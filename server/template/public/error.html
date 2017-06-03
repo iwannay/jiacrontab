@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+{{template "head" .}}
+<body> 
+    {{template "header" .}}
+    <div class="container-fluid" style="margin-top:10%">
+        <div class="row"></div>
+        <div class="row">
+
+        
+            <div class="col-md-3"></div>
+            <div class="col-md-6">
+                <div class="panel panel-danger">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">error</h3>
+                        </div>
+                        <div class="panel-body">
+                            {{.error}}
+                        </div>
+            </div>
+            </div>
+            <div class="col-md-3"></div>
+            </div>
+    </div>
+    {{template "footer" .}}
+    
+</body>
+
+</html>

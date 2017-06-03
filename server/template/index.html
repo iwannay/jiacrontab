@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+{{template "head" .}}
+
+<body>
+    {{template "header" .}}
+
+    <div class="container-fluid">
+        <div class="row-fluid">
+            <div class="col-md-3">
+                <div class="panel panel-primary">
+                    <!-- Default panel contents -->
+                    <div class="panel-heading">运行信息</div>
+
+                    <!-- List group -->
+                    <ul class="list-group">
+                        {{range $k,$v := .systemInfo}}
+                        <li class="list-group-item">{{$k}} : {{$v}}</li>
+                        {{end}}
+                    </ul>
+                </div>
+            </div>
+            <div class="col-md-9">
+                {{$rpcClientsMap := .rpcClientsMap}}
+                {{range $k,$v := .rpcClientsKey}}
+                <div class="col-sm-3">
+                    <div class="panel panel-info">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">服务器-{{$k}}</h3>
+                        </div>
+                        <div class="panel-body">
+                            <p>{{$v}}</p>
+                            <P>
+                                {{with $client := index $rpcClientsMap $v }}
+                                
+                                    {{if eq $client.State 1}}
+                                    正常
+                                    {{else}}
+                                    断开 <a href="/deleteClient?addr={{$v}}" onclick="return confirm('确定要删除吗？')" class="btn btn-danger btn-xs">删除</a>
+                                    {{end}}                               
+                                {{end}}
+                            </P>
+                            <p> <a href="/list?addr={{$v}}" role="button">GO</a></p>
+                        </div>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+        </div>
+
+    </div>
+   {{template "footer" .}}
+</body>
+
+</html>

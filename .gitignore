@@ -1,0 +1,44 @@
+# ---> Go
+# Compiled Object files, Static and Dynamic libs (Shared Objects)
+*.o
+*.a
+*.so
+
+# Folders
+_obj
+_test
+
+# Architecture specific extensions/prefixes
+*.[568vq]
+[568vq].out
+
+*.cgo1.go
+*.cgo2.c
+_cgo_defun.c
+_cgo_gotypes.go
+_cgo_export.*
+
+_testmain.go
+
+*.exe
+*.test
+*.prof
+*.json
+
+.data
+
+client/autobuild
+client/.data
+client/*.json
+client/logs
+client/watchbin
+
+
+
+server/debug
+server/autobuild
+server/jiacrontab
+server/watchbin
+server/.data
+
+

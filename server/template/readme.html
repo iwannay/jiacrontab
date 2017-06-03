@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+{{template "head" .}}
+
+<body>
+    {{template "header" .}}
+
+    <div class="container-fluid">
+        <ul class="breadcrumb">
+            <li><a href="/">Home</a> </li>
+            <li class="active">readme</li>
+        </ul>
+
+        <div class="row-fluid">
+            <pre>
+1、计划任务格式：
+    Minute Hour Day Month Week command
+    分钟 小时 天 月 星期 命令
+    0-59 0-23 1-31 1-12 0-6 command
+    Minute 每个小时的第几分钟执行该任务
+    Hour 每天的第几个小时执行该任务
+    Day 每月的第几天执行该任务
+    Month 每年的第几个月执行该任务
+    DayOfWeek 每周的第几天执行该任务，0表示周日
+    Command 指定要执行的程序 、脚本或命令
+
+    在这些字段里，除了“Command”是必须指定的字段以外，其它字段皆为可选。对于不指定的字段，要用“*”来填补其位置
+
+2、特殊符号含义
+    “*”代表取值范围内的数字,
+    “/”代表”每”,
+    “-”代表从某个数字到某个数字,
+    “,”分开几个离散的数字
+
+3、一些事例
+    5  * * * * ls 指定每小时的第5分钟执行一次ls命令
+    30 5 * * * ls 指定每天的 5:30 执行ls命令
+    30 7 8 * * ls 指定每月8号的7：30分执行ls命令
+    30 5 8 6 * ls 指定每年的6月8日5：30执行ls命令
+    30 6 * * 0 ls 指定每星期日的6:30执行ls命令[注：0表示星期天，1表示星期1，以此类推，也可以用英文来表示，sun表示星期天，mon表示星期一等。]
+    30 3 10,20 * * ls 每月10号及20号的3：30执行ls命令[注：“，”用来连接多个不连续的时段]
+    25 8-11 * * * ls 每天8-11点的第25分钟执行ls命令[注：“-”用来连接连续的时段]
+    */15 * * * * ls 每15分钟执行一次ls命令 [即每个小时的第0 15 30 45 60分钟执行ls命令 ]
+    30 6 */10 * * ls 每个月中，每隔10天6:30执行一次ls命令[即每月的1、11、21、31日是的6：30执行一次ls命令 ]
+
+    每天7：50以root 身份执行/etc/cron.daily目录中的所有可执行文件
+    50 7 * *  * root run-parts  /etc/cron.daily [ 注：run-parts参数表示，执行后面目录中的所有可执行文件
+
+    第10、20、30分钟输出到/tmp/cron1.txt：
+    10,20,30 * * * * echo “第10、20、30分钟输出一次”
+</pre>
+        </div>
+
+    </div>
+    {{template "footer" .}}
+</body>
+
+</html>

@@ -1,0 +1,457 @@
+package main
+
+import (
+	"bufio"
+	"context"
+	"encoding/json"
+	"errors"
+	"io"
+	"jiacrontab/libs"
+	"jiacrontab/libs/proto"
+	"log"
+	"net/http"
+	"net/http/pprof"
+	"net/smtp"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+)
+
+func storge(data map[string]*proto.TaskArgs) error {
+	var lock sync.RWMutex
+	lock.Lock()
+
+	f, err := libs.TryOpen(globalConfig.dataFile, os.O_CREATE|os.O_RDWR|os.O_TRUNC)
+	defer func() {
+		f.Close()
+		lock.Unlock()
+	}()
+	if err != nil {
+		return err
+	}
+
+	b, err := json.MarshalIndent(data, "", "  ")
+	// b, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	_, err = f.Write(b)
+	return err
+}
+
+func checkMonth(check proto.CrontabArgs, month time.Month) bool {
+	var flag = false
+	if check.Month != "*" {
+		if strings.Contains(check.Month, "/") {
+			sli := strings.Split(check.Month, "/")
+			tmp, err := strconv.Atoi(sli[1])
+			if err != nil {
+				log.Println(err)
+				goto end
+			}
+			if tmp == 0 {
+				goto end
+			}
+
+			remainder := month % time.Month(tmp)
+			if remainder == 0 {
+				flag = true
+			}
+
+		} else if strings.Contains(check.Month, ",") {
+			sli := strings.Split(check.Month, ",")
+			for _, v := range sli {
+				i, err := strconv.Atoi(v)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				if month.String() == proto.Months[i] {
+					flag = true
+					break
+				}
+			}
+		} else if strings.Contains(check.Month, "-") {
+			sli := strings.Split(check.Month, ",")
+			lower, err := strconv.Atoi(sli[0])
+			if err != nil {
+				log.Println(err)
+				goto end
+			}
+			upper, err := strconv.Atoi(sli[1])
+			if err != nil {
+				log.Println(err)
+				goto end
+			}
+
+			if month >= time.Month(lower) && month <= time.Month(upper) {
+				flag = true
+			}
+
+		} else {
+			m, err := strconv.Atoi(check.Month)
+			if err != nil {
+				goto end
+			}
+			if int(month) == m {
+				flag = true
+			}
+
+		}
+
+	} else {
+		flag = true
+	}
+end:
+	return flag
+}
+
+func checkWeekday(check proto.CrontabArgs, weekday time.Weekday) bool {
+	var flag = false
+	if check.Weekday != "*" {
+		if strings.Contains(check.Weekday, "/") {
+			sli := strings.Split(check.Weekday, "/")
+			tmp, err := strconv.Atoi(sli[1])
+			if err != nil {
+				log.Println(err)
+				goto end
+			}
+			if tmp == 0 {
+				goto end
+			}
+
+			remainder := weekday % time.Weekday(tmp)
+			if remainder == 0 {
+				flag = true
+			}
+
+		} else if strings.Contains(check.Weekday, ",") {
+			sli := strings.Split(check.Weekday, ",")
+			for _, v := range sli {
+				i, err := strconv.Atoi(v)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				if weekday.String() == proto.Days[i] {
+					flag = true
+					break
+				}
+			}
+		} else if strings.Contains(check.Weekday, "-") {
+			sli := strings.Split(check.Weekday, "-")
+			lower, err := strconv.Atoi(sli[0])
+			if err != nil {
+				log.Println(lower)
+				goto end
+			}
+			upper, err := strconv.Atoi(sli[1])
+			if err != nil {
+				log.Println(upper)
+				goto end
+			}
+			if weekday >= time.Weekday(lower) && weekday <= time.Weekday(upper) {
+				flag = true
+			}
+		} else {
+			wd, err := strconv.Atoi(check.Weekday)
+			if err != nil {
+				goto end
+			}
+			if int(weekday) == wd {
+				flag = true
+			}
+
+		}
+
+	} else {
+		flag = true
+	}
+end:
+	return flag
+}
+
+func checkDay(check proto.CrontabArgs, day int) bool {
+	var flag = false
+	if check.Day != "*" {
+		if strings.Contains(check.Day, "/") {
+			sli := strings.Split(check.Day, "/")
+			tmp, err := strconv.Atoi(sli[1])
+			if err != nil {
+				log.Println(err)
+				goto end
+			}
+			if tmp == 0 {
+				goto end
+			}
+
+			remainder := (day - 1) % tmp
+			if remainder == 0 {
+				flag = true
+			}
+
+		} else if strings.Contains(check.Day, ",") {
+			sli := strings.Split(check.Day, ",")
+			for _, v := range sli {
+				i, err := strconv.Atoi(v)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				if day == i {
+					flag = true
+					break
+				}
+			}
+		} else if strings.Contains(check.Day, "-") {
+			sli := strings.Split(check.Day, "-")
+			lower, err := strconv.Atoi(sli[0])
+			if err != nil {
+				log.Println(err)
+				goto end
+			}
+			upper, err := strconv.Atoi(sli[1])
+			if err != nil {
+				log.Println(err)
+				goto end
+			}
+			if day >= lower && day <= upper {
+				flag = true
+			}
+		} else {
+			i, err := strconv.Atoi(check.Day)
+			if err != nil {
+				log.Println(err)
+				goto end
+			}
+			if i == day {
+				flag = true
+			}
+		}
+
+	} else {
+		flag = true
+	}
+end:
+	return flag
+}
+
+func checkHour(check proto.CrontabArgs, hour int) bool {
+	var flag = false
+	if check.Hour != "*" {
+		if strings.Contains(check.Hour, "/") {
+			sli := strings.Split(check.Hour, "/")
+			tmp, err := strconv.Atoi(sli[1])
+			if err != nil {
+				log.Println(err)
+				goto end
+			}
+			if tmp == 0 {
+				goto end
+			}
+
+			remainder := hour % tmp
+			if remainder == 0 {
+				flag = true
+			}
+
+		} else if strings.Contains(check.Hour, ",") {
+			sli := strings.Split(check.Hour, ",")
+			for _, v := range sli {
+				i, err := strconv.Atoi(v)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				if hour == i {
+					flag = true
+					break
+				}
+			}
+		} else if strings.Contains(check.Hour, "-") {
+			sli := strings.Split(check.Hour, "-")
+			lower, err := strconv.Atoi(sli[0])
+			if err != nil {
+				log.Println(err)
+				goto end
+			}
+			upper, err := strconv.Atoi(sli[1])
+			if err != nil {
+				log.Println(err)
+				goto end
+			}
+			if hour >= lower && hour <= upper {
+				flag = true
+			}
+		} else {
+			i, err := strconv.Atoi(check.Hour)
+			if err != nil {
+				log.Println(err)
+				goto end
+			}
+			if i == hour {
+				flag = true
+			}
+		}
+
+	} else {
+		flag = true
+	}
+end:
+	return flag
+}
+
+func checkMinute(check proto.CrontabArgs, minute int) bool {
+	var flag = false
+	if check.Minute != "*" {
+		if strings.Contains(check.Minute, "/") {
+			sli := strings.Split(check.Minute, "/")
+			tmp, err := strconv.Atoi(sli[1])
+			if err != nil {
+				log.Println(err)
+				goto end
+			}
+			if tmp == 0 {
+				goto end
+			}
+			remainder := minute % tmp
+			if remainder == 0 {
+				flag = true
+			}
+
+		} else if strings.Contains(check.Minute, ",") {
+			sli := strings.Split(check.Minute, ",")
+			for _, v := range sli {
+				i, err := strconv.Atoi(v)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				if minute == i {
+					flag = true
+					break
+				}
+			}
+		} else if strings.Contains(check.Minute, "-") {
+			sli := strings.Split(check.Minute, "-")
+			lower, err := strconv.Atoi(sli[0])
+			if err != nil {
+				log.Println(err)
+				goto end
+			}
+			upper, err := strconv.Atoi(sli[1])
+			if err != nil {
+				log.Println(err)
+				goto end
+			}
+			if minute >= lower && minute <= upper {
+				flag = true
+			}
+		} else {
+			i, err := strconv.Atoi(check.Minute)
+			if err != nil {
+				log.Println(err)
+				goto end
+			}
+			if i == minute {
+				flag = true
+			}
+		}
+
+	} else {
+		flag = true
+	}
+end:
+	return flag
+}
+
+func execScript(ctx context.Context, logname string, bin string, logpath string, content *[]byte, args ...string) error {
+	defer libs.MRecover()
+	binpath, err := exec.LookPath(bin)
+	if err != nil {
+		return err
+	}
+
+	logPath := filepath.Join(logpath, strconv.Itoa(time.Now().Year()), time.Now().Month().String())
+	f, err := libs.TryOpen(filepath.Join(logPath, logname), os.O_APPEND|os.O_CREATE|os.O_RDWR)
+
+	defer f.Close()
+	if err != nil {
+		return err
+	}
+
+	cmd := exec.CommandContext(ctx, binpath, args...)
+	stdout, err := cmd.StdoutPipe()
+	defer stdout.Close()
+	if err != nil {
+		return err
+	}
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	reader := bufio.NewReader(stdout)
+
+	for {
+
+		line, err2 := reader.ReadString('\n')
+		*content = append([]byte(line), '\n')
+		f.WriteString(line)
+
+		if err2 != nil || io.EOF == err2 {
+			break
+		}
+	}
+
+	if err := cmd.Wait(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func initPprof(addr string) {
+	pprofServeMux := http.NewServeMux()
+	pprofServeMux.HandleFunc("/debug/pprof/", pprof.Index)
+	pprofServeMux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	pprofServeMux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	pprofServeMux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+
+	go func() {
+		log.Printf("pprof listen %s", addr)
+		if err := http.ListenAndServe(addr, pprofServeMux); err != nil {
+			log.Printf("http.ListenAndServe(\"%s\", pprofServeMux) error(%v)", addr, err)
+			panic(err)
+		}
+	}()
+
+}
+
+func sendMail(mailTo, title, content string) {
+	if mailTo == "" {
+		mailTo = globalConfig.mailTo
+	}
+	hostname := globalStore.Mail.Host
+	from := globalStore.Mail.User
+	pass := globalStore.Mail.Pass
+	port := globalStore.Mail.Port
+	auth := smtp.PlainAuth("", from, pass, hostname)
+
+	if from == "" || pass == "" || port == "" || mailTo == "" {
+		log.Printf("mail %v", errors.New("missing parameters"))
+		return
+	}
+
+	to := []string{mailTo}
+	toStr := strings.Join(to, ",")
+	msg := []byte("To: " + toStr + "\r\n" +
+		"Subject: " + title + "\r\n" +
+		"\r\n" +
+		content + "\r\n")
+
+	err := smtp.SendMail(hostname+":"+port, auth, from, to, msg)
+	log.Printf("send mail to %s %v", toStr, err)
+}

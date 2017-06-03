@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+{{template "head" .}}
+
+<body>
+    {{template "header" .}}
+    <div class="container-fluid">
+        
+        <ul class="breadcrumb">
+            <li><a href="/">Home</a> </li>
+            <li class="active">配置</li>
+        </ul>
+
+        <div class="row-fluid">
+            <ul class="list-group">
+                {{range $k,$v := .configs}}
+                <li class="list-group-item">{{$k}} : {{$v}}</li>
+                {{end}}
+            </ul>
+        </div>
+
+    </div>
+    {{template "footer" .}}
+</body>
+
+</html>

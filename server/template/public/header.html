@@ -1,0 +1,54 @@
+{{define "header"}}
+<header id="top" class="navbar navbar-inverse navbar-static-top">
+    <nav>
+        <div class="container-fluid">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="/">首页</a>
+            </div>
+
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                    <!--<li class="active"><a href="#">Link <span class="sr-only">(current)</span></a></li>-->
+                    <li {{if eq .action "/readme"}}class="active"{{end}}>
+                        <a href="/readme">readme
+                        {{if eq .action "/readme"}}<span class="sr-only">(current)</span>{{end}}
+                        </a>
+                    </li>
+                </ul>
+                {{if  .User}}
+                <ul class="nav navbar-nav navbar-right">
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{{.User}} <span class="caret"></span></a>
+                        <ul class="dropdown-menu">
+                            <!--<li><a href="#">Action</a></li>
+                            <li><a href="#">Another action</a></li>-->
+                            <li><a href="/viewConfig">配置信息</a></li>
+                            <li><a href="/reloadConfig">重新加载配置</a></li>
+                            <li role="separator" class="divider"></li>
+                            <li><a href="/logout">退出</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                {{end}}
+                                <!--<form class="navbar-form navbar-right">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search">
+                    </div>
+                    <button type="submit" class="btn btn-default">Submit</button>
+                </form>-->
+            </div>
+            <!-- /.navbar-collapse -->
+        </div>
+        <!-- /.container-fluid -->
+    </nav>
+</header>
+
+{{end}}

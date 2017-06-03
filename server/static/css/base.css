@@ -1,0 +1,40 @@
+html {
+    min-height: 100%;
+    position: relative;
+}
+
+body {
+    min-height: 100%;
+    padding-bottom: 81px;
+}
+
+footer {
+    height: 40px;
+    background-color: white;
+    border-top: 1px solid #d6d6d6;
+    clear: both;
+    width: 100%;
+    position: absolute;
+    line-height: 40px;
+    color: #888888;
+    /*position: fixed;*/
+    bottom: 1px;
+}
+
+.full {
+    min-height: 100%;
+    margin-bottom: -41px;
+    padding-bottom: 40px;
+}
+
+.border-bottom {
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+}
+
+.border-top {
+    border-top: 1px solid #ccc;
+    margin-top: 10px;
+    padding-top: 10px;
+}

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+{{template "head" .}}
+
+<body>
+    {{template "header" .}}
+
+    <div class="container-fluid">
+
+        <ul class="breadcrumb">
+            <li><a href="/">Home</a> </li>
+            <li class="active">{{.addr}}</li>
+        </ul>
+
+        <div class="container-fluid">
+            <div class="col-md-3">
+                <div class="list-group">
+                    {{$addr := .addr}}
+                    {{$clients := .rpcClientsMap}}
+                    {{$rpcClientsMap := .rpcClientsMap}}
+                    {{range $k,$v := .addrs}}
+                        {{$info := index $clients $v}}
+                        {{if eq $info.State 1}}
+                        <a href="/list?addr={{$v}}" class="list-group-item {{if eq $v $addr}}active{{end}}">
+                            {{$v}}
+                        </a>
+                        {{end}}
+                    {{end}}
+                </div>
+                 <div class="panel panel-primary">
+                    <!-- Default panel contents -->
+                    <div class="panel-heading">运行信息</div>
+
+                    <!-- List group -->
+                    <ul class="list-group">
+                        {{range $k,$v := .systemInfo}}
+                        <li class="list-group-item">{{$k}} : {{$v}}</li>
+                        {{end}}
+                    </ul>
+                </div>
+            </div>
+            <div class="col-md-9">
+
+                <p class="border-bottom">
+                    <a href="/update?addr={{.client.Addr}}" class="btn btn-primary">添加</a>
+                </p>
+
+                {{$list := .list}} {{$addr := .addr}} {{$logHost := .logHost}} {{$client := .client}} {{range $i,$e := .listKey}} {{$v := index $list $e}}
+                <div class="row-fluid show-grid border-bottom">
+                    <div class="span12"><strong>{{$v.Name}}</strong></div>
+                    <div class="span12">{{$v.Command}} {{$v.Args}}</div>
+                    <div class="span12">
+                            状态：{{if eq $v.State 0}}
+                        <span class="label label-danger">已停止</span> {{else if eq $v.State 1}}
+                        <span class="label label-info">计时中</span> {{else}}
+                        <span class="label label-success">运行中</span>{{end}} 
+                        &nbsp;&nbsp;|&nbsp;&nbsp;上次启动：{{date $v.LastExecTime}}
+                        &nbsp;&nbsp;|&nbsp;&nbsp;上次花费：{{formatMs "%.3fs" $v.LastCostTime 1000000000}}
+                        &nbsp;&nbsp;|&nbsp;&nbsp;超时：{{$v.Timeout}}s
+                        &nbsp;&nbsp;|&nbsp;&nbsp;超时触发：{{$v.OpTimeout}}
+                        &nbsp;&nbsp;|&nbsp;&nbsp;进程：{{$v.NumberProcess}}
+
+
+                    </div>
+                    <div class="span12">
+                        分:{{$v.C.Minute}}&nbsp;&nbsp;时:{{$v.C.Hour}}&nbsp;&nbsp;日:{{$v.C.Day}}&nbsp;&nbsp;月:{{$v.C.Month}}&nbsp;&nbsp;日/周:{{$v.C.Weekday}}
+
+                        <div class="btn-group">
+                            <a class="btn dropdown-toggle {{if eq $client.State 0}}disabled{{end}}" data-toggle="dropdown" href="">
+                                    操作
+                                    <span class="caret"></span>
+                                </a>
+                            <ul class="dropdown-menu">
+                                <li><a href="/start?taskId={{$v.Id}}&addr={{$client.Addr}}">启动计划任务</a></li>
+                                <li><a href="/stop?taskId={{$v.Id}}&addr={{$client.Addr}}&action=stop">停止计划任务</a></li>
+                                <li><a href="/update?taskId={{$v.Id}}&addr={{$client.Addr}}">修改计划任务</a></li>
+                                <li><a href="/stop?taskId={{$v.Id}}&addr={{$client.Addr}}&action=delete">删除计划任务</a></li>
+                                <li role="separator" class="divider"></li>
+                                <li><a href="/quickStart?taskId={{$v.Id}}&addr={{$client.Addr}}">测试用户脚本</a></li>
+                                <li><a href="/stop?taskId={{$v.Id}}&addr={{$client.Addr}}&action=kill">强杀脚本进程</a></li>
+                                <li role="separator" class="divider"></li>
+                                <li><a href="/log?taskId={{$v.Id}}&addr={{$client.Addr}}">查看最近日志</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+
+        </div>
+    </div>
+
+    {{template "footer" .}}
+</body>
+
+</html>
