@@ -3,9 +3,9 @@ package store
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"jiacrontab/libs"
+	"jiacrontab/libs/proto"
 	"log"
 	"os"
 	"path/filepath"
@@ -21,38 +21,37 @@ const (
 	stateSearch     = "Search"
 )
 
-type Result struct {
-	Value interface{}
-	Err   error
+type result struct {
+	value interface{}
+	err   error
 }
 type request struct {
 	key     string
 	state   string
 	handler handle
-	body    interface{}
+	body    string
 
-	response chan<- Result
+	response chan<- result
 }
-type data map[string]data
 
 type handle func(s *Store)
 
 func NewStore(path string) *Store {
 	s := &Store{
-		dataFile: path,
-		swapFile: filepath.Join(filepath.Dir(path), ".swap"),
-		requests: make(chan request),
-		Data:     make(map[string]interface{}),
+		dataFile:      path,
+		swapFile:      filepath.Join(filepath.Dir(path), ".swap"),
+		requests:      make(chan request),
+		RpcClientList: make(map[string]proto.ClientConf),
 	}
 	go s.server()
 	return s
 }
 
 type Store struct {
-	Data     map[string]interface{}
-	dataFile string
-	swapFile string
-	requests chan request
+	RpcClientList map[string]proto.ClientConf
+	dataFile      string
+	swapFile      string
+	requests      chan request
 }
 
 func (s *Store) server() {
@@ -69,7 +68,7 @@ func (s *Store) server() {
 }
 
 func (s *Store) requestHandle(req request) {
-	var ret Result
+	var ret result
 
 	if req.handler != nil {
 		req.handler(s)
@@ -87,55 +86,51 @@ func (s *Store) requestHandle(req request) {
 			log.Printf("failed recover %s", err)
 			if err = s.load(s.swapFile); err != nil {
 				log.Printf("failed recover %s", err)
-				ret.Err = err
+				ret.err = err
 			}
 		}
 	}
 
-	if req.key == "" {
-		if req.state == stateSelectCopy {
-			ret.Value = libs.DeepCopy2(s.Data)
+	switch req.key {
+	case "RpcClientList":
+		if req.state == stateSearch && req.body != "" {
+			if v, ok := s.RpcClientList[req.body]; ok {
+				req.response <- result{value: v}
+			} else {
+				req.response <- result{value: nil}
+			}
 		} else {
-			ret.Value = s.Data
+			var rpcClientList map[string]proto.ClientConf
+			if b, err := json.Marshal(s.RpcClientList); err == nil {
+				json.Unmarshal(b, &rpcClientList)
+			}
+			req.response <- result{value: rpcClientList}
 		}
 
-		req.response <- ret
-		return
+	case "dataFile":
+		req.response <- result{value: s.dataFile}
+	default:
+		req.response <- result{value: nil}
 	}
-
-	ret.Value = libs.DeepFind(s.Data, req.key)
-	if req.state == stateSelectCopy {
-		ret.Value = libs.DeepCopy2(ret.Value)
-	}
-
-	req.response <- ret
 
 }
 
-func (s *Store) Get(key string, v interface{}) error {
-	ret := s.Query(key, stateSelect, nil, "")
-	if ret.Value != nil {
-		b, err := json.Marshal(ret.Value)
-		if err != nil {
-			return err
-		}
-		return json.Unmarshal(b, v)
-	}
-
-	return fmt.Errorf("failed to get %s", key)
+func (s *Store) GetRPCClientList() (map[string]proto.ClientConf, bool) {
+	ret, ok := (s.Get("RpcClientList")).value.(map[string]proto.ClientConf)
+	return ret, ok
 }
 
-func (s *Store) GetCopy(key string, v interface{}) error {
-	ret := s.Query(key, stateSelectCopy, nil, "")
-	if ret.Value != nil {
-		b, err := json.Marshal(ret.Value)
-		if err != nil {
-			return err
-		}
-		return json.Unmarshal(b, v)
-	}
+func (s *Store) SearchRPCClientList(args string) (proto.ClientConf, bool) {
+	ret, ok := s.Search("RpcClientList", args).value.(proto.ClientConf)
+	return ret, ok
+}
 
-	return fmt.Errorf("failed to get %s", key)
+func (s *Store) Get(key string) result {
+	return s.Query(key, stateSelect, nil, "")
+
+}
+func (s *Store) Search(key, args string) result {
+	return s.Query(key, stateSearch, nil, args)
 }
 
 func (s *Store) Wrap(fn handle) *Store {
@@ -143,16 +138,16 @@ func (s *Store) Wrap(fn handle) *Store {
 	return s
 }
 
-func (s *Store) Sync() Result {
+func (s *Store) Sync() result {
 	return s.Query("", stateSync, nil, "")
 }
 
-func (s *Store) Load() Result {
+func (s *Store) Load() result {
 	return s.Query("", stateLoad, nil, "")
 }
 
-func (s *Store) Query(key string, state string, fn handle, body interface{}) Result {
-	response := make(chan Result)
+func (s *Store) Query(key string, state string, fn handle, body string) result {
+	response := make(chan result)
 	s.requests <- request{key, state, fn, body, response}
 	return <-response
 }
@@ -167,7 +162,7 @@ func (s *Store) sync(fpath string) error {
 		return err
 	}
 
-	b, err := json.MarshalIndent(s.Data, "", "  ")
+	b, err := json.MarshalIndent(s, "", "  ")
 
 	if err != nil {
 		return err
@@ -199,7 +194,7 @@ func (s *Store) load(fpath string) error {
 
 		return err
 	}
-	err = json.Unmarshal(b, &s.Data)
+	err = json.Unmarshal(b, &s)
 
 	return err
 }

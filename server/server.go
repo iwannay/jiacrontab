@@ -25,7 +25,7 @@ func wrapHandler(fn func(rw http.ResponseWriter, r *http.Request, m *modelView),
 
 		modelV := newModelView(rw, globalStore)
 		modelV.startTime = startNa
-
+		
 		defer func() {
 			k := fmt.Sprintf("%s|%s", getHttpClientIp(r), r.Header.Get("User-Agent"))
 			endMs := float64(time.Now().UnixNano()) / 1000000

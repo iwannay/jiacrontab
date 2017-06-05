@@ -6,7 +6,6 @@ import (
 	"html/template"
 	"jiacrontab/libs"
 	"jiacrontab/libs/proto"
-	"jiacrontab/server/rpc"
 	"jiacrontab/server/store"
 	"log"
 	"net/http"
@@ -26,7 +25,7 @@ func listTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 
 	sortedKeys := make([]string, 0)
 	sortedKeys2 := make([]string, 0)
-	m.s.GetCopy("RPCClientList", &clientList)
+	clientList, _ = m.s.GetRPCClientList()
 
 	if clientList != nil && len(clientList) > 0 {
 		for k := range clientList {
@@ -84,7 +83,7 @@ func index(rw http.ResponseWriter, r *http.Request, m *modelView) {
 
 	sInfo := libs.SystemInfo(startTime)
 	sortedKeys := make([]string, 0)
-	m.s.Get("RPCClientList", &clientList)
+	clientList, _ = m.s.GetRPCClientList()
 
 	for k := range clientList {
 		sortedKeys = append(sortedKeys, k)
@@ -170,7 +169,7 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 
 	} else {
 		var t proto.TaskArgs
-		var clientList map[string]*rpc.MrpcClient
+		var clientList map[string]proto.ClientConf
 		if id != "" {
 			m.rpcCall(addr, "Task.Get", id, &t)
 			if reply {
@@ -178,7 +177,8 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 				return
 			}
 		}
-		m.s.GetCopy("RPCClientList", &clientList)
+
+		clientList, _ = m.s.GetRPCClientList()
 		if len(clientList) > 0 {
 			for k := range clientList {
 				sortedKeys = append(sortedKeys, k)
@@ -383,14 +383,14 @@ func deleteClient(rw http.ResponseWriter, r *http.Request, m *modelView) {
 
 	addr := r.FormValue("addr")
 	m.s.Wrap(func(s *store.Store) {
-		if clientList, ok := s.Data["RPCClientList"].(map[string]proto.ClientConf); ok {
-			if v, ok := clientList[addr]; ok {
-				if v.State == 1 {
-					return
-				}
+
+		if v, ok := s.RpcClientList[addr]; ok {
+			if v.State == 1 {
+				return
 			}
-			delete(clientList, addr)
 		}
+		delete(s.RpcClientList, addr)
+
 	}).Sync()
 	http.Redirect(rw, r, "/", http.StatusFound)
 }

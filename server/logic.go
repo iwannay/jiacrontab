@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"jiacrontab/libs"
 	"jiacrontab/libs/proto"
 	"jiacrontab/server/store"
@@ -13,8 +12,6 @@ type Logic struct{}
 func (l *Logic) Register(args proto.ClientConf, reply *proto.MailArgs) error {
 	defer libs.MRecover()
 
-	var clientConf proto.ClientConf
-
 	*reply = proto.MailArgs{
 		Host: globalConfig.mailHost,
 		User: globalConfig.mailUser,
@@ -22,22 +19,20 @@ func (l *Logic) Register(args proto.ClientConf, reply *proto.MailArgs) error {
 		Port: globalConfig.mailPort,
 	}
 
-	globalStore.Get(fmt.Sprintf("RPCClientList.%s", args.Addr), &clientConf)
+	// globalStore.Get(fmt.Sprintf("RPCClientList.%s", args.Addr), &clientConf)
 
-	if clientConf.State == 1 {
-		return nil
-	}
+	// if clientConf, ok = globalStore.SearchRPCClientList(args.Addr); ok {
+
+	// }
+
+	// if clientConf.State == 1 {
+	// 	return nil
+	// }
 
 	globalStore.Wrap(func(s *store.Store) {
-		if s.Data["RPCClientList"] == nil {
-			s.Data["RPCClientList"] = make(map[string]proto.ClientConf)
-		}
-
-		if tmp, ok := (s.Data["RPCClientList"]).(map[string]proto.ClientConf); ok {
-			tmp[args.Addr] = proto.ClientConf{
-				Addr:  args.Addr,
-				State: 1,
-			}
+		s.RpcClientList[args.Addr] = proto.ClientConf{
+			Addr:  args.Addr,
+			State: 1,
 		}
 	}).Sync()
 

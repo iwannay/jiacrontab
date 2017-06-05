@@ -34,12 +34,9 @@ func (self *modelView) rpcCall(addr string, method string, args interface{}, rep
 	c, err := rpc.NewRpcClient(addr)
 	if err != nil {
 		self.s.Wrap(func(s *store.Store) {
-			if tmp, ok := s.Data["RPCClientList"].(map[string]proto.ClientConf); ok {
-				tmp[addr] = proto.ClientConf{
-					Addr:  addr,
-					State: 0,
-				}
-				s.Data["RPCClientList"] = tmp
+			s.RpcClientList[addr] = proto.ClientConf{
+				Addr:  addr,
+				State: 0,
 			}
 
 		}).Sync()
