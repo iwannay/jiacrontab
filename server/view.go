@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"html/template"
+	"jiacrontab/libs/proto"
+	"jiacrontab/server/rpc"
+	"jiacrontab/server/store"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -13,15 +16,43 @@ type modelView struct {
 	startTime float64
 	shareData map[string]interface{}
 	locals    map[string]interface{}
+	s         *store.Store
 	rw        http.ResponseWriter
 }
 
-func newModelView(rw http.ResponseWriter) *modelView {
+func newModelView(rw http.ResponseWriter, s *store.Store) *modelView {
 	return &modelView{
 		shareData: make(map[string]interface{}),
 		locals:    make(map[string]interface{}),
 		rw:        rw,
+		s:         s,
 	}
+}
+
+func (self *modelView) rpcCall(addr string, method string, args interface{}, reply interface{}) error {
+
+	c, err := rpc.NewRpcClient(addr)
+	if err != nil {
+		self.s.Wrap(func(s *store.Store) {
+			if tmp, ok := s.Data["RPCClientList"].(map[string]proto.ClientConf); ok {
+				tmp[addr] = proto.ClientConf{
+					Addr:  addr,
+					State: 0,
+				}
+				s.Data["RPCClientList"] = tmp
+			}
+
+		}).Sync()
+		log.Println(err)
+		return err
+	}
+
+	if err := c.Call(method, args, reply); err != nil {
+		err = fmt.Errorf("failded to call %s %s %s", method, args, err)
+		log.Println(err)
+	}
+	return err
+
 }
 
 func (self *modelView) renderHtml(viewPath []string, locals map[string]interface{}, funcMap template.FuncMap) error {

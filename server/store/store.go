@@ -3,6 +3,7 @@ package store
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"jiacrontab/libs"
 	"log"
@@ -20,17 +21,19 @@ const (
 	stateSearch     = "Search"
 )
 
-type result struct {
-	value interface{}
-	err   error
+type Result struct {
+	Value interface{}
+	Err   error
 }
 type request struct {
-	key      string
-	state    string
-	handler  handle
-	body     string
-	response chan<- result
+	key     string
+	state   string
+	handler handle
+	body    interface{}
+
+	response chan<- Result
 }
+type data map[string]data
 
 type handle func(s *Store)
 
@@ -66,7 +69,7 @@ func (s *Store) server() {
 }
 
 func (s *Store) requestHandle(req request) {
-	var ret result
+	var ret Result
 
 	if req.handler != nil {
 		req.handler(s)
@@ -84,36 +87,55 @@ func (s *Store) requestHandle(req request) {
 			log.Printf("failed recover %s", err)
 			if err = s.load(s.swapFile); err != nil {
 				log.Printf("failed recover %s", err)
-				ret.err = err
+				ret.Err = err
 			}
 		}
 	}
 
 	if req.key == "" {
 		if req.state == stateSelectCopy {
-			ret.value = libs.DeepCopy2(s.Data)
+			ret.Value = libs.DeepCopy2(s.Data)
 		} else {
-			ret.value = s.Data
+			ret.Value = s.Data
 		}
 
 		req.response <- ret
 		return
 	}
-	ret.value = libs.DeepFind(s.Data, req.key)
+
+	ret.Value = libs.DeepFind(s.Data, req.key)
 	if req.state == stateSelectCopy {
-		ret.value = libs.DeepCopy2(ret.value)
+		ret.Value = libs.DeepCopy2(ret.Value)
 	}
 
 	req.response <- ret
 
 }
 
-func (s *Store) Get(key string) result {
-	return s.Query(key, stateSelect, nil, "")
+func (s *Store) Get(key string, v interface{}) error {
+	ret := s.Query(key, stateSelect, nil, "")
+	if ret.Value != nil {
+		b, err := json.Marshal(ret.Value)
+		if err != nil {
+			return err
+		}
+		return json.Unmarshal(b, v)
+	}
+
+	return fmt.Errorf("failed to get %s", key)
 }
 
-func (s *Store) GetCopy(key string) result {
-	return s.Query(key, stateSelectCopy, nil, "")
+func (s *Store) GetCopy(key string, v interface{}) error {
+	ret := s.Query(key, stateSelectCopy, nil, "")
+	if ret.Value != nil {
+		b, err := json.Marshal(ret.Value)
+		if err != nil {
+			return err
+		}
+		return json.Unmarshal(b, v)
+	}
+
+	return fmt.Errorf("failed to get %s", key)
 }
 
 func (s *Store) Wrap(fn handle) *Store {
@@ -121,16 +143,16 @@ func (s *Store) Wrap(fn handle) *Store {
 	return s
 }
 
-func (s *Store) Sync() result {
+func (s *Store) Sync() Result {
 	return s.Query("", stateSync, nil, "")
 }
 
-func (s *Store) Load() result {
+func (s *Store) Load() Result {
 	return s.Query("", stateLoad, nil, "")
 }
 
-func (s *Store) Query(key string, state string, fn handle, body string) result {
-	response := make(chan result)
+func (s *Store) Query(key string, state string, fn handle, body interface{}) Result {
+	response := make(chan Result)
 	s.requests <- request{key, state, fn, body, response}
 	return <-response
 }
@@ -145,7 +167,7 @@ func (s *Store) sync(fpath string) error {
 		return err
 	}
 
-	b, err := json.MarshalIndent(s, "", "  ")
+	b, err := json.MarshalIndent(s.Data, "", "  ")
 
 	if err != nil {
 		return err
@@ -177,7 +199,7 @@ func (s *Store) load(fpath string) error {
 
 		return err
 	}
+	err = json.Unmarshal(b, &s.Data)
 
-	err = json.Unmarshal(b, s)
 	return err
 }

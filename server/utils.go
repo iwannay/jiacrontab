@@ -4,13 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"jiacrontab/libs"
-	"log"
 	"net"
 	"net/http"
-	"os"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -19,29 +15,6 @@ func replaceEmpty(str, replaceStr string) string {
 		return replaceStr
 	}
 	return str
-}
-
-func storge(data *map[string]*mrpcClient) error {
-	var lock sync.RWMutex
-	lock.Lock()
-	f, err := libs.TryOpen(globalConfig.dataFile, os.O_CREATE|os.O_RDWR|os.O_TRUNC)
-	defer func() {
-		f.Close()
-		lock.Unlock()
-	}()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	b, err := json.MarshalIndent(data, "", "  ")
-	// b, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-	_, err = f.Write(b)
-	f.Sync()
-	return err
 }
 
 func renderJSON(rw http.ResponseWriter, r *http.Request, data ResponseData) {

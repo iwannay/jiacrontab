@@ -23,7 +23,7 @@ func wrapHandler(fn func(rw http.ResponseWriter, r *http.Request, m *modelView),
 		startNa := float64(time.Now().UnixNano())
 		startMs := startNa / 1000000
 
-		modelV := newModelView(rw)
+		modelV := newModelView(rw, globalStore)
 		modelV.startTime = startNa
 
 		defer func() {

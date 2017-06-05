@@ -6,6 +6,8 @@ import (
 	"html/template"
 	"jiacrontab/libs"
 	"jiacrontab/libs/proto"
+	"jiacrontab/server/rpc"
+	"jiacrontab/server/store"
 	"log"
 	"net/http"
 	"reflect"
@@ -20,12 +22,14 @@ func listTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 	var addr string
 	var systemInfo map[string]interface{}
 	var locals proto.Mdata
-	var clientList map[string]*mrpcClient
+	var clientList map[string]proto.ClientConf
+
 	sortedKeys := make([]string, 0)
 	sortedKeys2 := make([]string, 0)
-	if len(globalStore.RpcClientList) > 0 {
-		clientList = globalStore.RpcClientList
-		for k, _ := range clientList {
+	m.s.GetCopy("RPCClientList", &clientList)
+
+	if clientList != nil && len(clientList) > 0 {
+		for k := range clientList {
 			sortedKeys = append(sortedKeys, k)
 		}
 		sort.Strings(sortedKeys)
@@ -38,26 +42,19 @@ func listTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		return
 	}
 
-	if c, err := newRpcClient(addr); err != nil {
+	locals = make(proto.Mdata)
+
+	if err := m.rpcCall(addr, "Task.All", "", &locals); err != nil {
 		http.Redirect(rw, r, "/", http.StatusFound)
 		return
-	} else {
-		locals = make(proto.Mdata)
-
-		if ok := c.call("Task.All", "", &locals); !ok {
-			http.Redirect(rw, r, "/", http.StatusFound)
-			return
-		}
-
-		for k, _ := range locals {
-			sortedKeys2 = append(sortedKeys2, k)
-		}
-		sort.Strings(sortedKeys2)
-
-		c.call("Task.SystemInfo", "", &systemInfo)
-
 	}
 
+	for k := range locals {
+		sortedKeys2 = append(sortedKeys2, k)
+	}
+	sort.Strings(sortedKeys2)
+
+	m.rpcCall(addr, "Task.SystemInfo", "", &systemInfo)
 	m.renderHtml2([]string{"listTask"}, map[string]interface{}{
 		"title":         "灵魂百度",
 		"list":          locals,
@@ -76,28 +73,30 @@ func listTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 }
 
 func index(rw http.ResponseWriter, r *http.Request, m *modelView) {
+	var clientList map[string]proto.ClientConf
 	if r.URL.Path != "/" {
 		rw.WriteHeader(http.StatusNotFound)
 		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
 			"error": "404 page not found",
 		}, nil)
 		return
-	} else {
-		sInfo := libs.SystemInfo(startTime)
-		sortedKeys := make([]string, 0)
-		clientList := globalStore.RpcClientList
-		for k, _ := range clientList {
-			sortedKeys = append(sortedKeys, k)
-		}
-		sort.Strings(sortedKeys)
-		m.renderHtml2([]string{"index"}, map[string]interface{}{
-			"rpcClientsKey": sortedKeys,
-			"rpcClientsMap": clientList,
-			"systemInfo":    sInfo,
-		}, template.FuncMap{
-			"date": date,
-		})
 	}
+
+	sInfo := libs.SystemInfo(startTime)
+	sortedKeys := make([]string, 0)
+	m.s.Get("RPCClientList", &clientList)
+
+	for k := range clientList {
+		sortedKeys = append(sortedKeys, k)
+	}
+	sort.Strings(sortedKeys)
+	m.renderHtml2([]string{"index"}, map[string]interface{}{
+		"rpcClientsKey": sortedKeys,
+		"rpcClientsMap": clientList,
+		"systemInfo":    sInfo,
+	}, template.FuncMap{
+		"date": date,
+	})
 
 }
 
@@ -110,15 +109,6 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 	if addr == "" {
 		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
 			"error": "params error",
-		}, nil)
-		return
-	}
-
-	rpcc, err := newRpcClient(addr)
-	if err != nil {
-		log.Println(err)
-		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
-			"error": err.Error(),
 		}, nil)
 		return
 	}
@@ -145,7 +135,7 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		hour := replaceEmpty(strings.TrimSpace(r.FormValue("hour")), "*")
 		minute := replaceEmpty(strings.TrimSpace(r.FormValue("minute")), "*")
 
-		rpcc.call("Task.Update", proto.TaskArgs{
+		if err := m.rpcCall(addr, "Task.Update", proto.TaskArgs{
 			Id:        id,
 			Name:      n,
 			Command:   command,
@@ -167,24 +157,30 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 				Minute:  minute,
 				Weekday: weekday,
 			},
-		}, &reply)
+		}, &reply); err != nil {
+			m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+				"error": err.Error(),
+			}, nil)
+			return
+		}
 		if reply {
 			http.Redirect(rw, r, "/list?addr="+addr, http.StatusFound)
+			return
 		}
 
 	} else {
 		var t proto.TaskArgs
-		var clientList map[string]*mrpcClient
+		var clientList map[string]*rpc.MrpcClient
 		if id != "" {
-			rpcc.call("Task.Get", id, &t)
+			m.rpcCall(addr, "Task.Get", id, &t)
 			if reply {
 				http.Redirect(rw, r, "/list?addr="+addr, http.StatusFound)
 				return
 			}
 		}
-		clientList = globalStore.RpcClientList
+		m.s.GetCopy("RPCClientList", &clientList)
 		if len(clientList) > 0 {
-			for k, _ := range clientList {
+			for k := range clientList {
 				sortedKeys = append(sortedKeys, k)
 			}
 			sort.Strings(sortedKeys)
@@ -220,31 +216,34 @@ func stopTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		return
 	}
 
-	if c, err := newRpcClient(addr); err != nil {
+	// if c, err := newRpcClient(addr); err != nil {
+	// 	m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+	// 		"error": "failed stop task" + taskId,
+	// 	}, nil)
+	// 	return
+	// } else {
+	var method string
+	if action == "stop" {
+		method = "Task.Stop"
+	} else if action == "delete" {
+		method = "Task.Delete"
+	} else {
+		method = "Task.Kill"
+	}
+	if err := m.rpcCall(addr, method, taskId, &reply); err != nil {
 		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
-			"error": "failed stop task" + taskId,
+			"error": err,
 		}, nil)
 		return
-	} else {
-		var method string
-		if action == "stop" {
-			method = "Task.Stop"
-		} else if action == "delete" {
-			method = "Task.Delete"
-		} else {
-			method = "Task.Kill"
-		}
-		c.call(method, taskId, &reply)
-		if reply {
-			http.Redirect(rw, r, "/list?addr="+addr, http.StatusFound)
-			return
-		} else {
-			m.renderHtml2([]string{"public/error"}, map[string]interface{}{
-				"error": fmt.Sprintf("failed %s %s", method, taskId),
-			}, nil)
-			return
-		}
 	}
+	if reply {
+		http.Redirect(rw, r, "/list?addr="+addr, http.StatusFound)
+		return
+	}
+
+	m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+		"error": fmt.Sprintf("failed %s %s", method, taskId),
+	}, nil)
 
 }
 
@@ -259,20 +258,22 @@ func startTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		return
 	}
 
-	if c, err := newRpcClient(addr); err != nil {
-		log.Println(err)
-	} else {
-		c.call("Task.Start", taskId, &reply)
-		if reply {
-			http.Redirect(rw, r, "/list?addr="+addr, http.StatusFound)
-			return
-		} else {
-			m.renderHtml2([]string{"error"}, map[string]interface{}{
-				"error": "failed start task" + taskId,
-			}, nil)
-			return
-		}
+	if err := m.rpcCall(addr, "Task.Start", taskId, &reply); err != nil {
+		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+			"error": "param error",
+		}, nil)
+		return
 	}
+
+	if reply {
+		http.Redirect(rw, r, "/list?addr="+addr, http.StatusFound)
+		return
+	}
+
+	m.renderHtml2([]string{"error"}, map[string]interface{}{
+		"error": "failed start task" + taskId,
+	}, nil)
+
 }
 
 func login(rw http.ResponseWriter, r *http.Request, m *modelView) {
@@ -292,21 +293,19 @@ func login(rw http.ResponseWriter, r *http.Request, m *modelView) {
 
 			http.Redirect(rw, r, "/", http.StatusFound)
 			return
-		} else {
-			m.renderHtml2([]string{"public/error"}, map[string]interface{}{
-				"error": "auth failed",
-			}, nil)
-			return
 		}
+
+		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+			"error": "auth failed",
+		}, nil)
 
 	} else {
 		var user map[string]interface{}
 		if globalJwt.auth(rw, r, &user) {
 			http.Redirect(rw, r, "/", http.StatusFound)
 			return
-		} else {
-			m.renderHtml2([]string{"login"}, nil, nil)
 		}
+		m.renderHtml2([]string{"login"}, nil, nil)
 
 	}
 }
@@ -322,18 +321,18 @@ func quickStart(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		return
 	}
 
-	if c, err := newRpcClient(addr); err != nil {
-		log.Println(err)
-	} else {
-
-		c.call("Task.QuickStart", taskId, &reply)
-		logList := strings.Split(string(reply), "\n")
-		m.renderHtml2([]string{"log"}, map[string]interface{}{
-			"logList": logList,
-			"addr":    addr,
+	if err := m.rpcCall(addr, "Task.QuickStart", taskId, &reply); err != nil {
+		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+			"error": err,
 		}, nil)
-
+		return
 	}
+	logList := strings.Split(string(reply), "\n")
+	m.renderHtml2([]string{"log"}, map[string]interface{}{
+		"logList": logList,
+		"addr":    addr,
+	}, nil)
+
 }
 
 func logout(rw http.ResponseWriter, r *http.Request, m *modelView) {
@@ -351,18 +350,20 @@ func recentLog(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		}, nil)
 		return
 	}
-	if c, err := newRpcClient(addr); err != nil {
-		log.Println(err)
-	} else {
-		c.call("Task.Log", id, &content)
-		logList := strings.Split(string(content), "\n")
-
-		m.renderHtml2([]string{"log"}, map[string]interface{}{
-			"logList": logList,
-			"addr":    addr,
+	if err := m.rpcCall(addr, "Task.Log", id, &content); err != nil {
+		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+			"error": err,
 		}, nil)
 		return
 	}
+	logList := strings.Split(string(content), "\n")
+
+	m.renderHtml2([]string{"log"}, map[string]interface{}{
+		"logList": logList,
+		"addr":    addr,
+	}, nil)
+	return
+
 }
 
 func readme(rw http.ResponseWriter, r *http.Request, m *modelView) {
@@ -380,16 +381,17 @@ func reloadConfig(rw http.ResponseWriter, r *http.Request, m *modelView) {
 
 func deleteClient(rw http.ResponseWriter, r *http.Request, m *modelView) {
 
-	clientAddr := r.FormValue("addr")
-	globalStore.lock.Lock()
-	if c, ok := globalStore.RpcClientList[clientAddr]; ok {
-		if c.State == 0 {
-			delete(globalStore.RpcClientList, clientAddr)
+	addr := r.FormValue("addr")
+	m.s.Wrap(func(s *store.Store) {
+		if clientList, ok := s.Data["RPCClientList"].(map[string]proto.ClientConf); ok {
+			if v, ok := clientList[addr]; ok {
+				if v.State == 1 {
+					return
+				}
+			}
+			delete(clientList, addr)
 		}
-	}
-	globalStore.lock.Unlock()
-	globalStore.Update(nil)
-
+	}).Sync()
 	http.Redirect(rw, r, "/", http.StatusFound)
 }
 
