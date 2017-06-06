@@ -37,7 +37,7 @@ func listenSignal(fn func()) {
 		if fn != nil {
 			fn()
 		}
-		log.Fatal("exit.")
+		log.Fatal("trying to exit gracefully...")
 
 	}
 }
