@@ -177,9 +177,14 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 				http.Redirect(rw, r, "/list?addr="+addr, http.StatusFound)
 				return
 			}
+		} else {
+			client, _ := m.s.SearchRPCClientList(addr)
+			log.Println(client)
+			t.MailTo = client.Mail
 		}
 
 		clientList, _ = m.s.GetRPCClientList()
+
 		if len(clientList) > 0 {
 			for k := range clientList {
 				sortedKeys = append(sortedKeys, k)
