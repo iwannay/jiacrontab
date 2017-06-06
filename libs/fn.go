@@ -2,6 +2,7 @@ package libs
 
 import (
 	"bufio"
+	"reflect"
 
 	"bytes"
 	"encoding/gob"
@@ -15,6 +16,7 @@ import (
 	"net"
 	"net/http"
 	"net/rpc"
+	"net/smtp"
 
 	"os"
 	"path/filepath"
@@ -198,4 +200,46 @@ func DeepFind(in map[string]interface{}, keyStr string) interface{} {
 	}
 
 	return nil
+}
+
+func PrintStruct(v interface{}) interface{} {
+	c := make(map[string]interface{})
+	values := reflect.ValueOf(v)
+	types := reflect.TypeOf(v)
+	l := values.NumField()
+	for i := 0; i < l; i++ {
+		v := values.Field(i)
+		t := types.Field(i)
+		if t.Name == "passwd" {
+			continue
+		}
+		switch v.Kind() {
+		case reflect.String:
+			c[t.Name] = v.String()
+		case reflect.Int64:
+			c[t.Name] = v.Int()
+		case reflect.Bool:
+			c[t.Name] = v.Bool()
+		}
+
+	}
+	return c
+}
+
+func SendMail(title, content, host, from, pass, port, mailTo string) {
+	if from == "" || pass == "" || port == "" || mailTo == "" {
+		log.Printf("mail %v", errors.New("missing parameters"))
+		return
+	}
+
+	auth := smtp.PlainAuth("", from, pass, host)
+	to := []string{mailTo}
+	toStr := strings.Join(to, ",")
+	msg := []byte("To: " + toStr + "\r\n" +
+		"Subject: " + title + "\r\n" +
+		"\r\n" +
+		content + "\r\n")
+
+	err := smtp.SendMail(host+":"+port, auth, from, to, msg)
+	log.Printf("send mail to %s %v", toStr, err)
 }

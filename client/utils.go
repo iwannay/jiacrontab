@@ -4,14 +4,12 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"jiacrontab/libs"
 	"jiacrontab/libs/proto"
 	"log"
 	"net/http"
 	"net/http/pprof"
-	"net/smtp"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -434,24 +432,10 @@ func sendMail(mailTo, title, content string) {
 	if mailTo == "" {
 		mailTo = globalConfig.mailTo
 	}
-	hostname := globalStore.Mail.Host
+	host := globalStore.Mail.Host
 	from := globalStore.Mail.User
 	pass := globalStore.Mail.Pass
 	port := globalStore.Mail.Port
-	auth := smtp.PlainAuth("", from, pass, hostname)
 
-	if from == "" || pass == "" || port == "" || mailTo == "" {
-		log.Printf("mail %v", errors.New("missing parameters"))
-		return
-	}
-
-	to := []string{mailTo}
-	toStr := strings.Join(to, ",")
-	msg := []byte("To: " + toStr + "\r\n" +
-		"Subject: " + title + "\r\n" +
-		"\r\n" +
-		content + "\r\n")
-
-	err := smtp.SendMail(hostname+":"+port, auth, from, to, msg)
-	log.Printf("send mail to %s %v", toStr, err)
+	libs.SendMail(title, content, host, from, pass, port, mailTo)
 }

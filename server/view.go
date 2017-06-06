@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"html/template"
-	"jiacrontab/libs/proto"
 	"jiacrontab/server/rpc"
 	"jiacrontab/server/store"
 	"log"
@@ -31,13 +30,15 @@ func newModelView(rw http.ResponseWriter, s *store.Store) *modelView {
 
 func (self *modelView) rpcCall(addr string, method string, args interface{}, reply interface{}) error {
 
+	v, ok := self.s.SearchRPCClientList(addr)
+	if !ok {
+		return fmt.Errorf("not found %s", addr)
+	}
 	c, err := rpc.NewRpcClient(addr)
 	if err != nil {
 		self.s.Wrap(func(s *store.Store) {
-			s.RpcClientList[addr] = proto.ClientConf{
-				Addr:  addr,
-				State: 0,
-			}
+			v.State = 0
+			s.RpcClientList[addr] = v
 
 		}).Sync()
 		log.Println(err)

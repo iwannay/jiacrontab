@@ -125,28 +125,28 @@ func (j *mjwt) cleanCookie(rw http.ResponseWriter) {
 
 func (j *mjwt) auth(rw http.ResponseWriter, r *http.Request, data *map[string]interface{}) bool {
 	var tokenString string
-	if token, err := r.Cookie(j.name); err != nil {
+	token, err := r.Cookie(j.name)
+	if err != nil {
 		log.Println(err)
 		return false
-	} else {
-		tokenString, err = url.QueryUnescape(token.Value)
-		if err != nil {
-			log.Println(err)
-			return false
-		}
 	}
-
-	if m, err := j.parse(tokenString); err != nil {
+	tokenString, err = url.QueryUnescape(token.Value)
+	if err != nil {
 		log.Println(err)
 		return false
-	} else {
-		if fmt.Sprintf("%s|%s", getHttpClientIp(r), r.Header.Get("User-Agent")) != m["ClientCheck"] {
-			log.Println("client sign changed.")
-			return false
-		}
-
-		*data = m
-		return true
 	}
+
+	m, err := j.parse(tokenString)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	if fmt.Sprintf("%s|%s", getHttpClientIp(r), r.Header.Get("User-Agent")) != m["ClientCheck"] {
+		log.Println("client sign changed.")
+		return false
+	}
+
+	*data = m
+	return true
 
 }

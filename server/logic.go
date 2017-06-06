@@ -19,24 +19,10 @@ func (l *Logic) Register(args proto.ClientConf, reply *proto.MailArgs) error {
 		Port: globalConfig.mailPort,
 	}
 
-	// globalStore.Get(fmt.Sprintf("RPCClientList.%s", args.Addr), &clientConf)
-
-	// if clientConf, ok = globalStore.SearchRPCClientList(args.Addr); ok {
-
-	// }
-
-	// if clientConf.State == 1 {
-	// 	return nil
-	// }
-
 	globalStore.Wrap(func(s *store.Store) {
-		s.RpcClientList[args.Addr] = proto.ClientConf{
-			Addr:  args.Addr,
-			State: 1,
-		}
+		s.RpcClientList[args.Addr] = args
 	}).Sync()
 
 	log.Println("register client", args)
-
 	return nil
 }

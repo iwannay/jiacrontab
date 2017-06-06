@@ -12,11 +12,31 @@
         </ul>
 
         <div class="row-fluid">
-            <ul class="list-group">
-                {{range $k,$v := .configs}}
-                <li class="list-group-item">{{$k}} : {{$v}}</li>
+            {{range $k,$v := .configs}}
+             <div class="panel panel-info">
+                    <!-- Default panel contents -->
+                    <div class="panel-heading">{{$k}}</div>
+                    
+                    <!-- List group -->
+                    <ul class="list-group">
+                        {{range $kk,$vv := $v}}
+                        <li class="list-group-item">{{$kk}} : {{$vv}}</li>
+                        {{end}}
+                        {{if eq $k "mail"}}
+                        <li class="list-group-item">
+                            <form class="form-inline" method="post">
+                                <div class="form-group">
+                                    <input type="text" class="form-control" name="mailTo" id="testEmail">
+                                </div>
+                                <button type="submit" class="btn btn-success">发送测试邮件</button>
+                            </form>
+                        </li>
+
+                        {{end}}
+                    </ul>
+                </div>
                 {{end}}
-            </ul>
+            
         </div>
 
     </div>

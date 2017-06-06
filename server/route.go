@@ -9,7 +9,6 @@ import (
 	"jiacrontab/server/store"
 	"log"
 	"net/http"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -113,12 +112,13 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 	}
 
 	if r.Method == http.MethodPost {
-		log.Println(r.Form)
+
 		n := strings.TrimSpace(r.FormValue("taskName"))
 		command := strings.TrimSpace(r.FormValue("command"))
 		timeoutStr := strings.TrimSpace(r.FormValue("timeout"))
 		timeout, err := strconv.Atoi(timeoutStr)
 		optimeout := strings.TrimSpace(r.FormValue("optimeout"))
+		mailTo := strings.TrimSpace(r.FormValue("mailTo"))
 		if _, ok := map[string]bool{"email": true, "kill": true, "email_and_kill": true, "ignore": true}[optimeout]; !ok {
 			optimeout = "ignore"
 		}
@@ -142,6 +142,7 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 			Timeout:   int64(timeout),
 			OpTimeout: optimeout,
 			Create:    time.Now().Unix(),
+			MailTo:    mailTo,
 			C: struct {
 				Weekday string
 				Month   string
@@ -396,25 +397,12 @@ func deleteClient(rw http.ResponseWriter, r *http.Request, m *modelView) {
 }
 
 func viewConfig(rw http.ResponseWriter, r *http.Request, m *modelView) {
-	c := make(map[string]interface{})
-	values := reflect.ValueOf(*globalConfig)
-	types := reflect.TypeOf(*globalConfig)
-	l := values.NumField()
-	for i := 0; i < l; i++ {
-		v := values.Field(i)
-		t := types.Field(i)
-		if t.Name == "passwd" {
-			continue
-		}
-		switch v.Kind() {
-		case reflect.String:
-			c[t.Name] = v.String()
-		case reflect.Int64:
-			c[t.Name] = v.Int()
-		case reflect.Bool:
-			c[t.Name] = v.Bool()
-		}
 
+	c := globalConfig.category()
+
+	if r.Method == http.MethodPost {
+		mailTo := strings.TrimSpace(r.FormValue("mailTo"))
+		libs.SendMail("测试邮件", "测试邮件请勿回复", globalConfig.mailHost, globalConfig.mailUser, globalConfig.mailPass, globalConfig.mailPort, mailTo)
 	}
 
 	m.renderHtml2([]string{"viewConfig"}, map[string]interface{}{

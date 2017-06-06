@@ -49,6 +49,7 @@ func initClientRpc() {
 		if err := rpcCall("Logic.Register", proto.ClientConf{
 			Addr:  globalConfig.addr,
 			State: 1,
+			Mail:  globalConfig.mailTo,
 		}, &mail); err != nil {
 			if rpcClient != nil {
 				rpcClient.Close()

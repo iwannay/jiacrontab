@@ -59,6 +59,7 @@ type MailArgs struct {
 type ClientConf struct {
 	State int
 	Addr  string
+	Mail  string
 }
 type Mdata map[string]*TaskArgs
 

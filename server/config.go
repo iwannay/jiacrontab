@@ -5,6 +5,8 @@ import (
 
 	"io/ioutil"
 
+	"fmt"
+
 	"gopkg.in/ini.v1"
 )
 
@@ -12,18 +14,20 @@ const configFile = "server.ini"
 const versionFile = "template/.VERSION"
 
 type config struct {
-	debug               bool
-	addr                string
-	staticDir           string
-	defaultFaviconDir   string
-	tplExt              string
-	tplDir              string
-	dataFile            string
-	rpcAddr             string
-	JWTSigningKey       []byte
-	tokenCookieName     string
-	tokenExpires        int64
-	tokenCookieMaxAge   int64
+	debug             bool
+	addr              string
+	staticDir         string
+	defaultFaviconDir string
+	tplExt            string
+	tplDir            string
+	dataFile          string
+	rpcAddr           string
+
+	JWTSigningKey     []byte
+	tokenCookieName   string
+	tokenExpires      int64
+	tokenCookieMaxAge int64
+
 	appName             string
 	user                string
 	passwd              string
@@ -77,6 +81,39 @@ func (c *config) reload() {
 	c.mailPass = mail.Key("pass").MustString("")
 	c.mailPort = mail.Key("port").MustString("25")
 	c.version = string(b)
+}
+
+func (c *config) category() map[string]map[string]string {
+	cat := make(map[string]map[string]string)
+
+	cat["base"] = map[string]string{
+		"version": c.version,
+		"appName": c.appName,
+	}
+	cat["jwt"] = map[string]string{
+		"JWTSigningKey":   string(c.JWTSigningKey),
+		"tokenCookieName": c.tokenCookieName,
+		"tokenExpires":    fmt.Sprintf("%d", c.tokenExpires),
+	}
+
+	cat["mail"] = map[string]string{
+		"mailUser": c.mailUser,
+		"mailHost": c.mailUser + ":" + c.mailPort,
+	}
+
+	cat["server"] = map[string]string{
+		"listen":    c.addr,
+		"staticDir": c.staticDir,
+		"tplExt":    c.tplExt,
+		"tplDir":    c.tplDir,
+	}
+
+	cat["rpc"] = map[string]string{
+		"listen":              c.rpcAddr,
+		"defaultRPCPath":      c.defaultRPCPath,
+		"defaultRPCDebugPath": c.defaultRPCPath,
+	}
+	return cat
 }
 
 func loadConfig() *ini.File {
