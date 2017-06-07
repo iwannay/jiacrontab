@@ -22,16 +22,19 @@ func listTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 	var locals proto.Mdata
 	var clientList map[string]proto.ClientConf
 
-	sortedKeys := make([]string, 0)
-	sortedKeys2 := make([]string, 0)
+	sortedTaskList := make([]*proto.TaskArgs, 0)
+	sortedClientList := make([]proto.ClientConf, 0)
 	clientList, _ = m.s.GetRPCClientList()
 
 	if clientList != nil && len(clientList) > 0 {
-		for k := range clientList {
-			sortedKeys = append(sortedKeys, k)
+		for _, v := range clientList {
+			sortedClientList = append(sortedClientList, v)
 		}
-		sort.Strings(sortedKeys)
-		firstK := sortedKeys[0]
+		sort.Slice(sortedClientList, func(i, j int) bool {
+			return (sortedClientList[i].Addr > sortedClientList[j].Addr) && (sortedClientList[i].State > sortedClientList[j].State)
+		})
+
+		firstK := sortedClientList[0].Addr
 		addr = replaceEmpty(r.FormValue("addr"), firstK)
 	} else {
 		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
@@ -47,20 +50,20 @@ func listTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		return
 	}
 
-	for k := range locals {
-		sortedKeys2 = append(sortedKeys2, k)
+	for _, v := range locals {
+
+		sortedTaskList = append(sortedTaskList, v)
 	}
-	sort.Strings(sortedKeys2)
+	sort.Slice(sortedTaskList, func(i, j int) bool {
+		return sortedTaskList[i].Create > sortedTaskList[j].Create
+	})
 
 	m.rpcCall(addr, "Task.SystemInfo", "", &systemInfo)
 	m.renderHtml2([]string{"listTask"}, map[string]interface{}{
 		"title":         "灵魂百度",
-		"list":          locals,
-		"addrs":         sortedKeys,
-		"listKey":       sortedKeys2,
-		"rpcClientsMap": clientList,
+		"list":          sortedTaskList,
+		"addrs":         sortedClientList,
 		"client":        clientList[addr],
-		"addr":          addr,
 		"systemInfo":    systemInfo,
 		"appName":       globalConfig.appName,
 	}, template.FuncMap{
@@ -81,17 +84,19 @@ func index(rw http.ResponseWriter, r *http.Request, m *modelView) {
 	}
 
 	sInfo := libs.SystemInfo(startTime)
-	sortedKeys := make([]string, 0)
 	clientList, _ = m.s.GetRPCClientList()
+	sortedClientList := make([]proto.ClientConf, 0)
 
-	for k := range clientList {
-		sortedKeys = append(sortedKeys, k)
+	for _, v := range clientList {
+		sortedClientList = append(sortedClientList, v)
 	}
-	sort.Strings(sortedKeys)
+
+	sort.Slice(sortedClientList, func(i, j int) bool {
+		return (sortedClientList[i].Addr > sortedClientList[j].Addr) && (sortedClientList[i].State > sortedClientList[j].State)
+	})
 	m.renderHtml2([]string{"index"}, map[string]interface{}{
-		"rpcClientsKey": sortedKeys,
-		"rpcClientsMap": clientList,
-		"systemInfo":    sInfo,
+		"clientList": sortedClientList,
+		"systemInfo": sInfo,
 	}, template.FuncMap{
 		"date": date,
 	})
@@ -190,7 +195,9 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 			log.Println(client)
 			t.MailTo = client.Mail
 		}
-		t.MaxConcurrent = 1
+		if t.MaxConcurrent == 0 {
+			t.MaxConcurrent = 1
+		}
 
 		clientList, _ = m.s.GetRPCClientList()
 
