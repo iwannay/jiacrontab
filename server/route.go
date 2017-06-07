@@ -116,15 +116,22 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		n := strings.TrimSpace(r.FormValue("taskName"))
 		command := strings.TrimSpace(r.FormValue("command"))
 		timeoutStr := strings.TrimSpace(r.FormValue("timeout"))
-		timeout, err := strconv.Atoi(timeoutStr)
-		optimeout := strings.TrimSpace(r.FormValue("optimeout"))
+		mConcurrentStr := strings.TrimSpace(r.FormValue("maxConcurrent"))
+
 		mailTo := strings.TrimSpace(r.FormValue("mailTo"))
+
+		optimeout := strings.TrimSpace(r.FormValue("optimeout"))
 		if _, ok := map[string]bool{"email": true, "kill": true, "email_and_kill": true, "ignore": true}[optimeout]; !ok {
 			optimeout = "ignore"
 		}
-
+		timeout, err := strconv.Atoi(timeoutStr)
 		if err != nil {
 			timeout = 0
+		}
+
+		maxConcurrent, err := strconv.Atoi(mConcurrentStr)
+		if err != nil {
+			maxConcurrent = 10
 		}
 
 		a := r.FormValue("args")
@@ -135,14 +142,15 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		minute := replaceEmpty(strings.TrimSpace(r.FormValue("minute")), "*")
 
 		if err := m.rpcCall(addr, "Task.Update", proto.TaskArgs{
-			Id:        id,
-			Name:      n,
-			Command:   command,
-			Args:      a,
-			Timeout:   int64(timeout),
-			OpTimeout: optimeout,
-			Create:    time.Now().Unix(),
-			MailTo:    mailTo,
+			Id:            id,
+			Name:          n,
+			Command:       command,
+			Args:          a,
+			Timeout:       int64(timeout),
+			OpTimeout:     optimeout,
+			Create:        time.Now().Unix(),
+			MailTo:        mailTo,
+			MaxConcurrent: maxConcurrent,
 			C: struct {
 				Weekday string
 				Month   string
@@ -182,6 +190,7 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 			log.Println(client)
 			t.MailTo = client.Mail
 		}
+		t.MaxConcurrent = 1
 
 		clientList, _ = m.s.GetRPCClientList()
 

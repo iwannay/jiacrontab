@@ -209,6 +209,9 @@ func (s *Store) load(fpath string) error {
 	err = json.Unmarshal(b, s)
 	if err == nil {
 		for _, v := range s.TaskList {
+			if v.MaxConcurrent == 0 {
+				v.MaxConcurrent = 1
+			}
 			v.NumberProcess = 0
 		}
 	}

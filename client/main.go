@@ -62,8 +62,8 @@ func main() {
 		for k, v := range globalCrontab.handleMap {
 			for _, cancel := range v.cancelCmdArray {
 				cancel()
-				log.Printf("kill %s", k)
 			}
+			log.Printf("kill %s", k)
 		}
 		globalCrontab.lock.Unlock()
 		globalStore.Update(func(s *store.Store) {

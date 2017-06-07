@@ -165,14 +165,16 @@ func (c *crontab) run() {
 			case task := <-c.killTaskChan:
 				c.lock.Lock()
 				if handle, ok := c.handleMap[task.Id]; ok {
-					c.lock.Unlock()
 					if handle.cancelCmdArray != nil {
 						for _, cancel := range handle.cancelCmdArray {
 							cancel()
 						}
 						handle.cancelCmdArray = make([]context.CancelFunc, 0)
+						c.lock.Unlock()
 						task.State = 1
 						globalStore.Sync()
+					} else {
+						c.lock.Unlock()
 					}
 				} else {
 					c.lock.Unlock()
@@ -206,6 +208,8 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 					checkMinute(check, now.Minute()) {
 
 					var content []byte
+					var hdl *handle
+
 					now2 := time.Now()
 					start := now2.UnixNano()
 					args := strings.Split(task.Args, " ")
@@ -215,7 +219,13 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 					ctx, cancel := context.WithCancel(context.Background())
 
 					c.lock.Lock()
-					c.handleMap[task.Id].cancelCmdArray = append(c.handleMap[task.Id].cancelCmdArray, cancel)
+					hdl = c.handleMap[task.Id]
+					if len(hdl.cancelCmdArray) >= task.MaxConcurrent {
+						hdl.cancelCmdArray[0]()
+						hdl.cancelCmdArray = hdl.cancelCmdArray[1:]
+					}
+					hdl.cancelCmdArray = append(hdl.cancelCmdArray, cancel)
+
 					c.lock.Unlock()
 
 					if task.Timeout != 0 {
@@ -245,9 +255,13 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 					err := execScript(ctx, fmt.Sprintf("%s-%s.log", task.Name, task.Id), task.Command, globalConfig.logPath, &content, args...)
 					flag = false
 					task.LastCostTime = time.Now().UnixNano() - start
-					task.State = 1
 
 					atomic.AddInt32(&task.NumberProcess, -1)
+					if task.NumberProcess == 0 {
+						task.State = 1
+					} else {
+						task.State = 2
+					}
 					globalStore.Sync()
 
 					log.Printf("%s:%s %v %s %.3fs %v", task.Name, task.Command, task.Args, task.OpTimeout, float64(task.LastCostTime)/1000000000, err)

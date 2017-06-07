@@ -56,6 +56,11 @@ func (t *Task) Update(args proto.TaskArgs, ok *bool) error {
 				v.Args = args.Args
 				v.MailTo = args.MailTo
 				v.Timeout = args.Timeout
+				v.MaxConcurrent = args.MaxConcurrent
+				if v.MaxConcurrent == 0 {
+					v.MaxConcurrent = 1
+				}
+
 				v.MailTo = args.MailTo
 				v.OpTimeout = args.OpTimeout
 				v.C = args.C

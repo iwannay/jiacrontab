@@ -12,6 +12,7 @@ type TaskArgs struct {
 	Timeout       int64
 	NumberProcess int32
 	MailTo        string
+	MaxConcurrent int    // 脚本最大并发量
 	OpTimeout     string // email/kill/email_and_kill/ignore
 	C             CrontabArgs
 }

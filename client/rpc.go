@@ -72,6 +72,7 @@ func pingRpcSrv() {
 		err := rpcCall("Logic.Register", proto.ClientConf{
 			Addr:  globalConfig.addr,
 			State: 1,
+			Mail:  globalConfig.mailTo,
 		}, &mail)
 
 		globalStore.Update(func(s *store.Store) {
