@@ -42,9 +42,9 @@ $ nohub ./client &> client.log &
 ``` 
 
 ### 截图
-![alt 截图](http://static.wzjg520.com/view?id=8-1496904294.jpg)  
+![alt 截图](https://raw.githubusercontent.com/iwannay/static_dir/master/jiacrontab_preview_1.jpg)  
 
-![alt 截图2](http://static.wzjg520.com/view?id=8-1496904302.jpg)
+![alt 截图2](https://raw.githubusercontent.com/iwannay/static_dir/master/jiacrontab_preview_2.jpg)
 
 ### 演示地址
 [demo](http://182.92.223.12:20000) 账号：admin 密码：123456
