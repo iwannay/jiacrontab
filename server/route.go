@@ -60,12 +60,12 @@ func listTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 
 	m.rpcCall(addr, "Task.SystemInfo", "", &systemInfo)
 	m.renderHtml2([]string{"listTask"}, map[string]interface{}{
-		"title":         "灵魂百度",
-		"list":          sortedTaskList,
-		"addrs":         sortedClientList,
-		"client":        clientList[addr],
-		"systemInfo":    systemInfo,
-		"appName":       globalConfig.appName,
+		"title":      "灵魂百度",
+		"list":       sortedTaskList,
+		"addrs":      sortedClientList,
+		"client":     clientList[addr],
+		"systemInfo": systemInfo,
+		"appName":    globalConfig.appName,
 	}, template.FuncMap{
 		"date":     date,
 		"formatMs": int2floatstr,

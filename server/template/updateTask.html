@@ -167,7 +167,7 @@
                     return false;
                 }
             } else {
-                if (/^\*\/[1-9]+$/.test(minute) || /^\d+-\d+$/.test(minute) || /^(\d+,)+\d+$/.test(minute) || minute == "*") { // */2 2-23 2,3,4 *
+                if (/^\*\/[1-9][0-9]?$/.test(minute) || /^\d+-\d+$/.test(minute) || /^(\d+,)+\d+$/.test(minute) || minute == "*") { // */2 2-23 2,3,4 *
                     $('#errorCrontab').addClass("hide").parents(".form-group").removeClass("has-error");
                 } else {
                     $('#errorCrontab').removeClass("hide").parents(".form-group").addClass("has-error");
@@ -186,7 +186,7 @@
                     return false;
                 }
             } else {
-                if (/^\*\/[1-9]+$/.test(hour) || /^\d+-\d+$/.test(hour) || /^(\d+,)+\d+$/.test(hour) || hour == "*") { // */2 2-23 2,3,4 *
+                if (/^\*\/[1-9][0-9]?$/.test(hour) || /^\d+-\d+$/.test(hour) || /^(\d+,)+\d+$/.test(hour) || hour == "*") { // */2 2-23 2,3,4 *
                     $('#errorCrontab').addClass("hide").parents(".form-group").removeClass("has-error");
                 } else {
                     $('#errorCrontab').removeClass("hide").parents(".form-group").addClass("has-error");
@@ -205,7 +205,7 @@
                     return false;
                 }
             } else {
-                if (/^\*\/[1-9]+$/.test(day) || /^\d+-\d+$/.test(day) || /^(\d+,)+\d+$/.test(day) || day == "*") { // */2 2-23 2,3,4 *
+                if (/^\*\/[1-9][0-9]?$/.test(day) || /^\d+-\d+$/.test(day) || /^(\d+,)+\d+$/.test(day) || day == "*") { // */2 2-23 2,3,4 *
                     $('#errorCrontab').addClass("hide").parents(".form-group").removeClass("has-error");
                 } else {
                     $('#errorCrontab').removeClass("hide").parents(".form-group").addClass("has-error");
@@ -224,7 +224,7 @@
                     return false;
                 }
             } else {
-                if (/^\*\/[1-9]+$/.test(month) || /^\d+-\d+$/.test(month) || /^(\d+,)+\d+$/.test(month) || month == "*") { // */2 2-23 2,3,4 *
+                if (/^\*\/[1-9][0-9]?$/.test(month) || /^\d+-\d+$/.test(month) || /^(\d+,)+\d+$/.test(month) || month == "*") { // */2 2-23 2,3,4 *
                     $('#errorCrontab').addClass("hide").parents(".form-group").removeClass("has-error");
                 } else {
                     $('#errorCrontab').removeClass("hide").parents(".form-group").addClass("has-error");
@@ -243,7 +243,7 @@
                     return false;
                 }
             } else {
-                if (/^\*\/[1-9]+$/.test(weekday) || /^\d+-\d+$/.test(weekday) || /^(\d+,)+\d+$/.test(weekday) || weekday == "*") { // */2 2-23 2,3,4 *
+                if (/^\*\/[1-9][0-9]?$/.test(weekday) || /^\d+-\d+$/.test(weekday) || /^(\d+,)+\d+$/.test(weekday) || weekday == "*") { // */2 2-23 2,3,4 *
                     $('#errorCrontab').addClass("hide").parents(".form-group").removeClass("has-error");
                 } else {
                     $('#errorCrontab').removeClass("hide").parents(".form-group").addClass("has-error");
