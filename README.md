@@ -20,8 +20,8 @@ client：实现定时逻辑，隔离用户脚本，将client布置于多台服�
 
 3.运行  
 ```sh
-$ nohub ./jiacrontab_server &> jiacrontab_server.log &
-$ nohub ./jiacrontab_client &> jiacontab_client.log &     
+$ nohub ./server &> server.log &
+$ nohub ./client &> client.log &     
 ```
 ### 源码安装
 1.安装git，golang；可参考官网。  
