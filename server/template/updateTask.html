@@ -49,7 +49,7 @@
                             {{$command := .task.Command}}
                             <select class="form-control" id="inputCommand" name="command">
                                 {{range $k, $v := .allowCommands}}
-                                <option {{if eq $v $command}}checked{{end}} value="{{$v}}">{{$v}}</option>
+                                <option {{if eq $v $command}}selected{{end}} value="{{$v}}">{{$v}}</option>
                                 {{end}}
                             </select>
                         </div>
