@@ -36,7 +36,7 @@ $ cd $GOPATH/src/jiacrontab/server
 $ go build .
 $ nohub ./server &> server.log &
 
-$ cd $GOPATH/src/jiacrontab/task
+$ cd $GOPATH/src/jiacrontab/client
 $ go build .
 $ nohub ./client &> client.log & 
 ``` 
