@@ -49,6 +49,8 @@ func (c *crontab) quickStart(t *proto.TaskArgs, content *[]byte) {
 	var timeout int64
 	if t.Timeout == 0 {
 		timeout = 60
+	} else {
+		timeout = t.Timeout
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
