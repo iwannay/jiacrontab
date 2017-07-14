@@ -394,9 +394,8 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 	reader := bufio.NewReader(stdout)
 
 	for {
-
 		line, err2 := reader.ReadString('\n')
-		*content = append([]byte(line), '\n')
+		*content = append(*content, []byte(line)...)
 		f.WriteString(line)
 
 		if err2 != nil || io.EOF == err2 {
