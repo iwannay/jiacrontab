@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"jiacrontab/client/store"
 	"jiacrontab/libs"
@@ -23,10 +24,11 @@ func newCrontab(taskChanSize int) *crontab {
 }
 
 type handle struct {
-	cancel         context.CancelFunc
-	cancelCmdArray []context.CancelFunc
-	clockChan      chan time.Time
-	timeout        int64
+	cancel          context.CancelFunc   // 取消定时器
+	cancelCmdArray  []context.CancelFunc // 取消正在执行的脚本
+	resolvedDepends chan []byte
+	clockChan       chan time.Time
+	timeout         int64
 }
 
 type crontab struct {
@@ -43,22 +45,29 @@ func (c *crontab) add(t *proto.TaskArgs) {
 }
 
 func (c *crontab) quickStart(t *proto.TaskArgs, content *[]byte) {
+	var timeout int64
+	var err error
 	start := time.Now().Unix()
 	args := strings.Split(t.Args, " ")
 	t.LastExecTime = start
-	var timeout int64
 	if t.Timeout == 0 {
 		timeout = 60
 	} else {
 		timeout = t.Timeout
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
-	err := execScript(ctx, fmt.Sprintf("%s-%s.log", t.Name, t.Id), t.Command, globalConfig.logPath, content, args...)
-	cancel()
-
-	if err != nil {
+	if ok := c.waitDependsDone(t.Id, &t.Depends, content); !ok {
+		err = errors.New("failded to exec depends")
 		*content = append(*content, []byte(err.Error())...)
+
+	} else {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+		err = execScript(ctx, fmt.Sprintf("%s-%s.log", t.Name, t.Id), t.Command, globalConfig.logPath, content, args...)
+		cancel()
+
+		if err != nil {
+			*content = append(*content, []byte(err.Error())...)
+		}
 	}
 
 	t.LastCostTime = time.Now().Unix() - start
@@ -136,8 +145,9 @@ func (c *crontab) run() {
 				task.State = 1
 				c.lock.Lock()
 				c.handleMap[task.Id] = &handle{
-					cancel:    cancel,
-					clockChan: make(chan time.Time),
+					cancel:          cancel,
+					resolvedDepends: make(chan []byte),
+					clockChan:       make(chan time.Time),
 				}
 				c.lock.Unlock()
 
@@ -211,54 +221,59 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 
 					var content []byte
 					var hdl *handle
+					var err error
 
 					now2 := time.Now()
 					start := now2.UnixNano()
 					args := strings.Split(task.Args, " ")
 					task.LastExecTime = now2.Unix()
-					flag := true
 					task.State = 2
-					ctx, cancel := context.WithCancel(context.Background())
 
-					c.lock.Lock()
-					hdl = c.handleMap[task.Id]
-					if len(hdl.cancelCmdArray) >= task.MaxConcurrent {
-						hdl.cancelCmdArray[0]()
-						hdl.cancelCmdArray = hdl.cancelCmdArray[1:]
-					}
-					hdl.cancelCmdArray = append(hdl.cancelCmdArray, cancel)
+					if ok := c.waitDependsDone(task.Id, &task.Depends, &content); !ok {
+						err = errors.New("failded to exec depends")
+						content = append(content, []byte(err.Error())...)
+					} else {
+						flag := true
+						ctx, cancel := context.WithCancel(context.Background())
+						c.lock.Lock()
+						hdl = c.handleMap[task.Id]
+						if len(hdl.cancelCmdArray) >= task.MaxConcurrent {
+							hdl.cancelCmdArray[0]()
+							hdl.cancelCmdArray = hdl.cancelCmdArray[1:]
+						}
+						hdl.cancelCmdArray = append(hdl.cancelCmdArray, cancel)
+						c.lock.Unlock()
 
-					c.lock.Unlock()
+						if task.Timeout != 0 {
+							time.AfterFunc(time.Duration(task.Timeout)*time.Second, func() {
+								if flag {
+									switch task.OpTimeout {
+									case "email":
+										sendMail(task.MailTo, globalConfig.addr+"提醒脚本执行超时", fmt.Sprintf(
+											"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
+											task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), task.Timeout))
+									case "kill":
+										cancel()
 
-					if task.Timeout != 0 {
-						time.AfterFunc(time.Duration(task.Timeout)*time.Second, func() {
-							if flag {
-								switch task.OpTimeout {
-								case "email":
-									sendMail(task.MailTo, globalConfig.addr+"提醒脚本执行超时", fmt.Sprintf(
-										"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
-										task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), task.Timeout))
-								case "kill":
-									cancel()
-
-								case "email_and_kill":
-									cancel()
-									sendMail(task.MailTo, globalConfig.addr+"提醒脚本执行超时", fmt.Sprintf(
-										"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
-										task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), task.Timeout))
-								case "ignore":
-								default:
+									case "email_and_kill":
+										cancel()
+										sendMail(task.MailTo, globalConfig.addr+"提醒脚本执行超时", fmt.Sprintf(
+											"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
+											task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), task.Timeout))
+									case "ignore":
+									default:
+									}
 								}
-							}
 
-						})
+							})
+						}
+						atomic.AddInt32(&task.NumberProcess, 1)
+						err = execScript(ctx, fmt.Sprintf("%s-%s.log", task.Name, task.Id), task.Command, globalConfig.logPath, &content, args...)
+						atomic.AddInt32(&task.NumberProcess, -1)
+						flag = false
 					}
-					atomic.AddInt32(&task.NumberProcess, 1)
-					err := execScript(ctx, fmt.Sprintf("%s-%s.log", task.Name, task.Id), task.Command, globalConfig.logPath, &content, args...)
-					flag = false
-					task.LastCostTime = time.Now().UnixNano() - start
 
-					atomic.AddInt32(&task.NumberProcess, -1)
+					task.LastCostTime = time.Now().UnixNano() - start
 					if task.NumberProcess == 0 {
 						task.State = 1
 					} else {
@@ -284,4 +299,56 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 
 	}
 
+}
+
+func (c *crontab) resolvedDepends(t *proto.TaskArgs, logContent []byte) {
+
+	c.lock.Lock()
+	if handle, ok := c.handleMap[t.Id]; ok {
+		handle.resolvedDepends <- logContent
+	} else {
+		log.Printf("depends: can not found %s")
+	}
+
+	c.lock.Unlock()
+
+}
+
+func (c *crontab) waitDependsDone(taskId string, dpds *[]proto.MScript, logContent *[]byte) bool {
+	defer func() {
+		for k, _ := range *dpds {
+			(*dpds)[k].Done = false
+			(*dpds)[k].LogContent = []byte("")
+		}
+	}()
+
+	if len(*dpds) == 0 {
+		log.Printf("taskId:%s dpends:%v", taskId, *dpds)
+		return true
+	}
+
+	if ok := pushDepends(taskId, *dpds); !ok {
+		*logContent = []byte("script depends exec failed!\n")
+		return false
+	}
+
+	c.lock.Lock()
+	if handle, ok := c.handleMap[taskId]; ok {
+		c.lock.Unlock()
+
+		t := time.Tick(60 * time.Second)
+		select {
+		case done := <-t:
+			log.Println(done.String())
+			return false
+		case *logContent = <-handle.resolvedDepends:
+		}
+
+	} else {
+		c.lock.Unlock()
+		log.Printf("depends: can not found %s")
+		return false
+	}
+	log.Printf("taskId:%s,exec %v done", taskId, dpds)
+	return true
 }

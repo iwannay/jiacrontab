@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"jiacrontab/server/rpc"
+	"jiacrontab/server/store"
+	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -55,4 +58,29 @@ func getHttpClientIp(r *http.Request) string {
 
 	}
 	return r.Header.Get("x-forwarded-for")
+}
+
+func rpcCall(addr string, method string, args interface{}, reply interface{}) error {
+
+	v, ok := globalStore.SearchRPCClientList(addr)
+	if !ok {
+		return fmt.Errorf("not found %s", addr)
+	}
+	c, err := rpc.NewRpcClient(addr)
+	if err != nil {
+		globalStore.Wrap(func(s *store.Store) {
+			v.State = 0
+			s.RpcClientList[addr] = v
+
+		}).Sync()
+		log.Println(err)
+		return err
+	}
+
+	if err := c.Call(method, args, reply); err != nil {
+		err = fmt.Errorf("failed to call %s %s %s", method, args, err)
+		log.Println(err)
+	}
+	return err
+
 }

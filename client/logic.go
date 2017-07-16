@@ -6,6 +6,7 @@ import (
 	"jiacrontab/client/store"
 	"jiacrontab/libs"
 	"jiacrontab/libs/proto"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -42,6 +43,9 @@ func (t *Task) Update(args proto.TaskArgs, ok *bool) error {
 	if args.Id == "" {
 
 		args.Id = strconv.Itoa(int(libs.RandNum()))
+		for k, _ := range args.Depends {
+			args.Depends[k].TaskId = args.Id
+		}
 		globalStore.Update(func(s *store.Store) {
 			s.TaskList[args.Id] = &args
 		}).Sync()
@@ -55,6 +59,12 @@ func (t *Task) Update(args proto.TaskArgs, ok *bool) error {
 				v.Command = args.Command
 				v.Args = args.Args
 				v.MailTo = args.MailTo
+				v.Depends = args.Depends
+
+				for k, _ := range v.Depends {
+					v.Depends[k].TaskId = args.Id
+
+				}
 				v.Timeout = args.Timeout
 				v.MaxConcurrent = args.MaxConcurrent
 				if v.MaxConcurrent == 0 {
@@ -181,5 +191,44 @@ func (t *Task) Log(args string, ret *[]byte) error {
 
 func (t *Task) SystemInfo(args string, ret *map[string]interface{}) error {
 	*ret = libs.SystemInfo(startTime)
+	return nil
+}
+
+func (t *Task) ResolvedSDepends(args proto.MScript, ok *bool) error {
+	defer func() {
+		log.Println("exec Task.ResolvedSDepends")
+	}()
+
+	if t, ok2 := globalStore.SearchTaskList(args.TaskId); ok2 {
+		flag := true
+		for k, v := range t.Depends {
+			if args.Command+args.Args == v.Command+v.Args {
+				t.Depends[k].Done = true
+				t.Depends[k].LogContent = args.LogContent
+			}
+
+			if t.Depends[k].Done == false {
+				flag = false
+			}
+		}
+		if flag {
+			var logContent []byte
+			for _, v := range t.Depends {
+				logContent = append(logContent, v.LogContent...)
+			}
+			globalCrontab.resolvedDepends(t, logContent)
+		}
+		*ok = true
+	} else {
+		*ok = false
+	}
+
+	return nil
+}
+
+func (t *Task) ExecDepend(args proto.MScript, reply *bool) error {
+	globalDepend.Add(args)
+	*reply = true
+	log.Printf("exec Task.ExecDepend %v", args)
 	return nil
 }

@@ -4,6 +4,7 @@ type TaskArgs struct {
 	Id            string
 	Name          string
 	Command       string
+	Depends       []MScript
 	State         int // 0/1/2
 	Args          string
 	Create        int64
@@ -23,6 +24,21 @@ type CrontabArgs struct {
 	Day     string
 	Hour    string
 	Minute  string
+}
+
+type MScript struct {
+	Dest       string
+	From       string
+	TaskId     string
+	Command    string
+	Args       string
+	Done       bool
+	LogContent []byte `json:"-"`
+}
+
+type DependsArgs struct {
+	TaskId string
+	Dpds   []MScript
 }
 
 var Months = [...]string{

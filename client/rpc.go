@@ -95,6 +95,12 @@ func rpcCall(serviceMethod string, args, reply interface{}) error {
 		return errors.New("RpcClient failed initialize")
 	}
 	err := rpcClient.Call(serviceMethod, args, reply)
+	if err != nil {
+		rpcClient.Close()
+		rpcClient, _ = libs.DialHTTP("tcp", globalConfig.rpcSrvAddr, globalConfig.defaultRPCPath)
+		err = rpcClient.Call(serviceMethod, args, reply)
+	}
+
 	log.Println("RpcCall", serviceMethod, err)
 	return err
 }

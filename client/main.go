@@ -26,6 +26,7 @@ type scheduler struct {
 var globalConfig *config
 var globalCrontab *crontab
 var globalStore *store.Store
+var globalDepend *depend
 var startTime = time.Now()
 
 func listenSignal(fn func()) {
@@ -56,6 +57,9 @@ func main() {
 
 	globalCrontab = newCrontab(10)
 	globalCrontab.run()
+
+	globalDepend = newDepend()
+	globalDepend.run()
 
 	go listenSignal(func() {
 		globalCrontab.lock.Lock()

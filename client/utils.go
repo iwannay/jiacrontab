@@ -438,3 +438,17 @@ func sendMail(mailTo, title, content string) {
 
 	libs.SendMail(title, content, host, from, pass, port, mailTo)
 }
+
+func pushDepends(taskId string, dpds []proto.MScript) bool {
+
+	if len(dpds) > 0 {
+		var reply bool
+
+		err := rpcCall("Logic.Depends", dpds, &reply)
+		if !reply || err != nil {
+			log.Printf("push Depends failed!")
+			return false
+		}
+	}
+	return true
+}
