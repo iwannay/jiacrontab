@@ -1,7 +1,30 @@
 <!DOCTYPE html>
 <html lang="zh-cn">
 {{template "head" .}}
+<style>
 
+.left-animate {
+    min-width: 120px;
+    transition:width 2s;
+    -moz-transition:width 2s; /* Firefox 4 */
+    -webkit-transition:width .6s; /* Safari and Chrome */
+    -o-transition:width 2s; /* Opera */
+}
+.depend-btn {
+    position: fixed;
+    right: 0;
+    top: 45%;
+    width: 30px;
+    padding: 8px;
+    border-radius: 4px;
+    background: #286090;
+    color: #fff;
+    cursor: pointer;
+}
+.depends-list .form-inline {
+    margin-bottom: 10px;
+}
+</style>
 <body>
     {{template "header" .}}
     <div class="container-fluid">
@@ -17,7 +40,9 @@
                 <div class="list-group">
                     {{$addr := .addr}}
                     {{$clients := .rpcClientsMap}}
-                    {{$rpcClientsMap := .rpcClientsMap}} {{range $k,$v := .addrs}}
+                    {{$rpcClientsMap := .rpcClientsMap}}
+
+                    {{range $k,$v := .addrs}}
                     {{$info := index $clients $v}}
                     <a href="/list?addr={{$v}}" class="list-group-item {{if eq $v $addr}}active{{end}}">
                         {{$v}}
@@ -26,7 +51,7 @@
                     {{end}}
                 </div>
             </div>
-            <div class="col-md-10">
+            <div class="col-md-10" id="formList">
                 <form class="form" action="" method="POST" onsubmit="return check(this)">
                     <input type="hidden" name="taskId" value="{{.task.Id}}">
                     <div class="form-group">
@@ -137,6 +162,48 @@
                     </div>
 
                 </form>
+            </div>
+            <div hidden class="depends-list" id="addList">
+                <div class="list-group">
+                    <button type="button" class="btn btn-primary btn-sm" id="addDepends" num="0">
+                        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> 添加依赖
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="depend-btn" id="dependBtn">展开依赖</div>
+        <div id="tempAdd" hidden>
+            <div class="form-inline">
+                <div class="form-group num-list">1.</div>
+                <div class="form-group">
+                    <select class="form-control">
+                        {{$addr := .addr}}
+                        {{$clients := .rpcClientsMap}}
+
+                        {{range $k,$v := .addrs}}
+                        {{$info := index $clients $v}}
+                        <option class="list-group-item {{if eq $v $addr}}active{{end}}">
+                            {{$v}}
+                        </option>
+                        {{end}}
+                    </select>
+                </div>
+                <div class="form-group">
+                        {{$command := .task.Command}}
+                        <select class="form-control" id="inputCommand" name="command">
+                            {{range $k, $v := .allowCommands}}
+                            <option {{if eq $v $command}}selected{{end}} value="{{$v}}">{{$v}}</option>
+                            {{end}}
+                        </select>
+                </div>
+                <div class="form-group">
+                    <input type="text" name="args" class="form-control" style="width:90px;" value="{{.task.Args}}" placeholder="args">
+                </div>
+                <div class="form-group">
+                    <button type="button" class="btn btn-danger deleteBtn" aria-label="Left Align">
+                        <span class="glyphicon glyphicon-minus" aria-hidden="true"></span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -252,11 +319,35 @@
                 }
 
             }
-
-
-
             return true;
         }
+
+        function getNumValue() {
+            $('.num-list').each(function(i, value) {
+                $(this).html((i + 1) + '.')
+            })
+        }
+        $(function() {
+            $('#dependBtn').on('click', function() {
+                if($(this).hasClass('on')) {
+                     $(this).removeClass('on').html('展开依赖');
+                    $('#formList').removeClass('col-md-6').addClass('col-md-10');
+                    $('#addList').removeClass('col-md-4').hide();
+                } else {
+                    $(this).addClass('on').html('收起依赖');
+                    $('#formList').removeClass('col-md-10').addClass('col-md-6');
+                    $('#addList').addClass('col-md-4').show();
+                }
+            })
+            $('#addDepends').on('click', function() {
+                $('#addList').append($('#tempAdd').html());
+                getNumValue();
+            })
+            $('#addList').delegate('.deleteBtn', 'click', function() {
+                $(this).parents('.form-inline').remove();
+                getNumValue();
+            })
+        })
     </script>
 </body>
 
