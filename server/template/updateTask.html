@@ -63,17 +63,36 @@
                     </div>
 
                      <div class="form-group">
+                        <label class="control-label" for="inputTimeout" >失败重试:</label>
+                        <div class="controls">
+                            <input type="text" id="opfailure" class="form-control" name="timeout" type="number" onkeyup="this.value=this.value.replace(/\D/g,'')"  onafterpaste="this.value=this.value.replace(/\D/g,'')"  value="{{.task.Timeout}}">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="control-label" >脚本失败操作:</label>
+                        <div class="controls">
+                            <label class="radio-inline">
+                                <input type="radio" name="optimeout" id="inlineRadio2" checked {{if eq .task.OpTimeout "email"}}checked{{end}} value="email"> 邮件通知
+                            </label>
+                            <label class="radio-inline">
+                                <input type="radio" name="optimeout" id="inlineRadio3" {{if eq .task.OpTimeout "ignore"}}checked{{end}} value="ignore"> 忽略
+                            </label>
+                        </div>
+                    </div>
+
+                     <div class="form-group">
                         <label class="control-label" for="inputTimeout" >脚本超时:</label>
                         <div class="controls">
                             <input type="text" id="inputTimeout" class="form-control" name="timeout" type="number" onkeyup="this.value=this.value.replace(/\D/g,'')"  onafterpaste="this.value=this.value.replace(/\D/g,'')"  value="{{.task.Timeout}}">
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="control-label" >脚本超时操作:</label>
                         <div class="controls">
                             <label class="radio-inline">
-                                <input type="radio" name="optimeout" id="inlineRadio2" {{if eq .task.OpTimeout "email"}}checked{{end}} id="inlineRadio1" value="email"> 邮件通知
+                                <input type="radio" name="optimeout" id="inlineRadio2" checked {{if eq .task.OpTimeout "email"}}checked{{end}} value="email"> 邮件通知
                             </label>
                             <label class="radio-inline">
                                 <input type="radio" name="optimeout" id="inlineRadio2" {{if eq .task.OpTimeout "kill"}}checked{{end}} value="kill"> 强杀
