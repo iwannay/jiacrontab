@@ -2,97 +2,133 @@
 <html lang="zh-cn">
 {{template "head" .}}
 <style>
-    .border-bottom:last-child{
+    .border-bottom:last-child {
         border-bottom: none;
     }
 </style>
 <body>
-    {{template "header" .}}
+{{template "header" .}}
+
+<div class="container-fluid">
+
+    <ul class="breadcrumb">
+        <li><a href="/">Home</a></li>
+        <li class="active">{{.client.Addr}}</li>
+    </ul>
 
     <div class="container-fluid">
+        <div class="col-md-12">
 
-        <ul class="breadcrumb">
-            <li><a href="/">Home</a> </li>
-            <li class="active">{{.client.Addr}}</li>
-        </ul>
+            <p class="border-bottom text-right">
+                <a href="/update?addr={{.client.Addr}}" class="btn btn-primary">添加任务</a>
+                <button class="btn btn-primary" data-toggle="modal" data-target="#myInfo">运行信息</button>
+            </p>
 
-        <div class="container-fluid">
-            <div class="col-md-3">
-                <div class="list-group">
-                    {{$addr := .client.Addr}}
-        
-                    {{range $k,$v := .addrs}}
-                        {{if eq $v.State 1}}
-                        <a href="/list?addr={{$v.Addr}}" class="list-group-item {{if eq $v.Addr $addr}}active{{end}}">
-                            {{$v.Addr}}
-                        </a>
-                        {{end}}
-                    {{end}}
-                </div>
-                 <div class="panel panel-primary">
-                    <!-- Default panel contents -->
-                    <div class="panel-heading">运行信息</div>
+            <!--&lt;!&ndash; info模态框（Modal） &ndash;&gt;-->
+            <div class="modal fade" id="myInfo" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+                 aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="">
+                            <!--<div class="list-group">-->
+                            <!--{{$addr := .client.Addr}}-->
 
-                    <!-- List group -->
-                    <ul class="list-group">
-                        {{range $k,$v := .systemInfo}}
-                        <li class="list-group-item">{{$k}} : {{$v}}</li>
-                        {{end}}
-                    </ul>
-                </div>
+                            <!--{{range $k,$v := .addrs}}-->
+                            <!--{{if eq $v.State 1}}-->
+                            <!--<a href="/list?addr={{$v.Addr}}" class="list-group-item {{if eq $v.Addr $addr}}active{{end}}">-->
+                            <!--{{$v.Addr}}-->
+                            <!--</a>-->
+                            <!--{{end}}-->
+                            <!--{{end}}-->
+                            <!--</div>-->
+                            <div class="panel panel-primary">
+                                <!-- Default panel contents -->
+                                <div class="panel-heading">运行信息</div>
+                                <!-- List group -->
+                                <ul class="list-group">
+                                    {{range $k,$v := .systemInfo}}
+                                    <li class="list-group-item">{{$k}} : {{$v}}</li>
+                                    {{end}}
+                                </ul>
+                            </div>
+                        </div>
+                    </div><!-- /.modal-content -->
+                </div><!-- /.modal -->
             </div>
-            <div class="col-md-9">
 
-                <p class="border-bottom">
-                    <a href="/update?addr={{.client.Addr}}" class="btn btn-primary">添加</a>
-                </p>
-
-                {{$logHost := .logHost}} {{$client := .client}} 
-                {{range $i,$v := .list}} 
-                <div class="row-fluid show-grid border-bottom">
-                    <div class="span12"><strong>{{$v.Name}}</strong></div>
-                    <div class="span12">{{$v.Command}} {{$v.Args}}</div>
-                    <div class="span12">
-                            状态：{{if eq $v.State 0}}
-                        <span class="label label-danger">已停止</span> {{else if eq $v.State 1}}
-                        <span class="label label-info">计时中</span> {{else}}
-                        <span class="label label-success">运行中</span>{{end}}
-                        &nbsp;&nbsp;|&nbsp;&nbsp;创建日期：{{date $v.Create}}
-                        &nbsp;&nbsp;|&nbsp;&nbsp;上次启动：{{date $v.LastExecTime}}
-                        &nbsp;&nbsp;|&nbsp;&nbsp;上次花费：{{formatMs "%.3fs" $v.LastCostTime 1000000000}}
-                        &nbsp;&nbsp;|&nbsp;&nbsp;超时：{{$v.Timeout}}s
-                        &nbsp;&nbsp;|&nbsp;&nbsp;超时触发：{{$v.OpTimeout}}
-                        &nbsp;&nbsp;|&nbsp;&nbsp;进程：{{$v.NumberProcess}}
-                    </div>
-                    <div class="span12">
-                        分:{{$v.C.Minute}}&nbsp;&nbsp;时:{{$v.C.Hour}}&nbsp;&nbsp;日:{{$v.C.Day}}&nbsp;&nbsp;月:{{$v.C.Month}}&nbsp;&nbsp;日/周:{{$v.C.Weekday}}
-
-                        <div class="btn-group">
-                            <a class="btn dropdown-toggle {{if eq $client.State 0}}disabled{{end}}" data-toggle="dropdown" href="">
+            <div class="bs-example" data-example-id="bordered-table">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                    <tr>
+                        <th>任务名</th>
+                        <th>状态</th>
+                        <th>命令</th>
+                        <th>定时</th>
+                        <th>创建时间</th>
+                        <th>上次执行</th>
+                        <th>上次花费</th>
+                        <th>超时</th>
+                        <th>超时触发</th>
+                        <th>进程</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {{$logHost := .logHost}} {{$client := .client}}
+                    {{range $i,$v := .list}}
+                    <tr>
+                        <th>{{$v.Name}}</th>
+                        <td>
+                            {{if eq $v.State 0}}
+                            <span class="label label-danger">已停止</span> {{else if eq $v.State 1}}
+                            <span class="label label-info">计时中</span> {{else}}
+                            <span class="label label-success">运行中</span>
+                            {{end}}
+                        </td>
+                        <td>{{$v.Command}} {{$v.Args}}</td>
+                        <td>{{$v.C.Minute}}&nbsp;{{$v.C.Hour}}&nbsp;{{$v.C.Day}}&nbsp;{{$v.C.Month}}&nbsp;{{$v.C.Weekday}}</td>
+                        <td>{{date $v.Create}}</td>
+                        <td>{{date $v.LastExecTime}}</td>
+                        <td>{{formatMs "%.3fs" $v.LastCostTime 1000000000}}</td>
+                        <td>{{$v.Timeout}}s</td>
+                        <td>{{$v.OpTimeout}}</td>
+                        <td>{{$v.NumberProcess}}</td>
+                        <td>
+                            <div class="btn-group">
+                                <a class="btn dropdown-toggle {{if eq $client.State 0}}disabled{{end}}"
+                                   data-toggle="dropdown" href="">
                                     操作
                                     <span class="caret"></span>
                                 </a>
-                            <ul class="dropdown-menu">
-                                <li><a href="/start?taskId={{$v.Id}}&addr={{$client.Addr}}">启动计划任务</a></li>
-                                <li><a href="/stop?taskId={{$v.Id}}&addr={{$client.Addr}}&action=stop">停止计划任务</a></li>
-                                <li><a href="/update?taskId={{$v.Id}}&addr={{$client.Addr}}">修改计划任务</a></li>
-                                <li><a href="/stop?taskId={{$v.Id}}&addr={{$client.Addr}}&action=delete">删除计划任务</a></li>
-                                <li role="separator" class="divider"></li>
-                                <li><a href="/quickStart?taskId={{$v.Id}}&addr={{$client.Addr}}">测试用户脚本</a></li>
-                                <li><a href="/stop?taskId={{$v.Id}}&addr={{$client.Addr}}&action=kill">强杀脚本进程</a></li>
-                                <li role="separator" class="divider"></li>
-                                <li><a href="/log?taskId={{$v.Id}}&addr={{$client.Addr}}">查看最近日志</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                {{end}}
-            </div>
+                                <ul class="dropdown-menu">
+                                    <li><a href="/start?taskId={{$v.Id}}&addr={{$client.Addr}}">启动计划任务</a></li>
+                                    <li><a href="/stop?taskId={{$v.Id}}&addr={{$client.Addr}}&action=stop">停止计划任务</a>
+                                    </li>
+                                    <li><a href="/update?taskId={{$v.Id}}&addr={{$client.Addr}}">修改计划任务</a></li>
+                                    <li><a href="/stop?taskId={{$v.Id}}&addr={{$client.Addr}}&action=delete">删除计划任务</a>
+                                    </li>
+                                    <li role="separator" class="divider"></li>
+                                    <li><a href="/quickStart?taskId={{$v.Id}}&addr={{$client.Addr}}">测试用户脚本</a></li>
+                                    <li><a href="/stop?taskId={{$v.Id}}&addr={{$client.Addr}}&action=kill">强杀脚本进程</a>
+                                    </li>
+                                    <li role="separator" class="divider"></li>
+                                    <li><a href="/log?taskId={{$v.Id}}&addr={{$client.Addr}}">查看最近日志</a></li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {{end}}
+                    </tbody>
+                </table>
+            </div><!-- /example -->
+
 
         </div>
     </div>
-
-    {{template "footer" .}}
+</div>
+{{template "footer" .}}
 </body>
-
+<script>
+    $('#myModal').modal(options)
+</script>
 </html>

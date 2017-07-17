@@ -30,7 +30,7 @@ $ nohup ./client &> client.log &
 $ cd $GOPATH/src
 $ git clone http://git.wzjg520.com:/wzjg520/jiacrontab.git 
 $ go get -u github.com/dgrijalva/jwt-go
-$ go get -u gopkg.in/ini.v1
+$ go get -u github.com/go-ini/ini
 
 $ cd $GOPATH/src/jiacrontab/server
 $ go build .

@@ -7,7 +7,7 @@ import (
 
 	"fmt"
 
-	"gopkg.in/ini.v1"
+	"github.com/go-ini/ini"
 )
 
 const configFile = "server.ini"
