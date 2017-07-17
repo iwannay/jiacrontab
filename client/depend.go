@@ -32,19 +32,31 @@ func (d *depend) run() {
 			case t := <-d.depends:
 				go func(t proto.MScript) {
 					var reply bool
-					ctx, cancel := context.WithTimeout(context.Background(), time.Duration(30)*time.Second)
+					var logContent []byte
+
+					if t.Timeout == 0 {
+						t.Timeout = 600
+					}
+
+					ctx, cancel := context.WithTimeout(context.Background(), time.Duration(t.Timeout)*time.Second)
 					args := strings.Split(t.Args, " ")
 					name := filepath.Base(args[len(args)-1])
 					start := time.Now().UnixNano()
 
-					err := execScript(ctx, fmt.Sprintf("%s-%s.log", name, t.TaskId), t.Command, globalConfig.logPath, &t.LogContent, args...)
+					err := execScript(ctx, fmt.Sprintf("%s-%s.log", name, t.TaskId), t.Command, globalConfig.logPath, &logContent, args...)
 					cancel()
 					costTime := time.Now().UnixNano() - start
 					log.Printf("exec task %s <%s %s> cost %.4fs %v", t.TaskId, t.Command, t.Args, float64(costTime)/1000000000, err)
 					if err != nil {
-						t.LogContent = append(t.LogContent, []byte(err.Error())...)
+						// t.LogContent = append(t.LogContent, []byte(err.Error())...)
+						logContent = append(logContent, []byte(err.Error())...)
 					}
-					t.LogContent = bytes.TrimRight(t.LogContent, "\x00")
+					// t.LogContent = bytes.TrimRight(t.LogContent, "\x00")
+
+					// 易得队列最后一个task即为该任务的时间标志
+					l := len(t.Queue)
+					t.Queue[l-1].LogContent = bytes.TrimRight(logContent, "\x00")
+					t.Queue[l-1].Done = true
 
 					t.Dest, t.From = t.From, t.Dest
 					if !filterDepend(t) {

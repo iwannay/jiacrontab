@@ -27,11 +27,19 @@ type CrontabArgs struct {
 }
 
 type MScript struct {
-	Dest       string
-	From       string
-	TaskId     string
-	Command    string
-	Args       string
+	Dest    string
+	From    string
+	TaskId  string
+	Command string
+	Args    string
+	Timeout int64
+	// Done       bool
+	// LogContent []byte `json:"-"`
+	Queue []MScriptContent
+}
+
+type MScriptContent struct {
+	TaskTime   int64
 	Done       bool
 	LogContent []byte `json:"-"`
 }

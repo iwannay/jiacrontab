@@ -24,11 +24,12 @@ func newCrontab(taskChanSize int) *crontab {
 }
 
 type handle struct {
-	cancel          context.CancelFunc   // 取消定时器
-	cancelCmdArray  []context.CancelFunc // 取消正在执行的脚本
-	resolvedDepends chan []byte
-	clockChan       chan time.Time
-	timeout         int64
+	cancel         context.CancelFunc   // 取消定时器
+	cancelCmdArray []context.CancelFunc // 取消正在执行的脚本
+	// resolvedDepends chan []byte
+	readyDepends chan proto.MScriptContent
+	clockChan    chan time.Time
+	timeout      int64
 }
 
 type crontab struct {
@@ -56,7 +57,14 @@ func (c *crontab) quickStart(t *proto.TaskArgs, content *[]byte) {
 		timeout = t.Timeout
 	}
 
-	if ok := c.waitDependsDone(t.Id, &t.Depends, content); !ok {
+	// 垃圾回收
+	if t.State == 0 || t.State == 1 {
+		for k, _ := range t.Depends {
+			t.Depends[k].Queue = make([]proto.MScriptContent, 0)
+		}
+	}
+
+	if ok := c.waitDependsDone(t.Id, &t.Depends, content, start); !ok {
 		err = errors.New("failded to exec depends")
 		*content = append(*content, []byte(err.Error())...)
 
@@ -145,9 +153,10 @@ func (c *crontab) run() {
 				task.State = 1
 				c.lock.Lock()
 				c.handleMap[task.Id] = &handle{
-					cancel:          cancel,
-					resolvedDepends: make(chan []byte),
-					clockChan:       make(chan time.Time),
+					cancel: cancel,
+					// resolvedDepends: make(chan []byte),
+					readyDepends: make(chan proto.MScriptContent, 10),
+					clockChan:    make(chan time.Time),
 				}
 				c.lock.Unlock()
 
@@ -223,13 +232,20 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 					var hdl *handle
 					var err error
 
+					// 垃圾回收
+					if task.State == 0 || task.State == 1 {
+						for k := range task.Depends {
+							task.Depends[k].Queue = make([]proto.MScriptContent, 0)
+						}
+					}
+
 					now2 := time.Now()
 					start := now2.UnixNano()
 					args := strings.Split(task.Args, " ")
 					task.LastExecTime = now2.Unix()
 					task.State = 2
 
-					if ok := c.waitDependsDone(task.Id, &task.Depends, &content); !ok {
+					if ok := c.waitDependsDone(task.Id, &task.Depends, &content, now2.Unix()); !ok {
 						err = errors.New("failded to exec depends")
 						content = append(content, []byte(err.Error())...)
 					} else {
@@ -301,11 +317,16 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 
 }
 
-func (c *crontab) resolvedDepends(t *proto.TaskArgs, logContent []byte) {
+func (c *crontab) resolvedDepends(t *proto.TaskArgs, logContent []byte, taskTime int64) {
 
 	c.lock.Lock()
 	if handle, ok := c.handleMap[t.Id]; ok {
-		handle.resolvedDepends <- logContent
+		// handle.resolvedDepends <- logContent
+		handle.readyDepends <- proto.MScriptContent{
+			TaskTime:   taskTime,
+			LogContent: logContent,
+			Done:       true,
+		}
 	} else {
 		log.Printf("depends: can not found %s")
 	}
@@ -314,19 +335,28 @@ func (c *crontab) resolvedDepends(t *proto.TaskArgs, logContent []byte) {
 
 }
 
-func (c *crontab) waitDependsDone(taskId string, dpds *[]proto.MScript, logContent *[]byte) bool {
-	defer func() {
-		for k, _ := range *dpds {
-			(*dpds)[k].Done = false
-			(*dpds)[k].LogContent = []byte("")
-		}
-	}()
+func (c *crontab) waitDependsDone(taskId string, dpds *[]proto.MScript, logContent *[]byte, taskTime int64) bool {
+	// defer func() {
+	// 	for k, _ := range *dpds {
+	// 		(*dpds)[k].Done = false
+	// 		(*dpds)[k].LogContent = []byte("")
+	// 	}
+	// }()
 
 	if len(*dpds) == 0 {
 		log.Printf("taskId:%s dpend length %d", taskId, len(*dpds))
 		return true
 	}
 
+	// 一个脚本开始执行时把时间标志放入队列
+	// 并显式声明执行未完成
+	for k, _ := range *dpds {
+		(*dpds)[k].Queue = append((*dpds)[k].Queue, proto.MScriptContent{
+			TaskTime: taskTime,
+			Done:     false,
+		})
+	}
+	log.Printf("1111 %v", *dpds)
 	if ok := pushDepends(taskId, *dpds); !ok {
 		*logContent = []byte("failed to exec depends push depends error!\n")
 		return false
@@ -337,11 +367,26 @@ func (c *crontab) waitDependsDone(taskId string, dpds *[]proto.MScript, logConte
 		c.lock.Unlock()
 
 		t := time.Tick(60 * time.Second)
-		select {
-		case <-t:
-			log.Printf("failed to exec depends wait timeout!")
-			return false
-		case *logContent = <-handle.resolvedDepends:
+		for {
+
+			select {
+			case <-t:
+				log.Printf("failed to exec depends wait timeout!")
+				return false
+			// case *logContent = <-handle.resolvedDepends:
+			case val := <-handle.readyDepends:
+				if val.TaskTime != taskTime {
+
+					handle.readyDepends <- val
+					log.Printf("task %s depend<%d> return to readyDepends chan", taskId, val.TaskTime)
+					// 防止重复接受
+					time.Sleep(1 * time.Second)
+				} else {
+					*logContent = val.LogContent
+					goto end
+				}
+
+			}
 		}
 
 	} else {
@@ -349,6 +394,7 @@ func (c *crontab) waitDependsDone(taskId string, dpds *[]proto.MScript, logConte
 		log.Printf("depends: can not found task %s", taskId)
 		return false
 	}
-	log.Printf("taskId:%s,exec all depends done", taskId)
+end:
+	log.Printf("task:%s exec all depends done", taskId)
 	return true
 }

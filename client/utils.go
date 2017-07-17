@@ -456,6 +456,7 @@ func pushDepends(taskId string, dpds []proto.MScript) bool {
 		}
 		if len(ndpds) > 0 {
 			var reply bool
+			log.Println("tiaoshi", ndpds)
 			err := rpcCall("Logic.Depends", ndpds, &reply)
 			if !reply || err != nil {
 				log.Printf("push Depends failed!")
@@ -476,22 +477,27 @@ func filterDepend(args proto.MScript) bool {
 
 	if t, ok := globalStore.SearchTaskList(args.TaskId); ok {
 		flag := true
+		i := len(args.Queue) - 1
 		for k, v := range t.Depends {
 			if args.Command+args.Args == v.Command+v.Args {
-				t.Depends[k].Done = true
-				t.Depends[k].LogContent = args.LogContent
+				// t.Depends[k].Done = true
+				// t.Depends[k].LogContent = args.LogContent
+				if t.Depends[k].Queue[i].TaskTime != args.Queue[i].TaskTime {
+					log.Println("time err")
+				}
+				t.Depends[k].Queue[i] = args.Queue[i]
 			}
 
-			if t.Depends[k].Done == false {
+			if t.Depends[k].Queue[i].Done == false {
 				flag = false
 			}
 		}
 		if flag {
 			var logContent []byte
 			for _, v := range t.Depends {
-				logContent = append(logContent, v.LogContent...)
+				logContent = append(logContent, v.Queue[i].LogContent...)
 			}
-			globalCrontab.resolvedDepends(t, logContent)
+			globalCrontab.resolvedDepends(t, logContent, args.Queue[i].TaskTime)
 			log.Println("exec Task.ResolvedSDepends done")
 		}
 		return true
