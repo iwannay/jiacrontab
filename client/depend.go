@@ -55,6 +55,10 @@ func (d *depend) run() {
 
 					// 易得队列最后一个task即为该任务的时间标志
 					l := len(t.Queue)
+					if l == 0 {
+						log.Printf("task %s <%s %s> exec failed depend queue length %d ", t.TaskId, t.Command, t.Args, l)
+						return
+					}
 					t.Queue[l-1].LogContent = bytes.TrimRight(logContent, "\x00")
 					t.Queue[l-1].Done = true
 

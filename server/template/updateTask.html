@@ -1,30 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-cn">
 {{template "head" .}}
-<style>
-
-.left-animate {
-    min-width: 120px;
-    transition:width 2s;
-    -moz-transition:width 2s; /* Firefox 4 */
-    -webkit-transition:width .6s; /* Safari and Chrome */
-    -o-transition:width 2s; /* Opera */
-}
-.depend-btn {
-    position: fixed;
-    right: 0;
-    top: 45%;
-    width: 30px;
-    padding: 8px;
-    border-radius: 4px;
-    background: #286090;
-    color: #fff;
-    cursor: pointer;
-}
-.depends-list .form-inline {
-    margin-bottom: 10px;
-}
-</style>
 <body>
     {{template "header" .}}
     <div class="container-fluid">
@@ -51,26 +27,26 @@
                     {{end}}
                 </div>
             </div>
-            <div class="col-md-10" id="formList">
-                <form class="form" action="" method="POST" onsubmit="return check(this)">
+            <div class="col-md-10">
+                <form class="form form-horizontal" action="" method="POST" onsubmit="return check(this)">
                     <input type="hidden" name="taskId" value="{{.task.Id}}">
                     <div class="form-group">
-                        <label for="inputAddr" class="control-label">地址:</label>
-                        <div class="controls">
+                        <label for="inputAddr" class="col-sm-1 control-label">地址:</label>
+                        <div class="col-sm-11 controls">
                             <input type="text" id="inputAddr" class="form-control" name="addr" disabled value="{{.addr}}">
                         </div>
                             
                     </div>
                     <div class="form-group">
-                        <label class="control-label" for="inputTaskName">脚本名称:</label>
-                        <div class="controls">
+                        <label class="col-sm-1 control-label" for="inputTaskName">脚本名称:</label>
+                        <div class="col-sm-11 controls">
                             <input type="text" id="inputTaskName" class="form-control" name="taskName" value="{{.task.Name}}" placeholder="任务名">
                             <span id="errorTaskName"  class="help-block hide">请使用字母、数字、“_”、“-”</span>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="control-label" for="inputCommand">命令:</label>
-                        <div class="controls">
+                        <label class="col-sm-1 control-label" for="inputCommand">命令:</label>
+                        <div class="col-sm-11 controls">
                             {{$command := .task.Command}}
                             <select class="form-control" id="inputCommand" name="command">
                                 {{range $k, $v := .allowCommands}}
@@ -81,22 +57,22 @@
                     </div>
 
                      <div class="form-group">
-                        <label class="control-label" for="inputArgs">参数:</label>
-                        <div class="controls">
+                        <label class="col-sm-1 control-label" for="inputArgs">参数:</label>
+                        <div class="col-sm-11 controls">
                             <input type="text" name="args" id="inputArgs" class="form-control" value="{{.task.Args}}" placeholder="args">
                         </div>
                     </div>
 
                      <div class="form-group">
-                        <label class="control-label" for="inputTimeout" >脚本超时:</label>
-                        <div class="controls">
+                        <label class="col-sm-1 control-label" for="inputTimeout" >脚本超时:</label>
+                        <div class="col-sm-11 controls">
                             <input type="text" id="inputTimeout" class="form-control" name="timeout" type="number" onkeyup="this.value=this.value.replace(/\D/g,'')"  onafterpaste="this.value=this.value.replace(/\D/g,'')"  value="{{.task.Timeout}}">
                         </div>
                     </div>
                     
                     <div class="form-group">
-                        <label class="control-label" >脚本超时操作:</label>
-                        <div class="controls">
+                        <label class="col-sm-1 control-label" >脚本超时操作:</label>
+                        <div class="col-sm-11 controls">
                             <label class="radio-inline">
                                 <input type="radio" name="optimeout" id="inlineRadio2" {{if eq .task.OpTimeout "email"}}checked{{end}} id="inlineRadio1" value="email"> 邮件通知
                             </label>
@@ -113,24 +89,22 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="control-label" for="inputMailTo" >邮箱地址:</label>
-                        <div class="controls">
+                        <label class="col-sm-1 control-label" for="inputMailTo" >邮箱地址:</label>
+                        <div class="col-sm-11 controls">
                             <input type="text" id="inputMailTo" class="form-control" name="mailTo"   value="{{.task.MailTo}}">
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="control-label" for="inputMaxConcurrent" >最大并发数:</label>
-                        <div class="controls">
+                        <label class="col-sm-1 control-label" for="inputMaxConcurrent" >最大并发数:</label>
+                        <div class="col-sm-11 controls">
                             <input type="text" id="inputMaxConcurrent" class="form-control" name="maxConcurrent"   value="{{.task.MaxConcurrent}}">
                         </div>
                     </div>
 
-
-
-                    <div class="form-group ">
-                        <label class="control-label" class="form-control">定时:</label>
-                        <div class="controls form-inline">
+                    <div class="form-group">
+                        <label class="col-sm-1 control-label" class="form-control">定时:</label>
+                        <div class="col-sm-11 controls form-inline">
                             <div class="input-group col-sm-2">
                                 <div class="input-group-addon">minute</div>
                                 <input name="minute" class="input-mini form-control" placeholder="minute" value="{{if .task.C.Minute}}{{.task.C.Minute}}{{else}}*{{end}}" type="text" >
@@ -156,54 +130,63 @@
                         </div>
                     </div>
 
-                    <div class="form-actions">
+                    <div class="form-group">
+                        <label class="col-sm-1 control-label" for="inputDepends" >添加依赖:</label>
+                        <div class="col-sm-11 controls" id="depend-list">
+                            <div class="row form-group">
+                                <div class="col-xs-12">
+                                    <button type="button" id="addDepends" onclick="addDepend(this)" class="btn btn-default" aria-label="Left Align">
+                                        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-offset-1 form-actions">
                         <button type="submit" class="btn btn-primary">提交</button>
                         <button type="button" onclick="location.reload()" class="btn">取消　</button>
                     </div>
 
                 </form>
             </div>
-            <div hidden class="depends-list" id="addList">
-                <div class="list-group">
-                    <button type="button" class="btn btn-primary btn-sm" id="addDepends" num="0">
-                        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> 添加依赖
-                    </button>
-                </div>
-            </div>
         </div>
-        <div class="depend-btn" id="dependBtn">展开依赖</div>
-        <div id="tempAdd" hidden>
-            <div class="form-inline">
-                <div class="form-group num-list">1.</div>
-                <div class="form-group">
-                    <select class="form-control">
-                        {{$addr := .addr}}
-                        {{$clients := .rpcClientsMap}}
+    </div>
+    <div id="template-depend" hidden>
+        <div class="row form-group depend-item">
+            <div class="col-xs-3">
+                <select class="form-control">
+                    {{$addr := .addr}}
+                    {{$clients := .rpcClientsMap}}
+                    {{$rpcClientsMap := .rpcClientsMap}}
 
-                        {{range $k,$v := .addrs}}
-                        {{$info := index $clients $v}}
-                        <option class="list-group-item {{if eq $v $addr}}active{{end}}">
-                            {{$v}}
-                        </option>
-                        {{end}}
-                    </select>
-                </div>
-                <div class="form-group">
-                        {{$command := .task.Command}}
-                        <select class="form-control" id="inputCommand" name="command">
-                            {{range $k, $v := .allowCommands}}
-                            <option {{if eq $v $command}}selected{{end}} value="{{$v}}">{{$v}}</option>
-                            {{end}}
-                        </select>
-                </div>
-                <div class="form-group">
-                    <input type="text" name="args" class="form-control" style="width:90px;" value="{{.task.Args}}" placeholder="args">
-                </div>
-                <div class="form-group">
-                    <button type="button" class="btn btn-danger deleteBtn" aria-label="Left Align">
-                        <span class="glyphicon glyphicon-minus" aria-hidden="true"></span>
-                    </button>
-                </div>
+                    {{range $k,$v := .addrs}}
+                    {{$info := index $clients $v}}
+                    <option class="list-group-item {{if eq $v $addr}}active{{end}}">
+                        {{$v}}
+                        {{if eq $info.State 1}}正常{{else}}断开{{end}}
+                    </option>
+                    {{end}}
+                </select>
+            </div>
+            <div class="col-xs-2">
+                {{$command := .task.Command}}
+                <select class="form-control">
+                    {{range $k, $v := .allowCommands}}
+                    <option {{if eq $v $command}}selected{{end}} value="{{$v}}">{{$v}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <div class="col-xs-4">
+                <input type="text" class="form-control" value="{{.task.Args}}" placeholder="args">
+            </div>
+            <div class="col-xs-2">
+                <input type="text" class="form-control" value="" placeholder="超时(s)">
+            </div>
+            <div class="col-xs-1">
+                <button type="button" onclick="deleteDepend(this)" class="btn btn-default" aria-label="Left Align">
+                    <span class="glyphicon glyphicon-minus" aria-hidden="true"></span>
+                </button>
             </div>
         </div>
     </div>
@@ -321,33 +304,13 @@
             }
             return true;
         }
-
-        function getNumValue() {
-            $('.num-list').each(function(i, value) {
-                $(this).html((i + 1) + '.')
-            })
+        function addDepend(dom) {
+            $('#depend-list').append($('#template-depend').html());
         }
-        $(function() {
-            $('#dependBtn').on('click', function() {
-                if($(this).hasClass('on')) {
-                     $(this).removeClass('on').html('展开依赖');
-                    $('#formList').removeClass('col-md-6').addClass('col-md-10');
-                    $('#addList').removeClass('col-md-4').hide();
-                } else {
-                    $(this).addClass('on').html('收起依赖');
-                    $('#formList').removeClass('col-md-10').addClass('col-md-6');
-                    $('#addList').addClass('col-md-4').show();
-                }
-            })
-            $('#addDepends').on('click', function() {
-                $('#addList').append($('#tempAdd').html());
-                getNumValue();
-            })
-            $('#addList').delegate('.deleteBtn', 'click', function() {
-                $(this).parents('.form-inline').remove();
-                getNumValue();
-            })
-        })
+        function deleteDepend(dom) {
+            $(dom).parents('.depend-item').remove();
+        }
+        
     </script>
 </body>
 
