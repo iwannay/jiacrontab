@@ -28,9 +28,7 @@ func (l *Logic) Register(args proto.ClientConf, reply *proto.MailArgs) error {
 }
 
 func (l *Logic) Depends(args []proto.MScript, reply *bool) error {
-	defer func() {
-		log.Println("call Logic.Depends end")
-	}()
+	log.Printf("Callee Logic.Depend taskId %s", args[0].TaskId)
 	*reply = true
 	for _, v := range args {
 		if err := rpcCall(v.Dest, "Task.ExecDepend", v, &reply); err != nil {
@@ -43,9 +41,7 @@ func (l *Logic) Depends(args []proto.MScript, reply *bool) error {
 }
 
 func (l *Logic) DependDone(args proto.MScript, reply *bool) error {
-	defer func() {
-		log.Println("call Logic.DependDone end")
-	}()
+	log.Printf("Callee Logic.DependDone taskId %s", args.TaskId)
 	*reply = true
 	if err := rpcCall(args.Dest, "Task.ResolvedSDepends", args, &reply); err != nil {
 		*reply = false

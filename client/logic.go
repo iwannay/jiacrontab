@@ -195,33 +195,32 @@ func (t *Task) SystemInfo(args string, ret *map[string]interface{}) error {
 }
 
 func (t *Task) ResolvedSDepends(args proto.MScript, ok *bool) error {
-	defer func() {
-		log.Println("exec Task.ResolvedSDepends")
-	}()
 
-	if t, ok2 := globalStore.SearchTaskList(args.TaskId); ok2 {
-		flag := true
-		for k, v := range t.Depends {
-			if args.Command+args.Args == v.Command+v.Args {
-				t.Depends[k].Done = true
-				t.Depends[k].LogContent = args.LogContent
-			}
+	*ok = filterDepend(args)
+	// if t, ok2 := globalStore.SearchTaskList(args.TaskId); ok2 {
+	// 	flag := true
+	// 	for k, v := range t.Depends {
+	// 		if args.Command+args.Args == v.Command+v.Args {
+	// 			t.Depends[k].Done = true
+	// 			t.Depends[k].LogContent = args.LogContent
+	// 		}
 
-			if t.Depends[k].Done == false {
-				flag = false
-			}
-		}
-		if flag {
-			var logContent []byte
-			for _, v := range t.Depends {
-				logContent = append(logContent, v.LogContent...)
-			}
-			globalCrontab.resolvedDepends(t, logContent)
-		}
-		*ok = true
-	} else {
-		*ok = false
-	}
+	// 		if t.Depends[k].Done == false {
+	// 			flag = false
+	// 		}
+	// 	}
+	// 	if flag {
+	// 		var logContent []byte
+	// 		for _, v := range t.Depends {
+	// 			logContent = append(logContent, v.LogContent...)
+	// 		}
+	// 		globalCrontab.resolvedDepends(t, logContent)
+	// 		log.Println("exec Task.ResolvedSDepends done")
+	// 	}
+	// 	*ok = true
+	// } else {
+	// 	*ok = false
+	// }
 
 	return nil
 }
@@ -229,6 +228,6 @@ func (t *Task) ResolvedSDepends(args proto.MScript, ok *bool) error {
 func (t *Task) ExecDepend(args proto.MScript, reply *bool) error {
 	globalDepend.Add(args)
 	*reply = true
-	log.Printf("exec Task.ExecDepend %v", args)
+	log.Printf("task %s <%s %s> add to execution queue ", args.TaskId, args.Command, args.Args)
 	return nil
 }

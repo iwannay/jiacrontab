@@ -206,7 +206,7 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 		select {
 		case now := <-h.clockChan:
 			wgroup.Add(1)
-			go func() {
+			go func(now time.Time) {
 				defer func() {
 					libs.MRecover()
 					wgroup.Done()
@@ -284,7 +284,7 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 					log.Printf("%s:%s %v %s %.3fs %v", task.Name, task.Command, task.Args, task.OpTimeout, float64(task.LastCostTime)/1000000000, err)
 
 				}
-			}()
+			}(now)
 		case <-ctx.Done():
 			// 等待所有的计划任务执行完毕
 			wgroup.Wait()
@@ -323,12 +323,12 @@ func (c *crontab) waitDependsDone(taskId string, dpds *[]proto.MScript, logConte
 	}()
 
 	if len(*dpds) == 0 {
-		log.Printf("taskId:%s dpends:%v", taskId, *dpds)
+		log.Printf("taskId:%s dpend length %d", taskId, len(*dpds))
 		return true
 	}
 
 	if ok := pushDepends(taskId, *dpds); !ok {
-		*logContent = []byte("script depends exec failed!\n")
+		*logContent = []byte("failed to exec depends push depends error!\n")
 		return false
 	}
 
@@ -338,17 +338,17 @@ func (c *crontab) waitDependsDone(taskId string, dpds *[]proto.MScript, logConte
 
 		t := time.Tick(60 * time.Second)
 		select {
-		case done := <-t:
-			log.Println(done.String())
+		case <-t:
+			log.Printf("failed to exec depends wait timeout!")
 			return false
 		case *logContent = <-handle.resolvedDepends:
 		}
 
 	} else {
 		c.lock.Unlock()
-		log.Printf("depends: can not found %s")
+		log.Printf("depends: can not found task %s", taskId)
 		return false
 	}
-	log.Printf("taskId:%s,exec %v done", taskId, dpds)
+	log.Printf("taskId:%s,exec all depends done", taskId)
 	return true
 }

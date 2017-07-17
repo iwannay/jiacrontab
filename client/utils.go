@@ -392,6 +392,8 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 		return err
 	}
 	reader := bufio.NewReader(stdout)
+	// 如果已经存在日志则直接写入
+	f.Write(*content)
 
 	for {
 		line, err2 := reader.ReadString('\n')
@@ -442,13 +444,57 @@ func sendMail(mailTo, title, content string) {
 func pushDepends(taskId string, dpds []proto.MScript) bool {
 
 	if len(dpds) > 0 {
-		var reply bool
 
-		err := rpcCall("Logic.Depends", dpds, &reply)
-		if !reply || err != nil {
-			log.Printf("push Depends failed!")
-			return false
+		// 检测目标服务器为本机时直接执行脚本
+		var ndpds []proto.MScript
+		for _, v := range dpds {
+			if v.Dest == globalConfig.addr {
+				globalDepend.Add(v)
+			} else {
+				ndpds = append(ndpds, v)
+			}
 		}
+		if len(ndpds) > 0 {
+			var reply bool
+			err := rpcCall("Logic.Depends", ndpds, &reply)
+			if !reply || err != nil {
+				log.Printf("push Depends failed!")
+				return false
+			}
+		}
+
 	}
 	return true
+}
+
+// filterDepend 本地执行的脚本依赖不再请求网络，直接转发到对应的处理模块
+// 目标网络不是本机时返回false
+func filterDepend(args proto.MScript) bool {
+	if args.Dest != globalConfig.addr {
+		return false
+	}
+
+	if t, ok := globalStore.SearchTaskList(args.TaskId); ok {
+		flag := true
+		for k, v := range t.Depends {
+			if args.Command+args.Args == v.Command+v.Args {
+				t.Depends[k].Done = true
+				t.Depends[k].LogContent = args.LogContent
+			}
+
+			if t.Depends[k].Done == false {
+				flag = false
+			}
+		}
+		if flag {
+			var logContent []byte
+			for _, v := range t.Depends {
+				logContent = append(logContent, v.LogContent...)
+			}
+			globalCrontab.resolvedDepends(t, logContent)
+			log.Println("exec Task.ResolvedSDepends done")
+		}
+		return true
+	}
+	return false
 }

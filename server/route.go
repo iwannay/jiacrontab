@@ -200,14 +200,13 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		var t proto.TaskArgs
 		var clientList map[string]proto.ClientConf
 		if id != "" {
-			m.rpcCall(addr, "Task.Get", id, &t)
-			if reply {
+			err := m.rpcCall(addr, "Task.Get", id, &t)
+			if err != nil {
 				http.Redirect(rw, r, "/list?addr="+addr, http.StatusFound)
 				return
 			}
 		} else {
 			client, _ := m.s.SearchRPCClientList(addr)
-			log.Println(client)
 			t.MailTo = client.Mail
 		}
 		if t.MaxConcurrent == 0 {

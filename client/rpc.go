@@ -94,6 +94,7 @@ func rpcCall(serviceMethod string, args, reply interface{}) error {
 	if rpcClient == nil {
 		return errors.New("RpcClient failed initialize")
 	}
+	log.Println("RpcCall", serviceMethod)
 	err := rpcClient.Call(serviceMethod, args, reply)
 	if err != nil {
 		rpcClient.Close()
@@ -101,6 +102,9 @@ func rpcCall(serviceMethod string, args, reply interface{}) error {
 		err = rpcClient.Call(serviceMethod, args, reply)
 	}
 
-	log.Println("RpcCall", serviceMethod, err)
+	if err != nil {
+		log.Println("RpcCall", serviceMethod, err)
+	}
+
 	return err
 }

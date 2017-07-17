@@ -76,7 +76,7 @@ func rpcCall(addr string, method string, args interface{}, reply interface{}) er
 		log.Println(err)
 		return err
 	}
-
+	log.Printf("rpcCall %s", method)
 	if err := c.Call(method, args, reply); err != nil {
 		err = fmt.Errorf("failed to call %s %s %s", method, args, err)
 		log.Println(err)
