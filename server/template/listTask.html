@@ -46,6 +46,9 @@
                 <p class="border-bottom">
                     <a href="/update?addr={{.client.Addr}}" class="btn btn-primary">添加</a>
                 </p>
+                <p class="border-bottom">
+                    <a href="/stopAllTask?addr={{.client.Addr}}&taskIds={{.taskIds}}" class="btn btn-primary">全部关闭</a>
+                </p>
 
                 {{$logHost := .logHost}} {{$client := .client}} 
                 {{range $i,$v := .list}} 

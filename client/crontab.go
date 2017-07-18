@@ -48,7 +48,8 @@ func (c *crontab) add(t *proto.TaskArgs) {
 func (c *crontab) quickStart(t *proto.TaskArgs, content *[]byte) {
 	var timeout int64
 	var err error
-	start := time.Now().Unix()
+	startTime := time.Now()
+	start := startTime.Unix()
 	args := strings.Split(t.Args, " ")
 	t.LastExecTime = start
 	if t.Timeout == 0 {
@@ -75,7 +76,7 @@ func (c *crontab) quickStart(t *proto.TaskArgs, content *[]byte) {
 		}
 	}
 
-	t.LastCostTime = time.Now().Unix() - start
+	t.LastCostTime = time.Now().UnixNano() - startTime.UnixNano()
 	globalStore.Sync()
 
 	log.Printf("%s:  quic start end costTime %ds %v", t.Name, t.LastCostTime, err)

@@ -25,7 +25,7 @@ func wrapHandler(fn func(rw http.ResponseWriter, r *http.Request, m *modelView),
 
 		modelV := newModelView(rw, globalStore)
 		modelV.startTime = startNa
-		
+
 		defer func() {
 			k := fmt.Sprintf("%s|%s", getHttpClientIp(r), r.Header.Get("User-Agent"))
 			endMs := float64(time.Now().UnixNano()) / 1000000
@@ -75,6 +75,7 @@ func initServer() {
 	mux.HandleFunc("/reloadConfig", wrapHandler(reloadConfig, []beforeReqHandle{filterReq, checkLogin}))
 	mux.HandleFunc("/deleteClient", wrapHandler(deleteClient, []beforeReqHandle{filterReq, checkLogin}))
 	mux.HandleFunc("/viewConfig", wrapHandler(viewConfig, []beforeReqHandle{filterReq, checkLogin}))
+	mux.HandleFunc("/stopAllTask", wrapHandler(stopAllTask, []beforeReqHandle{filterReq, checkLogin}))
 
 	if globalConfig.debug {
 		mux.HandleFunc("/debug/pprof/", pprof.Index)

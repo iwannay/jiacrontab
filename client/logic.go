@@ -115,6 +115,18 @@ func (t *Task) Stop(args string, ok *bool) error {
 	return nil
 }
 
+func (t *Task) StopAll(args []string, ok *bool) error {
+	*ok = true
+	for _, v := range args {
+		if val, ok2 := globalStore.SearchTaskList(v); ok2 {
+			globalCrontab.stop(val)
+		} else {
+			*ok = false
+		}
+	}
+	return nil
+}
+
 func (t *Task) Delete(args string, ok *bool) error {
 
 	if v, ok2 := globalStore.SearchTaskList(args); ok2 {
