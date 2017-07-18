@@ -50,6 +50,11 @@ func listTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		return
 	}
 
+	if err := m.rpcCall(addr, "Admin.SystemInfo", "", &systemInfo); err != nil {
+		http.Redirect(rw, r, "/", http.StatusFound)
+		return
+	}
+
 	for _, v := range locals {
 
 		sortedTaskList = append(sortedTaskList, v)
@@ -58,7 +63,6 @@ func listTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		return sortedTaskList[i].Create > sortedTaskList[j].Create
 	})
 
-	m.rpcCall(addr, "Task.SystemInfo", "", &systemInfo)
 	m.renderHtml2([]string{"listTask"}, map[string]interface{}{
 		"title":      "灵魂百度",
 		"list":       sortedTaskList,
@@ -123,9 +127,28 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		timeoutStr := strings.TrimSpace(r.FormValue("timeout"))
 		mConcurrentStr := strings.TrimSpace(r.FormValue("maxConcurrent"))
 
-		mailTo := strings.TrimSpace(r.FormValue("mailTo"))
+		destSli := r.PostForm["depends[dest]"]
+		cmdSli := r.PostForm["depends[command]"]
+		argsSli := r.PostForm["depends[args]"]
+		timeoutSli := r.PostForm["depends[timeout]"]
+		depends := make([]proto.MScript, len(destSli))
 
+		for k, v := range destSli {
+			depends[k].Dest = v
+			depends[k].From = addr
+			depends[k].Args = argsSli[k]
+			tmpT, err := strconv.Atoi(timeoutSli[k])
+
+			if err != nil {
+				depends[k].Timeout = 0
+			} else {
+				depends[k].Timeout = int64(tmpT)
+			}
+			depends[k].Command = cmdSli[k]
+		}
+		mailTo := strings.TrimSpace(r.FormValue("mailTo"))
 		optimeout := strings.TrimSpace(r.FormValue("optimeout"))
+
 		if _, ok := map[string]bool{"email": true, "kill": true, "email_and_kill": true, "ignore": true}[optimeout]; !ok {
 			optimeout = "ignore"
 		}
@@ -156,6 +179,7 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 			Create:        time.Now().Unix(),
 			MailTo:        mailTo,
 			MaxConcurrent: maxConcurrent,
+			Depends:       depends,
 			C: struct {
 				Weekday string
 				Month   string
@@ -185,14 +209,13 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		var t proto.TaskArgs
 		var clientList map[string]proto.ClientConf
 		if id != "" {
-			m.rpcCall(addr, "Task.Get", id, &t)
-			if reply {
+			err := m.rpcCall(addr, "Task.Get", id, &t)
+			if err != nil {
 				http.Redirect(rw, r, "/list?addr="+addr, http.StatusFound)
 				return
 			}
 		} else {
 			client, _ := m.s.SearchRPCClientList(addr)
-			log.Println(client)
 			t.MailTo = client.Mail
 		}
 		if t.MaxConcurrent == 0 {

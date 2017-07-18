@@ -212,6 +212,11 @@ func (s *Store) load(fpath string) error {
 			if v.MaxConcurrent == 0 {
 				v.MaxConcurrent = 1
 			}
+			if l := len(v.Depends); l > 0 {
+				for k := range v.Depends {
+					v.Depends[k].Queue = make([]proto.MScriptContent, 0)
+				}
+			}
 			v.NumberProcess = 0
 		}
 	}
