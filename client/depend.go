@@ -35,6 +35,7 @@ func (d *depend) run() {
 					var logContent []byte
 
 					if t.Timeout == 0 {
+						// 默认超时10分钟
 						t.Timeout = 600
 					}
 

@@ -122,22 +122,27 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		command := strings.TrimSpace(r.FormValue("command"))
 		timeoutStr := strings.TrimSpace(r.FormValue("timeout"))
 		mConcurrentStr := strings.TrimSpace(r.FormValue("maxConcurrent"))
-		mDepends := []proto.MScript{
-			proto.MScript{
-				Dest:    "localhost:20001",
-				From:    "localhost:20001",
-				Command: "php",
-				Args:    "-f /home/john/crontab/echo.php",
-			},
-			proto.MScript{
-				Dest:    "localhost:20001",
-				From:    "localhost:20001",
-				Command: "uname",
-				Args:    "-a",
-			},
+
+		destSli := r.PostForm["depends[dest]"]
+		cmdSli := r.PostForm["depends[command]"]
+		argsSli := r.PostForm["depends[args]"]
+		timeoutSli := r.PostForm["depends[timeout]"]
+		depends := make([]proto.MScript, len(destSli))
+
+		for k, v := range destSli {
+			depends[k].Dest = v
+			depends[k].From = addr
+			depends[k].Args = argsSli[k]
+			tmpT, err := strconv.Atoi(timeoutSli[k])
+
+			if err != nil {
+				depends[k].Timeout = 0
+			} else {
+				depends[k].Timeout = int64(tmpT)
+			}
+			depends[k].Command = cmdSli[k]
 		}
 		mailTo := strings.TrimSpace(r.FormValue("mailTo"))
-
 		optimeout := strings.TrimSpace(r.FormValue("optimeout"))
 
 		if _, ok := map[string]bool{"email": true, "kill": true, "email_and_kill": true, "ignore": true}[optimeout]; !ok {
@@ -170,7 +175,7 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 			Create:        time.Now().Unix(),
 			MailTo:        mailTo,
 			MaxConcurrent: maxConcurrent,
-			Depends:       mDepends,
+			Depends:       depends,
 			C: struct {
 				Weekday string
 				Month   string

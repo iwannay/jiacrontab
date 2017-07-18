@@ -3,6 +3,11 @@
 {{template "head" .}}
 <body>
     {{template "header" .}}
+    {{$addr := .addr}}
+    {{$clients := .rpcClientsMap}}
+    {{$rpcClientsMap := .rpcClientsMap}}
+    {{$addrs := .addrs}}
+    {{$allowCommands := .allowCommands}}
     <div class="container-fluid">
 
         <ul class="breadcrumb">
@@ -14,9 +19,7 @@
         <div class="row-fluid">
             <div class="col-md-2">
                 <div class="list-group">
-                    {{$addr := .addr}}
-                    {{$clients := .rpcClientsMap}}
-                    {{$rpcClientsMap := .rpcClientsMap}}
+                    
 
                     {{range $k,$v := .addrs}}
                     {{$info := index $clients $v}}
@@ -133,6 +136,7 @@
                     <div class="form-group">
                         <label class="col-sm-1 control-label" for="inputDepends" >添加依赖:</label>
                         <div class="col-sm-11 controls" id="depend-list">
+                            
                             <div class="row form-group">
                                 <div class="col-xs-12">
                                     <button type="button" id="addDepends" onclick="addDepend(this)" class="btn btn-default" aria-label="Left Align">
@@ -140,6 +144,45 @@
                                     </button>
                                 </div>
                             </div>
+                                    {{$task := .task}}
+                                    
+                                    {{range $key,$value:= .task.Depends}}
+                                    <div class="row form-group depend-item">
+                                        <div class="col-xs-3">
+                                            <select class="form-control" name="depends[dest]">
+                                               
+
+                                                {{range $k,$v := $addrs}}
+                                                {{$info := index $clients $v}}
+                                                    {{if eq $info.State 1}}
+                                                    <option class="list-group-item"  {{if eq $v $value.Dest}}selected{{end}}>
+                                                        {{$v}}
+                                                    </option>
+                                                    {{end}}
+                                                {{end}}
+                                            </select>
+                                        </div>
+                                        <div class="col-xs-2">
+                                            <select class="form-control" name="depends[command]">
+                                                {{range $k, $v := $allowCommands}}
+                                                <option {{if eq $v $value.Command}}selected{{end}} value="{{$v}}">{{$v}}</option>
+                                                {{end}}
+                                            </select>
+                                        </div>
+                                        <div class="col-xs-4">
+                                            <input type="text" class="form-control" name="depends[args]" value="{{$value.Args}}" placeholder="args">
+                                        </div>
+                                        <div class="col-xs-2">
+                                            <input type="text" class="form-control" value="{{$value.Timeout}}" name="depends[timeout]" placeholder="超时(s)">
+                                        </div>
+                                        <div class="col-xs-1">
+                                            <button type="button" onclick="deleteDepend(this)" class="btn btn-default" aria-label="Left Align">
+                                                <span class="glyphicon glyphicon-minus" aria-hidden="true"></span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {{end}}
+                            
                         </div>
                     </div>
 
@@ -155,33 +198,30 @@
     <div id="template-depend" hidden>
         <div class="row form-group depend-item">
             <div class="col-xs-3">
-                <select class="form-control">
-                    {{$addr := .addr}}
-                    {{$clients := .rpcClientsMap}}
-                    {{$rpcClientsMap := .rpcClientsMap}}
+                <select class="form-control" name="depends[dest]">
 
                     {{range $k,$v := .addrs}}
                     {{$info := index $clients $v}}
-                    <option class="list-group-item {{if eq $v $addr}}active{{end}}">
-                        {{$v}}
-                        {{if eq $info.State 1}}正常{{else}}断开{{end}}
-                    </option>
+                        {{if eq $info.State 1}}
+                        <option class="list-group-item">
+                            {{$v}}
+                        </option>
+                        {{end}}
                     {{end}}
                 </select>
             </div>
             <div class="col-xs-2">
-                {{$command := .task.Command}}
-                <select class="form-control">
+                <select class="form-control" name="depends[command]">
                     {{range $k, $v := .allowCommands}}
-                    <option {{if eq $v $command}}selected{{end}} value="{{$v}}">{{$v}}</option>
+                    <option value="{{$v}}">{{$v}}</option>
                     {{end}}
                 </select>
             </div>
             <div class="col-xs-4">
-                <input type="text" class="form-control" value="{{.task.Args}}" placeholder="args">
+                <input type="text" class="form-control" value="" name="depends[args]" placeholder="args">
             </div>
             <div class="col-xs-2">
-                <input type="text" class="form-control" value="" placeholder="超时(s)">
+                <input type="text" class="form-control" value="" name="depends[timeout]" placeholder="超时(s)">
             </div>
             <div class="col-xs-1">
                 <button type="button" onclick="deleteDepend(this)" class="btn btn-default" aria-label="Left Align">
