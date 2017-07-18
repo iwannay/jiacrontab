@@ -33,6 +33,9 @@ func (d *depend) run() {
 				go func(t proto.MScript) {
 					var reply bool
 					var logContent []byte
+					var mailTo string
+					var task *proto.TaskArgs
+					var ok bool
 
 					if t.Timeout == 0 {
 						// 默认超时10分钟
@@ -42,7 +45,8 @@ func (d *depend) run() {
 					ctx, cancel := context.WithTimeout(context.Background(), time.Duration(t.Timeout)*time.Second)
 					args := strings.Split(t.Args, " ")
 					name := filepath.Base(args[len(args)-1])
-					start := time.Now().UnixNano()
+					startTime := time.Now()
+					start := startTime.UnixNano()
 
 					err := execScript(ctx, fmt.Sprintf("%s-%s.log", name, t.TaskId), t.Command, globalConfig.logPath, &logContent, args...)
 					cancel()
@@ -51,6 +55,14 @@ func (d *depend) run() {
 					if err != nil {
 						// t.LogContent = append(t.LogContent, []byte(err.Error())...)
 						logContent = append(logContent, []byte(err.Error())...)
+						if task, ok = globalStore.SearchTaskList(t.TaskId); ok {
+							mailTo = task.MailTo
+						} else {
+							mailTo = globalConfig.mailTo
+						}
+						sendMail(mailTo, globalConfig.addr+"提醒脚本异常退出", fmt.Sprintf(
+							"任务名：%s\n依赖：%s %v\n开始时间：%s\n异常：%ss",
+							task.Name, t.Command, t.Args, startTime.Format("2006-01-02 15:04:05"), err.Error()))
 					}
 					// t.LogContent = bytes.TrimRight(t.LogContent, "\x00")
 

@@ -189,11 +189,6 @@ func (t *Task) Log(args string, ret *[]byte) error {
 	return err
 }
 
-func (t *Task) SystemInfo(args string, ret *map[string]interface{}) error {
-	*ret = libs.SystemInfo(startTime)
-	return nil
-}
-
 func (t *Task) ResolvedSDepends(args proto.MScript, ok *bool) error {
 
 	*ok = filterDepend(args)

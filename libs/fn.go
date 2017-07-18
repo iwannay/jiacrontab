@@ -233,7 +233,8 @@ func SendMail(title, content, host, from, pass, port, mailTo string) {
 	}
 
 	auth := smtp.PlainAuth("", from, pass, host)
-	to := []string{mailTo}
+
+	to := strings.Split(mailTo, ",")
 	toStr := strings.Join(to, ",")
 	msg := []byte("To: " + toStr + "\r\n" +
 		"Subject: " + title + "\r\n" +

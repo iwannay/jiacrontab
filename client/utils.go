@@ -438,7 +438,7 @@ func sendMail(mailTo, title, content string) {
 	pass := globalStore.Mail.Pass
 	port := globalStore.Mail.Port
 
-	libs.SendMail(title, content, host, from, pass, port, mailTo)
+	go libs.SendMail(title, content, host, from, pass, port, mailTo)
 }
 
 func pushDepends(taskId string, dpds []proto.MScript) bool {

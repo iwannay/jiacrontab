@@ -52,11 +52,11 @@ func (c *crontab) quickStart(t *proto.TaskArgs, content *[]byte) {
 	args := strings.Split(t.Args, " ")
 	t.LastExecTime = start
 	if t.Timeout == 0 {
-		timeout = 60
+		timeout = 600
 	} else {
 		timeout = t.Timeout
 	}
-
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	// 垃圾回收
 	if t.State == 0 || t.State == 1 {
 		for k, _ := range t.Depends {
@@ -64,15 +64,12 @@ func (c *crontab) quickStart(t *proto.TaskArgs, content *[]byte) {
 		}
 	}
 
-	if ok := c.waitDependsDone(t.Id, &t.Depends, content, start); !ok {
+	if ok := c.waitDependsDone(ctx, t.Id, &t.Depends, content, start); !ok {
 		err = errors.New("failded to exec depends")
 		*content = append(*content, []byte(err.Error())...)
-
 	} else {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 		err = execScript(ctx, fmt.Sprintf("%s-%s.log", t.Name, t.Id), t.Command, globalConfig.logPath, content, args...)
 		cancel()
-
 		if err != nil {
 			*content = append(*content, []byte(err.Error())...)
 		}
@@ -244,13 +241,13 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 					args := strings.Split(task.Args, " ")
 					task.LastExecTime = now2.Unix()
 					task.State = 2
+					ctx, cancel := context.WithCancel(context.Background())
 
-					if ok := c.waitDependsDone(task.Id, &task.Depends, &content, now2.Unix()); !ok {
+					if ok := c.waitDependsDone(ctx, task.Id, &task.Depends, &content, now2.Unix()); !ok {
 						err = errors.New("failded to exec depends")
 						content = append(content, []byte(err.Error())...)
 					} else {
 						flag := true
-						ctx, cancel := context.WithCancel(context.Background())
 						c.lock.Lock()
 						hdl = c.handleMap[task.Id]
 						if len(hdl.cancelCmdArray) >= task.MaxConcurrent {
@@ -287,6 +284,11 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 						err = execScript(ctx, fmt.Sprintf("%s-%s.log", task.Name, task.Id), task.Command, globalConfig.logPath, &content, args...)
 						atomic.AddInt32(&task.NumberProcess, -1)
 						flag = false
+						if err != nil {
+							sendMail(task.MailTo, globalConfig.addr+"提醒脚本异常退出", fmt.Sprintf(
+								"任务名：%s\n详情：%s %v\n开始时间：%s\n异常：%ss",
+								task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), err.Error()))
+						}
 					}
 
 					task.LastCostTime = time.Now().UnixNano() - start
@@ -335,7 +337,7 @@ func (c *crontab) resolvedDepends(t *proto.TaskArgs, logContent []byte, taskTime
 
 }
 
-func (c *crontab) waitDependsDone(taskId string, dpds *[]proto.MScript, logContent *[]byte, taskTime int64) bool {
+func (c *crontab) waitDependsDone(ctx context.Context, taskId string, dpds *[]proto.MScript, logContent *[]byte, taskTime int64) bool {
 	// defer func() {
 	// 	for k, _ := range *dpds {
 	// 		(*dpds)[k].Done = false
@@ -356,7 +358,6 @@ func (c *crontab) waitDependsDone(taskId string, dpds *[]proto.MScript, logConte
 			Done:     false,
 		})
 	}
-	log.Printf("1111 %v", *dpds)
 	if ok := pushDepends(taskId, *dpds); !ok {
 		*logContent = []byte("failed to exec depends push depends error!\n")
 		return false
@@ -370,6 +371,8 @@ func (c *crontab) waitDependsDone(taskId string, dpds *[]proto.MScript, logConte
 		for {
 
 			select {
+			case <-ctx.Done():
+				return false
 			case <-t:
 				log.Printf("failed to exec depends wait timeout!")
 				return false

@@ -50,6 +50,11 @@ func listTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		return
 	}
 
+	if err := m.rpcCall(addr, "Admin.SystemInfo", "", &systemInfo); err != nil {
+		http.Redirect(rw, r, "/", http.StatusFound)
+		return
+	}
+
 	for _, v := range locals {
 
 		sortedTaskList = append(sortedTaskList, v)
@@ -58,7 +63,6 @@ func listTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		return sortedTaskList[i].Create > sortedTaskList[j].Create
 	})
 
-	m.rpcCall(addr, "Task.SystemInfo", "", &systemInfo)
 	m.renderHtml2([]string{"listTask"}, map[string]interface{}{
 		"title":      "灵魂百度",
 		"list":       sortedTaskList,

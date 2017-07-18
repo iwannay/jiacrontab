@@ -80,7 +80,7 @@ func main() {
 
 	done := make(chan error, 0)
 	go func() {
-		done <- initSrvRpc(&Task{})
+		done <- initSrvRpc(&Task{}, &Admin{})
 	}()
 
 	initClientRpc()
