@@ -388,15 +388,32 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 	if err != nil {
 		return err
 	}
+	stderr, err := cmd.StderrPipe()
+	defer stderr.Close()
+	if err != nil {
+		return err
+	}
+
 	if err := cmd.Start(); err != nil {
 		return err
 	}
 	reader := bufio.NewReader(stdout)
+	readerErr := bufio.NewReader(stderr)
 	// 如果已经存在日志则直接写入
 	f.Write(*content)
 
 	for {
 		line, err2 := reader.ReadString('\n')
+		*content = append(*content, []byte(line)...)
+		f.WriteString(line)
+
+		if err2 != nil || io.EOF == err2 {
+			break
+		}
+	}
+
+	for {
+		line, err2 := readerErr.ReadString('\n')
 		*content = append(*content, []byte(line)...)
 		f.WriteString(line)
 
@@ -456,7 +473,6 @@ func pushDepends(taskId string, dpds []proto.MScript) bool {
 		}
 		if len(ndpds) > 0 {
 			var reply bool
-			log.Println("tiaoshi", ndpds)
 			err := rpcCall("Logic.Depends", ndpds, &reply)
 			if !reply || err != nil {
 				log.Printf("push Depends failed!")
@@ -476,14 +492,17 @@ func filterDepend(args proto.MScript) bool {
 	}
 
 	if t, ok := globalStore.SearchTaskList(args.TaskId); ok {
+		if t.State != 2 {
+			log.Printf("master task is end stop wait depend done")
+			return true
+		}
 		flag := true
 		i := len(args.Queue) - 1
 		for k, v := range t.Depends {
 			if args.Command+args.Args == v.Command+v.Args {
-				// t.Depends[k].Done = true
-				// t.Depends[k].LogContent = args.LogContent
 				if t.Depends[k].Queue[i].TaskTime != args.Queue[i].TaskTime {
-					log.Println("time err")
+					log.Printf("TaskTime not equal")
+					return true
 				}
 				t.Depends[k].Queue[i] = args.Queue[i]
 			}

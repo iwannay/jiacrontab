@@ -76,6 +76,7 @@ func (d *depend) run() {
 					t.Queue[l-1].Done = true
 
 					t.Dest, t.From = t.From, t.Dest
+
 					if !filterDepend(t) {
 						err = rpcCall("Logic.DependDone", t, &reply)
 						if !reply || err != nil {

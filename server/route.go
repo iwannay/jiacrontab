@@ -31,8 +31,8 @@ func listTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		for _, v := range clientList {
 			sortedClientList = append(sortedClientList, v)
 		}
-		sort.Slice(sortedClientList, func(i, j int) bool {
-			return (sortedClientList[i].Addr > sortedClientList[j].Addr) && (sortedClientList[i].State > sortedClientList[j].State)
+		sort.SliceStable(sortedClientList, func(i, j int) bool {
+			return sortedClientList[i].Addr > sortedClientList[j].Addr
 		})
 
 		firstK := sortedClientList[0].Addr
@@ -60,7 +60,7 @@ func listTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		taskIdSli = append(taskIdSli, v.Id)
 		sortedTaskList = append(sortedTaskList, v)
 	}
-	sort.Slice(sortedTaskList, func(i, j int) bool {
+	sort.SliceStable(sortedTaskList, func(i, j int) bool {
 		return sortedTaskList[i].Create > sortedTaskList[j].Create
 	})
 
