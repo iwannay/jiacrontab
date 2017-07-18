@@ -1,9 +1,13 @@
 <!DOCTYPE html>
 <html lang="zh-cn">
 {{template "head" .}}
-
 <body>
     {{template "header" .}}
+    {{$addr := .addr}}
+    {{$clients := .rpcClientsMap}}
+    {{$rpcClientsMap := .rpcClientsMap}}
+    {{$addrs := .addrs}}
+    {{$allowCommands := .allowCommands}}
     <div class="container-fluid">
 
         <ul class="breadcrumb">
@@ -15,9 +19,9 @@
         <div class="row-fluid">
             <div class="col-md-2">
                 <div class="list-group">
-                    {{$addr := .addr}}
-                    {{$clients := .rpcClientsMap}}
-                    {{$rpcClientsMap := .rpcClientsMap}} {{range $k,$v := .addrs}}
+
+
+                    {{range $k,$v := .addrs}}
                     {{$info := index $clients $v}}
                     <a href="/list?addr={{$v}}" class="list-group-item {{if eq $v $addr}}active{{end}}">
                         {{$v}}
@@ -27,25 +31,25 @@
                 </div>
             </div>
             <div class="col-md-10">
-                <form class="form" action="" method="POST" onsubmit="return check(this)">
+                <form class="form form-horizontal" action="" method="POST" onsubmit="return check(this)">
                     <input type="hidden" name="taskId" value="{{.task.Id}}">
                     <div class="form-group">
-                        <label for="inputAddr" class="control-label">地址:</label>
-                        <div class="controls">
+                        <label for="inputAddr" class="col-sm-1 control-label">地址:</label>
+                        <div class="col-sm-11 controls">
                             <input type="text" id="inputAddr" class="form-control" name="addr" disabled value="{{.addr}}">
                         </div>
 
                     </div>
                     <div class="form-group">
-                        <label class="control-label" for="inputTaskName">脚本名称:</label>
-                        <div class="controls">
+                        <label class="col-sm-1 control-label" for="inputTaskName">脚本名称:</label>
+                        <div class="col-sm-11 controls">
                             <input type="text" id="inputTaskName" class="form-control" name="taskName" value="{{.task.Name}}" placeholder="任务名">
                             <span id="errorTaskName"  class="help-block hide">请使用字母、数字、“_”、“-”</span>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="control-label" for="inputCommand">命令:</label>
-                        <div class="controls">
+                        <label class="col-sm-1 control-label" for="inputCommand">命令:</label>
+                        <div class="col-sm-11 controls">
                             {{$command := .task.Command}}
                             <select class="form-control" id="inputCommand" name="command">
                                 {{range $k, $v := .allowCommands}}
@@ -56,75 +60,54 @@
                     </div>
 
                      <div class="form-group">
-                        <label class="control-label" for="inputArgs">参数:</label>
-                        <div class="controls">
+                        <label class="col-sm-1 control-label" for="inputArgs">参数:</label>
+                        <div class="col-sm-11 controls">
                             <input type="text" name="args" id="inputArgs" class="form-control" value="{{.task.Args}}" placeholder="args">
                         </div>
                     </div>
 
                      <div class="form-group">
-                        <label class="control-label" for="inputTimeout" >失败重试:</label>
-                        <div class="controls">
-                            <input type="text" id="opfailure" class="form-control" name="timeout" type="number" onkeyup="this.value=this.value.replace(/\D/g,'')"  onafterpaste="this.value=this.value.replace(/\D/g,'')"  value="{{.task.Timeout}}">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="control-label" >脚本失败操作:</label>
-                        <div class="controls">
-                            <label class="radio-inline">
-                                <input type="radio" name="opfailure" checked {{if eq .task.OpTimeout "email"}}checked{{end}} value="email"> 邮件通知
-                            </label>
-                            <label class="radio-inline">
-                                <input type="radio" name="opfailure" {{if eq .task.OpTimeout "ignore"}}checked{{end}} value="ignore"> 忽略
-                            </label>
-                        </div>
-                    </div>
-
-                     <div class="form-group">
-                        <label class="control-label" for="inputTimeout" >脚本超时:</label>
-                        <div class="controls">
+                        <label class="col-sm-1 control-label" for="inputTimeout" >脚本超时:</label>
+                        <div class="col-sm-11 controls">
                             <input type="text" id="inputTimeout" class="form-control" name="timeout" type="number" onkeyup="this.value=this.value.replace(/\D/g,'')"  onafterpaste="this.value=this.value.replace(/\D/g,'')"  value="{{.task.Timeout}}">
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="control-label" >脚本超时操作:</label>
-                        <div class="controls">
+                        <label class="col-sm-1 control-label" >脚本超时操作:</label>
+                        <div class="col-sm-11 controls">
                             <label class="radio-inline">
-                                <input type="radio" name="optimeout" checked {{if eq .task.OpTimeout "email"}}checked{{end}} value="email"> 邮件通知
+                                <input type="radio" name="optimeout" id="inlineRadio2" {{if eq .task.OpTimeout "email"}}checked{{end}} id="inlineRadio1" value="email"> 邮件通知
                             </label>
                             <label class="radio-inline">
-                                <input type="radio" name="optimeout" {{if eq .task.OpTimeout "kill"}}checked{{end}} value="kill"> 强杀
+                                <input type="radio" name="optimeout" id="inlineRadio2" {{if eq .task.OpTimeout "kill"}}checked{{end}} value="kill"> 强杀
                             </label>
                             <label class="radio-inline">
-                                <input type="radio" name="optimeout" {{if eq .task.OpTimeout "email_and_kill"}}checked{{end}} value="email_and_kill"> 邮件通知并强杀
+                                <input type="radio" name="optimeout" id="inlineRadio3" {{if eq .task.OpTimeout "email_and_kill"}}checked{{end}} value="email_and_kill"> 邮件通知并强杀
                             </label>
                             <label class="radio-inline">
-                                <input type="radio" name="optimeout" {{if eq .task.OpTimeout "ignore"}}checked{{end}} value="ignore"> 忽略
+                                <input type="radio" name="optimeout" id="inlineRadio3" {{if eq .task.OpTimeout "ignore"}}checked{{end}} value="ignore"> 忽略
                             </label>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="control-label" for="inputMailTo" >邮箱地址:</label>
-                        <div class="controls">
+                        <label class="col-sm-1 control-label" for="inputMailTo" >邮箱地址:</label>
+                        <div class="col-sm-11 controls">
                             <input type="text" id="inputMailTo" class="form-control" name="mailTo"   value="{{.task.MailTo}}">
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="control-label" for="inputMaxConcurrent" >最大并发数:</label>
-                        <div class="controls">
+                        <label class="col-sm-1 control-label" for="inputMaxConcurrent" >最大并发数:</label>
+                        <div class="col-sm-11 controls">
                             <input type="text" id="inputMaxConcurrent" class="form-control" name="maxConcurrent"   value="{{.task.MaxConcurrent}}">
                         </div>
                     </div>
 
-
-
-                    <div class="form-group ">
-                        <label class="control-label" class="form-control">定时:</label>
-                        <div class="controls form-inline">
+                    <div class="form-group">
+                        <label class="col-sm-1 control-label" class="form-control">定时:</label>
+                        <div class="col-sm-11 controls form-inline">
                             <div class="input-group col-sm-2">
                                 <div class="input-group-addon">minute</div>
                                 <input name="minute" class="input-mini form-control" placeholder="minute" value="{{if .task.C.Minute}}{{.task.C.Minute}}{{else}}*{{end}}" type="text" >
@@ -150,12 +133,100 @@
                         </div>
                     </div>
 
-                    <div class="form-actions">
+                    <div class="form-group">
+                        <label class="col-sm-1 control-label" for="inputDepends" >添加依赖:</label>
+                        <div class="col-sm-11 controls" id="depend-list">
+
+                            <div class="row form-group">
+                                <div class="col-xs-12">
+                                    <button type="button" id="addDepends" onclick="addDepend(this)" class="btn btn-default" aria-label="Left Align">
+                                        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                            </div>
+                                    {{$task := .task}}
+
+                                    {{range $key,$value:= .task.Depends}}
+                                    <div class="row form-group depend-item">
+                                        <div class="col-xs-3">
+                                            <select class="form-control" name="depends[dest]">
+
+
+                                                {{range $k,$v := $addrs}}
+                                                {{$info := index $clients $v}}
+                                                    {{if eq $info.State 1}}
+                                                    <option class="list-group-item"  {{if eq $v $value.Dest}}selected{{end}}>
+                                                        {{$v}}
+                                                    </option>
+                                                    {{end}}
+                                                {{end}}
+                                            </select>
+                                        </div>
+                                        <div class="col-xs-2">
+                                            <select class="form-control" name="depends[command]">
+                                                {{range $k, $v := $allowCommands}}
+                                                <option {{if eq $v $value.Command}}selected{{end}} value="{{$v}}">{{$v}}</option>
+                                                {{end}}
+                                            </select>
+                                        </div>
+                                        <div class="col-xs-4">
+                                            <input type="text" class="form-control" name="depends[args]" value="{{$value.Args}}" placeholder="args">
+                                        </div>
+                                        <div class="col-xs-2">
+                                            <input type="text" class="form-control" value="{{$value.Timeout}}" name="depends[timeout]" placeholder="超时(s)">
+                                        </div>
+                                        <div class="col-xs-1">
+                                            <button type="button" onclick="deleteDepend(this)" class="btn btn-default" aria-label="Left Align">
+                                                <span class="glyphicon glyphicon-minus" aria-hidden="true"></span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {{end}}
+
+                        </div>
+                    </div>
+
+                    <div class="col-sm-offset-1 form-actions">
                         <button type="submit" class="btn btn-primary">提交</button>
                         <button type="button" onclick="location.reload()" class="btn">取消　</button>
                     </div>
 
                 </form>
+            </div>
+        </div>
+    </div>
+    <div id="template-depend" hidden>
+        <div class="row form-group depend-item">
+            <div class="col-xs-3">
+                <select class="form-control" name="depends[dest]">
+
+                    {{range $k,$v := .addrs}}
+                    {{$info := index $clients $v}}
+                        {{if eq $info.State 1}}
+                        <option class="list-group-item">
+                            {{$v}}
+                        </option>
+                        {{end}}
+                    {{end}}
+                </select>
+            </div>
+            <div class="col-xs-2">
+                <select class="form-control" name="depends[command]">
+                    {{range $k, $v := .allowCommands}}
+                    <option value="{{$v}}">{{$v}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <div class="col-xs-4">
+                <input type="text" class="form-control" value="" name="depends[args]" placeholder="args">
+            </div>
+            <div class="col-xs-2">
+                <input type="text" class="form-control" value="" name="depends[timeout]" placeholder="超时(s)">
+            </div>
+            <div class="col-xs-1">
+                <button type="button" onclick="deleteDepend(this)" class="btn btn-default" aria-label="Left Align">
+                    <span class="glyphicon glyphicon-minus" aria-hidden="true"></span>
+                </button>
             </div>
         </div>
     </div>
@@ -271,11 +342,15 @@
                 }
 
             }
-
-
-
             return true;
         }
+        function addDepend(dom) {
+            $('#depend-list').append($('#template-depend').html());
+        }
+        function deleteDepend(dom) {
+            $(dom).parents('.depend-item').remove();
+        }
+
     </script>
 </body>
 
