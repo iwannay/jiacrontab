@@ -364,6 +364,13 @@ func (c *crontab) waitDependsDone(ctx context.Context, taskId string, dpds *[]pr
 	}
 
 	c.lock.Lock()
+	// 任务在停止状态下需要手动构造依赖接受通道
+	if _, ok := c.handleMap[taskId]; !ok {
+		c.handleMap[taskId] = &handle{
+			readyDepends: make(chan proto.MScriptContent, 10),
+		}
+	}
+
 	if handle, ok := c.handleMap[taskId]; ok {
 		c.lock.Unlock()
 
