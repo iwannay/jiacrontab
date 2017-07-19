@@ -74,6 +74,9 @@ func (d *depend) run() {
 					}
 					t.Queue[l-1].LogContent = bytes.TrimRight(logContent, "\x00")
 					t.Queue[l-1].Done = true
+					if err != nil {
+						t.Queue[l-1].Err = err.Error()
+					}
 
 					t.Dest, t.From = t.From, t.Dest
 

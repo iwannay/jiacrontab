@@ -41,6 +41,7 @@ type MScript struct {
 type MScriptContent struct {
 	TaskTime   int64
 	Done       bool
+	Err        string `json:"-"`
 	LogContent []byte `json:"-"`
 }
 
