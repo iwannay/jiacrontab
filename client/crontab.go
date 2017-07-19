@@ -252,6 +252,7 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 						cancel()
 						err = errors.New("failded to exec depends")
 						content = append(content, []byte(err.Error())...)
+						writeLog(globalConfig.logPath, fmt.Sprintf("%s-%s.log", task.Name, task.Id), &content)
 						costTime := time.Now().UnixNano() - start
 						sendMail(task.MailTo, globalConfig.addr+"提醒脚本依赖异常退出", fmt.Sprintf(
 							"任务名：%s\n详情：%s %v\n开始时间：%s\n耗时：%.4f\n异常：%s",
@@ -347,7 +348,7 @@ func (c *crontab) resolvedDepends(t *proto.TaskArgs, logContent []byte, taskTime
 			Done:       true,
 		}:
 		case <-timerC:
-			log.Printf("taskTime %s failed to write to readyDepends chan", taskTime)
+			log.Printf("taskTime %d failed to write to readyDepends chan", taskTime)
 		}
 
 	} else {

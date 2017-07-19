@@ -54,7 +54,7 @@ func (d *depend) run() {
 					log.Printf("exec task %s <%s %s> cost %.4fs %v", t.TaskId, t.Command, t.Args, float64(costTime)/1000000000, err)
 					if err != nil {
 						// t.LogContent = append(t.LogContent, []byte(err.Error())...)
-						logContent = append(logContent, []byte(err.Error())...)
+						logContent = append(logContent, []byte(err.Error()+"\n")...)
 						// if task, ok = globalStore.SearchTaskList(t.TaskId); ok {
 						// 	mailTo = task.MailTo
 						// } else {

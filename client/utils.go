@@ -429,6 +429,16 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 	return nil
 }
 
+func writeLog(logpath string, logname string, content *[]byte) {
+	logPath := filepath.Join(logpath, strconv.Itoa(time.Now().Year()), time.Now().Month().String())
+	f, err := libs.TryOpen(filepath.Join(logPath, logname), os.O_APPEND|os.O_CREATE|os.O_RDWR)
+	if err != nil {
+		log.Printf("write log %v", err)
+	}
+	defer f.Close()
+	f.Write(*content)
+}
+
 func initPprof(addr string) {
 	pprofServeMux := http.NewServeMux()
 	pprofServeMux.HandleFunc("/debug/pprof/", pprof.Index)
