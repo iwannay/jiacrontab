@@ -21,6 +21,7 @@ func listTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 	var systemInfo map[string]interface{}
 	var locals proto.Mdata
 	var clientList map[string]proto.ClientConf
+	var taskIdSli []string
 
 	sortedTaskList := make([]*proto.TaskArgs, 0)
 	sortedClientList := make([]proto.ClientConf, 0)
@@ -30,8 +31,8 @@ func listTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		for _, v := range clientList {
 			sortedClientList = append(sortedClientList, v)
 		}
-		sort.Slice(sortedClientList, func(i, j int) bool {
-			return (sortedClientList[i].Addr > sortedClientList[j].Addr) && (sortedClientList[i].State > sortedClientList[j].State)
+		sort.SliceStable(sortedClientList, func(i, j int) bool {
+			return sortedClientList[i].Addr > sortedClientList[j].Addr
 		})
 
 		firstK := sortedClientList[0].Addr
@@ -56,10 +57,10 @@ func listTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 	}
 
 	for _, v := range locals {
-
+		taskIdSli = append(taskIdSli, v.Id)
 		sortedTaskList = append(sortedTaskList, v)
 	}
-	sort.Slice(sortedTaskList, func(i, j int) bool {
+	sort.SliceStable(sortedTaskList, func(i, j int) bool {
 		return sortedTaskList[i].Create > sortedTaskList[j].Create
 	})
 
@@ -69,6 +70,7 @@ func listTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		"addrs":      sortedClientList,
 		"client":     clientList[addr],
 		"systemInfo": systemInfo,
+		"taskIds":    strings.Join(taskIdSli, ","),
 		"appName":    globalConfig.appName,
 	}, template.FuncMap{
 		"date":     date,
@@ -288,6 +290,36 @@ func stopTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 
 	m.renderHtml2([]string{"public/error"}, map[string]interface{}{
 		"error": fmt.Sprintf("failed %s %s", method, taskId),
+	}, nil)
+
+}
+
+func stopAllTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
+	taskIds := strings.TrimSpace(r.FormValue("taskIds"))
+	addr := strings.TrimSpace(r.FormValue("addr"))
+	method := "Task.StopAll"
+	taskIdSli := strings.Split(taskIds, ",")
+	var reply bool
+	if len(taskIdSli) == 0 || addr == "" {
+		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+			"error": "param error",
+		}, nil)
+		return
+	}
+
+	if err := m.rpcCall(addr, method, taskIdSli, &reply); err != nil {
+		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+			"error": err,
+		}, nil)
+		return
+	}
+	if reply {
+		http.Redirect(rw, r, "/list?addr="+addr, http.StatusFound)
+		return
+	}
+
+	m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+		"error": fmt.Sprintf("failed %s %v", method, taskIdSli),
 	}, nil)
 
 }

@@ -98,8 +98,10 @@ func rpcCall(serviceMethod string, args, reply interface{}) error {
 	err := rpcClient.Call(serviceMethod, args, reply)
 	if err != nil {
 		rpcClient.Close()
-		rpcClient, _ = libs.DialHTTP("tcp", globalConfig.rpcSrvAddr, globalConfig.defaultRPCPath)
-		err = rpcClient.Call(serviceMethod, args, reply)
+		rpcClient, err = libs.DialHTTP("tcp", globalConfig.rpcSrvAddr, globalConfig.defaultRPCPath)
+		if err == nil {
+			err = rpcClient.Call(serviceMethod, args, reply)
+		}
 	}
 
 	if err != nil {
