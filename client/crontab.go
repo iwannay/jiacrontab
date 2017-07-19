@@ -135,7 +135,11 @@ func (c *crontab) run() {
 			// broadcast
 			c.lock.Lock()
 			for _, v := range c.handleMap {
-				v.clockChan <- now
+				select {
+				case v.clockChan <- now:
+				case <-time.After(5 * time.Second):
+				}
+
 			}
 			c.lock.Unlock()
 		}
@@ -147,7 +151,6 @@ func (c *crontab) run() {
 			select {
 			case task := <-c.taskChan:
 				ctx, cancel := context.WithCancel(context.Background())
-				task.State = 1
 				c.lock.Lock()
 				c.handleMap[task.Id] = &handle{
 					cancel: cancel,
@@ -156,6 +159,7 @@ func (c *crontab) run() {
 					clockChan:    make(chan time.Time),
 				}
 				c.lock.Unlock()
+				task.State = 1
 				log.Printf("add task %s %s", task.Name, task.Id)
 
 				go c.deal(task, ctx)
