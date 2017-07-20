@@ -295,10 +295,14 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 						err = execScript(ctx, fmt.Sprintf("%s-%s.log", task.Name, task.Id), task.Command, globalConfig.logPath, &content, args...)
 
 						flag = false
-						if err != nil && task.UnexpectedExitMail {
-							sendMail(task.MailTo, globalConfig.addr+"提醒脚本异常退出", fmt.Sprintf(
-								"任务名：%s\n详情：%s %v\n开始时间：%s\n异常：%s",
-								task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), err.Error()))
+						if err != nil {
+							writeLog(globalConfig.logPath, fmt.Sprintf("%s-%s.log", task.Name, task.Id), &content)
+							if task.UnexpectedExitMail {
+								sendMail(task.MailTo, globalConfig.addr+"提醒脚本异常退出", fmt.Sprintf(
+									"任务名：%s\n详情：%s %v\n开始时间：%s\n异常：%s",
+									task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), err.Error()))
+							}
+
 						}
 					}
 					atomic.AddInt32(&task.NumberProcess, -1)
