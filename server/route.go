@@ -123,11 +123,14 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 	}
 
 	if r.Method == http.MethodPost {
-
+		var unExitM bool
 		n := strings.TrimSpace(r.FormValue("taskName"))
 		command := strings.TrimSpace(r.FormValue("command"))
 		timeoutStr := strings.TrimSpace(r.FormValue("timeout"))
 		mConcurrentStr := strings.TrimSpace(r.FormValue("maxConcurrent"))
+		unpdExitM := r.FormValue("unexpectedExitMail")
+		mailTo := strings.TrimSpace(r.FormValue("mailTo"))
+		optimeout := strings.TrimSpace(r.FormValue("optimeout"))
 
 		destSli := r.PostForm["depends[dest]"]
 		cmdSli := r.PostForm["depends[command]"]
@@ -148,8 +151,12 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 			}
 			depends[k].Command = cmdSli[k]
 		}
-		mailTo := strings.TrimSpace(r.FormValue("mailTo"))
-		optimeout := strings.TrimSpace(r.FormValue("optimeout"))
+
+		if unpdExitM == "1" {
+			unExitM = true
+		} else {
+			unExitM = false
+		}
 
 		if _, ok := map[string]bool{"email": true, "kill": true, "email_and_kill": true, "ignore": true}[optimeout]; !ok {
 			optimeout = "ignore"
@@ -172,16 +179,17 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		minute := replaceEmpty(strings.TrimSpace(r.FormValue("minute")), "*")
 
 		if err := m.rpcCall(addr, "Task.Update", proto.TaskArgs{
-			Id:            id,
-			Name:          n,
-			Command:       command,
-			Args:          a,
-			Timeout:       int64(timeout),
-			OpTimeout:     optimeout,
-			Create:        time.Now().Unix(),
-			MailTo:        mailTo,
-			MaxConcurrent: maxConcurrent,
-			Depends:       depends,
+			Id:                 id,
+			Name:               n,
+			Command:            command,
+			Args:               a,
+			Timeout:            int64(timeout),
+			OpTimeout:          optimeout,
+			Create:             time.Now().Unix(),
+			MailTo:             mailTo,
+			MaxConcurrent:      maxConcurrent,
+			Depends:            depends,
+			UnexpectedExitMail: unExitM,
 			C: struct {
 				Weekday string
 				Month   string

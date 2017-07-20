@@ -257,10 +257,14 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 						err = errors.New("failded to exec depends")
 						content = append(content, []byte(err.Error())...)
 						writeLog(globalConfig.logPath, fmt.Sprintf("%s-%s.log", task.Name, task.Id), &content)
-						costTime := time.Now().UnixNano() - start
-						sendMail(task.MailTo, globalConfig.addr+"提醒脚本依赖异常退出", fmt.Sprintf(
-							"任务名：%s\n详情：%s %v\n开始时间：%s\n耗时：%.4f\n异常：%s",
-							task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), float64(costTime)/1000000000, err.Error()))
+
+						if task.UnexpectedExitMail {
+							costTime := time.Now().UnixNano() - start
+							sendMail(task.MailTo, globalConfig.addr+"提醒脚本依赖异常退出", fmt.Sprintf(
+								"任务名：%s\n详情：%s %v\n开始时间：%s\n耗时：%.4f\n异常：%s",
+								task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), float64(costTime)/1000000000, err.Error()))
+						}
+
 					} else {
 						flag := true
 
@@ -291,7 +295,7 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 						err = execScript(ctx, fmt.Sprintf("%s-%s.log", task.Name, task.Id), task.Command, globalConfig.logPath, &content, args...)
 
 						flag = false
-						if err != nil {
+						if err != nil && task.UnexpectedExitMail {
 							sendMail(task.MailTo, globalConfig.addr+"提醒脚本异常退出", fmt.Sprintf(
 								"任务名：%s\n详情：%s %v\n开始时间：%s\n异常：%s",
 								task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), err.Error()))
@@ -321,7 +325,7 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 			task.State = 0
 			log.Println("stop", task.Name, task.Id)
 			// 垃圾回收
-			// 防止向以终止的依赖接受通道继续发送信息
+			// 防止向已终止的依赖接受通道继续发送信息
 			for k := range task.Depends {
 				task.Depends[k].Queue = make([]proto.MScriptContent, 0)
 			}
