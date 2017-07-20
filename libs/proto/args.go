@@ -1,21 +1,22 @@
 package proto
 
 type TaskArgs struct {
-	Id            string
-	Name          string
-	Command       string
-	Depends       []MScript
-	State         int // 0/1/2
-	Args          string
-	Create        int64
-	LastCostTime  int64
-	LastExecTime  int64
-	Timeout       int64
-	NumberProcess int32
-	MailTo        string
-	MaxConcurrent int    // 脚本最大并发量
-	OpTimeout     string // email/kill/email_and_kill/ignore
-	C             CrontabArgs
+	Id                 string
+	Name               string
+	Command            string
+	Depends            []MScript
+	State              int // 0/1/2
+	Args               string
+	Create             int64
+	LastCostTime       int64
+	LastExecTime       int64
+	Timeout            int64
+	NumberProcess      int32
+	UnexpectedExitMail bool
+	MailTo             string
+	MaxConcurrent      int    // 脚本最大并发量
+	OpTimeout          string // email/kill/email_and_kill/ignore
+	C                  CrontabArgs
 }
 
 type CrontabArgs struct {
@@ -41,6 +42,7 @@ type MScript struct {
 type MScriptContent struct {
 	TaskTime   int64
 	Done       bool
+	Err        string `json:"-"`
 	LogContent []byte `json:"-"`
 }
 

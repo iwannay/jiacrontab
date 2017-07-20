@@ -185,6 +185,16 @@
 
                         </div>
                     </div>
+                    
+                    <div class="form-group">
+                        <div class="col-sm-offset-1 col-sm-10">
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" value="1" {{if .task.UnexpectedExitMail}}checked{{end}} name="unexpectedExitMail"> 脚本异常退出时邮件通知
+                                </label>
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="col-sm-offset-1 form-actions">
                         <button type="submit" class="btn btn-primary">提交</button>

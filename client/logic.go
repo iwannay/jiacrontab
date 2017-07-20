@@ -43,7 +43,7 @@ func (t *Task) Update(args proto.TaskArgs, ok *bool) error {
 	if args.Id == "" {
 
 		args.Id = strconv.Itoa(int(libs.RandNum()))
-		for k, _ := range args.Depends {
+		for k := range args.Depends {
 			args.Depends[k].TaskId = args.Id
 		}
 		globalStore.Update(func(s *store.Store) {
@@ -60,8 +60,9 @@ func (t *Task) Update(args proto.TaskArgs, ok *bool) error {
 				v.Args = args.Args
 				v.MailTo = args.MailTo
 				v.Depends = args.Depends
+				v.UnexpectedExitMail = args.UnexpectedExitMail
 
-				for k, _ := range v.Depends {
+				for k := range v.Depends {
 					v.Depends[k].TaskId = args.Id
 
 				}

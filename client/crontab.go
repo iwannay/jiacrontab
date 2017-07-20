@@ -42,7 +42,6 @@ type crontab struct {
 
 func (c *crontab) add(t *proto.TaskArgs) {
 	c.taskChan <- t
-	log.Printf("add task %s %s", t.Name, t.Id)
 }
 
 func (c *crontab) quickStart(t *proto.TaskArgs, content *[]byte) {
@@ -88,12 +87,10 @@ func (c *crontab) quickStart(t *proto.TaskArgs, content *[]byte) {
 func (c *crontab) stop(t *proto.TaskArgs) {
 	c.kill(t)
 	c.delTaskChan <- t
-	log.Println("stop", t.Name, t.Id)
 }
 
 func (c *crontab) kill(t *proto.TaskArgs) {
 	c.killTaskChan <- t
-	log.Println("kill", t.Name, t.Id)
 }
 
 func (c *crontab) delete(t *proto.TaskArgs) {
@@ -138,7 +135,11 @@ func (c *crontab) run() {
 			// broadcast
 			c.lock.Lock()
 			for _, v := range c.handleMap {
-				v.clockChan <- now
+				select {
+				case v.clockChan <- now:
+				case <-time.After(5 * time.Second):
+				}
+
 			}
 			c.lock.Unlock()
 		}
@@ -150,7 +151,6 @@ func (c *crontab) run() {
 			select {
 			case task := <-c.taskChan:
 				ctx, cancel := context.WithCancel(context.Background())
-				task.State = 1
 				c.lock.Lock()
 				c.handleMap[task.Id] = &handle{
 					cancel: cancel,
@@ -159,6 +159,8 @@ func (c *crontab) run() {
 					clockChan:    make(chan time.Time),
 				}
 				c.lock.Unlock()
+				task.State = 1
+				log.Printf("add task %s %s", task.Name, task.Id)
 
 				go c.deal(task, ctx)
 			}
@@ -192,6 +194,7 @@ func (c *crontab) run() {
 						}
 						handle.cancelCmdArray = make([]context.CancelFunc, 0)
 						task.State = 1
+						log.Println("kill", task.Name, task.Id)
 						globalStore.Sync()
 					}
 				} else {
@@ -229,13 +232,6 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 					var hdl *handle
 					var err error
 
-					// 垃圾回收
-					if task.State == 0 || task.State == 1 {
-						for k := range task.Depends {
-							task.Depends[k].Queue = make([]proto.MScriptContent, 0)
-						}
-					}
-
 					now2 := time.Now()
 					start := now2.UnixNano()
 					args := strings.Split(task.Args, " ")
@@ -260,10 +256,15 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 						cancel()
 						err = errors.New("failded to exec depends")
 						content = append(content, []byte(err.Error())...)
-						costTime := time.Now().UnixNano() - start
-						sendMail(task.MailTo, globalConfig.addr+"提醒脚本依赖超时退出", fmt.Sprintf(
-							"任务名：%s\n详情：%s %v\n开始时间：%s\n耗时：%.4f\n异常:%s",
-							task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), float64(costTime)/1000000000, err.Error()))
+						writeLog(globalConfig.logPath, fmt.Sprintf("%s-%s.log", task.Name, task.Id), &content)
+
+						if task.UnexpectedExitMail {
+							costTime := time.Now().UnixNano() - start
+							sendMail(task.MailTo, globalConfig.addr+"提醒脚本依赖异常退出", fmt.Sprintf(
+								"任务名：%s\n详情：%s %v\n开始时间：%s\n耗时：%.4f\n异常：%s",
+								task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), float64(costTime)/1000000000, err.Error()))
+						}
+
 					} else {
 						flag := true
 
@@ -294,7 +295,7 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 						err = execScript(ctx, fmt.Sprintf("%s-%s.log", task.Name, task.Id), task.Command, globalConfig.logPath, &content, args...)
 
 						flag = false
-						if err != nil {
+						if err != nil && task.UnexpectedExitMail {
 							sendMail(task.MailTo, globalConfig.addr+"提醒脚本异常退出", fmt.Sprintf(
 								"任务名：%s\n详情：%s %v\n开始时间：%s\n异常：%s",
 								task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), err.Error()))
@@ -304,6 +305,11 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 					task.LastCostTime = time.Now().UnixNano() - start
 					if task.NumberProcess == 0 {
 						task.State = 1
+						// 垃圾回收
+						for k := range task.Depends {
+							task.Depends[k].Queue = make([]proto.MScriptContent, 0)
+						}
+
 					} else {
 						task.State = 2
 					}
@@ -317,6 +323,12 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 			// 等待所有的计划任务执行完毕
 			wgroup.Wait()
 			task.State = 0
+			log.Println("stop", task.Name, task.Id)
+			// 垃圾回收
+			// 防止向已终止的依赖接受通道继续发送信息
+			for k := range task.Depends {
+				task.Depends[k].Queue = make([]proto.MScriptContent, 0)
+			}
 			c.lock.Lock()
 			close(c.handleMap[task.Id].clockChan)
 			close(c.handleMap[task.Id].readyDepends)
@@ -330,16 +342,23 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 
 }
 
-func (c *crontab) resolvedDepends(t *proto.TaskArgs, logContent []byte, taskTime int64) {
+func (c *crontab) resolvedDepends(t *proto.TaskArgs, logContent []byte, taskTime int64, err string) {
 	c.lock.Lock()
 	if handle, ok := c.handleMap[t.Id]; ok {
 		c.lock.Unlock()
 		// handle.resolvedDepends <- logContent
-		handle.readyDepends <- proto.MScriptContent{
+		timerC := time.Tick(5 * time.Second)
+		select {
+		case handle.readyDepends <- proto.MScriptContent{
 			TaskTime:   taskTime,
 			LogContent: logContent,
+			Err:        err,
 			Done:       true,
+		}:
+		case <-timerC:
+			log.Printf("taskTime %d failed to write to readyDepends chan", taskTime)
 		}
+
 	} else {
 		c.lock.Unlock()
 		log.Printf("depends: can not found %s", t.Id)
@@ -348,27 +367,41 @@ func (c *crontab) resolvedDepends(t *proto.TaskArgs, logContent []byte, taskTime
 }
 
 func (c *crontab) waitDependsDone(ctx context.Context, taskId string, dpds *[]proto.MScript, logContent *[]byte, taskTime int64) bool {
-	// defer func() {
-	// 	for k, _ := range *dpds {
-	// 		(*dpds)[k].Done = false
-	// 		(*dpds)[k].LogContent = []byte("")
-	// 	}
-	// }()
+	defer func() {
+		// 结束时修改执行状态
+		if len(*dpds) > 0 {
+			for k, v := range *dpds {
+				for key, val := range v.Queue {
+					if val.TaskTime == taskTime {
+						(*dpds)[k].Queue[key].Done = true
+					}
+				}
+			}
+		}
+
+	}()
+	flag := true
 
 	if len(*dpds) == 0 {
-		log.Printf("taskId:%s dpend length %d", taskId, len(*dpds))
+		log.Printf("taskId:%s depend length %d", taskId, len(*dpds))
 		return true
 	}
 
 	// 一个脚本开始执行时把时间标志放入队列
 	// 并显式声明执行未完成
-	for k, _ := range *dpds {
+	for k := range *dpds {
 		(*dpds)[k].Queue = append((*dpds)[k].Queue, proto.MScriptContent{
 			TaskTime: taskTime,
 			Done:     false,
 		})
 	}
-	if ok := pushDepends(taskId, *dpds); !ok {
+	copyDpds := make([]proto.MScript, 0)
+	copyDpds = append(copyDpds, (*dpds)...)
+	for k := range copyDpds {
+		copyDpds[k].Queue = make([]proto.MScriptContent, 0)
+		copyDpds[k].Queue = append(copyDpds[k].Queue, (*dpds)[k].Queue...)
+	}
+	if ok := pushDepends(taskId, copyDpds); !ok {
 		*logContent = []byte("failed to exec depends push depends error!\n")
 		return false
 	}
@@ -384,8 +417,8 @@ func (c *crontab) waitDependsDone(ctx context.Context, taskId string, dpds *[]pr
 	if handle, ok := c.handleMap[taskId]; ok {
 		c.lock.Unlock()
 
-		// 默认所有依赖最终欧超时1小时
-		t := time.Tick(600 * time.Second)
+		// 默认所有依赖最终总超时3600
+		t := time.Tick(3600 * time.Second)
 		for {
 
 			select {
@@ -398,12 +431,25 @@ func (c *crontab) waitDependsDone(ctx context.Context, taskId string, dpds *[]pr
 			case val := <-handle.readyDepends:
 				if val.TaskTime != taskTime {
 
-					handle.readyDepends <- val
-					log.Printf("task %s depend<%d> return to readyDepends chan", taskId, val.TaskTime)
-					// 防止重复接受
-					time.Sleep(1 * time.Second)
+					checkFlag := false
+					for _, v := range (*dpds)[0].Queue {
+						if v.TaskTime == val.TaskTime {
+							checkFlag = true
+						}
+					}
+
+					if checkFlag {
+						handle.readyDepends <- val
+						log.Printf("task %s depend<%d> return to readyDepends chan", taskId, val.TaskTime)
+						// 防止重复接收
+						time.Sleep(1 * time.Second)
+					}
+
 				} else {
 					*logContent = val.LogContent
+					if val.Err != "" {
+						flag = false
+					}
 					goto end
 				}
 
@@ -417,5 +463,5 @@ func (c *crontab) waitDependsDone(ctx context.Context, taskId string, dpds *[]pr
 	}
 end:
 	log.Printf("task:%s exec all depends done", taskId)
-	return true
+	return flag
 }

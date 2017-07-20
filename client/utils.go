@@ -429,6 +429,16 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 	return nil
 }
 
+func writeLog(logpath string, logname string, content *[]byte) {
+	logPath := filepath.Join(logpath, strconv.Itoa(time.Now().Year()), time.Now().Month().String())
+	f, err := libs.TryOpen(filepath.Join(logPath, logname), os.O_APPEND|os.O_CREATE|os.O_RDWR)
+	if err != nil {
+		log.Printf("write log %v", err)
+	}
+	defer f.Close()
+	f.Write(*content)
+}
+
 func initPprof(addr string) {
 	pprofServeMux := http.NewServeMux()
 	pprofServeMux.HandleFunc("/debug/pprof/", pprof.Index)
@@ -492,16 +502,20 @@ func filterDepend(args proto.MScript) bool {
 	}
 
 	if t, ok := globalStore.SearchTaskList(args.TaskId); ok {
-		if t.State != 2 {
-			log.Printf("master task is end stop wait depend done")
-			return true
-		}
 		flag := true
 		i := len(args.Queue) - 1
 		for k, v := range t.Depends {
 			if args.Command+args.Args == v.Command+v.Args {
+				if i > len(v.Queue)-1 {
+					log.Printf("depend queue is close and stop wait depend %s %s done", args.Command, args.Args)
+					return true
+				}
 				if t.Depends[k].Queue[i].TaskTime != args.Queue[i].TaskTime {
 					log.Printf("TaskTime not equal")
+					return true
+				}
+				if t.Depends[k].Queue[i].Done == true {
+					log.Printf("depend queue is close and stop wait depend %s %s done", args.Command, args.Args)
 					return true
 				}
 				t.Depends[k].Queue[i] = args.Queue[i]
@@ -511,12 +525,19 @@ func filterDepend(args proto.MScript) bool {
 				flag = false
 			}
 		}
+
+		// 如果依赖脚本执行出错直接通知主脚本停止
+		if args.Queue[i].Err != "" {
+			flag = true
+			log.Printf("task %s depend %s %s exec failed %s try to stop master task", args.TaskId, args.Args, args.Args, args.Queue[i].Err)
+		}
+
 		if flag {
 			var logContent []byte
 			for _, v := range t.Depends {
 				logContent = append(logContent, v.Queue[i].LogContent...)
 			}
-			globalCrontab.resolvedDepends(t, logContent, args.Queue[i].TaskTime)
+			globalCrontab.resolvedDepends(t, logContent, args.Queue[i].TaskTime, args.Queue[i].Err)
 			log.Println("exec Task.ResolvedSDepends done")
 		}
 		return true
