@@ -7,6 +7,7 @@ const configFile = "client.ini"
 
 type config struct {
 	debug               bool
+	debugScript         bool
 	rpcListenAddr       string
 	addr                string
 	dataFile            string
@@ -32,6 +33,7 @@ func newConfig() *config {
 
 	c := &config{
 		debug:         base.Key("debug").MustBool(false),
+		debugScript:   base.Key("debugScript").MustBool(false),
 		rpcListenAddr: rpc.Key("listen").MustString(":20001"),
 		pprofAddr:     server.Key("pprof_addr").MustString(":20002"),
 		addr:          rpc.Key("local_addr").MustString("localhost:20002"),

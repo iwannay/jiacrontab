@@ -2,8 +2,10 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"jiacrontab/libs"
 	"jiacrontab/libs/proto"
@@ -367,35 +369,55 @@ end:
 	return flag
 }
 
-func execScript(ctx context.Context, logname string, bin string, logpath string, content *[]byte, args ...string) error {
-	defer libs.MRecover()
+func wrapExecScript(ctx context.Context, logname string, bin string, logpath string, content *[]byte, args ...string) error {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println(err)
+		}
+	}()
+
+	f, err := execScript(ctx, logname, bin, logpath, content, args...)
+	defer func() {
+		if f != nil {
+			f.Close()
+		}
+	}()
+	if err != nil && f != nil {
+		prefix := fmt.Sprintf("[%s %s %s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, bin, strings.Join(args, " "))
+		f.WriteString(prefix + err.Error() + "\n")
+	}
+
+	return err
+}
+
+func execScript(ctx context.Context, logname string, bin string, logpath string, content *[]byte, args ...string) (*os.File, error) {
+
 	binpath, err := exec.LookPath(bin)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	logPath := filepath.Join(logpath, strconv.Itoa(time.Now().Year()), time.Now().Month().String())
 	f, err := libs.TryOpen(filepath.Join(logPath, logname), os.O_APPEND|os.O_CREATE|os.O_RDWR)
 
-	defer f.Close()
 	if err != nil {
-		return err
+		return f, err
 	}
 
 	cmd := exec.CommandContext(ctx, binpath, args...)
 	stdout, err := cmd.StdoutPipe()
 	defer stdout.Close()
 	if err != nil {
-		return err
+		return f, err
 	}
 	stderr, err := cmd.StderrPipe()
 	defer stderr.Close()
 	if err != nil {
-		return err
+		return f, err
 	}
 
 	if err := cmd.Start(); err != nil {
-		return err
+		return f, err
 	}
 	reader := bufio.NewReader(stdout)
 	readerErr := bufio.NewReader(stderr)
@@ -404,29 +426,42 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 
 	for {
 		line, err2 := reader.ReadString('\n')
-		*content = append(*content, []byte(line)...)
-		f.WriteString(line)
-
 		if err2 != nil || io.EOF == err2 {
 			break
 		}
+		if globalConfig.debugScript {
+			prefix := fmt.Sprintf("[%s %s %s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, bin, strings.Join(args, " "))
+			*content = append(*content, []byte(prefix+line)...)
+		} else {
+			*content = append(*content, []byte(line)...)
+		}
+
+		f.WriteString(line)
+
 	}
 
 	for {
 		line, err2 := readerErr.ReadString('\n')
-		*content = append(*content, []byte(line)...)
-		f.WriteString(line)
-
 		if err2 != nil || io.EOF == err2 {
 			break
 		}
+		// 默认给err信息加上日期标志
+		if globalConfig.debugScript {
+			prefix := fmt.Sprintf("[%s %s %s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, bin, strings.Join(args, " "))
+			*content = append(*content, []byte(prefix+line)...)
+		} else {
+			*content = append(*content, []byte(line)...)
+		}
+
+		f.WriteString(line)
+
 	}
 
 	if err := cmd.Wait(); err != nil {
-		return err
+		return f, err
 	}
 
-	return nil
+	return f, nil
 }
 
 func writeLog(logpath string, logname string, content *[]byte) {
@@ -529,13 +564,27 @@ func filterDepend(args proto.MScript) bool {
 		// 如果依赖脚本执行出错直接通知主脚本停止
 		if args.Queue[i].Err != "" {
 			flag = true
-			log.Printf("task %s depend %s %s exec failed %s try to stop master task", args.TaskId, args.Args, args.Args, args.Queue[i].Err)
+			log.Printf("task %s <%s %s> exec failed %s try to stop master task", args.TaskId, args.Args, args.Args, args.Queue[i].Err)
 		}
 
 		if flag {
 			var logContent []byte
 			for _, v := range t.Depends {
-				logContent = append(logContent, v.Queue[i].LogContent...)
+				reader := bufio.NewReader(bytes.NewReader(v.Queue[i].LogContent))
+
+				for {
+					line, err2 := reader.ReadString('\n')
+					if err2 != nil || io.EOF == err2 {
+						break
+					}
+					line = strings.Replace(line, "\n", "", 1)
+
+					// *content = append(*content, []byte(line)...)
+					tmp := fmt.Sprintf("%-100s [%s->%s %s]\n", line, args.From, args.Command, args.Args)
+					logContent = append(logContent, []byte(tmp)...)
+
+				}
+				// logContent = append(logContent, v.Queue[i].LogContent...)
 			}
 			globalCrontab.resolvedDepends(t, logContent, args.Queue[i].TaskTime, args.Queue[i].Err)
 			log.Println("exec Task.ResolvedSDepends done")

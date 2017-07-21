@@ -45,12 +45,12 @@ func (d *depend) run() {
 					startTime := time.Now()
 					start := startTime.UnixNano()
 
-					err := execScript(ctx, fmt.Sprintf("%s-%s.log", name, t.TaskId), t.Command, globalConfig.logPath, &logContent, args...)
+					err := wrapExecScript(ctx, fmt.Sprintf("%s-%s.log", name, t.TaskId), t.Command, globalConfig.logPath, &logContent, args...)
 					cancel()
 					costTime := time.Now().UnixNano() - start
 					log.Printf("exec task %s <%s %s> cost %.4fs %v", t.TaskId, t.Command, t.Args, float64(costTime)/1000000000, err)
 					if err != nil {
-						logContent = append(logContent, []byte(err.Error()+"\n")...)
+						logContent = append(logContent, []byte(err.Error())...)
 					}
 
 					// 易得队列最后一个task即为该任务的时间标志

@@ -154,11 +154,9 @@
 
                                                 {{range $k,$v := $addrs}}
                                                 {{$info := index $clients $v}}
-                                                    {{if eq $info.State 1}}
                                                     <option class="list-group-item"  {{if eq $v $value.Dest}}selected{{end}}>
-                                                        {{$v}}
+                                                        {{$v}} {{if eq $info.State 0}}断开{{end}}
                                                     </option>
-                                                    {{end}}
                                                 {{end}}
                                             </select>
                                         </div>
@@ -212,11 +210,9 @@
 
                     {{range $k,$v := .addrs}}
                     {{$info := index $clients $v}}
-                        {{if eq $info.State 1}}
                         <option class="list-group-item">
-                            {{$v}}
+                            {{$v}} {{if eq $info.State 0}}断开{{end}}
                         </option>
-                        {{end}}
                     {{end}}
                 </select>
             </div>

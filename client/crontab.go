@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"jiacrontab/client/store"
 	"jiacrontab/libs"
@@ -66,10 +65,10 @@ func (c *crontab) quickStart(t *proto.TaskArgs, content *[]byte) {
 
 	if ok := c.waitDependsDone(ctx, t.Id, &t.Depends, content, start); !ok {
 		cancel()
-		err = errors.New("failded to exec depends")
-		*content = append(*content, []byte(err.Error())...)
+		errMsg := fmt.Sprintf("[%s %s %s]>>  failded to exec depends", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, t.Name)
+		*content = append(*content, []byte(errMsg)...)
 	} else {
-		err = execScript(ctx, fmt.Sprintf("%s-%s.log", t.Name, t.Id), t.Command, globalConfig.logPath, content, args...)
+		err = wrapExecScript(ctx, fmt.Sprintf("%s-%s.log", t.Name, t.Id), t.Command, globalConfig.logPath, content, args...)
 		cancel()
 		if err != nil {
 			*content = append(*content, []byte(err.Error())...)
@@ -254,10 +253,9 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 
 					if ok := c.waitDependsDone(ctx, task.Id, &task.Depends, &content, now2.Unix()); !ok {
 						cancel()
-						err = errors.New("failded to exec depends")
-						content = append(content, []byte(err.Error())...)
+						errMsg := fmt.Sprintf("[%s %s %s]>>  failded to exec depends", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, task.Name)
+						content = append(content, []byte(errMsg)...)
 						writeLog(globalConfig.logPath, fmt.Sprintf("%s-%s.log", task.Name, task.Id), &content)
-
 						if task.UnexpectedExitMail {
 							costTime := time.Now().UnixNano() - start
 							sendMail(task.MailTo, globalConfig.addr+"提醒脚本依赖异常退出", fmt.Sprintf(
@@ -292,16 +290,13 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 							})
 						}
 
-						err = execScript(ctx, fmt.Sprintf("%s-%s.log", task.Name, task.Id), task.Command, globalConfig.logPath, &content, args...)
+						err = wrapExecScript(ctx, fmt.Sprintf("%s-%s.log", task.Name, task.Id), task.Command, globalConfig.logPath, &content, args...)
 
 						flag = false
-						if err != nil {
-							writeLog(globalConfig.logPath, fmt.Sprintf("%s-%s.log", task.Name, task.Id), &content)
-							if task.UnexpectedExitMail {
-								sendMail(task.MailTo, globalConfig.addr+"提醒脚本异常退出", fmt.Sprintf(
-									"任务名：%s\n详情：%s %v\n开始时间：%s\n异常：%s",
-									task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), err.Error()))
-							}
+						if err != nil && task.UnexpectedExitMail {
+							sendMail(task.MailTo, globalConfig.addr+"提醒脚本异常退出", fmt.Sprintf(
+								"任务名：%s\n详情：%s %v\n开始时间：%s\n异常：%s",
+								task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), err.Error()))
 
 						}
 					}
