@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -382,9 +381,17 @@ func wrapExecScript(ctx context.Context, logname string, bin string, logpath str
 			f.Close()
 		}
 	}()
-	if err != nil && f != nil {
-		prefix := fmt.Sprintf("[%s %s %s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, bin, strings.Join(args, " "))
-		f.WriteString(prefix + err.Error() + "\n")
+	if err != nil {
+		var errMsg string
+		if globalConfig.debugScript {
+			prefix := fmt.Sprintf("[%s %s %s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, bin, strings.Join(args, " "))
+			errMsg = prefix + err.Error() + "\n"
+			f.WriteString(errMsg)
+		} else {
+			errMsg = err.Error() + "\n"
+			f.WriteString(errMsg)
+		}
+		*content = append(*content, []byte(errMsg)...)
 	}
 
 	return err
@@ -431,7 +438,8 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 		}
 		if globalConfig.debugScript {
 			prefix := fmt.Sprintf("[%s %s %s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, bin, strings.Join(args, " "))
-			*content = append(*content, []byte(prefix+line)...)
+			line = prefix + line
+			*content = append(*content, []byte(line)...)
 		} else {
 			*content = append(*content, []byte(line)...)
 		}
@@ -448,7 +456,8 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 		// 默认给err信息加上日期标志
 		if globalConfig.debugScript {
 			prefix := fmt.Sprintf("[%s %s %s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, bin, strings.Join(args, " "))
-			*content = append(*content, []byte(prefix+line)...)
+			line = prefix + line
+			*content = append(*content, []byte(line)...)
 		} else {
 			*content = append(*content, []byte(line)...)
 		}
@@ -503,13 +512,20 @@ func sendMail(mailTo, title, content string) {
 	go libs.SendMail(title, content, host, from, pass, port, mailTo)
 }
 
-func pushDepends(taskId string, dpds []proto.MScript) bool {
+func pushDepends(dpds []proto.MScript, curQueue proto.MScriptContent) bool {
 
 	if len(dpds) > 0 {
 
-		// 检测目标服务器为本机时直接执行脚本
+		copyDpds := make([]proto.MScript, 0)
+		copyDpds = append(copyDpds, dpds...)
+		for k := range copyDpds {
+			copyDpds[k].Queue = make([]proto.MScriptContent, 0)
+			copyDpds[k].Queue = append(copyDpds[k].Queue, curQueue)
+		}
+
 		var ndpds []proto.MScript
-		for _, v := range dpds {
+		for _, v := range copyDpds {
+			// 检测目标服务器为本机时直接执行脚本
 			if v.Dest == globalConfig.addr {
 				globalDepend.Add(v)
 			} else {
@@ -529,6 +545,51 @@ func pushDepends(taskId string, dpds []proto.MScript) bool {
 	return true
 }
 
+// sign dest+cmd+args
+// sign相同认为为同一个依赖,sign为空时取第一个
+func pushPipeDepend(dpds []proto.MScript, sign string, curQueue proto.MScriptContent) bool {
+	var flag = true
+	if len(dpds) > 0 {
+		var ndpds []proto.MScript
+		flag = false
+
+		// 解除引用
+		copyDpds := make([]proto.MScript, 0)
+		copyDpds = append(copyDpds, dpds...)
+		for k := range copyDpds {
+			copyDpds[k].Queue = make([]proto.MScriptContent, 0)
+			copyDpds[k].Queue = append(copyDpds[k].Queue, curQueue)
+		}
+
+		flag = false
+		for _, v := range copyDpds {
+			if flag || sign == "" {
+				// 检测目标服务器为本机时直接执行脚本
+				log.Printf("sync push %s <%s %s>", v.Dest, v.Command, v.Args)
+				if v.Dest == globalConfig.addr {
+					globalDepend.Add(v)
+				} else {
+					ndpds = append(ndpds, v)
+					var reply bool
+					err := rpcCall("Logic.Depends", ndpds, &reply)
+					if !reply || err != nil {
+						log.Printf("sync push Depends failed!")
+						return false
+					}
+				}
+				flag = true
+				break
+			}
+			if v.Dest+v.Command+v.Args == sign {
+				flag = true
+			}
+
+		}
+
+	}
+	return flag
+}
+
 // filterDepend 本地执行的脚本依赖不再请求网络，直接转发到对应的处理模块
 // 目标网络不是本机时返回false
 func filterDepend(args proto.MScript) bool {
@@ -539,30 +600,51 @@ func filterDepend(args proto.MScript) bool {
 	if t, ok := globalStore.SearchTaskList(args.TaskId); ok {
 		flag := true
 		i := len(args.Queue) - 1
+		closeMsg := fmt.Sprintf("depend queue is close and stop wait depend %s %s done", args.Command, args.Args)
+		if t.State != 2 {
+			log.Println(closeMsg)
+			return true
+		}
 		for k, v := range t.Depends {
-			if args.Command+args.Args == v.Command+v.Args {
-				if i > len(v.Queue)-1 {
-					log.Printf("depend queue is close and stop wait depend %s %s done", args.Command, args.Args)
+			argsSign := args.From + args.Command + args.Args
+			vSign := v.Dest + v.Command + v.Args
+			if argsSign == vSign {
+				if len(v.Queue) == 0 {
+					log.Println(closeMsg)
 					return true
 				}
-				if t.Depends[k].Queue[i].TaskTime != args.Queue[i].TaskTime {
-					log.Printf("TaskTime not equal")
-					return true
+				globalCrontab.sliceLock.Lock()
+				for key, value := range v.Queue {
+					if value.TaskTime == args.Queue[0].TaskTime {
+						if value.Done == true {
+							log.Println(closeMsg)
+							return true
+						}
+						t.Depends[k].Queue[key] = args.Queue[0]
+					}
+
 				}
-				if t.Depends[k].Queue[i].Done == true {
-					log.Printf("depend queue is close and stop wait depend %s %s done", args.Command, args.Args)
-					return true
+				globalCrontab.sliceLock.Lock()
+
+				if t.Sync {
+					return pushPipeDepend(t.Depends, argsSign, args.Queue[0])
 				}
-				t.Depends[k].Queue[i] = args.Queue[i]
+
 			}
 
-			if t.Depends[k].Queue[i].Done == false {
-				flag = false
+			// 判断是否所有依赖执行完毕
+			for _, value := range v.Queue {
+				if value.TaskTime == args.Queue[0].TaskTime {
+					if value.Done == false {
+						flag = false
+					}
+				}
 			}
+
 		}
 
 		// 如果依赖脚本执行出错直接通知主脚本停止
-		if args.Queue[i].Err != "" {
+		if args.Queue[0].Err != "" {
 			flag = true
 			log.Printf("task %s <%s %s> exec failed %s try to stop master task", args.TaskId, args.Args, args.Args, args.Queue[i].Err)
 		}
@@ -570,23 +652,14 @@ func filterDepend(args proto.MScript) bool {
 		if flag {
 			var logContent []byte
 			for _, v := range t.Depends {
-				reader := bufio.NewReader(bytes.NewReader(v.Queue[i].LogContent))
-
-				for {
-					line, err2 := reader.ReadString('\n')
-					if err2 != nil || io.EOF == err2 {
-						break
+				for _, value := range v.Queue {
+					if value.TaskTime == args.Queue[0].TaskTime {
+						logContent = append(logContent, v.Queue[0].LogContent...)
 					}
-					line = strings.Replace(line, "\n", "", 1)
-
-					// *content = append(*content, []byte(line)...)
-					tmp := fmt.Sprintf("%-100s [%s->%s %s]\n", line, args.From, args.Command, args.Args)
-					logContent = append(logContent, []byte(tmp)...)
-
 				}
-				// logContent = append(logContent, v.Queue[i].LogContent...)
+
 			}
-			globalCrontab.resolvedDepends(t, logContent, args.Queue[i].TaskTime, args.Queue[i].Err)
+			globalCrontab.resolvedDepends(t, logContent, args.Queue[0].TaskTime, args.Queue[0].Err)
 			log.Println("exec Task.ResolvedSDepends done")
 		}
 		return true

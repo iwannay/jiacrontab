@@ -123,12 +123,13 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 	}
 
 	if r.Method == http.MethodPost {
-		var unExitM bool
+		var unExitM, sync bool
 		n := strings.TrimSpace(r.FormValue("taskName"))
 		command := strings.TrimSpace(r.FormValue("command"))
 		timeoutStr := strings.TrimSpace(r.FormValue("timeout"))
 		mConcurrentStr := strings.TrimSpace(r.FormValue("maxConcurrent"))
 		unpdExitM := r.FormValue("unexpectedExitMail")
+		mSync := r.FormValue("sync")
 		mailTo := strings.TrimSpace(r.FormValue("mailTo"))
 		optimeout := strings.TrimSpace(r.FormValue("optimeout"))
 
@@ -156,6 +157,11 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 			unExitM = true
 		} else {
 			unExitM = false
+		}
+		if mSync == "1" {
+			sync = true
+		} else {
+			sync = false
 		}
 
 		if _, ok := map[string]bool{"email": true, "kill": true, "email_and_kill": true, "ignore": true}[optimeout]; !ok {
@@ -190,6 +196,7 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 			MaxConcurrent:      maxConcurrent,
 			Depends:            depends,
 			UnexpectedExitMail: unExitM,
+			Sync:               sync,
 			C: struct {
 				Weekday string
 				Month   string

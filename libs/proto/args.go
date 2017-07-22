@@ -13,6 +13,7 @@ type TaskArgs struct {
 	Timeout            int64
 	NumberProcess      int32
 	UnexpectedExitMail bool
+	Sync               bool // 脚本是否同步执行
 	MailTo             string
 	MaxConcurrent      int    // 脚本最大并发量
 	OpTimeout          string // email/kill/email_and_kill/ignore

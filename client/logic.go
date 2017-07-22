@@ -95,7 +95,9 @@ func (t *Task) Get(args string, task *proto.TaskArgs) error {
 func (t *Task) Start(args string, ok *bool) error {
 
 	if v, ok2 := globalStore.SearchTaskList(args); ok2 {
-		globalCrontab.add(v)
+		if v.State == 0 {
+			globalCrontab.add(v)
+		}
 		*ok = true
 	} else {
 		*ok = false
@@ -205,30 +207,6 @@ func (t *Task) Log(args string, ret *[]byte) error {
 func (t *Task) ResolvedSDepends(args proto.MScript, ok *bool) error {
 
 	*ok = filterDepend(args)
-	// if t, ok2 := globalStore.SearchTaskList(args.TaskId); ok2 {
-	// 	flag := true
-	// 	for k, v := range t.Depends {
-	// 		if args.Command+args.Args == v.Command+v.Args {
-	// 			t.Depends[k].Done = true
-	// 			t.Depends[k].LogContent = args.LogContent
-	// 		}
-
-	// 		if t.Depends[k].Done == false {
-	// 			flag = false
-	// 		}
-	// 	}
-	// 	if flag {
-	// 		var logContent []byte
-	// 		for _, v := range t.Depends {
-	// 			logContent = append(logContent, v.LogContent...)
-	// 		}
-	// 		globalCrontab.resolvedDepends(t, logContent)
-	// 		log.Println("exec Task.ResolvedSDepends done")
-	// 	}
-	// 	*ok = true
-	// } else {
-	// 	*ok = false
-	// }
 
 	return nil
 }

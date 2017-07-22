@@ -53,16 +53,15 @@ func (d *depend) run() {
 						logContent = append(logContent, []byte(err.Error())...)
 					}
 
-					// 易得队列最后一个task即为该任务的时间标志
 					l := len(t.Queue)
 					if l == 0 {
 						log.Printf("task %s <%s %s> exec failed depend queue length %d ", t.TaskId, t.Command, t.Args, l)
 						return
 					}
-					t.Queue[l-1].LogContent = bytes.TrimRight(logContent, "\x00")
-					t.Queue[l-1].Done = true
+					t.Queue[0].LogContent = bytes.TrimRight(logContent, "\x00")
+					t.Queue[0].Done = true
 					if err != nil {
-						t.Queue[l-1].Err = err.Error()
+						t.Queue[0].Err = err.Error()
 					}
 
 					t.Dest, t.From = t.From, t.Dest

@@ -37,6 +37,7 @@ type crontab struct {
 	killTaskChan chan *proto.TaskArgs
 	handleMap    map[string]*handle
 	lock         sync.RWMutex
+	sliceLock    sync.RWMutex
 }
 
 func (c *crontab) add(t *proto.TaskArgs) {
@@ -44,41 +45,48 @@ func (c *crontab) add(t *proto.TaskArgs) {
 }
 
 func (c *crontab) quickStart(t *proto.TaskArgs, content *[]byte) {
-	var timeout int64
-	var err error
-	startTime := time.Now()
-	start := startTime.Unix()
-	args := strings.Split(t.Args, " ")
-	t.LastExecTime = start
-	if t.Timeout == 0 {
-		timeout = 600
-	} else {
-		timeout = t.Timeout
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
-	// 垃圾回收
-	if t.State == 0 || t.State == 1 {
-		for k := range t.Depends {
-			t.Depends[k].Queue = make([]proto.MScriptContent, 0)
-		}
-	}
 
-	if ok := c.waitDependsDone(ctx, t.Id, &t.Depends, content, start); !ok {
-		cancel()
-		errMsg := fmt.Sprintf("[%s %s %s]>>  failded to exec depends", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, t.Name)
-		*content = append(*content, []byte(errMsg)...)
-	} else {
-		err = wrapExecScript(ctx, fmt.Sprintf("%s-%s.log", t.Name, t.Id), t.Command, globalConfig.logPath, content, args...)
-		cancel()
-		if err != nil {
-			*content = append(*content, []byte(err.Error())...)
-		}
-	}
+	// if t.State != 0 {
+	// 	log.Printf("quick start error task.State should 0, %d give", t.State)
+	// } else {
+	c.execTask(t, content)
+	// }
 
-	t.LastCostTime = time.Now().UnixNano() - startTime.UnixNano()
-	globalStore.Sync()
+	// var timeout int64
+	// var err error
+	// startTime := time.Now()
+	// start := startTime.Unix()
+	// args := strings.Split(t.Args, " ")
+	// t.LastExecTime = start
+	// if t.Timeout == 0 {
+	// 	timeout = 600
+	// } else {
+	// 	timeout = t.Timeout
+	// }
+	// ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	// // 垃圾回收
+	// if t.State == 0 || t.State == 1 {
+	// 	for k := range t.Depends {
+	// 		t.Depends[k].Queue = make([]proto.MScriptContent, 0)
+	// 	}
+	// }
 
-	log.Printf("%s:  quic start end costTime %ds %v", t.Name, t.LastCostTime, err)
+	// if ok := c.waitDependsDone(ctx, t.Id, &t.Depends, content, start, t.Sync); !ok {
+	// 	cancel()
+	// 	errMsg := fmt.Sprintf("[%s %s %s]>>  failded to exec depends\n", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, t.Name)
+	// 	*content = append(*content, []byte(errMsg)...)
+	// } else {
+	// 	err = wrapExecScript(ctx, fmt.Sprintf("%s-%s.log", t.Name, t.Id), t.Command, globalConfig.logPath, content, args...)
+	// 	cancel()
+	// 	if err != nil {
+	// 		*content = append(*content, []byte(err.Error())...)
+	// 	}
+	// }
+
+	// t.LastCostTime = time.Now().UnixNano() - startTime.UnixNano()
+	// globalStore.Sync()
+
+	// log.Printf("%s:  quic start end costTime %ds %v", t.Name, t.LastCostTime, err)
 
 }
 
@@ -213,7 +221,7 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 		c.lock.Unlock()
 		select {
 		case now := <-h.clockChan:
-			wgroup.Add(1)
+
 			go func(now time.Time) {
 				defer func() {
 					libs.MRecover()
@@ -226,96 +234,9 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 					checkDay(check, now.Day()) &&
 					checkHour(check, now.Hour()) &&
 					checkMinute(check, now.Minute()) {
-
 					var content []byte
-					var hdl *handle
-					var err error
-
-					now2 := time.Now()
-					start := now2.UnixNano()
-					args := strings.Split(task.Args, " ")
-					task.LastExecTime = now2.Unix()
-					task.State = 2
-					atomic.AddInt32(&task.NumberProcess, 1)
-					ctx, cancel := context.WithCancel(context.Background())
-
-					// 保存并发执行的终止句柄
-					c.lock.Lock()
-					hdl = c.handleMap[task.Id]
-					if len(hdl.cancelCmdArray) >= task.MaxConcurrent {
-						hdl.cancelCmdArray[0]()
-						hdl.cancelCmdArray = hdl.cancelCmdArray[1:]
-					}
-					hdl.cancelCmdArray = append(hdl.cancelCmdArray, cancel)
-					c.lock.Unlock()
-
-					log.Printf("start task %s %s %s %s", task.Name, task.Id, task.Command, task.Args)
-
-					if ok := c.waitDependsDone(ctx, task.Id, &task.Depends, &content, now2.Unix()); !ok {
-						cancel()
-						errMsg := fmt.Sprintf("[%s %s %s]>>  failded to exec depends", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, task.Name)
-						content = append(content, []byte(errMsg)...)
-						writeLog(globalConfig.logPath, fmt.Sprintf("%s-%s.log", task.Name, task.Id), &content)
-						if task.UnexpectedExitMail {
-							costTime := time.Now().UnixNano() - start
-							sendMail(task.MailTo, globalConfig.addr+"提醒脚本依赖异常退出", fmt.Sprintf(
-								"任务名：%s\n详情：%s %v\n开始时间：%s\n耗时：%.4f\n异常：%s",
-								task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), float64(costTime)/1000000000, err.Error()))
-						}
-
-					} else {
-						flag := true
-
-						if task.Timeout != 0 {
-							time.AfterFunc(time.Duration(task.Timeout)*time.Second, func() {
-								if flag {
-									switch task.OpTimeout {
-									case "email":
-										sendMail(task.MailTo, globalConfig.addr+"提醒脚本执行超时", fmt.Sprintf(
-											"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
-											task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), task.Timeout))
-									case "kill":
-										cancel()
-
-									case "email_and_kill":
-										cancel()
-										sendMail(task.MailTo, globalConfig.addr+"提醒脚本执行超时", fmt.Sprintf(
-											"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
-											task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), task.Timeout))
-									case "ignore":
-									default:
-									}
-								}
-
-							})
-						}
-
-						err = wrapExecScript(ctx, fmt.Sprintf("%s-%s.log", task.Name, task.Id), task.Command, globalConfig.logPath, &content, args...)
-
-						flag = false
-						if err != nil && task.UnexpectedExitMail {
-							sendMail(task.MailTo, globalConfig.addr+"提醒脚本异常退出", fmt.Sprintf(
-								"任务名：%s\n详情：%s %v\n开始时间：%s\n异常：%s",
-								task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), err.Error()))
-
-						}
-					}
-					atomic.AddInt32(&task.NumberProcess, -1)
-					task.LastCostTime = time.Now().UnixNano() - start
-					if task.NumberProcess == 0 {
-						task.State = 1
-						// 垃圾回收
-						for k := range task.Depends {
-							task.Depends[k].Queue = make([]proto.MScriptContent, 0)
-						}
-
-					} else {
-						task.State = 2
-					}
-					globalStore.Sync()
-
-					log.Printf("%s:%s %v %s %.3fs %v", task.Name, task.Command, task.Args, task.OpTimeout, float64(task.LastCostTime)/1000000000, err)
-
+					wgroup.Add(1)
+					c.execTask(task, &content)
 				}
 			}(now)
 		case <-ctx.Done():
@@ -346,7 +267,6 @@ func (c *crontab) resolvedDepends(t *proto.TaskArgs, logContent []byte, taskTime
 	if handle, ok := c.handleMap[t.Id]; ok {
 		c.lock.Unlock()
 		// handle.resolvedDepends <- logContent
-		timerC := time.Tick(5 * time.Second)
 		select {
 		case handle.readyDepends <- proto.MScriptContent{
 			TaskTime:   taskTime,
@@ -354,7 +274,7 @@ func (c *crontab) resolvedDepends(t *proto.TaskArgs, logContent []byte, taskTime
 			Err:        err,
 			Done:       true,
 		}:
-		case <-timerC:
+		case <-time.After(5 * time.Second):
 			log.Printf("taskTime %d failed to write to readyDepends chan", taskTime)
 		}
 
@@ -365,7 +285,7 @@ func (c *crontab) resolvedDepends(t *proto.TaskArgs, logContent []byte, taskTime
 
 }
 
-func (c *crontab) waitDependsDone(ctx context.Context, taskId string, dpds *[]proto.MScript, logContent *[]byte, taskTime int64) bool {
+func (c *crontab) waitDependsDone(ctx context.Context, taskId string, dpds *[]proto.MScript, logContent *[]byte, taskTime int64, sync bool) bool {
 	defer func() {
 		// 结束时修改执行状态
 		if len(*dpds) > 0 {
@@ -388,21 +308,27 @@ func (c *crontab) waitDependsDone(ctx context.Context, taskId string, dpds *[]pr
 
 	// 一个脚本开始执行时把时间标志放入队列
 	// 并显式声明执行未完成
+	curQueueI := proto.MScriptContent{
+		TaskTime: taskTime,
+		Done:     false,
+	}
 	for k := range *dpds {
-		(*dpds)[k].Queue = append((*dpds)[k].Queue, proto.MScriptContent{
-			TaskTime: taskTime,
-			Done:     false,
-		})
+		(*dpds)[k].Queue = append((*dpds)[k].Queue, curQueueI)
 	}
-	copyDpds := make([]proto.MScript, 0)
-	copyDpds = append(copyDpds, (*dpds)...)
-	for k := range copyDpds {
-		copyDpds[k].Queue = make([]proto.MScriptContent, 0)
-		copyDpds[k].Queue = append(copyDpds[k].Queue, (*dpds)[k].Queue...)
+
+	syncFlag := true
+	if sync {
+		// 同步模式
+		syncFlag = pushPipeDepend(*dpds, "", curQueueI)
+	} else {
+		// 并发模式
+		// syncFlag = pushDepends(copyDpds)
+		syncFlag = pushDepends(*dpds, curQueueI)
 	}
-	if ok := pushDepends(taskId, copyDpds); !ok {
-		*logContent = []byte("failed to exec depends push depends error!\n")
-		return false
+	if !syncFlag {
+		prefix := fmt.Sprintf("[%s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr)
+		*logContent = []byte(prefix + "failed to exec depends push depends error!\n")
+		return syncFlag
 	}
 
 	c.lock.Lock()
@@ -463,4 +389,104 @@ func (c *crontab) waitDependsDone(ctx context.Context, taskId string, dpds *[]pr
 end:
 	log.Printf("task:%s exec all depends done", taskId)
 	return flag
+}
+
+func (c *crontab) execTask(task *proto.TaskArgs, logContent *[]byte) {
+	var err error
+
+	now2 := time.Now()
+	start := now2.UnixNano()
+	args := strings.Split(task.Args, " ")
+	task.LastExecTime = now2.Unix()
+	saveState := task.State
+	task.State = 2
+	atomic.AddInt32(&task.NumberProcess, 1)
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// 保存并发执行的终止句柄
+	c.lock.Lock()
+	if hdl, ok := c.handleMap[task.Id]; ok {
+		c.lock.Unlock()
+		if len(hdl.cancelCmdArray) >= task.MaxConcurrent {
+			hdl.cancelCmdArray[0]()
+			hdl.cancelCmdArray = hdl.cancelCmdArray[1:]
+		}
+		hdl.cancelCmdArray = append(hdl.cancelCmdArray, cancel)
+	} else {
+		c.lock.Unlock()
+	}
+
+	log.Printf("start task %s %s %s %s", task.Name, task.Id, task.Command, task.Args)
+
+	if ok := c.waitDependsDone(ctx, task.Id, &task.Depends, logContent, now2.Unix(), task.Sync); !ok {
+		cancel()
+		errMsg := fmt.Sprintf("[%s %s %s]>>  failded to exec depends\n", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, task.Name)
+		*logContent = append(*logContent, []byte(errMsg)...)
+		writeLog(globalConfig.logPath, fmt.Sprintf("%s-%s.log", task.Name, task.Id), logContent)
+		if task.UnexpectedExitMail {
+			costTime := time.Now().UnixNano() - start
+			sendMail(task.MailTo, globalConfig.addr+"提醒脚本依赖异常退出", fmt.Sprintf(
+				"任务名：%s\n详情：%s %v\n开始时间：%s\n耗时：%.4f\n异常：%s",
+				task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), float64(costTime)/1000000000, err.Error()))
+		}
+
+	} else {
+		flag := true
+
+		if task.Timeout != 0 {
+			time.AfterFunc(time.Duration(task.Timeout)*time.Second, func() {
+				if flag {
+					switch task.OpTimeout {
+					case "email":
+						sendMail(task.MailTo, globalConfig.addr+"提醒脚本执行超时", fmt.Sprintf(
+							"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
+							task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), task.Timeout))
+					case "kill":
+						cancel()
+
+					case "email_and_kill":
+						cancel()
+						sendMail(task.MailTo, globalConfig.addr+"提醒脚本执行超时", fmt.Sprintf(
+							"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
+							task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), task.Timeout))
+					case "ignore":
+					default:
+					}
+				}
+
+			})
+		}
+
+		err = wrapExecScript(ctx, fmt.Sprintf("%s-%s.log", task.Name, task.Id), task.Command, globalConfig.logPath, logContent, args...)
+
+		flag = false
+		if err != nil && task.UnexpectedExitMail {
+			sendMail(task.MailTo, globalConfig.addr+"提醒脚本异常退出", fmt.Sprintf(
+				"任务名：%s\n详情：%s %v\n开始时间：%s\n异常：%s",
+				task.Name, task.Command, task.Args, now2.Format("2006-01-02 15:04:05"), err.Error()))
+
+		}
+	}
+	atomic.AddInt32(&task.NumberProcess, -1)
+	task.LastCostTime = time.Now().UnixNano() - start
+	if task.NumberProcess == 0 {
+		if saveState != 2 {
+			task.State = saveState
+		} else {
+			task.State = 1
+		}
+
+		// 垃圾回收
+		c.sliceLock.Lock()
+		for k := range task.Depends {
+			task.Depends[k].Queue = make([]proto.MScriptContent, 0)
+		}
+		c.sliceLock.Unlock()
+
+	} else {
+		task.State = 2
+	}
+	globalStore.Sync()
+
+	log.Printf("%s:%s %v %s %.3fs %v", task.Name, task.Command, task.Args, task.OpTimeout, float64(task.LastCostTime)/1000000000, err)
 }
