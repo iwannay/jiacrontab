@@ -138,48 +138,56 @@
                         <div class="col-sm-11 controls" id="depend-list">
                             
                             <div class="row form-group">
-                                <div class="col-xs-12">
-                                    <button type="button" id="addDepends" onclick="addDepend(this)" class="btn btn-default" aria-label="Left Align">
-                                        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                                <div class="col-xs-2">
+                                    <div class="input-group">
+                                        <select class="form-control">
+                                            <option>同步</option>
+                                            <option>异步</option>
+                                        </select>
+                                        <span class="input-group-btn">
+                                            <button id="addDepends" onclick="addDepend(this)" class="btn btn-default" type="button">
+                                                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                                            </button>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            {{$task := .task}}
+                            
+                            {{range $key,$value:= .task.Depends}}
+                            <div class="row form-group depend-item">
+                                <div class="col-xs-3">
+                                    <select class="form-control" name="depends[dest]">
+                                        
+
+                                        {{range $k,$v := $addrs}}
+                                        {{$info := index $clients $v}}
+                                            <option class="list-group-item"  {{if eq $v $value.Dest}}selected{{end}}>
+                                                {{$v}} {{if eq $info.State 0}}断开{{end}}
+                                            </option>
+                                        {{end}}
+                                    </select>
+                                </div>
+                                <div class="col-xs-2">
+                                    <select class="form-control" name="depends[command]">
+                                        {{range $k, $v := $allowCommands}}
+                                        <option {{if eq $v $value.Command}}selected{{end}} value="{{$v}}">{{$v}}</option>
+                                        {{end}}
+                                    </select>
+                                </div>
+                                <div class="col-xs-4">
+                                    <input type="text" class="form-control" name="depends[args]" value="{{$value.Args}}" placeholder="args">
+                                </div>
+                                <div class="col-xs-2">
+                                    <input type="text" class="form-control" value="{{$value.Timeout}}" name="depends[timeout]" placeholder="超时(s)">
+                                </div>
+                                <div class="col-xs-1">
+                                    <button type="button" onclick="deleteDepend(this)" class="btn btn-default" aria-label="Left Align">
+                                        <span class="glyphicon glyphicon-minus" aria-hidden="true"></span>
                                     </button>
                                 </div>
                             </div>
-                                    {{$task := .task}}
-                                    
-                                    {{range $key,$value:= .task.Depends}}
-                                    <div class="row form-group depend-item">
-                                        <div class="col-xs-3">
-                                            <select class="form-control" name="depends[dest]">
-                                               
-
-                                                {{range $k,$v := $addrs}}
-                                                {{$info := index $clients $v}}
-                                                    <option class="list-group-item"  {{if eq $v $value.Dest}}selected{{end}}>
-                                                        {{$v}} {{if eq $info.State 0}}断开{{end}}
-                                                    </option>
-                                                {{end}}
-                                            </select>
-                                        </div>
-                                        <div class="col-xs-2">
-                                            <select class="form-control" name="depends[command]">
-                                                {{range $k, $v := $allowCommands}}
-                                                <option {{if eq $v $value.Command}}selected{{end}} value="{{$v}}">{{$v}}</option>
-                                                {{end}}
-                                            </select>
-                                        </div>
-                                        <div class="col-xs-4">
-                                            <input type="text" class="form-control" name="depends[args]" value="{{$value.Args}}" placeholder="args">
-                                        </div>
-                                        <div class="col-xs-2">
-                                            <input type="text" class="form-control" value="{{$value.Timeout}}" name="depends[timeout]" placeholder="超时(s)">
-                                        </div>
-                                        <div class="col-xs-1">
-                                            <button type="button" onclick="deleteDepend(this)" class="btn btn-default" aria-label="Left Align">
-                                                <span class="glyphicon glyphicon-minus" aria-hidden="true"></span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    {{end}}
+                            {{end}}
                             
                         </div>
                     </div>
