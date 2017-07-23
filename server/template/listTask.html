@@ -42,11 +42,17 @@
                 </div>
             </div>
             <div class="col-md-9">
+                <div class="border-bottom clearfix">
+                    <div class="navbar-left">
+                        <a href="/stopAllTask?addr={{.client.Addr}}&taskIds={{.taskIds}}" class="btn btn-primary">全部停止</a>
+                       
+                    </div>
 
-                <p class="border-bottom">
-                    <a href="/stopAllTask?addr={{.client.Addr}}&taskIds={{.taskIds}}" class="btn btn-primary">全部关闭</a>
-                    <a href="/update?addr={{.client.Addr}}" class="btn btn-primary">添加</a>
-                </p>
+                    <div class="navbar-right" style="margin-right:0;">
+                        <a href="/model?type=batch&url={{.url}}" class="btn btn-primary">批量模式</a>
+                         <a href="/update?addr={{.client.Addr}}" class="btn btn-info">添加</a>
+                    </div>
+                </div>
 
                 {{$logHost := .logHost}} {{$client := .client}} 
                 {{range $i,$v := .list}} 

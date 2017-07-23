@@ -76,6 +76,7 @@ func initServer() {
 	mux.HandleFunc("/deleteClient", wrapHandler(deleteClient, []beforeReqHandle{filterReq, checkLogin}))
 	mux.HandleFunc("/viewConfig", wrapHandler(viewConfig, []beforeReqHandle{filterReq, checkLogin}))
 	mux.HandleFunc("/stopAllTask", wrapHandler(stopAllTask, []beforeReqHandle{filterReq, checkLogin}))
+	mux.HandleFunc("/model", wrapHandler(model, []beforeReqHandle{filterReq, checkLogin}))
 
 	if globalConfig.debug {
 		mux.HandleFunc("/debug/pprof/", pprof.Index)

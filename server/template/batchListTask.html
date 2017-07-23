@@ -38,12 +38,13 @@
             <div class="col-md-12">
                 <div class="border-bottom clearfix">
                     <div class="navbar-left">
-                        <a href="#" onclick="launch()" class="btn btn-primary">启动</a>
-                        <a href="#" onclick="stop()" class="btn btn-primary">停止</a>
+                        <a href="#" onclick="launch('/start?addr={{.client.Addr}}')" class="btn btn-primary">启动</a>
+                        <a href="#" onclick="stop('/stop?addr={{.client.Addr}}&action=stop')" class="btn btn-primary">停止</a>
                     </div>
                     <div class="navbar-right" style="margin-right:0;">
-                        <a href="/update?addr={{.client.Addr}}" class="btn btn-info">添加</a>
+                        <a href="/model?type=default&url={{.url}}" class="btn btn-primary">默认模式</a>
                         <a  data-toggle="modal" data-target="#infoModal" class="btn btn-primary">运行信息</a>
+                        <a href="/update?addr={{.client.Addr}}" class="btn btn-info">添加</a>
                     </div>
                 </div>
                 <div class="table-responsive" style="min-height:410px;">
@@ -139,19 +140,23 @@
     </div><!-- /.modal -->
 
     <script>
-        function launch() {
+        function launch(url) {
             let launchTasks = [];
             $(".taskId:checked").each(function(i, ele) {
                 launchTasks.push(ele.value);
             })
-            console.log(launchTasks);
+            if (launchTasks.length > 0) {
+                location.href = url+"&taskId="+launchTasks.join(",");
+            }
         }
-        function stop() {
+        function stop(url) {
             let stopTasks = [];
             $(".taskId:checked").each(function(i, ele) {
                 stopTasks.push(ele.value);
             })
-            console.log(stopTasks);
+            if (stopTasks.length > 0) {
+                location.href = url+"&taskId="+stopTasks.join(",");
+            }
         }
         function isChecked(dom) {
             var isCheckFlag = false;

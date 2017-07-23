@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -99,26 +100,30 @@ func (t *Task) Get(args string, task *proto.TaskArgs) error {
 }
 
 func (t *Task) Start(args string, ok *bool) error {
-
-	if v, ok2 := globalStore.SearchTaskList(args); ok2 {
-		if v.State == 0 {
-			globalCrontab.add(v)
+	*ok = true
+	ids := strings.Split(args, ",")
+	for _, v := range ids {
+		if val, ok2 := globalStore.SearchTaskList(v); ok2 {
+			if val.State == 0 {
+				globalCrontab.add(val)
+			}
+		} else {
+			*ok = false
 		}
-		*ok = true
-	} else {
-		*ok = false
 	}
 
 	return nil
 }
 
 func (t *Task) Stop(args string, ok *bool) error {
-
-	if v, ok2 := globalStore.SearchTaskList(args); ok2 {
-		globalCrontab.stop(v)
-		*ok = true
-	} else {
-		*ok = false
+	*ok = true
+	ids := strings.Split(args, ",")
+	for _, v := range ids {
+		if val, ok2 := globalStore.SearchTaskList(v); ok2 {
+			globalCrontab.stop(val)
+		} else {
+			*ok = false
+		}
 	}
 
 	return nil
@@ -137,12 +142,15 @@ func (t *Task) StopAll(args []string, ok *bool) error {
 }
 
 func (t *Task) Delete(args string, ok *bool) error {
+	*ok = true
+	ids := strings.Split(args, ",")
+	for _, v := range ids {
+		if val, ok2 := globalStore.SearchTaskList(v); ok2 {
+			globalCrontab.delete(val)
 
-	if v, ok2 := globalStore.SearchTaskList(args); ok2 {
-		globalCrontab.delete(v)
-		*ok = true
-	} else {
-		*ok = false
+		} else {
+			*ok = false
+		}
 	}
 
 	return nil
