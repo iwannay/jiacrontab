@@ -140,9 +140,9 @@
                             <div class="row form-group">
                                 <div class="col-xs-2">
                                     <div class="input-group">
-                                        <select class="form-control">
-                                            <option>同步</option>
-                                            <option>异步</option>
+                                        <select class="form-control" name="sync">
+                                            <option value="1"  {{if .task.Sync}}selected{{end}} >同步执行</option>
+                                            <option value="0"  {{if eq .task.Sync false}}selected{{end}} >并发执行</option>
                                         </select>
                                         <span class="input-group-btn">
                                             <button id="addDepends" onclick="addDepend(this)" class="btn btn-default" type="button">
@@ -162,7 +162,7 @@
 
                                         {{range $k,$v := $addrs}}
                                         {{$info := index $clients $v}}
-                                            <option class="list-group-item"  {{if eq $v $value.Dest}}selected{{end}}>
+                                            <option value="{{$v}}" class="list-group-item"  {{if eq $v $value.Dest}}selected{{end}}>
                                                 {{$v}} {{if eq $info.State 0}}断开{{end}}
                                             </option>
                                         {{end}}
@@ -218,7 +218,7 @@
 
                     {{range $k,$v := .addrs}}
                     {{$info := index $clients $v}}
-                        <option class="list-group-item">
+                        <option {{$v}} class="list-group-item">
                             {{$v}} {{if eq $info.State 0}}断开{{end}}
                         </option>
                     {{end}}

@@ -225,6 +225,7 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 	} else {
 		var t proto.TaskArgs
 		var clientList map[string]proto.ClientConf
+
 		if id != "" {
 			err := m.rpcCall(addr, "Task.Get", id, &t)
 			if err != nil {

@@ -53,32 +53,38 @@ func (t *Task) Update(args proto.TaskArgs, ok *bool) error {
 		globalCrontab.add(&args)
 
 	} else {
-		globalStore.Update(func(s *store.Store) {
-			if v, ok2 := s.TaskList[args.Id]; ok2 {
-				v.Name = args.Name
-				v.Command = args.Command
-				v.Args = args.Args
-				v.MailTo = args.MailTo
-				v.Depends = args.Depends
-				v.UnexpectedExitMail = args.UnexpectedExitMail
+		if v, ok2 := globalStore.SearchTaskList(args.Id); ok2 {
 
-				for k := range v.Depends {
-					v.Depends[k].TaskId = args.Id
-
-				}
-				v.Timeout = args.Timeout
-				v.MaxConcurrent = args.MaxConcurrent
-				if v.MaxConcurrent == 0 {
-					v.MaxConcurrent = 1
-				}
-
-				v.MailTo = args.MailTo
-				v.OpTimeout = args.OpTimeout
-				v.C = args.C
-			} else {
-				*ok = false
+			if v.State == 2 {
+				return errors.New("can not update when task is running")
 			}
-		}).Sync()
+
+			v.Name = args.Name
+			v.Command = args.Command
+			v.Args = args.Args
+			v.MailTo = args.MailTo
+			v.Depends = args.Depends
+			v.UnexpectedExitMail = args.UnexpectedExitMail
+			v.Sync = args.Sync
+
+			for k := range v.Depends {
+				v.Depends[k].TaskId = args.Id
+
+			}
+			v.Timeout = args.Timeout
+			v.MaxConcurrent = args.MaxConcurrent
+			if v.MaxConcurrent == 0 {
+				v.MaxConcurrent = 1
+			}
+
+			v.MailTo = args.MailTo
+			v.OpTimeout = args.OpTimeout
+			v.C = args.C
+		} else {
+			*ok = false
+		}
+		globalStore.Sync()
+
 	}
 
 	return nil

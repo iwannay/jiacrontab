@@ -45,49 +45,7 @@ func (c *crontab) add(t *proto.TaskArgs) {
 }
 
 func (c *crontab) quickStart(t *proto.TaskArgs, content *[]byte) {
-
-	// if t.State != 0 {
-	// 	log.Printf("quick start error task.State should 0, %d give", t.State)
-	// } else {
-	c.execTask(t, content)
-	// }
-
-	// var timeout int64
-	// var err error
-	// startTime := time.Now()
-	// start := startTime.Unix()
-	// args := strings.Split(t.Args, " ")
-	// t.LastExecTime = start
-	// if t.Timeout == 0 {
-	// 	timeout = 600
-	// } else {
-	// 	timeout = t.Timeout
-	// }
-	// ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
-	// // 垃圾回收
-	// if t.State == 0 || t.State == 1 {
-	// 	for k := range t.Depends {
-	// 		t.Depends[k].Queue = make([]proto.MScriptContent, 0)
-	// 	}
-	// }
-
-	// if ok := c.waitDependsDone(ctx, t.Id, &t.Depends, content, start, t.Sync); !ok {
-	// 	cancel()
-	// 	errMsg := fmt.Sprintf("[%s %s %s]>>  failded to exec depends\n", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, t.Name)
-	// 	*content = append(*content, []byte(errMsg)...)
-	// } else {
-	// 	err = wrapExecScript(ctx, fmt.Sprintf("%s-%s.log", t.Name, t.Id), t.Command, globalConfig.logPath, content, args...)
-	// 	cancel()
-	// 	if err != nil {
-	// 		*content = append(*content, []byte(err.Error())...)
-	// 	}
-	// }
-
-	// t.LastCostTime = time.Now().UnixNano() - startTime.UnixNano()
-	// globalStore.Sync()
-
-	// log.Printf("%s:  quic start end costTime %ds %v", t.Name, t.LastCostTime, err)
-
+	c.execTask(t, content, 0)
 }
 
 // stop 停止计划任务
@@ -126,7 +84,6 @@ func (c *crontab) run() {
 		globalStore.Update(func(s *store.Store) {
 			for _, v := range s.TaskList {
 				if v.State != 0 {
-
 					c.add(v)
 				}
 			}
@@ -144,7 +101,7 @@ func (c *crontab) run() {
 			for _, v := range c.handleMap {
 				select {
 				case v.clockChan <- now:
-				case <-time.After(5 * time.Second):
+				case <-time.After(2 * time.Second):
 				}
 
 			}
@@ -157,16 +114,31 @@ func (c *crontab) run() {
 		for {
 			select {
 			case task := <-c.taskChan:
+				task.State = 1
 				ctx, cancel := context.WithCancel(context.Background())
 				c.lock.Lock()
+				if handle, ok := c.handleMap[task.Id]; ok {
+					if handle.cancelCmdArray != nil {
+						for _, cancel := range handle.cancelCmdArray {
+							cancel()
+						}
+					}
+					if handle.cancel != nil {
+						handle.cancel()
+					}
+
+					log.Println("kill", task.Name, task.Id)
+
+				}
 				c.handleMap[task.Id] = &handle{
 					cancel: cancel,
 					// resolvedDepends: make(chan []byte),
 					readyDepends: make(chan proto.MScriptContent, 10),
 					clockChan:    make(chan time.Time),
 				}
+
 				c.lock.Unlock()
-				task.State = 1
+
 				log.Printf("add task %s %s", task.Name, task.Id)
 
 				go c.deal(task, ctx)
@@ -180,7 +152,16 @@ func (c *crontab) run() {
 			case task := <-c.delTaskChan:
 				c.lock.Lock()
 				if handle, ok := c.handleMap[task.Id]; ok {
-					handle.cancel()
+					if handle.cancel != nil {
+						handle.cancel()
+						log.Printf("start stop %s", task.Name)
+					} else {
+						log.Printf("start stop %s failed cancel is nil", task.Name)
+					}
+
+				} else {
+					log.Printf("can not found %s", task.Name)
+					task.State = 0
 				}
 				c.lock.Unlock()
 			}
@@ -200,7 +181,6 @@ func (c *crontab) run() {
 							cancel()
 						}
 						handle.cancelCmdArray = make([]context.CancelFunc, 0)
-						task.State = 1
 						log.Println("kill", task.Name, task.Id)
 						globalStore.Sync()
 					}
@@ -228,6 +208,7 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 					wgroup.Done()
 				}()
 
+				wgroup.Add(1)
 				check := task.C
 				if checkMonth(check, now.Month()) &&
 					checkWeekday(check, now.Weekday()) &&
@@ -235,15 +216,15 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 					checkHour(check, now.Hour()) &&
 					checkMinute(check, now.Minute()) {
 					var content []byte
-					wgroup.Add(1)
-					c.execTask(task, &content)
+
+					c.execTask(task, &content, 1)
 				}
 			}(now)
 		case <-ctx.Done():
 			// 等待所有的计划任务执行完毕
 			wgroup.Wait()
 			task.State = 0
-			log.Println("stop", task.Name, task.Id)
+			log.Printf("stop %s %s ok", task.Name, task.Id)
 			// 垃圾回收
 			// 防止向已终止的依赖接受通道继续发送信息
 			for k := range task.Depends {
@@ -391,14 +372,12 @@ end:
 	return flag
 }
 
-func (c *crontab) execTask(task *proto.TaskArgs, logContent *[]byte) {
+func (c *crontab) execTask(task *proto.TaskArgs, logContent *[]byte, state int) {
 	var err error
-
 	now2 := time.Now()
 	start := now2.UnixNano()
 	args := strings.Split(task.Args, " ")
 	task.LastExecTime = now2.Unix()
-	saveState := task.State
 	task.State = 2
 	atomic.AddInt32(&task.NumberProcess, 1)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -470,11 +449,8 @@ func (c *crontab) execTask(task *proto.TaskArgs, logContent *[]byte) {
 	atomic.AddInt32(&task.NumberProcess, -1)
 	task.LastCostTime = time.Now().UnixNano() - start
 	if task.NumberProcess == 0 {
-		if saveState != 2 {
-			task.State = saveState
-		} else {
-			task.State = 1
-		}
+
+		task.State = state
 
 		// 垃圾回收
 		c.sliceLock.Lock()

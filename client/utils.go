@@ -536,7 +536,7 @@ func pushDepends(dpds []proto.MScript, curQueue proto.MScriptContent) bool {
 			var reply bool
 			err := rpcCall("Logic.Depends", ndpds, &reply)
 			if !reply || err != nil {
-				log.Printf("push Depends failed!")
+				log.Printf("push Depends failed,%s", err)
 				return false
 			}
 		}
@@ -562,7 +562,8 @@ func pushPipeDepend(dpds []proto.MScript, sign string, curQueue proto.MScriptCon
 		}
 
 		flag = false
-		for _, v := range copyDpds {
+		l := len(copyDpds) - 1
+		for k, v := range copyDpds {
 			if flag || sign == "" {
 				// 检测目标服务器为本机时直接执行脚本
 				log.Printf("sync push %s <%s %s>", v.Dest, v.Command, v.Args)
@@ -580,7 +581,7 @@ func pushPipeDepend(dpds []proto.MScript, sign string, curQueue proto.MScriptCon
 				flag = true
 				break
 			}
-			if v.Dest+v.Command+v.Args == sign {
+			if (v.Dest+v.Command+v.Args == sign) && (l != k) {
 				flag = true
 			}
 
@@ -599,7 +600,6 @@ func filterDepend(args proto.MScript) bool {
 
 	if t, ok := globalStore.SearchTaskList(args.TaskId); ok {
 		flag := true
-		i := len(args.Queue) - 1
 		closeMsg := fmt.Sprintf("depend queue is close and stop wait depend %s %s done", args.Command, args.Args)
 		if t.State != 2 {
 			log.Println(closeMsg)
@@ -610,24 +610,27 @@ func filterDepend(args proto.MScript) bool {
 			vSign := v.Dest + v.Command + v.Args
 			if argsSign == vSign {
 				if len(v.Queue) == 0 {
-					log.Println(closeMsg)
+					log.Println(closeMsg, "queue length", 0)
 					return true
 				}
 				globalCrontab.sliceLock.Lock()
 				for key, value := range v.Queue {
 					if value.TaskTime == args.Queue[0].TaskTime {
 						if value.Done == true {
-							log.Println(closeMsg)
+							globalCrontab.sliceLock.Unlock()
+							log.Println(closeMsg, ",tasktime %d value.done eq true", value.TaskTime)
 							return true
 						}
 						t.Depends[k].Queue[key] = args.Queue[0]
 					}
 
 				}
-				globalCrontab.sliceLock.Lock()
+				globalCrontab.sliceLock.Unlock()
 
 				if t.Sync {
-					return pushPipeDepend(t.Depends, argsSign, args.Queue[0])
+					if ok := pushPipeDepend(t.Depends, argsSign, args.Queue[0]); ok {
+						return true
+					}
 				}
 
 			}
@@ -646,7 +649,7 @@ func filterDepend(args proto.MScript) bool {
 		// 如果依赖脚本执行出错直接通知主脚本停止
 		if args.Queue[0].Err != "" {
 			flag = true
-			log.Printf("task %s <%s %s> exec failed %s try to stop master task", args.TaskId, args.Args, args.Args, args.Queue[i].Err)
+			log.Printf("task %s <%s %s> exec failed %s try to stop master task", args.TaskId, args.Args, args.Args, args.Queue[0].Err)
 		}
 
 		if flag {
