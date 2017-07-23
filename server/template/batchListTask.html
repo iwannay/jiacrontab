@@ -54,6 +54,7 @@
                                 <th>
                                     <input type="checkbox" id="checkedAll" onclick="isCheckAll(this)" style="vertical-align: top;">
                                 </th>
+                                <th>序号</th>
                                 <th>名称</th>
                                 <th>脚本</th>
                                 <th>状态</th>
@@ -63,7 +64,7 @@
                                 <th>超时</th>
                                 <th>超时触发</th>
                                 <th>进程</th>
-                                <th>日期</th>
+                                <th>定时</th>
                                 <th>操作</th>
                             </tr>
                         </thead>
@@ -76,6 +77,7 @@
                                         <input type="checkbox" onclick="isChecked(this)" value="{{$v.Id}}" class="taskId">
                                     </label>
                                 </td>
+                                <td>{{$i}}</td>
                                 <td>{{$v.Name}}</td>
                                 <td>{{$v.Command}} {{$v.Args}}</td>
                                 <td>
@@ -93,7 +95,7 @@
                                 <td>{{$v.Timeout}}s</td>
                                 <td>{{$v.OpTimeout}}</td>
                                 <td>{{$v.NumberProcess}}</td>
-                                <td>分:{{$v.C.Minute}}&nbsp;&nbsp;时:{{$v.C.Hour}}&nbsp;&nbsp;日:{{$v.C.Day}}&nbsp;&nbsp;月:{{$v.C.Month}}&nbsp;&nbsp;日/周:{{$v.C.Weekday}}</td>
+                                <td>{{$v.C.Minute}}&nbsp;&nbsp;{{$v.C.Hour}}&nbsp;&nbsp;{{$v.C.Day}}&nbsp;&nbsp;{{$v.C.Month}}&nbsp;&nbsp;{{$v.C.Weekday}}</td>
                                 <td>
                                     <div class="dropdown">
                                         <div href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">操作 <span class="caret"></span></div>
