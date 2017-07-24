@@ -34,11 +34,11 @@ $ go get -u gopkg.in/ini.v1
 
 $ cd $GOPATH/src/jiacrontab/server
 $ go build .
-$ nohub ./server &> server.log &
+$ nohup ./server &> server.log &
 
 $ cd $GOPATH/src/jiacrontab/client
 $ go build .
-$ nohub ./client &> client.log & 
+$ nohup ./client &> client.log & 
 ``` 
 
 ### 截图
