@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -53,32 +54,38 @@ func (t *Task) Update(args proto.TaskArgs, ok *bool) error {
 		globalCrontab.add(&args)
 
 	} else {
-		globalStore.Update(func(s *store.Store) {
-			if v, ok2 := s.TaskList[args.Id]; ok2 {
-				v.Name = args.Name
-				v.Command = args.Command
-				v.Args = args.Args
-				v.MailTo = args.MailTo
-				v.Depends = args.Depends
-				v.UnexpectedExitMail = args.UnexpectedExitMail
+		if v, ok2 := globalStore.SearchTaskList(args.Id); ok2 {
 
-				for k := range v.Depends {
-					v.Depends[k].TaskId = args.Id
-
-				}
-				v.Timeout = args.Timeout
-				v.MaxConcurrent = args.MaxConcurrent
-				if v.MaxConcurrent == 0 {
-					v.MaxConcurrent = 1
-				}
-
-				v.MailTo = args.MailTo
-				v.OpTimeout = args.OpTimeout
-				v.C = args.C
-			} else {
-				*ok = false
+			if v.State == 2 {
+				return errors.New("can not update when task is running")
 			}
-		}).Sync()
+
+			v.Name = args.Name
+			v.Command = args.Command
+			v.Args = args.Args
+			v.MailTo = args.MailTo
+			v.Depends = args.Depends
+			v.UnexpectedExitMail = args.UnexpectedExitMail
+			v.Sync = args.Sync
+
+			for k := range v.Depends {
+				v.Depends[k].TaskId = args.Id
+
+			}
+			v.Timeout = args.Timeout
+			v.MaxConcurrent = args.MaxConcurrent
+			if v.MaxConcurrent == 0 {
+				v.MaxConcurrent = 1
+			}
+
+			v.MailTo = args.MailTo
+			v.OpTimeout = args.OpTimeout
+			v.C = args.C
+		} else {
+			*ok = false
+		}
+		globalStore.Sync()
+
 	}
 
 	return nil
@@ -93,24 +100,30 @@ func (t *Task) Get(args string, task *proto.TaskArgs) error {
 }
 
 func (t *Task) Start(args string, ok *bool) error {
-
-	if v, ok2 := globalStore.SearchTaskList(args); ok2 {
-		globalCrontab.add(v)
-		*ok = true
-	} else {
-		*ok = false
+	*ok = true
+	ids := strings.Split(args, ",")
+	for _, v := range ids {
+		if val, ok2 := globalStore.SearchTaskList(v); ok2 {
+			if val.State == 0 {
+				globalCrontab.add(val)
+			}
+		} else {
+			*ok = false
+		}
 	}
 
 	return nil
 }
 
 func (t *Task) Stop(args string, ok *bool) error {
-
-	if v, ok2 := globalStore.SearchTaskList(args); ok2 {
-		globalCrontab.stop(v)
-		*ok = true
-	} else {
-		*ok = false
+	*ok = true
+	ids := strings.Split(args, ",")
+	for _, v := range ids {
+		if val, ok2 := globalStore.SearchTaskList(v); ok2 {
+			globalCrontab.stop(val)
+		} else {
+			*ok = false
+		}
 	}
 
 	return nil
@@ -129,12 +142,15 @@ func (t *Task) StopAll(args []string, ok *bool) error {
 }
 
 func (t *Task) Delete(args string, ok *bool) error {
+	*ok = true
+	ids := strings.Split(args, ",")
+	for _, v := range ids {
+		if val, ok2 := globalStore.SearchTaskList(v); ok2 {
+			globalCrontab.delete(val)
 
-	if v, ok2 := globalStore.SearchTaskList(args); ok2 {
-		globalCrontab.delete(v)
-		*ok = true
-	} else {
-		*ok = false
+		} else {
+			*ok = false
+		}
 	}
 
 	return nil
@@ -205,30 +221,6 @@ func (t *Task) Log(args string, ret *[]byte) error {
 func (t *Task) ResolvedSDepends(args proto.MScript, ok *bool) error {
 
 	*ok = filterDepend(args)
-	// if t, ok2 := globalStore.SearchTaskList(args.TaskId); ok2 {
-	// 	flag := true
-	// 	for k, v := range t.Depends {
-	// 		if args.Command+args.Args == v.Command+v.Args {
-	// 			t.Depends[k].Done = true
-	// 			t.Depends[k].LogContent = args.LogContent
-	// 		}
-
-	// 		if t.Depends[k].Done == false {
-	// 			flag = false
-	// 		}
-	// 	}
-	// 	if flag {
-	// 		var logContent []byte
-	// 		for _, v := range t.Depends {
-	// 			logContent = append(logContent, v.LogContent...)
-	// 		}
-	// 		globalCrontab.resolvedDepends(t, logContent)
-	// 		log.Println("exec Task.ResolvedSDepends done")
-	// 	}
-	// 	*ok = true
-	// } else {
-	// 	*ok = false
-	// }
 
 	return nil
 }

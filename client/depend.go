@@ -45,24 +45,23 @@ func (d *depend) run() {
 					startTime := time.Now()
 					start := startTime.UnixNano()
 
-					err := execScript(ctx, fmt.Sprintf("%s-%s.log", name, t.TaskId), t.Command, globalConfig.logPath, &logContent, args...)
+					err := wrapExecScript(ctx, fmt.Sprintf("%s-%s.log", name, t.TaskId), t.Command, globalConfig.logPath, &logContent, args...)
 					cancel()
 					costTime := time.Now().UnixNano() - start
 					log.Printf("exec task %s <%s %s> cost %.4fs %v", t.TaskId, t.Command, t.Args, float64(costTime)/1000000000, err)
 					if err != nil {
-						logContent = append(logContent, []byte(err.Error()+"\n")...)
+						logContent = append(logContent, []byte(err.Error())...)
 					}
 
-					// 易得队列最后一个task即为该任务的时间标志
 					l := len(t.Queue)
 					if l == 0 {
 						log.Printf("task %s <%s %s> exec failed depend queue length %d ", t.TaskId, t.Command, t.Args, l)
 						return
 					}
-					t.Queue[l-1].LogContent = bytes.TrimRight(logContent, "\x00")
-					t.Queue[l-1].Done = true
+					t.Queue[0].LogContent = bytes.TrimRight(logContent, "\x00")
+					t.Queue[0].Done = true
 					if err != nil {
-						t.Queue[l-1].Err = err.Error()
+						t.Queue[0].Err = err.Error()
 					}
 
 					t.Dest, t.From = t.From, t.Dest

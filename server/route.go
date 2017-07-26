@@ -64,7 +64,13 @@ func listTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		return sortedTaskList[i].Create > sortedTaskList[j].Create
 	})
 
-	m.renderHtml2([]string{"listTask"}, map[string]interface{}{
+	tpl := []string{"listTask"}
+	if cki, err := r.Cookie("model"); err == nil {
+		if cki.Value == "batch" {
+			tpl = []string{"batchListTask"}
+		}
+	}
+	m.renderHtml2(tpl, map[string]interface{}{
 		"title":      "灵魂百度",
 		"list":       sortedTaskList,
 		"addrs":      sortedClientList,
@@ -72,6 +78,7 @@ func listTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		"systemInfo": systemInfo,
 		"taskIds":    strings.Join(taskIdSli, ","),
 		"appName":    globalConfig.appName,
+		"url":        r.URL.String(),
 	}, template.FuncMap{
 		"date":     date,
 		"formatMs": int2floatstr,
@@ -123,12 +130,13 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 	}
 
 	if r.Method == http.MethodPost {
-		var unExitM bool
+		var unExitM, sync bool
 		n := strings.TrimSpace(r.FormValue("taskName"))
 		command := strings.TrimSpace(r.FormValue("command"))
 		timeoutStr := strings.TrimSpace(r.FormValue("timeout"))
 		mConcurrentStr := strings.TrimSpace(r.FormValue("maxConcurrent"))
 		unpdExitM := r.FormValue("unexpectedExitMail")
+		mSync := r.FormValue("sync")
 		mailTo := strings.TrimSpace(r.FormValue("mailTo"))
 		optimeout := strings.TrimSpace(r.FormValue("optimeout"))
 
@@ -156,6 +164,11 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 			unExitM = true
 		} else {
 			unExitM = false
+		}
+		if mSync == "1" {
+			sync = true
+		} else {
+			sync = false
 		}
 
 		if _, ok := map[string]bool{"email": true, "kill": true, "email_and_kill": true, "ignore": true}[optimeout]; !ok {
@@ -190,6 +203,7 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 			MaxConcurrent:      maxConcurrent,
 			Depends:            depends,
 			UnexpectedExitMail: unExitM,
+			Sync:               sync,
 			C: struct {
 				Weekday string
 				Month   string
@@ -218,6 +232,7 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 	} else {
 		var t proto.TaskArgs
 		var clientList map[string]proto.ClientConf
+
 		if id != "" {
 			err := m.rpcCall(addr, "Task.Get", id, &t)
 			if err != nil {
@@ -355,7 +370,7 @@ func startTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		return
 	}
 
-	m.renderHtml2([]string{"error"}, map[string]interface{}{
+	m.renderHtml2([]string{"public/error"}, map[string]interface{}{
 		"error": "failed start task" + taskId,
 	}, nil)
 
@@ -493,4 +508,18 @@ func viewConfig(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		"configs": c,
 	}, nil)
 	return
+}
+
+func model(rw http.ResponseWriter, r *http.Request, m *modelView) {
+	val := r.FormValue("type")
+	url := r.FormValue("url")
+	http.SetCookie(rw, &http.Cookie{
+		Name:     "model",
+		Path:     "/",
+		Value:    val,
+		HttpOnly: true,
+	})
+
+	http.Redirect(rw, r, url, http.StatusFound)
+
 }

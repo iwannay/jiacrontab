@@ -36,7 +36,7 @@ func newReqFilter() *reqFilter {
 
 	r := &reqFilter{
 		requestCounterMap: make(map[string]*reqInfo),
-		callLimit:         100, // 相同客户端filterDuration内调用接口最大次数
+		callLimit:         1000, // 相同客户端filterDuration内调用接口最大次数
 		filterDuration:    3600,
 		updateDuration:    60 * 60, // 垃圾回收扫描周期
 		routeCallLimit: map[string]int64{
@@ -63,7 +63,7 @@ func (self *reqFilter) filter(rw http.ResponseWriter, r *http.Request) error {
 			log.Printf("%s the counter is reset to 0", k)
 		}
 		if v.counter > self.callLimit {
-			errMsg := fmt.Sprintf("api call %d reaches the maximum limit %d", v.counter, self.callLimit)
+			errMsg := fmt.Sprintf("%s  call api %d reaches the maximum limit %d", k, v.counter, self.callLimit)
 			log.Printf("%s:%s", k, errMsg)
 			return errors.New(errMsg)
 		}

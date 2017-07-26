@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+{{template "head" .}}
+<style>
+    .border-bottom:last-child{
+        border-bottom: none;
+    }
+</style>
+<body>
+    {{template "header" .}}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <ul class="breadcrumb">
+                    <li><a href="/">Home</a> </li>
+                    <li role="presentation" class="dropdown">
+                        <span class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                        {{.client.Addr}} <span class="caret"></span>
+                        </span>
+                        <ul class="dropdown-menu">
+                            {{$addr := .client.Addr}}
+                
+                            {{range $k,$v := .addrs}}
+                                {{if eq $v.State 1}}
+                                <li>
+                                    <a href="/list?addr={{$v.Addr}}">
+                                        {{$v.Addr}}
+                                    </a>
+                                </li>
+                                {{end}}
+                            {{end}}
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="border-bottom clearfix">
+                    <div class="navbar-left">
+                        <a href="#" onclick="launch('/start?addr={{.client.Addr}}')" class="btn btn-primary">启动</a>
+                        <a href="#" onclick="stop('/stop?addr={{.client.Addr}}&action=stop')" class="btn btn-primary">停止</a>
+                    </div>
+                    <div class="navbar-right" style="margin-right:0;">
+                        <a href="/model?type=default&url={{.url}}" class="btn btn-primary">默认模式</a>
+                        <a  data-toggle="modal" data-target="#infoModal" class="btn btn-primary">运行信息</a>
+                        <a href="/update?addr={{.client.Addr}}" class="btn btn-info">添加</a>
+                    </div>
+                </div>
+                <div class="table-responsive" style="min-height:410px;">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="checkedAll" onclick="isCheckAll(this)" style="vertical-align: top;">
+                                </th>
+                                <th>序号</th>
+                                <th>名称</th>
+                                <th>脚本</th>
+                                <th>状态</th>
+                                <th>创建日期</th>
+                                <th>上次启动</th>
+                                <th>上次耗时</th>
+                                <th>超时</th>
+                                <th>超时触发</th>
+                                <th>进程</th>
+                                <th>定时</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{$logHost := .logHost}} {{$client := .client}} 
+                            {{range $i,$v := .list}} 
+                            <tr>
+                                <td>
+                                    <label>
+                                        <input type="checkbox" onclick="isChecked(this)" value="{{$v.Id}}" class="taskId">
+                                    </label>
+                                </td>
+                                <td>{{$i}}</td>
+                                <td>{{$v.Name}}</td>
+                                <td>{{$v.Command}} {{$v.Args}}</td>
+                                <td>
+                                    {{if eq $v.State 0}}
+                                    <span class="label label-danger">已停止</span> 
+                                    {{else if eq $v.State 1}}
+                                    <span class="label label-info">计时中</span> 
+                                    {{else}}
+                                    <span class="label label-success">运行中</span>
+                                    {{end}}
+                                </td>
+                                <td>{{date $v.Create}}</td>
+                                <td>{{date $v.LastExecTime}}</td>
+                                <td>{{formatMs "%.3fs" $v.LastCostTime 1000000000}}</td>
+                                <td>{{$v.Timeout}}s</td>
+                                <td>{{$v.OpTimeout}}</td>
+                                <td>{{$v.NumberProcess}}</td>
+                                <td>{{$v.C.Minute}}&nbsp;&nbsp;{{$v.C.Hour}}&nbsp;&nbsp;{{$v.C.Day}}&nbsp;&nbsp;{{$v.C.Month}}&nbsp;&nbsp;{{$v.C.Weekday}}</td>
+                                <td>
+                                    <div class="dropdown">
+                                        <div href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">操作 <span class="caret"></span></div>
+                                        <ul class="dropdown-menu  dropdown-menu-right">
+                                            <li><a href="/start?taskId={{$v.Id}}&addr={{$client.Addr}}">启动计划任务</a></li>
+                                            <li><a href="/stop?taskId={{$v.Id}}&addr={{$client.Addr}}&action=stop">停止计划任务</a></li>
+                                            <li><a href="/update?taskId={{$v.Id}}&addr={{$client.Addr}}">修改计划任务</a></li>
+                                            <li><a href="/stop?taskId={{$v.Id}}&addr={{$client.Addr}}&action=delete">删除计划任务</a></li>
+                                            <li role="separator" class="divider"></li>
+                                            <li><a href="/quickStart?taskId={{$v.Id}}&addr={{$client.Addr}}">测试用户脚本</a></li>
+                                            <li><a href="/stop?taskId={{$v.Id}}&addr={{$client.Addr}}&action=kill">强杀脚本进程</a></li>
+                                            <li role="separator" class="divider"></li>
+                                            <li><a href="/log?taskId={{$v.Id}}&addr={{$client.Addr}}">查看最近日志</a></li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{template "footer" .}}
+
+    <div class="modal fade" tabindex="-1" role="dialog" id="infoModal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">{{$addr}}-运行信息</h4>
+            </div>
+            <div class="modal-body">
+                    {{range $k,$v := .systemInfo}}
+                    <p>{{$k}} : {{$v}}</p>
+                    {{end}}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+            </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+
+    <script>
+        function launch(url) {
+            let launchTasks = [];
+            $(".taskId:checked").each(function(i, ele) {
+                launchTasks.push(ele.value);
+            })
+            if (launchTasks.length > 0) {
+                location.href = url+"&taskId="+launchTasks.join(",");
+            }
+        }
+        function stop(url) {
+            let stopTasks = [];
+            $(".taskId:checked").each(function(i, ele) {
+                stopTasks.push(ele.value);
+            })
+            if (stopTasks.length > 0) {
+                location.href = url+"&taskId="+stopTasks.join(",");
+            }
+        }
+        function isChecked(dom) {
+            var isCheckFlag = false;
+            if($(dom).prop('checked')) {
+                if($(".taskId:checked").length == $(".taskId").length) {
+                    isCheckFlag = true;
+                } else {
+                    isCheckFlag = false;
+                }
+            } else {
+                isCheckFlag = false;
+            }
+            
+            $('#checkedAll').prop('checked', isCheckFlag);
+        }
+        function isCheckAll(dom) {
+            if($(dom).prop('checked')) {
+                $('.taskId').prop("checked",true); 
+            } else {
+                $('.taskId').prop("checked",false);
+            }
+        }
+
+
+    </script>
+</body>
+</html>

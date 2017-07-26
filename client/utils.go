@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"jiacrontab/libs"
 	"jiacrontab/libs/proto"
@@ -367,35 +368,63 @@ end:
 	return flag
 }
 
-func execScript(ctx context.Context, logname string, bin string, logpath string, content *[]byte, args ...string) error {
-	defer libs.MRecover()
+func wrapExecScript(ctx context.Context, logname string, bin string, logpath string, content *[]byte, args ...string) error {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println(err)
+		}
+	}()
+
+	f, err := execScript(ctx, logname, bin, logpath, content, args...)
+	defer func() {
+		if f != nil {
+			f.Close()
+		}
+	}()
+	if err != nil {
+		var errMsg string
+		if globalConfig.debugScript {
+			prefix := fmt.Sprintf("[%s %s %s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, bin, strings.Join(args, " "))
+			errMsg = prefix + err.Error() + "\n"
+			f.WriteString(errMsg)
+		} else {
+			errMsg = err.Error() + "\n"
+			f.WriteString(errMsg)
+		}
+		*content = append(*content, []byte(errMsg)...)
+	}
+
+	return err
+}
+
+func execScript(ctx context.Context, logname string, bin string, logpath string, content *[]byte, args ...string) (*os.File, error) {
+
 	binpath, err := exec.LookPath(bin)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	logPath := filepath.Join(logpath, strconv.Itoa(time.Now().Year()), time.Now().Month().String())
 	f, err := libs.TryOpen(filepath.Join(logPath, logname), os.O_APPEND|os.O_CREATE|os.O_RDWR)
 
-	defer f.Close()
 	if err != nil {
-		return err
+		return f, err
 	}
 
 	cmd := exec.CommandContext(ctx, binpath, args...)
 	stdout, err := cmd.StdoutPipe()
 	defer stdout.Close()
 	if err != nil {
-		return err
+		return f, err
 	}
 	stderr, err := cmd.StderrPipe()
 	defer stderr.Close()
 	if err != nil {
-		return err
+		return f, err
 	}
 
 	if err := cmd.Start(); err != nil {
-		return err
+		return f, err
 	}
 	reader := bufio.NewReader(stdout)
 	readerErr := bufio.NewReader(stderr)
@@ -404,29 +433,44 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 
 	for {
 		line, err2 := reader.ReadString('\n')
-		*content = append(*content, []byte(line)...)
-		f.WriteString(line)
-
 		if err2 != nil || io.EOF == err2 {
 			break
 		}
+		if globalConfig.debugScript {
+			prefix := fmt.Sprintf("[%s %s %s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, bin, strings.Join(args, " "))
+			line = prefix + line
+			*content = append(*content, []byte(line)...)
+		} else {
+			*content = append(*content, []byte(line)...)
+		}
+
+		f.WriteString(line)
+
 	}
 
 	for {
 		line, err2 := readerErr.ReadString('\n')
-		*content = append(*content, []byte(line)...)
-		f.WriteString(line)
-
 		if err2 != nil || io.EOF == err2 {
 			break
 		}
+		// 默认给err信息加上日期标志
+		if globalConfig.debugScript {
+			prefix := fmt.Sprintf("[%s %s %s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, bin, strings.Join(args, " "))
+			line = prefix + line
+			*content = append(*content, []byte(line)...)
+		} else {
+			*content = append(*content, []byte(line)...)
+		}
+
+		f.WriteString(line)
+
 	}
 
 	if err := cmd.Wait(); err != nil {
-		return err
+		return f, err
 	}
 
-	return nil
+	return f, nil
 }
 
 func writeLog(logpath string, logname string, content *[]byte) {
@@ -468,13 +512,20 @@ func sendMail(mailTo, title, content string) {
 	go libs.SendMail(title, content, host, from, pass, port, mailTo)
 }
 
-func pushDepends(taskId string, dpds []proto.MScript) bool {
+func pushDepends(dpds []proto.MScript, curQueue proto.MScriptContent) bool {
 
 	if len(dpds) > 0 {
 
-		// 检测目标服务器为本机时直接执行脚本
+		copyDpds := make([]proto.MScript, 0)
+		copyDpds = append(copyDpds, dpds...)
+		for k := range copyDpds {
+			copyDpds[k].Queue = make([]proto.MScriptContent, 0)
+			copyDpds[k].Queue = append(copyDpds[k].Queue, curQueue)
+		}
+
 		var ndpds []proto.MScript
-		for _, v := range dpds {
+		for _, v := range copyDpds {
+			// 检测目标服务器为本机时直接执行脚本
 			if v.Dest == globalConfig.addr {
 				globalDepend.Add(v)
 			} else {
@@ -485,13 +536,59 @@ func pushDepends(taskId string, dpds []proto.MScript) bool {
 			var reply bool
 			err := rpcCall("Logic.Depends", ndpds, &reply)
 			if !reply || err != nil {
-				log.Printf("push Depends failed!")
+				log.Printf("push Depends failed,%s", err)
 				return false
 			}
 		}
 
 	}
 	return true
+}
+
+// sign dest+cmd+args
+// sign相同认为为同一个依赖,sign为空时取第一个
+func pushPipeDepend(dpds []proto.MScript, sign string, curQueue proto.MScriptContent) bool {
+	var flag = true
+	if len(dpds) > 0 {
+		var ndpds []proto.MScript
+		flag = false
+
+		// 解除引用
+		copyDpds := make([]proto.MScript, 0)
+		copyDpds = append(copyDpds, dpds...)
+		for k := range copyDpds {
+			copyDpds[k].Queue = make([]proto.MScriptContent, 0)
+			copyDpds[k].Queue = append(copyDpds[k].Queue, curQueue)
+		}
+
+		flag = false
+		l := len(copyDpds) - 1
+		for k, v := range copyDpds {
+			if flag || sign == "" {
+				// 检测目标服务器为本机时直接执行脚本
+				log.Printf("sync push %s <%s %s>", v.Dest, v.Command, v.Args)
+				if v.Dest == globalConfig.addr {
+					globalDepend.Add(v)
+				} else {
+					ndpds = append(ndpds, v)
+					var reply bool
+					err := rpcCall("Logic.Depends", ndpds, &reply)
+					if !reply || err != nil {
+						log.Printf("sync push Depends failed!")
+						return false
+					}
+				}
+				flag = true
+				break
+			}
+			if (v.Dest+v.Command+v.Args == sign) && (l != k) {
+				flag = true
+			}
+
+		}
+
+	}
+	return flag
 }
 
 // filterDepend 本地执行的脚本依赖不再请求网络，直接转发到对应的处理模块
@@ -503,41 +600,69 @@ func filterDepend(args proto.MScript) bool {
 
 	if t, ok := globalStore.SearchTaskList(args.TaskId); ok {
 		flag := true
-		i := len(args.Queue) - 1
+		closeMsg := fmt.Sprintf("depend queue is close and stop wait depend %s %s done", args.Command, args.Args)
+		if t.State != 2 {
+			log.Println(closeMsg)
+			return true
+		}
 		for k, v := range t.Depends {
-			if args.Command+args.Args == v.Command+v.Args {
-				if i > len(v.Queue)-1 {
-					log.Printf("depend queue is close and stop wait depend %s %s done", args.Command, args.Args)
+			argsSign := args.From + args.Command + args.Args
+			vSign := v.Dest + v.Command + v.Args
+			if argsSign == vSign {
+				if len(v.Queue) == 0 {
+					log.Println(closeMsg, "queue length", 0)
 					return true
 				}
-				if t.Depends[k].Queue[i].TaskTime != args.Queue[i].TaskTime {
-					log.Printf("TaskTime not equal")
-					return true
+				globalCrontab.sliceLock.Lock()
+				for key, value := range v.Queue {
+					if value.TaskTime == args.Queue[0].TaskTime {
+						if value.Done == true {
+							globalCrontab.sliceLock.Unlock()
+							log.Println(closeMsg, ",tasktime %d value.done eq true", value.TaskTime)
+							return true
+						}
+						t.Depends[k].Queue[key] = args.Queue[0]
+					}
+
 				}
-				if t.Depends[k].Queue[i].Done == true {
-					log.Printf("depend queue is close and stop wait depend %s %s done", args.Command, args.Args)
-					return true
+				globalCrontab.sliceLock.Unlock()
+
+				if t.Sync {
+					if ok := pushPipeDepend(t.Depends, argsSign, args.Queue[0]); ok {
+						return true
+					}
 				}
-				t.Depends[k].Queue[i] = args.Queue[i]
+
 			}
 
-			if t.Depends[k].Queue[i].Done == false {
-				flag = false
+			// 判断是否所有依赖执行完毕
+			for _, value := range v.Queue {
+				if value.TaskTime == args.Queue[0].TaskTime {
+					if value.Done == false {
+						flag = false
+					}
+				}
 			}
+
 		}
 
 		// 如果依赖脚本执行出错直接通知主脚本停止
-		if args.Queue[i].Err != "" {
+		if args.Queue[0].Err != "" {
 			flag = true
-			log.Printf("task %s depend %s %s exec failed %s try to stop master task", args.TaskId, args.Args, args.Args, args.Queue[i].Err)
+			log.Printf("task %s <%s %s> exec failed %s try to stop master task", args.TaskId, args.Args, args.Args, args.Queue[0].Err)
 		}
 
 		if flag {
 			var logContent []byte
 			for _, v := range t.Depends {
-				logContent = append(logContent, v.Queue[i].LogContent...)
+				for _, value := range v.Queue {
+					if value.TaskTime == args.Queue[0].TaskTime {
+						logContent = append(logContent, v.Queue[0].LogContent...)
+					}
+				}
+
 			}
-			globalCrontab.resolvedDepends(t, logContent, args.Queue[i].TaskTime, args.Queue[i].Err)
+			globalCrontab.resolvedDepends(t, logContent, args.Queue[0].TaskTime, args.Queue[0].Err)
 			log.Println("exec Task.ResolvedSDepends done")
 		}
 		return true

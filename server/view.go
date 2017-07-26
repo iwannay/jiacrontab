@@ -45,8 +45,8 @@ func (self *modelView) rpcCall(addr string, method string, args interface{}, rep
 		return err
 	}
 
-	if err := c.Call(method, args, reply); err != nil {
-		err = fmt.Errorf("failded to call %s %s %s", method, args, err)
+	if err = c.Call(method, args, reply); err != nil {
+		err = fmt.Errorf("failded to call %s %+v %s", method, args, err)
 		log.Println(err)
 	}
 	return err
