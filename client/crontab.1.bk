@@ -1,6 +1,7 @@
 package main
 
 import (
+	"container/ring"
 	"context"
 	"fmt"
 	"jiacrontab/client/store"
@@ -22,7 +23,7 @@ func newCrontab(taskChanSize int) *crontab {
 	}
 }
 
-type taskEntity struct {
+type task struct {
 	id       string
 	pid      string
 	name     string
@@ -32,68 +33,21 @@ type taskEntity struct {
 	timeout  int64
 	sync     bool
 	cancel   context.CancelFunc
-
-	ready   chan struct{}
-	depends []dependScript
+	ready    chan struct{}
+	depends  []task
 }
 
-type dependScript struct {
-	pid        string
-	from       string
-	dest       string
-	done       bool
-	logContent []byte
-}
-
-func (d *dependScript) exec() {
-
-}
-
-func newTaskEntity(t *proto.TaskArgs) *taskEntity {
-	var depends []dependScript
-	id := fmt.Sprintf("%d", time.Now().Unix())
-	for _, v := range t.Depends {
-		depends = append(depends, dependScript{
-			pid:  id,
-			from: v.From,
-			dest: v.Dest,
-			done: false,
-		})
+func (t *task) exec() {
+	if t.taskArgs != nil {
+		atomic.AddInt32(&t.taskArgs.NumberProcess, 1)
 	}
-	return &taskEntity{
-		id:      id,
-		pid:     t.Id,
-		name:    t.Name,
-		command: t.Command,
-		sync:    t.Sync,
-		ready:   make(chan struct{}),
-		depends: depends,
-	}
-}
-
-func (t *taskEntity) exec() {
-	now := time.Now()
-	atomic.AddInt32(&t.taskArgs.NumberProcess, 1)
-	ctx, cancel := context.WithCancel(context.Background())
-	t.cancel = cancel
-	args := strings.Split(t.taskArgs.Args, " ")
-	start := now.UnixNano()
-	state := t.taskArgs.State
-	t.taskArgs.State = 2
-	var logContent *[]byte
 
 	go func() {
-		// TODO 这里设置脚本依赖超时
 		if len(t.taskArgs.Depends) > 0 {
 			log.Println("have depends")
 			if t.sync {
 				for _, v := range t.depends {
 					v.exec()
-				}
-				t.ready <- struct{}{}
-			} else {
-				for _, v := range t.depends {
-					go v.exec()
 				}
 			}
 
@@ -104,64 +58,20 @@ func (t *taskEntity) exec() {
 
 	// 等待所有依赖执行完毕
 	<-t.ready
-
-	// 执行脚本
-	flag := true
-
-	if t.taskArgs.Timeout != 0 {
-		time.AfterFunc(time.Duration(t.taskArgs.Timeout)*time.Second, func() {
-			if flag {
-				switch t.taskArgs.OpTimeout {
-				case "email":
-					sendMail(t.taskArgs.MailTo, globalConfig.addr+"提醒脚本执行超时", fmt.Sprintf(
-						"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
-						t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), t.taskArgs.Timeout))
-				case "kill":
-					cancel()
-
-				case "email_and_kill":
-					cancel()
-					sendMail(t.taskArgs.MailTo, globalConfig.addr+"提醒脚本执行超时", fmt.Sprintf(
-						"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
-						t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), t.taskArgs.Timeout))
-				case "ignore":
-				default:
-				}
-			}
-
-		})
+	if t.taskArgs != nil {
+		atomic.AddInt32(&t.taskArgs.NumberProcess, -1)
 	}
-
-	err := wrapExecScript(ctx, fmt.Sprintf("%s-%s.log", t.taskArgs.Name, t.taskArgs.Id), t.taskArgs.Command, globalConfig.logPath, logContent, args...)
-
-	flag = false
-	if err != nil && t.taskArgs.UnexpectedExitMail {
-		sendMail(t.taskArgs.MailTo, globalConfig.addr+"提醒脚本异常退出", fmt.Sprintf(
-			"任务名：%s\n详情：%s %v\n开始时间：%s\n异常：%s",
-			t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), err.Error()))
-
-	}
-	atomic.AddInt32(&t.taskArgs.NumberProcess, -1)
-
-	t.taskArgs.LastCostTime = time.Now().UnixNano() - start
-	if t.taskArgs.NumberProcess == 0 {
-		t.taskArgs.State = state
-
-	} else {
-		t.taskArgs.State = 2
-	}
-	globalStore.Sync()
-
-	log.Printf("%s:%s %v %s %.3fs %v", t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, t.taskArgs.OpTimeout, float64(t.taskArgs.LastCostTime)/1000000000, err)
 
 }
 
 type handle struct {
 	cancel         context.CancelFunc   // 取消定时器
 	cancelCmdArray []context.CancelFunc // 取消正在执行的脚本
-	readyDepends   chan proto.MScriptContent
-	clockChan      chan time.Time
-	taskPool       []*taskEntity
+	// resolvedDepends chan []byte
+	readyDepends chan proto.MScriptContent
+	clockChan    chan time.Time
+	taskPool     *ring.Ring
+	timeout      int64
 }
 
 type crontab struct {
@@ -169,6 +79,7 @@ type crontab struct {
 	delTaskChan  chan *proto.TaskArgs
 	killTaskChan chan *proto.TaskArgs
 	handleMap    map[string]*handle
+	taskPool     []task
 	lock         sync.RWMutex
 	sliceLock    sync.RWMutex
 }
@@ -248,26 +159,35 @@ func (c *crontab) run() {
 	go func() {
 		for {
 			select {
-			case t := <-c.taskChan:
+			case task := <-c.taskChan:
+				task.State = 1
+				ctx, cancel := context.WithCancel(context.Background())
 				c.lock.Lock()
-				if t.State == 0 {
-					t.State = 1
-					ctx, cancel := context.WithCancel(context.Background())
-
-					taskPool := make([]*taskEntity, 0)
-					c.handleMap[t.Id] = &handle{
-						cancel:       cancel,
-						readyDepends: make(chan proto.MScriptContent, 10),
-						clockChan:    make(chan time.Time),
-						taskPool:     taskPool,
+				if handle, ok := c.handleMap[task.Id]; ok {
+					if handle.cancelCmdArray != nil {
+						for _, cancel := range handle.cancelCmdArray {
+							cancel()
+						}
 					}
-					c.lock.Unlock()
-					go c.deal(t, ctx)
-					log.Printf("add task %s %s", t.Name, t.Id)
-				} else {
-					c.lock.Unlock()
-					log.Printf("task %s %s exists", t.Name, t.Id)
+					if handle.cancel != nil {
+						handle.cancel()
+					}
+
+					log.Println("kill", task.Name, task.Id)
+
 				}
+				c.handleMap[task.Id] = &handle{
+					cancel: cancel,
+					// resolvedDepends: make(chan []byte),
+					readyDepends: make(chan proto.MScriptContent, 10),
+					clockChan:    make(chan time.Time),
+				}
+
+				c.lock.Unlock()
+
+				log.Printf("add task %s %s", task.Name, task.Id)
+
+				go c.deal(task, ctx)
 			}
 		}
 	}()
@@ -302,11 +222,13 @@ func (c *crontab) run() {
 				c.lock.Lock()
 				if handle, ok := c.handleMap[task.Id]; ok {
 					c.lock.Unlock()
-					if handle.taskPool != nil {
-						for _, v := range handle.taskPool {
-							v.cancel()
+					if handle.cancelCmdArray != nil {
+						for _, cancel := range handle.cancelCmdArray {
+							cancel()
 						}
+						handle.cancelCmdArray = make([]context.CancelFunc, 0)
 						log.Println("kill", task.Name, task.Id)
+						globalStore.Sync()
 					}
 				} else {
 					c.lock.Unlock()
@@ -339,10 +261,9 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 					checkDay(check, now.Day()) &&
 					checkHour(check, now.Hour()) &&
 					checkMinute(check, now.Minute()) {
+					var content []byte
 
-					taskEty := newTaskEntity(task)
-					h.taskPool = append(h.taskPool, taskEty)
-					taskEty.exec()
+					c.execTask(task, &content, 1)
 				}
 			}(now)
 		case <-ctx.Done():
@@ -350,7 +271,8 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 			wgroup.Wait()
 			task.State = 0
 			log.Printf("stop %s %s ok", task.Name, task.Id)
-
+			// 垃圾回收
+			// 防止向已终止的依赖接受通道继续发送信息
 			for k := range task.Depends {
 				task.Depends[k].Queue = make([]proto.MScriptContent, 0)
 			}
@@ -496,7 +418,6 @@ end:
 	return flag
 }
 
-// 删除
 func (c *crontab) execTask(task *proto.TaskArgs, logContent *[]byte, state int) {
 	var err error
 	now2 := time.Now()
