@@ -12,6 +12,7 @@ type TaskArgs struct {
 	LastExecTime       int64
 	Timeout            int64
 	NumberProcess      int32
+	TimerCounter       int32
 	UnexpectedExitMail bool
 	Sync               bool // 脚本是否同步执行
 	MailTo             string
@@ -29,27 +30,15 @@ type CrontabArgs struct {
 }
 
 type MScript struct {
-	Dest    string
-	From    string
-	TaskId  string
-	Command string
-	Args    string
-	Timeout int64
-	// Done       bool
-	// LogContent []byte `json:"-"`
-	Queue []MScriptContent
-}
-
-type MScriptContent struct {
-	TaskTime   int64
-	Done       bool
+	Name       string
+	Dest       string
+	From       string
+	TaskId     string
+	Command    string
+	Args       string
+	Timeout    int64
 	Err        string `json:"-"`
 	LogContent []byte `json:"-"`
-}
-
-type DependsArgs struct {
-	TaskId string
-	Dpds   []MScript
 }
 
 var Months = [...]string{

@@ -64,8 +64,8 @@ func main() {
 	go listenSignal(func() {
 		globalCrontab.lock.Lock()
 		for k, v := range globalCrontab.handleMap {
-			for _, cancel := range v.cancelCmdArray {
-				cancel()
+			for _, item := range v.taskPool {
+				item.cancel()
 			}
 			log.Printf("kill %s", k)
 		}

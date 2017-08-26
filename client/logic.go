@@ -56,7 +56,7 @@ func (t *Task) Update(args proto.TaskArgs, ok *bool) error {
 	} else {
 		if v, ok2 := globalStore.SearchTaskList(args.Id); ok2 {
 
-			if v.State == 2 {
+			if v.NumberProcess > 0 {
 				return errors.New("can not update when task is running")
 			}
 
@@ -104,7 +104,7 @@ func (t *Task) Start(args string, ok *bool) error {
 	ids := strings.Split(args, ",")
 	for _, v := range ids {
 		if val, ok2 := globalStore.SearchTaskList(v); ok2 {
-			if val.State == 0 {
+			if val.TimerCounter == 0 {
 				globalCrontab.add(val)
 			}
 		} else {
@@ -184,7 +184,7 @@ func (t *Task) Log(args string, ret *[]byte) error {
 
 	if v, ok := globalStore.SearchTaskList(args); ok {
 
-		filename = fmt.Sprintf("%s-%s.log", v.Name, v.Id)
+		filename = fmt.Sprintf("%s.log", v.Name)
 	}
 
 	if filename == "" {
@@ -218,16 +218,51 @@ func (t *Task) Log(args string, ret *[]byte) error {
 	return err
 }
 
-func (t *Task) ResolvedSDepends(args proto.MScript, ok *bool) error {
+func (t *Task) ResolvedDepends(args proto.MScript, ok *bool) error {
 
-	*ok = filterDepend(args)
+	var err error
+	if args.Err != "" {
+		err = errors.New(args.Err)
+	}
 
+	idArr := strings.Split(args.TaskId, "-")
+	globalCrontab.lock.Lock()
+	if h, ok2 := globalCrontab.handleMap[idArr[0]]; ok2 {
+		globalCrontab.lock.Unlock()
+		for _, v := range h.taskPool {
+			if v.id == idArr[1] {
+				for _, v2 := range v.depends {
+					if v2.id == args.TaskId {
+						v2.dest = args.Dest
+						v2.from = args.From
+						v2.logContent = args.LogContent
+						v2.err = err
+						v2.done = true
+						*ok = filterDepend(v2)
+						return nil
+					}
+				}
+			}
+		}
+	}
+
+	log.Printf("resolvedDepends: %s is not exists", args.Name)
+
+	*ok = false
 	return nil
 }
 
 func (t *Task) ExecDepend(args proto.MScript, reply *bool) error {
-	globalDepend.Add(args)
+
+	globalDepend.Add(&dependScript{
+		id:      args.TaskId,
+		dest:    args.Dest,
+		from:    args.From,
+		name:    args.Name,
+		command: args.Command,
+		args:    args.Args,
+	})
 	*reply = true
-	log.Printf("task %s <%s %s> add to execution queue ", args.TaskId, args.Command, args.Args)
+	log.Printf("task %s %s %s add to execution queue ", args.Name, args.Command, args.Args)
 	return nil
 }
