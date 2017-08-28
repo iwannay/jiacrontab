@@ -63,7 +63,7 @@
                                 <th>上次耗时</th>
                                 <th>超时</th>
                                 <th>超时触发</th>
-                                <th>进程</th>
+                                <th>进程/计时器</th>
                                 <th>定时</th>
                                 <th>操作</th>
                             </tr>
@@ -94,7 +94,7 @@
                                 <td>{{formatMs "%.3fs" $v.LastCostTime 1000000000}}</td>
                                 <td>{{$v.Timeout}}s</td>
                                 <td>{{$v.OpTimeout}}</td>
-                                <td>{{$v.NumberProcess}}</td>
+                                <td>{{$v.NumberProcess}}/{{$v.TimerCounter}}</td>
                                 <td>{{$v.C.Minute}}&nbsp;&nbsp;{{$v.C.Hour}}&nbsp;&nbsp;{{$v.C.Day}}&nbsp;&nbsp;{{$v.C.Month}}&nbsp;&nbsp;{{$v.C.Weekday}}</td>
                                 <td>
                                     <div class="dropdown">

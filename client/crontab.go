@@ -355,7 +355,7 @@ func (c *crontab) run() {
 func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 	var wgroup sync.WaitGroup
 	// 定时计数器用于统计有多少个定时期，当定时器为0时说明没有正在执行的计划
-	atomic.AddInt32(&(task.TimerCounter), 1)
+	atomic.AddInt32(&task.TimerCounter, 1)
 	task.State = 1
 	defer atomic.AddInt32(&task.TimerCounter, -1)
 	c.lock.Lock()

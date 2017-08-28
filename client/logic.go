@@ -244,6 +244,8 @@ func (t *Task) ResolvedDepends(args proto.MScript, ok *bool) error {
 				}
 			}
 		}
+	} else {
+		globalCrontab.lock.Unlock()
 	}
 
 	log.Printf("resolvedDepends: %s is not exists", args.Name)
