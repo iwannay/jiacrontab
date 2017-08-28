@@ -41,9 +41,9 @@ func (l *Logic) Depends(args []proto.MScript, reply *bool) error {
 }
 
 func (l *Logic) DependDone(args proto.MScript, reply *bool) error {
-	log.Printf("Callee Logic.DependDone taskId %s", args.TaskId)
+	log.Printf("Callee Logic.DependDone task %s", args.Name)
 	*reply = true
-	if err := rpcCall(args.Dest, "Task.ResolvedSDepends", args, &reply); err != nil {
+	if err := rpcCall(args.Dest, "Task.ResolvedDepends", args, &reply); err != nil {
 		*reply = false
 		return err
 	}

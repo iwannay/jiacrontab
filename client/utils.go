@@ -512,24 +512,24 @@ func sendMail(mailTo, title, content string) {
 	go libs.SendMail(title, content, host, from, pass, port, mailTo)
 }
 
-func pushDepends(dpds []proto.MScript, curQueue proto.MScriptContent) bool {
+func pushDepends(dpds []*dependScript) bool {
 
 	if len(dpds) > 0 {
-
-		copyDpds := make([]proto.MScript, 0)
-		copyDpds = append(copyDpds, dpds...)
-		for k := range copyDpds {
-			copyDpds[k].Queue = make([]proto.MScriptContent, 0)
-			copyDpds[k].Queue = append(copyDpds[k].Queue, curQueue)
-		}
-
 		var ndpds []proto.MScript
-		for _, v := range copyDpds {
+		for _, v := range dpds {
 			// 检测目标服务器为本机时直接执行脚本
-			if v.Dest == globalConfig.addr {
+			if v.dest == globalConfig.addr {
 				globalDepend.Add(v)
 			} else {
-				ndpds = append(ndpds, v)
+				ndpds = append(ndpds, proto.MScript{
+					Name:    v.name,
+					Dest:    v.dest,
+					From:    v.from,
+					TaskId:  v.id,
+					Command: v.command,
+					Args:    v.args,
+					Timeout: v.timeout,
+				})
 			}
 		}
 		if len(ndpds) > 0 {
@@ -545,34 +545,30 @@ func pushDepends(dpds []proto.MScript, curQueue proto.MScriptContent) bool {
 	return true
 }
 
-// sign dest+cmd+args
-// sign相同认为为同一个依赖,sign为空时取第一个
-func pushPipeDepend(dpds []proto.MScript, sign string, curQueue proto.MScriptContent) bool {
+// 同步添加依赖执行
+func pushPipeDepend(dpds []*dependScript, dependScriptId string) bool {
 	var flag = true
 	if len(dpds) > 0 {
-		var ndpds []proto.MScript
 		flag = false
+		l := len(dpds) - 1
+		for k, v := range dpds {
+			if flag || dependScriptId == "" {
 
-		// 解除引用
-		copyDpds := make([]proto.MScript, 0)
-		copyDpds = append(copyDpds, dpds...)
-		for k := range copyDpds {
-			copyDpds[k].Queue = make([]proto.MScriptContent, 0)
-			copyDpds[k].Queue = append(copyDpds[k].Queue, curQueue)
-		}
-
-		flag = false
-		l := len(copyDpds) - 1
-		for k, v := range copyDpds {
-			if flag || sign == "" {
 				// 检测目标服务器为本机时直接执行脚本
-				log.Printf("sync push %s <%s %s>", v.Dest, v.Command, v.Args)
-				if v.Dest == globalConfig.addr {
+				log.Printf("sync push %s <%s %s>", v.dest, v.command, v.args)
+				if v.dest == globalConfig.addr {
 					globalDepend.Add(v)
 				} else {
-					ndpds = append(ndpds, v)
 					var reply bool
-					err := rpcCall("Logic.Depends", ndpds, &reply)
+					err := rpcCall("Logic.Depends", []proto.MScript{{
+						Name:    v.name,
+						Dest:    v.dest,
+						From:    v.from,
+						TaskId:  v.id,
+						Command: v.command,
+						Args:    v.args,
+						Timeout: v.timeout,
+					}}, &reply)
 					if !reply || err != nil {
 						log.Printf("sync push Depends failed!")
 						return false
@@ -581,7 +577,8 @@ func pushPipeDepend(dpds []proto.MScript, sign string, curQueue proto.MScriptCon
 				flag = true
 				break
 			}
-			if (v.Dest+v.Command+v.Args == sign) && (l != k) {
+
+			if (v.id == dependScriptId) && (l != k) {
 				flag = true
 			}
 
@@ -593,79 +590,61 @@ func pushPipeDepend(dpds []proto.MScript, sign string, curQueue proto.MScriptCon
 
 // filterDepend 本地执行的脚本依赖不再请求网络，直接转发到对应的处理模块
 // 目标网络不是本机时返回false
-func filterDepend(args proto.MScript) bool {
-	if args.Dest != globalConfig.addr {
+func filterDepend(args *dependScript) bool {
+
+	if args.dest != globalConfig.addr {
 		return false
 	}
 
-	if t, ok := globalStore.SearchTaskList(args.TaskId); ok {
-		flag := true
-		closeMsg := fmt.Sprintf("depend queue is close and stop wait depend %s %s done", args.Command, args.Args)
-		if t.State != 2 {
-			log.Println(closeMsg)
-			return true
-		}
-		for k, v := range t.Depends {
-			argsSign := args.From + args.Command + args.Args
-			vSign := v.Dest + v.Command + v.Args
-			if argsSign == vSign {
-				if len(v.Queue) == 0 {
-					log.Println(closeMsg, "queue length", 0)
-					return true
-				}
-				globalCrontab.sliceLock.Lock()
-				for key, value := range v.Queue {
-					if value.TaskTime == args.Queue[0].TaskTime {
-						if value.Done == true {
-							globalCrontab.sliceLock.Unlock()
-							log.Println(closeMsg, ",tasktime %d value.done eq true", value.TaskTime)
+	idArr := strings.Split(args.id, "-")
+	isAllDone := true
+	globalCrontab.lock.Lock()
+	if h, ok := globalCrontab.handleMap[idArr[0]]; ok {
+
+		globalCrontab.lock.Unlock()
+		var logContent []byte
+		var currTaskEntity *taskEntity
+		for _, v := range h.taskPool {
+			if v.id == idArr[1] {
+				currTaskEntity = v
+				for _, v2 := range v.depends {
+
+					if v2.done == false {
+						isAllDone = false
+					} else {
+						logContent = append(logContent, v2.logContent...)
+					}
+
+					if v2.id == args.id && v.sync {
+						if ok := pushPipeDepend(v.depends, v2.id); ok {
 							return true
 						}
-						t.Depends[k].Queue[key] = args.Queue[0]
-					}
-
-				}
-				globalCrontab.sliceLock.Unlock()
-
-				if t.Sync {
-					if ok := pushPipeDepend(t.Depends, argsSign, args.Queue[0]); ok {
-						return true
-					}
-				}
-
-			}
-
-			// 判断是否所有依赖执行完毕
-			for _, value := range v.Queue {
-				if value.TaskTime == args.Queue[0].TaskTime {
-					if value.Done == false {
-						flag = false
 					}
 				}
 			}
+		}
 
+		if currTaskEntity == nil {
+			log.Printf("cant find task entity %s %s %s", args.name, args.command, args.args)
+			return true
 		}
 
 		// 如果依赖脚本执行出错直接通知主脚本停止
-		if args.Queue[0].Err != "" {
-			flag = true
-			log.Printf("task %s <%s %s> exec failed %s try to stop master task", args.TaskId, args.Args, args.Args, args.Queue[0].Err)
+		if args.err != nil {
+			isAllDone = true
+			log.Printf("depend %s %s %s exec failed %s try to stop master task", args.name, args.command, args.args, args.err)
 		}
 
-		if flag {
-			var logContent []byte
-			for _, v := range t.Depends {
-				for _, value := range v.Queue {
-					if value.TaskTime == args.Queue[0].TaskTime {
-						logContent = append(logContent, v.Queue[0].LogContent...)
-					}
-				}
-
-			}
-			globalCrontab.resolvedDepends(t, logContent, args.Queue[0].TaskTime, args.Queue[0].Err)
-			log.Println("exec Task.ResolvedSDepends done")
+		if isAllDone {
+			currTaskEntity.ready <- struct{}{}
+			currTaskEntity.logContent = logContent
 		}
-		return true
+
+	} else {
+		log.Printf("cant find task handle %s %s %s", args.name, args.command, args.args)
+		globalCrontab.lock.Unlock()
 	}
-	return false
+
+	return true
+
 }

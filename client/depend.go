@@ -6,22 +6,21 @@ import (
 	"fmt"
 	"jiacrontab/libs/proto"
 	"log"
-	"path/filepath"
 	"strings"
 	"time"
 )
 
 func newDepend() *depend {
 	return &depend{
-		depends: make(chan proto.MScript, 100),
+		depends: make(chan *dependScript, 100),
 	}
 }
 
 type depend struct {
-	depends chan proto.MScript
+	depends chan *dependScript
 }
 
-func (d *depend) Add(t proto.MScript) {
+func (d *depend) Add(t *dependScript) {
 	d.depends <- t
 }
 
@@ -30,46 +29,53 @@ func (d *depend) run() {
 		for {
 			select {
 			case t := <-d.depends:
-				go func(t proto.MScript) {
+				go func(t *dependScript) {
 					var reply bool
 					var logContent []byte
+					var errMsg string
 
-					if t.Timeout == 0 {
+					if t.timeout == 0 {
 						// 默认超时10分钟
-						t.Timeout = 600
+						t.timeout = 600
 					}
 
-					ctx, cancel := context.WithTimeout(context.Background(), time.Duration(t.Timeout)*time.Second)
-					args := strings.Split(t.Args, " ")
-					name := filepath.Base(args[len(args)-1])
+					ctx, cancel := context.WithTimeout(context.Background(), time.Duration(t.timeout)*time.Second)
+					args := strings.Split(t.args, " ")
 					startTime := time.Now()
 					start := startTime.UnixNano()
 
-					err := wrapExecScript(ctx, fmt.Sprintf("%s-%s.log", name, t.TaskId), t.Command, globalConfig.logPath, &logContent, args...)
+					err := wrapExecScript(ctx, fmt.Sprintf("%s.log", t.name), t.command, globalConfig.logPath, &logContent, args...)
 					cancel()
 					costTime := time.Now().UnixNano() - start
-					log.Printf("exec task %s <%s %s> cost %.4fs %v", t.TaskId, t.Command, t.Args, float64(costTime)/1000000000, err)
+					log.Printf("exec %s %s %s cost %.4fs %v", t.name, t.command, t.args, float64(costTime)/1000000000, err)
+
+					t.logContent = bytes.TrimRight(logContent, "\x00")
+					t.done = true
+					t.err = err
+
 					if err != nil {
-						logContent = append(logContent, []byte(err.Error())...)
+						errMsg = err.Error()
+					} else {
+						errMsg = ""
 					}
 
-					l := len(t.Queue)
-					if l == 0 {
-						log.Printf("task %s <%s %s> exec failed depend queue length %d ", t.TaskId, t.Command, t.Args, l)
-						return
-					}
-					t.Queue[0].LogContent = bytes.TrimRight(logContent, "\x00")
-					t.Queue[0].Done = true
-					if err != nil {
-						t.Queue[0].Err = err.Error()
-					}
-
-					t.Dest, t.From = t.From, t.Dest
+					t.dest, t.from = t.from, t.dest
 
 					if !filterDepend(t) {
-						err = rpcCall("Logic.DependDone", t, &reply)
+						err = rpcCall("Logic.DependDone", proto.MScript{
+							Name:       t.name,
+							Dest:       t.dest,
+							From:       t.from,
+							TaskId:     t.id,
+							Command:    t.command,
+							LogContent: t.logContent,
+							Err:        errMsg,
+							Args:       t.args,
+							Timeout:    t.timeout,
+						}, &reply)
+
 						if !reply || err != nil {
-							log.Printf("task %s <%s %s> %s->Logic.DependDone failed!", t.TaskId, t.Command, t.Args, t.Dest)
+							log.Printf("task %s %s %s call Logic.DependDone failed!", t.name, t.command, t.args)
 						}
 					}
 

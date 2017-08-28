@@ -1,10 +1,14 @@
 # jiacrontab
 提供可视化界面的定时任务管理工具。
 
-1.允许设置每个脚本的超时时间，超时操作可选择邮件通知管理者，或强杀脚本进程。  
+1.允许设置每个脚本的超时时间，超时操作可选择邮件通知管理者，或强杀脚本进程。
 2.允许设置脚本的最大并发数。  
-3.可一台server管理多个client。  
-4.每个脚本都可在server端灵活配置，如测试脚本运行，查看日志，强杀进程，停止定时...。
+3.一台server管理多个client。  
+4.每个脚本都可在server端灵活配置，如测试脚本运行，查看日志，强杀进程，停止定时...。  
+5.允许添加脚本依赖（支持跨服务器），依赖脚本提供同步和异步的执行模式。  
+6.友好的web界面，方便用户操作。  
+7.脚本出错时可选择邮箱通知多人。  
+
 
 ## 说明
 jiacrontab由server，client两部分构成，两者完全独立通过rpc通信。  
@@ -34,11 +38,11 @@ $ go get -u gopkg.in/ini.v1
 
 $ cd $GOPATH/src/jiacrontab/server
 $ go build .
-$ nohub ./server &> server.log &
+$ nohup ./server &> server.log &
 
 $ cd $GOPATH/src/jiacrontab/client
 $ go build .
-$ nohub ./client &> client.log & 
+$ nohup ./client &> client.log & 
 ``` 
 
 ### 截图
