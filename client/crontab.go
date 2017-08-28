@@ -15,15 +15,6 @@ import (
 	"time"
 )
 
-func newCrontab(taskChanSize int) *crontab {
-	return &crontab{
-		taskChan:     make(chan *proto.TaskArgs, taskChanSize),
-		stopTaskChan: make(chan *proto.TaskArgs, taskChanSize),
-		killTaskChan: make(chan *proto.TaskArgs, taskChanSize),
-		handleMap:    make(map[string]*handle),
-	}
-}
-
 type taskEntity struct {
 	id         string
 	pid        string
@@ -56,9 +47,17 @@ type dependScript struct {
 
 func newTaskEntity(t *proto.TaskArgs) *taskEntity {
 	var depends []*dependScript
+	var md5key string
+	var dependSubName string
 	id := fmt.Sprintf("%d", time.Now().Unix())
+
 	for k, v := range t.Depends {
-		md5key := fmt.Sprintf("%s-%s-%d", v.Command, v.Args, k)
+		md5key = fmt.Sprintf("%s-%s-%d", v.Command, v.Args, k)
+		if v.Name == "" {
+			dependSubName = fmt.Sprintf("%d", libs.RandNum())
+		} else {
+			dependSubName = v.Name
+		}
 		depends = append(depends, &dependScript{
 			pid:     id,
 			id:      fmt.Sprintf("%s-%s-%x", t.Id, id, md5.Sum([]byte(md5key))),
@@ -67,7 +66,7 @@ func newTaskEntity(t *proto.TaskArgs) *taskEntity {
 			command: v.Command,
 			timeout: v.Timeout,
 			args:    v.Args,
-			name:    fmt.Sprintf("%s-%s", t.Name, v.Name),
+			name:    fmt.Sprintf("%s-%s", t.Name, dependSubName),
 			done:    false,
 		})
 	}
@@ -178,6 +177,15 @@ type crontab struct {
 	killTaskChan chan *proto.TaskArgs
 	handleMap    map[string]*handle
 	lock         sync.RWMutex
+}
+
+func newCrontab(taskChanSize int) *crontab {
+	return &crontab{
+		taskChan:     make(chan *proto.TaskArgs, taskChanSize),
+		stopTaskChan: make(chan *proto.TaskArgs, taskChanSize),
+		killTaskChan: make(chan *proto.TaskArgs, taskChanSize),
+		handleMap:    make(map[string]*handle),
+	}
 }
 
 func (c *crontab) add(t *proto.TaskArgs) {
@@ -346,13 +354,15 @@ func (c *crontab) run() {
 
 func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 	var wgroup sync.WaitGroup
+	// 定时计数器用于统计有多少个定时期，当定时器为0时说明没有正在执行的计划
 	atomic.AddInt32(&(task.TimerCounter), 1)
 	task.State = 1
 	defer atomic.AddInt32(&task.TimerCounter, -1)
+	c.lock.Lock()
+	h := c.handleMap[task.Id]
+	c.lock.Unlock()
 	for {
-		c.lock.Lock()
-		h := c.handleMap[task.Id]
-		c.lock.Unlock()
+
 		select {
 		case now := <-h.clockChan:
 
