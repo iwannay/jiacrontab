@@ -1,6 +1,6 @@
 package main
 
-import ini "gopkg.in/ini.v1"
+import ini "github.com/go-ini/ini"
 import "log"
 
 const configFile = "client.ini"

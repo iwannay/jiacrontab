@@ -20,7 +20,7 @@
             <div class="col-md-3">
                 <div class="list-group">
                     {{$addr := .client.Addr}}
-        
+
                     {{range $k,$v := .addrs}}
                         {{if eq $v.State 1}}
                         <a href="/list?addr={{$v.Addr}}" class="list-group-item {{if eq $v.Addr $addr}}active{{end}}">
@@ -45,7 +45,7 @@
                 <div class="border-bottom clearfix">
                     <div class="navbar-left">
                         <a href="/stopAllTask?addr={{.client.Addr}}&taskIds={{.taskIds}}" class="btn btn-primary">全部停止</a>
-                       
+
                     </div>
 
                     <div class="navbar-right" style="margin-right:0;">
@@ -54,8 +54,8 @@
                     </div>
                 </div>
 
-                {{$logHost := .logHost}} {{$client := .client}} 
-                {{range $i,$v := .list}} 
+                {{$logHost := .logHost}} {{$client := .client}}
+                {{range $i,$v := .list}}
                 <div class="row-fluid show-grid border-bottom">
                     <div class="span12"><strong>{{$v.Name}}</strong></div>
                     <div class="span12">{{$v.Command}} {{$v.Args}}</div>

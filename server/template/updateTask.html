@@ -19,7 +19,7 @@
         <div class="row-fluid">
             <div class="col-md-2">
                 <div class="list-group">
-                    
+
 
                     {{range $k,$v := .addrs}}
                     {{$info := index $clients $v}}
@@ -38,7 +38,7 @@
                         <div class="col-sm-11 controls">
                             <input type="text" id="inputAddr" class="form-control" name="addr" disabled value="{{.addr}}">
                         </div>
-                            
+
                     </div>
                     <div class="form-group">
                         <label class="col-sm-1 control-label" for="inputTaskName">脚本名称:</label>
@@ -72,7 +72,7 @@
                             <input type="text" id="inputTimeout" class="form-control" name="timeout" type="number" onkeyup="this.value=this.value.replace(/\D/g,'')"  onafterpaste="this.value=this.value.replace(/\D/g,'')"  value="{{.task.Timeout}}">
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="col-sm-1 control-label" >脚本超时操作:</label>
                         <div class="col-sm-11 controls">
@@ -136,7 +136,7 @@
                     <div class="form-group">
                         <label class="col-sm-1 control-label" for="inputDepends" >添加依赖:</label>
                         <div class="col-sm-11 controls" id="depend-list">
-                            
+
                             <div class="row form-group">
                                 <div class="col-xs-3">
                                     <div class="input-group">
@@ -153,12 +153,12 @@
                                 </div>
                             </div>
                             {{$task := .task}}
-                            
+
                             {{range $key,$value:= .task.Depends}}
                             <div class="row form-group depend-item">
                                 <div class="col-xs-3">
                                     <select class="form-control" name="depends[dest]">
-                                        
+
 
                                         {{range $k,$v := $addrs}}
                                         {{$info := index $clients $v}}
@@ -188,10 +188,10 @@
                                 </div>
                             </div>
                             {{end}}
-                            
+
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <div class="col-sm-offset-1 col-sm-10">
                             <div class="checkbox">
@@ -364,7 +364,7 @@
         function deleteDepend(dom) {
             $(dom).parents('.depend-item').remove();
         }
-        
+
     </script>
 </body>
 
