@@ -1,7 +1,7 @@
 # jiacrontab
 提供可视化界面的定时任务管理工具。
 
-1.允许设置每个脚本的超时时间，超时操作可选择邮件通知管理者，或强杀脚本进程。
+1.允许设置每个脚本的超时时间，超时操作可选择邮件通知管理者，或强杀脚本进程。  
 2.允许设置脚本的最大并发数。  
 3.一台server管理多个client。  
 4.每个脚本都可在server端灵活配置，如测试脚本运行，查看日志，强杀进程，停止定时...。  
@@ -45,10 +45,17 @@ $ go build .
 $ nohup ./client &> client.log & 
 ``` 
 
-### 截图
+### 版本升级
+
+1、下载新版本压缩包，并解压。  
+
+2、替换旧版本中的server(或server.exe)、client(或client.exe)执行文件，以及static、template目录为新版
+
+
+## 截图
 ![alt 截图](https://raw.githubusercontent.com/iwannay/static_dir/master/jiacrontab_preview_1.jpg)  
 
 ![alt 截图2](https://raw.githubusercontent.com/iwannay/static_dir/master/jiacrontab_preview_2.jpg)
 
-### 演示地址
+## 演示地址
 [demo](http://182.92.223.12:20000) 账号：admin 密码：123456
