@@ -47,20 +47,20 @@ type dependScript struct {
 
 func newTaskEntity(t *proto.TaskArgs) *taskEntity {
 	var depends []*dependScript
-	var md5key string
 	var dependSubName string
+	var md5Sum string
 	id := fmt.Sprintf("%d", time.Now().Unix())
 
 	for k, v := range t.Depends {
-		md5key = fmt.Sprintf("%s-%s-%d", v.Command, v.Args, k)
+		md5Sum = fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s-%s-%d", v.Command, v.Args, k))))
 		if v.Name == "" {
-			dependSubName = fmt.Sprintf("%d", libs.RandNum())
+			dependSubName = md5Sum
 		} else {
 			dependSubName = v.Name
 		}
 		depends = append(depends, &dependScript{
 			pid:     id,
-			id:      fmt.Sprintf("%s-%s-%x", t.Id, id, md5.Sum([]byte(md5key))),
+			id:      fmt.Sprintf("%s-%s-%s", t.Id, id, md5Sum),
 			from:    v.From,
 			dest:    v.Dest,
 			command: v.Command,
