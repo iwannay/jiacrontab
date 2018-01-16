@@ -383,10 +383,8 @@ func wrapExecScript(ctx context.Context, logname string, cmdList [][]string, log
 	var args []string
 	if len(cmdList) > 1 {
 		for k, v := range cmdList {
-			name := v[0]
-			args := v[1:]
 			if k > 0 {
-				cmdStr += " | "
+				cmdStr += "|"
 			}
 			cmdStr += v[0] + strings.Join(v[1:], " ")
 		}
@@ -406,7 +404,7 @@ func wrapExecScript(ctx context.Context, logname string, cmdList [][]string, log
 	if err != nil {
 		var errMsg string
 		if globalConfig.debugScript {
-			prefix := fmt.Sprintf("[%s %s %s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, cmdStr)
+			prefix := fmt.Sprintf("[%s %s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, cmdStr)
 			errMsg = prefix + err.Error() + "\n"
 			f.WriteString(errMsg)
 		} else {

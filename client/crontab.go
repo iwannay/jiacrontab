@@ -102,7 +102,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 			costTime := time.Now().UnixNano() - start
 			sendMail(t.taskArgs.MailTo, globalConfig.addr+"提醒脚本依赖异常退出", fmt.Sprintf(
 				"任务名：%s\n详情：%s %v\n开始时间：%s\n耗时：%.4f\n异常：%s",
-				t.name, t.command, t.args, now.Format("2006-01-02 15:04:05"), float64(costTime)/1000000000, errors.New(errMsg)))
+				t.name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), float64(costTime)/1000000000, errors.New(errMsg)))
 		}
 
 	} else {
@@ -133,8 +133,15 @@ func (t *taskEntity) exec(logContent *[]byte) {
 			})
 		}
 
-		err := wrapExecScript(ctx, fmt.Sprintf("%s.log", t.name), t.command, globalConfig.logPath, &t.logContent, args...)
+		var cmdList [][]string
+		var cmd []string
+		cmd = append(append(cmd, t.command), args...)
+		cmdList = append(cmdList, cmd)
+		if len(t.taskArgs.PipeCommands) > 0 {
+			cmdList = append(cmdList, t.taskArgs.PipeCommands...)
+		}
 
+		err := wrapExecScript(ctx, fmt.Sprintf("%s.log", t.name), cmdList, globalConfig.logPath, &t.logContent)
 		flag = false
 		if err != nil && t.taskArgs.UnexpectedExitMail {
 			sendMail(t.taskArgs.MailTo, globalConfig.addr+"提醒脚本异常退出", fmt.Sprintf(

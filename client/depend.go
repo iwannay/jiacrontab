@@ -40,11 +40,12 @@ func (d *depend) run() {
 					}
 
 					ctx, cancel := context.WithTimeout(context.Background(), time.Duration(t.timeout)*time.Second)
-					args := strings.Split(t.args, " ")
+					args := strings.Split(t.command+" "+t.args, " ")
 					startTime := time.Now()
 					start := startTime.UnixNano()
+					cmdList := [][]string{args}
 
-					err := wrapExecScript(ctx, fmt.Sprintf("%s.log", t.name), t.command, globalConfig.logPath, &logContent, args...)
+					err := wrapExecScript(ctx, fmt.Sprintf("%s.log", t.name), cmdList, globalConfig.logPath, &logContent)
 					cancel()
 					costTime := time.Now().UnixNano() - start
 					log.Printf("exec %s %s %s cost %.4fs %v", t.name, t.command, t.args, float64(costTime)/1000000000, err)

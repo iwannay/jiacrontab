@@ -48,14 +48,35 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="col-sm-1 control-label" for="inputCommand">命令:</label>
-                        <div class="col-sm-11 controls">
+                        <label class="col-sm-1 control-label" >命令:</label>
+                        <div class="col-sm-11 controls" id="commandWrap">
                             {{$command := .task.Command}}
-                            <select class="form-control" id="inputCommand" name="command">
-                                {{range $k, $v := .allowCommands}}
-                                <option {{if eq $v $command}}selected{{end}} value="{{$v}}">{{$v}}</option>
-                                {{end}}
-                            </select>
+                            <div class="commandItem clearfix">
+                                <div class="col-sm-3" style="padding-left:0;">
+                                    <select class="form-control col-sm-5 inputCommand" name="command">
+                                        {{range $k, $v := .allowCommands}}
+                                        <option {{if eq $v $command}}selected{{end}} value="{{$v}}">{{$v}}</option>
+                                        {{end}}
+                                    </select>
+                                </div>
+                                <div class="col-sm-4">
+                                    <input type="text" name="args" id="inputArgs" class="form-control" value="" placeholder="args">
+                                </div>
+                                <div class="col-sm-2">
+                                    <div class="input-group">
+                                        <select class="form-control" name="sync">
+                                            <option value="1">&amp;&amp;</option>
+                                            <option value="0" selected="">pipe</option>
+                                        </select>
+                                        <span class="input-group-btn">
+                                            <button class="btn btn-default addCommand" type="button">
+                                                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                                            </button>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            
                         </div>
                     </div>
 
@@ -244,6 +265,42 @@
             </div>
         </div>
     </div>
+
+    <div id="commandList" hidden>
+        <div class="commandItem clearfix">
+            <div class="col-xs-3" style="padding-left:0;">
+                <select class="form-control col-sm-5 inputCommand" name="command">
+                    
+                    {{range $k, $v := .allowCommands}}
+                    <option value="{{$v}}">{{$v}}</option>
+                    {{end}}
+                    
+                </select>
+            </div>
+            <div class="col-xs-4">
+                <input type="text" name="args" id="inputArgs" class="form-control" value="" placeholder="args">
+            </div>
+            <div class="col-xs-2">
+                <div class="input-group">
+                    <select class="form-control" name="sync">
+                        <option value="1">&amp;&amp;</option>
+                        <option value="0" selected="">pipe</option>
+                    </select>
+                    
+                    <span class="input-group-btn">
+                        <button class="btn btn-default addCommand" type="button">
+                            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                        </button>
+                    </span>
+                </div>
+            </div>
+            <div class="col-xs-1">
+                <button type="button" class="btn btn-default deleteCommand" aria-label="Left Align">
+                    <span class="glyphicon glyphicon-minus" aria-hidden="true"></span>
+                </button>
+            </div>
+        </div>
+    </div>
     {{template "footer" .}}
     <script>
         function check(dom) {
@@ -364,6 +421,13 @@
         function deleteDepend(dom) {
             $(dom).parents('.depend-item').remove();
         }
+        $('#commandWrap').delegate('.addCommand', 'click', function() {
+            $(this).parents('.commandItem').after($('#commandList').html());
+        })
+
+        $('#commandWrap').delegate('.deleteCommand', 'click', function() {
+            $(this).parents('.commandItem').remove();
+        })
         
     </script>
 </body>

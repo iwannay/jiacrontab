@@ -5,6 +5,7 @@ type TaskArgs struct {
 	Name               string
 	Command            string
 	Depends            []MScript
+	PipeCommands       [][]string
 	State              int // 0/1/2
 	Args               string
 	Create             int64
