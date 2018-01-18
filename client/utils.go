@@ -508,7 +508,8 @@ func pipeExecScript(ctx context.Context, cmdList [][]string, logname string, log
 			logCmdName += " | "
 		}
 		logCmdName += v[0] + " " + v[1]
-		cmdEntryList = append(cmdEntryList, exec.CommandContext(ctx, name, args...))
+		subCtx, _ := context.WithCancel(ctx)
+		cmdEntryList = append(cmdEntryList, exec.CommandContext(subCtx, name, args...))
 	}
 
 	exitError = execute(&outBufer, &errBufer,
