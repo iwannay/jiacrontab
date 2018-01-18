@@ -9,10 +9,17 @@ import (
 	"jiacrontab/libs"
 	"jiacrontab/libs/proto"
 	"log"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+)
+
+const (
+	exitError       = "error"
+	exitKilled      = "killed"
+	exitSuccess     = "success"
+	exitDependError = "depend error"
+	exitTimeout     = "timeout"
 )
 
 type taskEntity struct {
@@ -88,16 +95,18 @@ func (t *taskEntity) exec(logContent *[]byte) {
 	atomic.AddInt32(&t.taskArgs.NumberProcess, 1)
 	ctx, cancel := context.WithCancel(context.Background())
 	t.cancel = cancel
-	args := strings.Split(t.taskArgs.Args, " ")
+	// args := strings.Split(t.taskArgs.Args, " ")
 	start := now.UnixNano()
 	t.taskArgs.LastExecTime = now.Unix()
 	t.taskArgs.State = 2
+	t.taskArgs.LastExitStatus = exitSuccess
 
 	if ok := t.waitDependsDone(ctx); !ok {
 		cancel()
 		errMsg := fmt.Sprintf("[%s %s %s]>>  failded to exec depends\n", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, t.name)
 		t.logContent = append(t.logContent, []byte(errMsg)...)
 		writeLog(globalConfig.logPath, fmt.Sprintf("%s.log", t.name), &t.logContent)
+		t.taskArgs.LastExitStatus = exitDependError
 		if t.taskArgs.UnexpectedExitMail {
 			costTime := time.Now().UnixNano() - start
 			sendMail(t.taskArgs.MailTo, globalConfig.addr+"提醒脚本依赖异常退出", fmt.Sprintf(
@@ -114,13 +123,16 @@ func (t *taskEntity) exec(logContent *[]byte) {
 				if flag {
 					switch t.taskArgs.OpTimeout {
 					case "email":
+						t.taskArgs.LastExitStatus = "timeout"
 						sendMail(t.taskArgs.MailTo, globalConfig.addr+"提醒脚本执行超时", fmt.Sprintf(
 							"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
 							t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), t.taskArgs.Timeout))
 					case "kill":
+						t.taskArgs.LastExitStatus = exitKilled
 						cancel()
 
 					case "email_and_kill":
+						t.taskArgs.LastExitStatus = exitTimeout
 						cancel()
 						sendMail(t.taskArgs.MailTo, globalConfig.addr+"提醒脚本执行超时", fmt.Sprintf(
 							"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
@@ -134,8 +146,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 		}
 
 		var cmdList [][]string
-		var cmd []string
-		cmd = append(append(cmd, t.command), args...)
+		cmd := []string{t.taskArgs.Command, t.taskArgs.Args}
 		cmdList = append(cmdList, cmd)
 		if len(t.taskArgs.PipeCommands) > 0 {
 			cmdList = append(cmdList, t.taskArgs.PipeCommands...)
@@ -143,11 +154,14 @@ func (t *taskEntity) exec(logContent *[]byte) {
 
 		err := wrapExecScript(ctx, fmt.Sprintf("%s.log", t.name), cmdList, globalConfig.logPath, &t.logContent)
 		flag = false
-		if err != nil && t.taskArgs.UnexpectedExitMail {
-			sendMail(t.taskArgs.MailTo, globalConfig.addr+"提醒脚本异常退出", fmt.Sprintf(
-				"任务名：%s\n详情：%s %v\n开始时间：%s\n异常：%s",
-				t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), err.Error()))
 
+		if err != nil {
+			t.taskArgs.LastExitStatus = exitError
+			if t.taskArgs.UnexpectedExitMail {
+				sendMail(t.taskArgs.MailTo, globalConfig.addr+"提醒脚本异常退出", fmt.Sprintf(
+					"任务名：%s\n详情：%s %v\n开始时间：%s\n异常：%s",
+					t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), err.Error()))
+			}
 		}
 	}
 

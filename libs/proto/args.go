@@ -11,6 +11,7 @@ type TaskArgs struct {
 	Create             int64
 	LastCostTime       int64
 	LastExecTime       int64
+	LastExitStatus     string
 	Timeout            int64
 	NumberProcess      int32
 	TimerCounter       int32

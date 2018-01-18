@@ -384,14 +384,14 @@ func wrapExecScript(ctx context.Context, logname string, cmdList [][]string, log
 	if len(cmdList) > 1 {
 		for k, v := range cmdList {
 			if k > 0 {
-				cmdStr += "|"
+				cmdStr += " | "
 			}
-			cmdStr += v[0] + strings.Join(v[1:], " ")
+			cmdStr += v[0] + "  " + v[1]
 		}
 		f, err = pipeExecScript(ctx, cmdList, logname, logpath, content)
 	} else {
 		bin = cmdList[0][0]
-		args = cmdList[0][1:]
+		args = strings.Split(cmdList[0][1], " ")
 		f, err = execScript(ctx, logname, bin, logpath, content, args)
 		cmdStr = bin + " " + strings.Join(args, " ")
 	}
@@ -498,25 +498,22 @@ func pipeExecScript(ctx context.Context, cmdList [][]string, logname string, log
 	var cmdEntryList []*exec.Cmd
 	var f *os.File
 	var logPath string
-	var err error
+	var err, exitError error
 	var logCmdName string
 
 	for k, v := range cmdList {
 		name := v[0]
-		args := v[1:]
+		args := strings.Split(v[1], " ")
 		if k > 0 {
 			logCmdName += " | "
 		}
-		logCmdName += v[0] + strings.Join(v[1:], " ")
-
+		logCmdName += v[0] + " " + v[1]
 		cmdEntryList = append(cmdEntryList, exec.CommandContext(ctx, name, args...))
 	}
 
-	if err := Execute(&outBufer, &errBufer,
+	exitError = execute(&outBufer, &errBufer,
 		cmdEntryList...,
-	); err != nil {
-		log.Fatalln(err)
-	}
+	)
 
 	logPath = filepath.Join(logpath, strconv.Itoa(time.Now().Year()), time.Now().Month().String())
 	f, err = libs.TryOpen(filepath.Join(logPath, logname), os.O_APPEND|os.O_CREATE|os.O_RDWR)
@@ -562,7 +559,7 @@ func pipeExecScript(ctx context.Context, cmdList [][]string, logname string, log
 
 	}
 
-	return f, nil
+	return f, exitError
 
 }
 
@@ -576,7 +573,7 @@ func writeLog(logpath string, logname string, content *[]byte) {
 	f.Write(*content)
 }
 
-func Execute(outputBuffer *bytes.Buffer, errorBuffer *bytes.Buffer, stack ...*exec.Cmd) (err error) {
+func execute(outputBuffer *bytes.Buffer, errorBuffer *bytes.Buffer, stack ...*exec.Cmd) (err error) {
 	pipeStack := make([]*io.PipeWriter, len(stack)-1)
 	i := 0
 	for ; i < len(stack)-1; i++ {
@@ -590,9 +587,8 @@ func Execute(outputBuffer *bytes.Buffer, errorBuffer *bytes.Buffer, stack ...*ex
 	stack[i].Stdout = outputBuffer
 	stack[i].Stderr = errorBuffer
 
-	if err := call(stack, pipeStack); err != nil {
+	if err = call(stack, pipeStack); err != nil {
 		errorBuffer.WriteString(err.Error())
-		log.Fatalln(string(errorBuffer.Bytes()), err)
 	}
 	return err
 }
