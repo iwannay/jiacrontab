@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"bytes"
+	"encoding/base64"
 	"encoding/gob"
 
 	"errors"
@@ -231,16 +232,24 @@ func SendMail(title, content, host, from, pass, port, mailTo string) {
 		log.Printf("mail %v", errors.New("missing parameters"))
 		return
 	}
-
 	auth := smtp.PlainAuth("", from, pass, host)
 
 	to := strings.Split(mailTo, ",")
 	toStr := strings.Join(to, ",")
-	msg := []byte("To: " + toStr + "\r\n" +
-		"Subject: " + title + "\r\n" +
-		"\r\n" +
-		content + "\r\n")
+	header := make(map[string]string)
 
-	err := smtp.SendMail(host+":"+port, auth, from, to, msg)
+	header["From"] = from
+	header["To"] = toStr
+	header["Subject"] = fmt.Sprintf("=?UTF-8?B?%s?=", base64.StdEncoding.EncodeToString([]byte(title)))
+	header["MIME-Version"] = "1.0"
+	header["Content-Type"] = "text/html; charset=UTF-8"
+	header["Content-Transfer-Encoding"] = "base64"
+	message := ""
+	for k, v := range header {
+		message += fmt.Sprintf("%s: %s\r\n", k, v)
+	}
+	message += "\r\n" + base64.StdEncoding.EncodeToString([]byte(content))
+
+	err := smtp.SendMail(host+":"+port, auth, from, to, []byte(message))
 	log.Printf("send mail to %s %v", toStr, err)
 }

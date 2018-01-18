@@ -131,6 +131,7 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 
 	if r.Method == http.MethodPost {
 		var unExitM, sync bool
+		var pipeCommandList [][]string
 		n := strings.TrimSpace(r.FormValue("taskName"))
 		command := strings.TrimSpace(r.FormValue("command"))
 		timeoutStr := strings.TrimSpace(r.FormValue("timeout"))
@@ -139,12 +140,17 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		mSync := r.FormValue("sync")
 		mailTo := strings.TrimSpace(r.FormValue("mailTo"))
 		optimeout := strings.TrimSpace(r.FormValue("optimeout"))
-
+		pipeCommands := r.PostForm["command[]"]
+		pipeArgs := r.PostForm["args[]"]
 		destSli := r.PostForm["depends[dest]"]
 		cmdSli := r.PostForm["depends[command]"]
 		argsSli := r.PostForm["depends[args]"]
 		timeoutSli := r.PostForm["depends[timeout]"]
 		depends := make([]proto.MScript, len(destSli))
+
+		for k, v := range pipeCommands {
+			pipeCommandList = append(pipeCommandList, []string{v, pipeArgs[k]})
+		}
 
 		for k, v := range destSli {
 			depends[k].Dest = v
@@ -196,6 +202,7 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 			Name:               n,
 			Command:            command,
 			Args:               a,
+			PipeCommands:       pipeCommandList,
 			Timeout:            int64(timeout),
 			OpTimeout:          optimeout,
 			Create:             time.Now().Unix(),

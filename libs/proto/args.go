@@ -5,11 +5,13 @@ type TaskArgs struct {
 	Name               string
 	Command            string
 	Depends            []MScript
+	PipeCommands       [][]string
 	State              int // 0/1/2
 	Args               string
 	Create             int64
 	LastCostTime       int64
 	LastExecTime       int64
+	LastExitStatus     string
 	Timeout            int64
 	NumberProcess      int32
 	TimerCounter       int32

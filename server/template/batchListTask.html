@@ -65,6 +65,7 @@
                                 <th>超时触发</th>
                                 <th>进程/计时器</th>
                                 <th>定时</th>
+                                <th>上次执行</th>
                                 <th>操作</th>
                             </tr>
                         </thead>
@@ -96,6 +97,13 @@
                                 <td>{{$v.OpTimeout}}</td>
                                 <td>{{$v.NumberProcess}}/{{$v.TimerCounter}}</td>
                                 <td>{{$v.C.Minute}}&nbsp;&nbsp;{{$v.C.Hour}}&nbsp;&nbsp;{{$v.C.Day}}&nbsp;&nbsp;{{$v.C.Month}}&nbsp;&nbsp;{{$v.C.Weekday}}</td>
+                                <td>{{with $v.LastExitStatus}}
+                                    {{if eq $v.LastExitStatus "success"}}
+                                    <span class="label label-success">{{$v.LastExitStatus}}</span>
+                                    {{else}}
+                                    <span class="label label-danger">{{$v.LastExitStatus}}</span> 
+                                    {{end}}
+                                    {{else}}无{{end}}</td>
                                 <td>
                                     <div class="dropdown">
                                         <div href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">操作 <span class="caret"></span></div>

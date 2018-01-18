@@ -66,6 +66,7 @@ func (t *Task) Update(args proto.TaskArgs, ok *bool) error {
 			v.MailTo = args.MailTo
 			v.Depends = args.Depends
 			v.UnexpectedExitMail = args.UnexpectedExitMail
+			v.PipeCommands = args.PipeCommands
 			v.Sync = args.Sync
 
 			for k := range v.Depends {

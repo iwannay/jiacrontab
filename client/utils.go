@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -368,14 +369,33 @@ end:
 	return flag
 }
 
-func wrapExecScript(ctx context.Context, logname string, bin string, logpath string, content *[]byte, args ...string) error {
+func wrapExecScript(ctx context.Context, logname string, cmdList [][]string, logpath string, content *[]byte) error {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Println(err)
 		}
 	}()
 
-	f, err := execScript(ctx, logname, bin, logpath, content, args...)
+	var err error
+	var f *os.File
+	var cmdStr string
+	var bin string
+	var args []string
+	if len(cmdList) > 1 {
+		for k, v := range cmdList {
+			if k > 0 {
+				cmdStr += " | "
+			}
+			cmdStr += v[0] + "  " + v[1]
+		}
+		f, err = pipeExecScript(ctx, cmdList, logname, logpath, content)
+	} else {
+		bin = cmdList[0][0]
+		args = strings.Split(cmdList[0][1], " ")
+		f, err = execScript(ctx, logname, bin, logpath, content, args)
+		cmdStr = bin + " " + strings.Join(args, " ")
+	}
+
 	defer func() {
 		if f != nil {
 			f.Close()
@@ -384,7 +404,7 @@ func wrapExecScript(ctx context.Context, logname string, bin string, logpath str
 	if err != nil {
 		var errMsg string
 		if globalConfig.debugScript {
-			prefix := fmt.Sprintf("[%s %s %s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, bin, strings.Join(args, " "))
+			prefix := fmt.Sprintf("[%s %s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, cmdStr)
 			errMsg = prefix + err.Error() + "\n"
 			f.WriteString(errMsg)
 		} else {
@@ -397,8 +417,7 @@ func wrapExecScript(ctx context.Context, logname string, bin string, logpath str
 	return err
 }
 
-func execScript(ctx context.Context, logname string, bin string, logpath string, content *[]byte, args ...string) (*os.File, error) {
-
+func execScript(ctx context.Context, logname string, bin string, logpath string, content *[]byte, args []string) (*os.File, error) {
 	binpath, err := exec.LookPath(bin)
 	if err != nil {
 		return nil, err
@@ -473,6 +492,77 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 	return f, nil
 }
 
+func pipeExecScript(ctx context.Context, cmdList [][]string, logname string, logpath string, content *[]byte) (*os.File, error) {
+	var outBufer bytes.Buffer
+	var errBufer bytes.Buffer
+	var cmdEntryList []*exec.Cmd
+	var f *os.File
+	var logPath string
+	var err, exitError error
+	var logCmdName string
+
+	for k, v := range cmdList {
+		name := v[0]
+		args := strings.Split(v[1], " ")
+		if k > 0 {
+			logCmdName += " | "
+		}
+		logCmdName += v[0] + " " + v[1]
+		cmdEntryList = append(cmdEntryList, exec.CommandContext(ctx, name, args...))
+	}
+
+	exitError = execute(&outBufer, &errBufer,
+		cmdEntryList...,
+	)
+
+	logPath = filepath.Join(logpath, strconv.Itoa(time.Now().Year()), time.Now().Month().String())
+	f, err = libs.TryOpen(filepath.Join(logPath, logname), os.O_APPEND|os.O_CREATE|os.O_RDWR)
+	if err != nil {
+		return f, err
+	}
+
+	// 如果已经存在日志则直接写入
+	f.Write(*content)
+
+	for {
+		line, err2 := outBufer.ReadString('\n')
+		if err2 != nil || io.EOF == err2 {
+			break
+		}
+		if globalConfig.debugScript {
+			prefix := fmt.Sprintf("[%s %s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, logCmdName)
+			line = prefix + line
+			*content = append(*content, []byte(line)...)
+		} else {
+			*content = append(*content, []byte(line)...)
+		}
+
+		f.WriteString(line)
+
+	}
+
+	for {
+		line, err2 := errBufer.ReadString('\n')
+		if err2 != nil || io.EOF == err2 {
+			break
+		}
+		// 默认给err信息加上日期标志
+		if globalConfig.debugScript {
+			prefix := fmt.Sprintf("[%s %s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, logCmdName)
+			line = prefix + line
+			*content = append(*content, []byte(line)...)
+		} else {
+			*content = append(*content, []byte(line)...)
+		}
+
+		f.WriteString(line)
+
+	}
+
+	return f, exitError
+
+}
+
 func writeLog(logpath string, logname string, content *[]byte) {
 	logPath := filepath.Join(logpath, strconv.Itoa(time.Now().Year()), time.Now().Month().String())
 	f, err := libs.TryOpen(filepath.Join(logPath, logname), os.O_APPEND|os.O_CREATE|os.O_RDWR)
@@ -481,6 +571,46 @@ func writeLog(logpath string, logname string, content *[]byte) {
 	}
 	defer f.Close()
 	f.Write(*content)
+}
+
+func execute(outputBuffer *bytes.Buffer, errorBuffer *bytes.Buffer, stack ...*exec.Cmd) (err error) {
+	pipeStack := make([]*io.PipeWriter, len(stack)-1)
+	i := 0
+	for ; i < len(stack)-1; i++ {
+		stdinPipe, stdoutPipe := io.Pipe()
+		stack[i].Stdout = stdoutPipe
+		stack[i].Stderr = errorBuffer
+		stack[i+1].Stdin = stdinPipe
+		pipeStack[i] = stdoutPipe
+	}
+
+	stack[i].Stdout = outputBuffer
+	stack[i].Stderr = errorBuffer
+
+	if err = call(stack, pipeStack); err != nil {
+		errorBuffer.WriteString(err.Error())
+	}
+	return err
+}
+
+func call(stack []*exec.Cmd, pipes []*io.PipeWriter) (err error) {
+	if stack[0].Process == nil {
+		if err = stack[0].Start(); err != nil {
+			return err
+		}
+	}
+	if len(stack) > 1 {
+		if err = stack[1].Start(); err != nil {
+			return err
+		}
+		defer func() {
+			if err == nil {
+				pipes[0].Close()
+				err = call(stack[1:], pipes[1:])
+			}
+		}()
+	}
+	return stack[0].Wait()
 }
 
 func initPprof(addr string) {
