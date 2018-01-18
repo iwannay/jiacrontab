@@ -101,7 +101,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 	t.taskArgs.State = 2
 	t.taskArgs.LastExitStatus = exitSuccess
 	flag := true
-	isTimeout := false
+	isExceptError := false
 
 	if ok := t.waitDependsDone(ctx); !ok {
 		cancel()
@@ -109,6 +109,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 		t.logContent = append(t.logContent, []byte(errMsg)...)
 		writeLog(globalConfig.logPath, fmt.Sprintf("%s.log", t.name), &t.logContent)
 		t.taskArgs.LastExitStatus = exitDependError
+		isExceptError = true
 		if t.taskArgs.UnexpectedExitMail {
 			costTime := time.Now().UnixNano() - start
 			sendMail(t.taskArgs.MailTo, globalConfig.addr+"提醒脚本依赖异常退出", fmt.Sprintf(
@@ -122,7 +123,8 @@ func (t *taskEntity) exec(logContent *[]byte) {
 		if t.taskArgs.Timeout != 0 {
 			time.AfterFunc(time.Duration(t.taskArgs.Timeout)*time.Second, func() {
 				if flag {
-					isTimeout = true
+
+					isExceptError = true
 					switch t.taskArgs.OpTimeout {
 					case "email":
 						t.taskArgs.LastExitStatus = exitTimeout
@@ -158,7 +160,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 		flag = false
 
 		if err != nil {
-			if isTimeout == false {
+			if isExceptError == false {
 				t.taskArgs.LastExitStatus = exitError
 			}
 
