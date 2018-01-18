@@ -610,7 +610,8 @@ func call(stack []*exec.Cmd, pipes []*io.PipeWriter) (err error) {
 			}
 		}()
 	}
-	return stack[0].Wait()
+	err = stack[0].Wait()
+	return
 }
 
 func initPprof(addr string) {

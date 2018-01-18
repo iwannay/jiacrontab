@@ -123,7 +123,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 				if flag {
 					switch t.taskArgs.OpTimeout {
 					case "email":
-						t.taskArgs.LastExitStatus = "timeout"
+						t.taskArgs.LastExitStatus = exitTimeout
 						sendMail(t.taskArgs.MailTo, globalConfig.addr+"提醒脚本执行超时", fmt.Sprintf(
 							"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
 							t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), t.taskArgs.Timeout))
@@ -156,7 +156,10 @@ func (t *taskEntity) exec(logContent *[]byte) {
 		flag = false
 
 		if err != nil {
-			t.taskArgs.LastExitStatus = exitError
+			if flag == false {
+				t.taskArgs.LastExitStatus = exitError
+			}
+
 			if t.taskArgs.UnexpectedExitMail {
 				sendMail(t.taskArgs.MailTo, globalConfig.addr+"提醒脚本异常退出", fmt.Sprintf(
 					"任务名：%s\n详情：%s %v\n开始时间：%s\n异常：%s",
