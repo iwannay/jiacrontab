@@ -100,6 +100,8 @@ func (t *taskEntity) exec(logContent *[]byte) {
 	t.taskArgs.LastExecTime = now.Unix()
 	t.taskArgs.State = 2
 	t.taskArgs.LastExitStatus = exitSuccess
+	flag := true
+	isTimeout := false
 
 	if ok := t.waitDependsDone(ctx); !ok {
 		cancel()
@@ -116,11 +118,11 @@ func (t *taskEntity) exec(logContent *[]byte) {
 
 	} else {
 		// 执行脚本
-		flag := true
 
 		if t.taskArgs.Timeout != 0 {
 			time.AfterFunc(time.Duration(t.taskArgs.Timeout)*time.Second, func() {
 				if flag {
+					isTimeout = true
 					switch t.taskArgs.OpTimeout {
 					case "email":
 						t.taskArgs.LastExitStatus = exitTimeout
@@ -128,7 +130,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 							"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
 							t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), t.taskArgs.Timeout))
 					case "kill":
-						t.taskArgs.LastExitStatus = exitKilled
+						t.taskArgs.LastExitStatus = exitTimeout
 						cancel()
 
 					case "email_and_kill":
@@ -156,7 +158,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 		flag = false
 
 		if err != nil {
-			if flag == false {
+			if isTimeout == false {
 				t.taskArgs.LastExitStatus = exitError
 			}
 
