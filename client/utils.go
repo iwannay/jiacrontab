@@ -508,8 +508,7 @@ func pipeExecScript(ctx context.Context, cmdList [][]string, logname string, log
 			logCmdName += " | "
 		}
 		logCmdName += v[0] + " " + v[1]
-		subCtx, _ := context.WithCancel(ctx)
-		cmdEntryList = append(cmdEntryList, exec.CommandContext(subCtx, name, args...))
+		cmdEntryList = append(cmdEntryList, exec.CommandContext(ctx, name, args...))
 	}
 
 	exitError = execute(&outBufer, &errBufer,
@@ -604,11 +603,9 @@ func call(stack []*exec.Cmd, pipes []*io.PipeWriter) (err error) {
 		if err = stack[1].Start(); err != nil {
 			return err
 		}
-		defer func() {
-			if err == nil {
-				pipes[0].Close()
-				err = call(stack[1:], pipes[1:])
-			}
+		go func() {
+			defer pipes[0].Close()
+			err = call(stack[1:], pipes[1:])
 		}()
 	}
 	err = stack[0].Wait()
