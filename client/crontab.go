@@ -325,7 +325,9 @@ func (c *crontab) run() {
 					if h.cancel == nil {
 						ctx, cancel := context.WithCancel(context.Background())
 						c.handleMap[t.Id].cancel = cancel
-						c.handleMap[t.Id].clockChan = make(chan time.Time)
+						if c.handleMap[t.Id].clockChan == nil {
+							c.handleMap[t.Id].clockChan = make(chan time.Time)
+						}
 						c.lock.Unlock()
 						go c.deal(t, ctx)
 					} else {
@@ -419,8 +421,9 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 					if l := len(h.taskPool); l > task.MaxConcurrent {
 						cancelPool := h.taskPool[0 : l-task.MaxConcurrent]
 						h.taskPool = h.taskPool[l-task.MaxConcurrent:]
-						for _, v := range cancelPool {
+						for k, v := range cancelPool {
 							v.cancel()
+							log.Printf("taskPool: clean %s %d", v.name, k)
 						}
 					}
 					taskEty.exec(nil)

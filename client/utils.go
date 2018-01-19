@@ -391,7 +391,13 @@ func wrapExecScript(ctx context.Context, logname string, cmdList [][]string, log
 		f, err = pipeExecScript(ctx, cmdList, logname, logpath, content)
 	} else {
 		bin = cmdList[0][0]
-		args = strings.Split(cmdList[0][1], " ")
+		rawArgs := strings.Split(cmdList[0][1], " ")
+		for _, v := range rawArgs {
+			if strings.TrimSpace(v) != "" {
+				args = append(args, v)
+			}
+		}
+
 		f, err = execScript(ctx, logname, bin, logpath, content, args)
 		cmdStr = bin + " " + strings.Join(args, " ")
 	}
@@ -503,7 +509,15 @@ func pipeExecScript(ctx context.Context, cmdList [][]string, logname string, log
 
 	for k, v := range cmdList {
 		name := v[0]
-		args := strings.Split(v[1], " ")
+		rawArgs := strings.Split(v[1], " ")
+		args := []string{}
+		for _, v := range rawArgs {
+			if strings.TrimSpace(v) != "" {
+				args = append(args, v)
+			}
+
+		}
+
 		if k > 0 {
 			logCmdName += " | "
 		}
