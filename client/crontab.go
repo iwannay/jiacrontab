@@ -347,13 +347,13 @@ func (c *crontab) run() {
 				if handle, ok := c.handleMap[task.Id]; ok {
 					if handle.cancel != nil {
 						handle.cancel()
-						log.Printf("try to stop %s", task.Name)
+						log.Printf("try to stop timer %s", task.Name)
 					} else {
-						log.Printf("stop %s failed cancel function is nil", task.Name)
+						log.Printf("stop timer %s  failed cancel function is nil", task.Name)
 					}
 
 				} else {
-					log.Printf("stop: can not found %s", task.Name)
+					log.Printf("stop: can not found timer %s", task.Name)
 					task.State = 0
 				}
 				c.lock.Unlock()
