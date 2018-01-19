@@ -289,7 +289,11 @@ func (c *crontab) run() {
 
 			// broadcast
 			c.lock.Lock()
-			for _, v := range c.handleMap {
+			for k, v := range c.handleMap {
+				if v.clockChan == nil {
+					log.Printf("clock:%s is closed", k)
+					continue
+				}
 				select {
 				case v.clockChan <- now:
 				case <-time.After(1 * time.Second):
@@ -349,7 +353,7 @@ func (c *crontab) run() {
 					}
 
 				} else {
-					log.Printf("can not found %s", task.Name)
+					log.Printf("stop: can not found %s", task.Name)
 					task.State = 0
 				}
 				c.lock.Unlock()
@@ -366,12 +370,14 @@ func (c *crontab) run() {
 				if handle, ok := c.handleMap[task.Id]; ok {
 					c.lock.Unlock()
 					if handle.taskPool != nil {
-						for _, v := range handle.taskPool {
+						for k, v := range handle.taskPool {
 							v.cancel()
+							log.Println("kill", task.Name, task.Id, k)
 						}
-						log.Println("kill", task.Name, task.Id)
+
 					}
 				} else {
+					log.Printf("kill: can not found %s", task.Name)
 					c.lock.Unlock()
 				}
 			}

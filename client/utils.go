@@ -603,13 +603,14 @@ func call(stack []*exec.Cmd, pipes []*io.PipeWriter) (err error) {
 		if err = stack[1].Start(); err != nil {
 			return err
 		}
-		go func() {
-			defer pipes[0].Close()
-			err = call(stack[1:], pipes[1:])
+		defer func() {
+			pipes[0].Close()
+			if err == nil {
+				err = call(stack[1:], pipes[1:])
+			}
 		}()
 	}
-	err = stack[0].Wait()
-	return
+	return stack[0].Wait()
 }
 
 func initPprof(addr string) {
