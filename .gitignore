@@ -40,5 +40,7 @@ server/autobuild
 server/jiacrontab
 server/watchbin
 server/.data
+server/server
+clent/client
 
 
