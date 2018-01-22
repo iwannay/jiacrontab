@@ -373,8 +373,12 @@ func (c *crontab) run() {
 					c.lock.Unlock()
 					if handle.taskPool != nil {
 						for k, v := range handle.taskPool {
-							v.cancel()
-							log.Println("kill", task.Name, task.Id, k)
+							if v.cancel == nil {
+								log.Println("kill", task.Name, task.Id, k, "but cancel handler is nul")
+							} else {
+								v.cancel()
+								log.Println("kill", task.Name, task.Id, k)
+							}
 						}
 
 					}
@@ -422,8 +426,10 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 						cancelPool := h.taskPool[0 : l-task.MaxConcurrent]
 						h.taskPool = h.taskPool[l-task.MaxConcurrent:]
 						for k, v := range cancelPool {
-							v.cancel()
-							log.Printf("taskPool: clean %s %d", v.name, k)
+							if v.cancel != nil {
+								v.cancel()
+								log.Printf("taskPool: clean %s %d", v.name, k)
+							}
 						}
 					}
 					taskEty.exec(nil)
