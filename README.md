@@ -58,4 +58,4 @@ $ nohup ./client &> client.log &
 ![alt 截图2](https://raw.githubusercontent.com/iwannay/static_dir/master/jiacrontab_preview_2.jpg)
 
 ## 演示地址
-[demo](http://182.92.223.12:20000) 账号：admin 密码：123456
+[demo](http://jiacrontab.wzjg520.com) 账号：admin 密码：123456
