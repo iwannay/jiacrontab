@@ -1,31 +1,35 @@
-package main
+package routes
 
 import (
 	"crypto/md5"
 	"fmt"
-	"html/template"
 	"jiacrontab/libs"
 	"jiacrontab/libs/proto"
-	"jiacrontab/server/store"
-	"log"
+	"jiacrontab/server/conf"
+	"jiacrontab/server/model"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/iwannay/jiaweb"
 )
 
-func listTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
+func ListTask(ctx jiaweb.Context) error {
 
 	var addr string
 	var systemInfo map[string]interface{}
 	var locals proto.Mdata
 	var clientList map[string]proto.ClientConf
 	var taskIdSli []string
+	var r = ctx.Request()
+	var m = model.NewModel()
 
 	sortedTaskList := make([]*proto.TaskArgs, 0)
 	sortedClientList := make([]proto.ClientConf, 0)
-	clientList, _ = m.s.GetRPCClientList()
+
+	clientList, _ = m.GetRPCClientList()
 
 	if clientList != nil && len(clientList) > 0 {
 		for _, v := range clientList {
@@ -36,24 +40,24 @@ func listTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		})
 
 		firstK := sortedClientList[0].Addr
-		addr = replaceEmpty(r.FormValue("addr"), firstK)
+		addr = libs.ReplaceEmpty(r.FormValue("addr"), firstK)
 	} else {
-		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+		ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 			"error": "nothing to show",
-		}, nil)
-		return
+		})
+		return nil
 	}
 
 	locals = make(proto.Mdata)
 
-	if err := m.rpcCall(addr, "Task.All", "", &locals); err != nil {
-		http.Redirect(rw, r, "/", http.StatusFound)
-		return
+	if err := m.RpcCall(addr, "Task.All", "", &locals); err != nil {
+		ctx.Redirect("/", http.StatusFound)
+		return err
 	}
 
-	if err := m.rpcCall(addr, "Admin.SystemInfo", "", &systemInfo); err != nil {
-		http.Redirect(rw, r, "/", http.StatusFound)
-		return
+	if err := m.RpcCall(addr, "Admin.SystemInfo", "", &systemInfo); err != nil {
+		ctx.Redirect("/", http.StatusFound)
+		return err
 	}
 
 	for _, v := range locals {
@@ -70,34 +74,27 @@ func listTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 			tpl = []string{"batchListTask"}
 		}
 	}
-	m.renderHtml2(tpl, map[string]interface{}{
+
+	ctx.RenderHtml(tpl, map[string]interface{}{
 		"title":      "灵魂百度",
 		"list":       sortedTaskList,
 		"addrs":      sortedClientList,
 		"client":     clientList[addr],
 		"systemInfo": systemInfo,
 		"taskIds":    strings.Join(taskIdSli, ","),
-		"appName":    globalConfig.appName,
-		"url":        r.URL.String(),
-	}, template.FuncMap{
-		"date":     date,
-		"formatMs": int2floatstr,
+		"url":        r.Url(),
 	})
+
+	return nil
 
 }
 
-func index(rw http.ResponseWriter, r *http.Request, m *modelView) {
+func Index(ctx jiaweb.Context) error {
 	var clientList map[string]proto.ClientConf
-	if r.URL.Path != "/" {
-		rw.WriteHeader(http.StatusNotFound)
-		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
-			"error": "404 page not found",
-		}, nil)
-		return
-	}
+	var m = model.NewModel()
 
-	sInfo := libs.SystemInfo(startTime)
-	clientList, _ = m.s.GetRPCClientList()
+	sInfo := libs.SystemInfo(ctx.StartTime())
+	clientList, _ = m.GetRPCClientList()
 	sortedClientList := make([]proto.ClientConf, 0)
 
 	for _, v := range clientList {
@@ -107,26 +104,27 @@ func index(rw http.ResponseWriter, r *http.Request, m *modelView) {
 	sort.Slice(sortedClientList, func(i, j int) bool {
 		return (sortedClientList[i].Addr > sortedClientList[j].Addr) && (sortedClientList[i].State > sortedClientList[j].State)
 	})
-	m.renderHtml2([]string{"index"}, map[string]interface{}{
+	ctx.RenderHtml([]string{"index"}, map[string]interface{}{
 		"clientList": sortedClientList,
 		"systemInfo": sInfo,
-	}, template.FuncMap{
-		"date": date,
 	})
+	return nil
 
 }
 
-func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
+func UpdateTask(ctx jiaweb.Context) error {
 	var reply bool
+	var r = ctx.Request()
+	var m = model.NewModel()
 
 	sortedKeys := make([]string, 0)
 	addr := strings.TrimSpace(r.FormValue("addr"))
 	id := strings.TrimSpace(r.FormValue("taskId"))
 	if addr == "" {
-		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+		ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 			"error": "params error",
-		}, nil)
-		return
+		})
+		return nil
 	}
 
 	if r.Method == http.MethodPost {
@@ -191,13 +189,13 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		}
 
 		a := r.FormValue("args")
-		month := replaceEmpty(strings.TrimSpace(r.FormValue("month")), "*")
-		weekday := replaceEmpty(strings.TrimSpace(r.FormValue("weekday")), "*")
-		day := replaceEmpty(strings.TrimSpace(r.FormValue("day")), "*")
-		hour := replaceEmpty(strings.TrimSpace(r.FormValue("hour")), "*")
-		minute := replaceEmpty(strings.TrimSpace(r.FormValue("minute")), "*")
+		month := libs.ReplaceEmpty(strings.TrimSpace(r.FormValue("month")), "*")
+		weekday := libs.ReplaceEmpty(strings.TrimSpace(r.FormValue("weekday")), "*")
+		day := libs.ReplaceEmpty(strings.TrimSpace(r.FormValue("day")), "*")
+		hour := libs.ReplaceEmpty(strings.TrimSpace(r.FormValue("hour")), "*")
+		minute := libs.ReplaceEmpty(strings.TrimSpace(r.FormValue("minute")), "*")
 
-		if err := m.rpcCall(addr, "Task.Update", proto.TaskArgs{
+		if err := m.RpcCall(addr, "Task.Update", proto.TaskArgs{
 			Id:                 id,
 			Name:               n,
 			Command:            command,
@@ -226,14 +224,14 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 				Weekday: weekday,
 			},
 		}, &reply); err != nil {
-			m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+			ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 				"error": err.Error(),
-			}, nil)
-			return
+			})
+			return err
 		}
 		if reply {
-			http.Redirect(rw, r, "/list?addr="+addr, http.StatusFound)
-			return
+			ctx.Redirect("/list?addr="+addr, http.StatusFound)
+			return nil
 		}
 
 	} else {
@@ -241,20 +239,20 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		var clientList map[string]proto.ClientConf
 
 		if id != "" {
-			err := m.rpcCall(addr, "Task.Get", id, &t)
+			err := m.RpcCall(addr, "Task.Get", id, &t)
 			if err != nil {
-				http.Redirect(rw, r, "/list?addr="+addr, http.StatusFound)
-				return
+				ctx.Redirect("/list?addr="+addr, http.StatusFound)
+				return err
 			}
 		} else {
-			client, _ := m.s.SearchRPCClientList(addr)
+			client, _ := m.SearchRPCClientList(addr)
 			t.MailTo = client.Mail
 		}
 		if t.MaxConcurrent == 0 {
 			t.MaxConcurrent = 1
 		}
 
-		clientList, _ = m.s.GetRPCClientList()
+		clientList, _ = m.GetRPCClientList()
 
 		if len(clientList) > 0 {
 			for k := range clientList {
@@ -262,35 +260,38 @@ func updateTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 			}
 			sort.Strings(sortedKeys)
 			firstK := sortedKeys[0]
-			addr = replaceEmpty(r.FormValue("addr"), firstK)
+			addr = libs.ReplaceEmpty(r.FormValue("addr"), firstK)
 		} else {
-			m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+			ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 				"error": "nothing to show",
-			}, nil)
-			return
+			})
+			return nil
 		}
 
-		m.renderHtml2([]string{"updateTask"}, map[string]interface{}{
+		ctx.RenderHtml([]string{"updateTask"}, map[string]interface{}{
 			"addr":          addr,
 			"addrs":         sortedKeys,
 			"rpcClientsMap": clientList,
 			"task":          t,
-			"allowCommands": globalConfig.allowCommands,
-		}, nil)
+			"allowCommands": conf.ConfigArgs.AllowCommands,
+		})
 	}
+	return nil
 
 }
 
-func stopTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
+func StopTask(ctx jiaweb.Context) error {
+	var r = ctx.Request()
+	var m = model.NewModel()
 	taskId := strings.TrimSpace(r.FormValue("taskId"))
 	addr := strings.TrimSpace(r.FormValue("addr"))
-	action := replaceEmpty(r.FormValue("action"), "stop")
+	action := libs.ReplaceEmpty(r.FormValue("action"), "stop")
 	var reply bool
 	if taskId == "" || addr == "" {
-		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+		ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 			"error": "param error",
-		}, nil)
-		return
+		})
+		return nil
 	}
 
 	// if c, err := newRpcClient(addr); err != nil {
@@ -307,189 +308,220 @@ func stopTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
 	} else {
 		method = "Task.Kill"
 	}
-	if err := m.rpcCall(addr, method, taskId, &reply); err != nil {
-		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+	if err := m.RpcCall(addr, method, taskId, &reply); err != nil {
+		ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 			"error": err,
-		}, nil)
-		return
+		})
+		return err
 	}
 	if reply {
-		http.Redirect(rw, r, "/list?addr="+addr, http.StatusFound)
-		return
+		ctx.Redirect("/list?addr="+addr, http.StatusFound)
+		return nil
 	}
 
-	m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+	ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 		"error": fmt.Sprintf("failed %s %s", method, taskId),
-	}, nil)
+	})
+	return nil
 
 }
 
-func stopAllTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
+func StopAllTask(ctx jiaweb.Context) error {
+	var r = ctx.Request()
+	var m = model.NewModel()
 	taskIds := strings.TrimSpace(r.FormValue("taskIds"))
 	addr := strings.TrimSpace(r.FormValue("addr"))
 	method := "Task.StopAll"
 	taskIdSli := strings.Split(taskIds, ",")
 	var reply bool
 	if len(taskIdSli) == 0 || addr == "" {
-		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+		ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 			"error": "param error",
-		}, nil)
-		return
+		})
+		return nil
 	}
 
-	if err := m.rpcCall(addr, method, taskIdSli, &reply); err != nil {
-		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+	if err := m.RpcCall(addr, method, taskIdSli, &reply); err != nil {
+		ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 			"error": err,
-		}, nil)
-		return
+		})
+		return err
 	}
 	if reply {
-		http.Redirect(rw, r, "/list?addr="+addr, http.StatusFound)
-		return
+		ctx.Redirect("/list?addr="+addr, http.StatusFound)
+		return nil
 	}
 
-	m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+	ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 		"error": fmt.Sprintf("failed %s %v", method, taskIdSli),
-	}, nil)
+	})
+
+	return nil
 
 }
 
-func startTask(rw http.ResponseWriter, r *http.Request, m *modelView) {
+func StartTask(ctx jiaweb.Context) error {
+	var r = ctx.Request()
+	var m = model.NewModel()
 	taskId := strings.TrimSpace(r.FormValue("taskId"))
 	addr := strings.TrimSpace(r.FormValue("addr"))
 	var reply bool
 	if taskId == "" || addr == "" {
-		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+		ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 			"error": "param error",
-		}, nil)
-		return
+		})
+		return nil
 	}
 
-	if err := m.rpcCall(addr, "Task.Start", taskId, &reply); err != nil {
-		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+	if err := m.RpcCall(addr, "Task.Start", taskId, &reply); err != nil {
+		ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 			"error": "param error",
-		}, nil)
-		return
+		})
+		return err
 	}
 
 	if reply {
-		http.Redirect(rw, r, "/list?addr="+addr, http.StatusFound)
-		return
+		ctx.Redirect("/list?addr="+addr, http.StatusFound)
+		return nil
 	}
 
-	m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+	ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 		"error": "failed start task" + taskId,
-	}, nil)
+	})
 
+	return nil
 }
 
-func login(rw http.ResponseWriter, r *http.Request, m *modelView) {
+func Login(ctx jiaweb.Context) error {
+	fmt.Println("hahah")
+	var r = ctx.Request()
 	if r.Method == http.MethodPost {
 
 		u := r.FormValue("username")
 		pwd := r.FormValue("passwd")
 		remb := r.FormValue("remember")
 
-		if u == globalConfig.user && pwd == globalConfig.passwd {
-			md5p := fmt.Sprintf("%x", md5.Sum([]byte(pwd)))
+		if u == conf.ConfigArgs.User && pwd == conf.ConfigArgs.Passwd {
+			// md5p := fmt.Sprintf("%x", md5.Sum([]byte(pwd)))
+			clientFeature := ctx.RemoteIP() + "-" + ctx.Request().Header.Get("User-Agent")
+			fmt.Println("client feature", clientFeature)
+			clientSign := fmt.Sprintf("%x", md5.Sum([]byte(clientFeature)))
+			fmt.Println("client md5", clientSign)
 			if remb == "yes" {
-				globalJwt.accessToken(rw, r, u, md5p)
+				ctx.GenerateToken(map[string]interface{}{
+					"user":       u,
+					"clientSign": clientSign,
+				})
+				// globalJwt.accessToken(rw, r, u, md5p)
 			} else {
-				globalJwt.accessTempToken(rw, r, u, md5p)
+				// globalJwt.accessTempToken(rw, r, u, md5p)
+				ctx.GenerateSeesionToken(map[string]interface{}{
+					"user":       u,
+					"clientSign": clientSign,
+				})
 			}
 
-			http.Redirect(rw, r, "/", http.StatusFound)
-			return
+			ctx.Redirect("/", http.StatusFound)
+			return nil
 		}
 
-		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+		ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 			"error": "auth failed",
-		}, nil)
+		})
 
 	} else {
-		var user map[string]interface{}
-		if globalJwt.auth(rw, r, &user) {
-			http.Redirect(rw, r, "/", http.StatusFound)
-			return
-		}
-		m.renderHtml2([]string{"login"}, nil, nil)
+		// var user map[string]interface{}
+
+		// if ctx.VerifyToken(&user) {
+		// 	ctx.Redirect("/", http.StatusFound)
+		// 	return nil
+		// }
+		ctx.RenderHtml([]string{"login"}, nil)
 
 	}
+	return nil
 }
 
-func quickStart(rw http.ResponseWriter, r *http.Request, m *modelView) {
+func QuickStart(ctx jiaweb.Context) error {
+	var r = ctx.Request()
+	var m = model.NewModel()
+
 	taskId := strings.TrimSpace(r.FormValue("taskId"))
 	addr := strings.TrimSpace(r.FormValue("addr"))
 	var reply []byte
 	if taskId == "" || addr == "" {
-		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+		ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 			"error": "param error",
-		}, nil)
-		return
+		})
+		return nil
 	}
 
-	if err := m.rpcCall(addr, "Task.QuickStart", taskId, &reply); err != nil {
-		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+	if err := m.RpcCall(addr, "Task.QuickStart", taskId, &reply); err != nil {
+		ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 			"error": err,
-		}, nil)
-		return
+		})
+		return nil
 	}
 	logList := strings.Split(string(reply), "\n")
-	m.renderHtml2([]string{"log"}, map[string]interface{}{
+	ctx.RenderHtml([]string{"log"}, map[string]interface{}{
 		"logList": logList,
 		"addr":    addr,
-	}, nil)
-
+	})
+	return nil
 }
 
-func logout(rw http.ResponseWriter, r *http.Request, m *modelView) {
-	globalJwt.cleanCookie(rw)
-	http.Redirect(rw, r, "/login", http.StatusFound)
+func Logout(ctx jiaweb.Context) error {
+	ctx.CleanToken()
+	ctx.Redirect("/login", http.StatusFound)
+	return nil
 }
 
-func recentLog(rw http.ResponseWriter, r *http.Request, m *modelView) {
+func RecentLog(ctx jiaweb.Context) error {
+	var r = ctx.Request()
+	var m = model.NewModel()
 	id := r.FormValue("taskId")
 	addr := r.FormValue("addr")
 	var content []byte
 	if id == "" {
-		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+		ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 			"error": "param error",
-		}, nil)
-		return
+		})
+		return nil
 	}
-	if err := m.rpcCall(addr, "Task.Log", id, &content); err != nil {
-		m.renderHtml2([]string{"public/error"}, map[string]interface{}{
+	if err := m.RpcCall(addr, "Task.Log", id, &content); err != nil {
+		ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 			"error": err,
-		}, nil)
-		return
+		})
+		return nil
 	}
 	logList := strings.Split(string(content), "\n")
 
-	m.renderHtml2([]string{"log"}, map[string]interface{}{
+	ctx.RenderHtml([]string{"log"}, map[string]interface{}{
 		"logList": logList,
 		"addr":    addr,
-	}, nil)
-	return
+	})
+	return nil
 
 }
 
-func readme(rw http.ResponseWriter, r *http.Request, m *modelView) {
+func Readme(ctx jiaweb.Context) error {
 
-	m.renderHtml2([]string{"readme"}, map[string]interface{}{}, nil)
-	return
+	ctx.RenderHtml([]string{"readme"}, nil)
+	return nil
 
 }
 
-func reloadConfig(rw http.ResponseWriter, r *http.Request, m *modelView) {
-	globalConfig.reload()
-	http.Redirect(rw, r, "/", http.StatusFound)
-	log.Println("reload config")
+func ReloadConfig(ctx jiaweb.Context) error {
+	conf.ConfigArgs.Reload()
+	ctx.Redirect("/", http.StatusFound)
+	return nil
 }
 
-func deleteClient(rw http.ResponseWriter, r *http.Request, m *modelView) {
-
+func DeleteClient(ctx jiaweb.Context) error {
+	m := model.NewModel()
+	r := ctx.Request()
 	addr := r.FormValue("addr")
-	m.s.Wrap(func(s *store.Store) {
+	m.InnerStore().Wrap(func(s *model.Store) {
 
 		if v, ok := s.RpcClientList[addr]; ok {
 			if v.State == 1 {
@@ -499,25 +531,29 @@ func deleteClient(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		delete(s.RpcClientList, addr)
 
 	}).Sync()
-	http.Redirect(rw, r, "/", http.StatusFound)
+	ctx.Redirect("/", http.StatusFound)
+	return nil
 }
 
-func viewConfig(rw http.ResponseWriter, r *http.Request, m *modelView) {
+func ViewConfig(ctx jiaweb.Context) error {
 
-	c := globalConfig.category()
+	c := conf.ConfigArgs.Category()
+	r := ctx.Request()
 
 	if r.Method == http.MethodPost {
 		mailTo := strings.TrimSpace(r.FormValue("mailTo"))
-		libs.SendMail("测试邮件", "测试邮件请勿回复", globalConfig.mailHost, globalConfig.mailUser, globalConfig.mailPass, globalConfig.mailPort, mailTo)
+		libs.SendMail("测试邮件", "测试邮件请勿回复", conf.ConfigArgs.MailHost, conf.ConfigArgs.MailUser, conf.ConfigArgs.MailPass, conf.ConfigArgs.MailPort, mailTo)
 	}
 
-	m.renderHtml2([]string{"viewConfig"}, map[string]interface{}{
+	ctx.RenderHtml([]string{"viewConfig"}, map[string]interface{}{
 		"configs": c,
-	}, nil)
-	return
+	})
+	return nil
 }
 
-func model(rw http.ResponseWriter, r *http.Request, m *modelView) {
+func Model(ctx jiaweb.Context) error {
+	rw := ctx.Response().ResponseWriter()
+	r := ctx.Request()
 	val := r.FormValue("type")
 	url := r.FormValue("url")
 	http.SetCookie(rw, &http.Cookie{
@@ -527,6 +563,7 @@ func model(rw http.ResponseWriter, r *http.Request, m *modelView) {
 		HttpOnly: true,
 	})
 
-	http.Redirect(rw, r, url, http.StatusFound)
+	ctx.Redirect(url, http.StatusFound)
+	return nil
 
 }

@@ -1,4 +1,4 @@
-package store
+package model
 
 // func TestStore_Get(t *testing.T) {
 

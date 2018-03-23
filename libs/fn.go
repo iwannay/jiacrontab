@@ -39,6 +39,17 @@ func RandNum() int64 {
 	return rand.Int63()
 }
 
+func Date(t int64) string {
+	if t == 0 {
+		return "0"
+	}
+
+	return time.Unix(t, 0).Format("2006-01-02 15:04:05")
+}
+
+func Int2floatstr(f string, n int64, l int) string {
+	return fmt.Sprintf(f, float64(n)/float64(l))
+}
 func MRecover() {
 	if err := recover(); err != nil {
 		log.Printf("panic:%s\n%s", err, debug.Stack())

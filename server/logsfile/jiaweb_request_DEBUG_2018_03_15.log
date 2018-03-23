@@ -1,0 +1,12 @@
+[DEBUG] 2018-03-15 18:34:42.2222 [middleware.go:69] / GET [::1]:48752 HTTP/1.1 200 0 0 0
+[DEBUG] 2018-03-15 18:34:44.7787 [middleware.go:69] / GET [::1]:48752 HTTP/1.1 200 0 0 0
+[DEBUG] 2018-03-15 18:35:00.0846 [middleware.go:69] /login GET [::1]:48752 HTTP/1.1 200 0 0 0
+[DEBUG] 2018-03-15 18:35:02.3758 [middleware.go:69] /login GET [::1]:48752 HTTP/1.1 200 0 0 0
+[DEBUG] 2018-03-15 18:36:52.5053 [middleware.go:69] /login GET [::1]:48752 HTTP/1.1 200 0 0 0
+[DEBUG] 2018-03-15 18:37:27.8854 [middleware.go:69] /login GET [::1]:48752 HTTP/1.1 200 0 0 0
+[DEBUG] 2018-03-15 18:38:23.4813 [middleware.go:69] /login GET [::1]:49296 HTTP/1.1 200 0 0 0
+[DEBUG] 2018-03-15 18:39:16.0646 [middleware.go:69] /login GET [::1]:49730 HTTP/1.1 200 0 0 0
+[DEBUG] 2018-03-15 18:39:38.4909 [middleware.go:69] /login GET [::1]:49928 HTTP/1.1 200 0 0 0
+[DEBUG] 2018-03-15 18:40:01.4739 [middleware.go:69] /login GET [::1]:50138 HTTP/1.1 200 0 0 0
+[DEBUG] 2018-03-15 18:40:26.3542 [middleware.go:69] /login GET [::1]:50342 HTTP/1.1 200 0 0 1
+[DEBUG] 2018-03-15 18:40:43.4479 [middleware.go:69] /login GET [::1]:50494 HTTP/1.1 200 0 0 0

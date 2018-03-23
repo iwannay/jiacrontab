@@ -1,4 +1,4 @@
-package store
+package model
 
 import (
 	"encoding/json"
@@ -115,12 +115,12 @@ func (s *Store) requestHandle(req request) {
 
 }
 
-func (s *Store) GetRPCClientList() (map[string]proto.ClientConf, bool) {
+func (s *Store) getRPCClientList() (map[string]proto.ClientConf, bool) {
 	ret, ok := (s.Get("RpcClientList")).value.(map[string]proto.ClientConf)
 	return ret, ok
 }
 
-func (s *Store) SearchRPCClientList(args string) (proto.ClientConf, bool) {
+func (s *Store) searchRPCClientList(args string) (proto.ClientConf, bool) {
 	ret, ok := s.Search("RpcClientList", args).value.(proto.ClientConf)
 	return ret, ok
 }
