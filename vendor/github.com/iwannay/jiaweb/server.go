@@ -166,6 +166,14 @@ func (s *HttpServer) TemplateConfig() *config.TemplateNode {
 	return s.JiaWeb.Config.Template
 }
 
+func (s *HttpServer) SetTempplateConfig(tplConf *config.TemplateNode) {
+	if tplConf != nil {
+		s.JiaWeb.Config.Template = tplConf
+		logger.Logger().Debug("JiaWeb:HttpServer set template config", LogTarget_HttpServer)
+	}
+
+}
+
 func (s *HttpServer) Group(prefix string) Group {
 	return NewGroup(prefix, s)
 }

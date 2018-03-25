@@ -47,7 +47,6 @@ type (
 		GenerateToken(v jwt.MapClaims)
 		CleanToken()
 		GenerateSeesionToken(v jwt.MapClaims)
-		StartTime() time.Time
 		CostTime() string
 		VerifyToken(v *map[string]interface{}) bool
 		Redirect(url string, code int)
@@ -122,10 +121,6 @@ func (ctx *HttpContext) QueryRouteParam(key string) string {
 func (ctx *HttpContext) CostTime() string {
 	dur := time.Now().Sub(ctx.startTime)
 	return fmt.Sprintf("%.3f ms", float64(dur.Nanoseconds())/float64(1000000))
-}
-
-func (ctx *HttpContext) StartTime() time.Time {
-	return ctx.startTime
 }
 
 func (ctx *HttpContext) RenderHtml(viewPath []string, locals map[string]interface{}) error {

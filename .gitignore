@@ -32,7 +32,7 @@ client/.data
 client/*.json
 client/logs
 client/watchbin
-
+client/logsfile
 
 
 server/debug
@@ -42,5 +42,6 @@ server/watchbin
 server/.data
 server/server
 clent/client
+server/logsfile
 
 

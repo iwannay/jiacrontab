@@ -265,7 +265,7 @@ func (r *route) ServerFile(path string, fileroot string) RouteNode {
 		root = &base.HideDirFS{root}
 	}
 	fileServer := http.FileServer(root)
-	fileServer = http.StripPrefix("/static/", fileServer)
+	// fileServer = http.StripPrefix("/dist/", fileServer)
 	node := r.add(HTTPMethod_GET, path, r.wrapFileHandle(fileServer))
 	return node
 }
