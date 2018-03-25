@@ -17,7 +17,6 @@ func (m *AuthMiddleware) Handle(ctx jiaweb.Context) error {
 	var data = make(map[string]interface{})
 	var passURL = map[string]bool{
 		"/login": true,
-		"/":      true,
 	}
 	clientFeature := ctx.RemoteIP() + "-" + ctx.Request().Header.Get("User-Agent")
 
@@ -25,20 +24,22 @@ func (m *AuthMiddleware) Handle(ctx jiaweb.Context) error {
 	path := ctx.Request().Path()
 
 	if strings.HasPrefix(path, "/jiaweb") || strings.HasPrefix(path, "/api") || strings.HasPrefix(path, "/viewImage") {
-		m.Next(ctx)
-		return nil
+		return m.Next(ctx)
 	}
 
 	if ctx.VerifyToken(&data) {
 		if sign, ok := data["clientSign"]; ok && sign == clientSign {
-			m.Next(ctx)
-			return nil
+			ctx.HttpServer().Render.AddLocals(jiaweb.KValue{
+				Key:   "user",
+				Value: data,
+			})
+			return m.Next(ctx)
 		}
 	}
 
 	if _, ok := passURL[path]; ok {
-		m.Next(ctx)
-		return nil
+		return m.Next(ctx)
+
 	}
 
 	ctx.Redirect("/login", http.StatusFound)

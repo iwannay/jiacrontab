@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"jiacrontab/libs"
 	"jiacrontab/server/conf"
@@ -28,6 +29,13 @@ func notFoundHandle(ctx jiaweb.Context) {
 	ctx.RenderHtml([]string{"public/404"}, nil)
 }
 
+func exceptionHandle(ctx jiaweb.Context, err error) {
+	fmt.Println("errror", err)
+	ctx.WriteJSON(map[string]interface{}{
+		"error": err,
+	})
+}
+
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	// globalJwt = newJwt(globalConfig.tokenExpires, globalConfig.tokenCookieName, globalConfig.JWTSigningKey, globalConfig.tokenCookieMaxAge)
@@ -40,6 +48,7 @@ func main() {
 		app.SetEnableDetailRequestData(true)
 		app.SetPProfConfig(true, 10004)
 		app.SetNotFoundHandle(notFoundHandle)
+		app.SetExceptionHandle(exceptionHandle)
 	})
 
 	router(app)
@@ -50,6 +59,10 @@ func main() {
 		EnableJwt:    true,
 		CookieMaxAge: 86400,
 		SignKey:      "ASDASDFASDFIFIFJA234243",
+	})
+	app.HttpServer.SetTempplateConfig(&jiawebConfig.TemplateNode{
+		TplDir: "template",
+		TplExt: ".html",
 	})
 
 	app.HttpServer.RegisterModule(&jiaweb.HttpModule{
@@ -78,8 +91,14 @@ func main() {
 			}, jiaweb.KValue{
 				Key:   "appVersion",
 				Value: "v1.3.5",
+			}, jiaweb.KValue{
+				Key:   "action",
+				Value: ctx.Request().Path(),
+			}, jiaweb.KValue{
+				Key:   "goVersion",
+				Value: runtime.Version(),
 			})
-			ctx.HttpServer().Render.AppendTpl("public/head", "public/foot")
+			ctx.HttpServer().Render.AppendTpl("public/head", "public/footer", "public/header")
 			ctx.Store().Store("appConfig", config)
 		},
 	})
@@ -90,11 +109,10 @@ func main() {
 		"formatMs": libs.Int2floatstr,
 	})
 
+	go rpc.InitSrvRpc(config.DefaultRPCPath, config.DefaultRPCDebugPath, config.RpcAddr, &routes.Logic{})
 	app.StartServer(20000)
 
 	// globalReqFilter = newReqFilter()
-
-	go rpc.InitSrvRpc(config.DefaultRPCPath, config.DefaultRPCDebugPath, config.RpcAddr, &routes.Logic{})
 
 	// initServer()
 }

@@ -52,7 +52,7 @@ func registerController(i interface{}) jiaweb.HttpHandle {
 
 func router(app *jiaweb.JiaWeb) {
 	var route = app.HttpServer.Route()
-	route.ServerFile("/static/<key:.*>", file.GetCurrentDirectory()+"/static")
+	route.ServerFile("/static/<key:.*>", file.GetCurrentDirectory()+"/")
 	route.GET("/", routes.Index)
 	route.GET("/list", routes.ListTask)
 	route.GET("/log", routes.RecentLog)

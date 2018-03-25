@@ -16,6 +16,13 @@ import (
 	"github.com/iwannay/jiaweb"
 )
 
+var app *jiaweb.JiaWeb
+
+const (
+	minuteTimeLayout = "200601021504"
+	dateTimeLayout   = "2006-01-02 15:04:05"
+)
+
 func ListTask(ctx jiaweb.Context) error {
 
 	var addr string
@@ -93,7 +100,10 @@ func Index(ctx jiaweb.Context) error {
 	var clientList map[string]proto.ClientConf
 	var m = model.NewModel()
 
-	sInfo := libs.SystemInfo(ctx.StartTime())
+	info := app.RuntimeState()
+	t, _ := time.Parse(dateTimeLayout, info.ServerStartTime)
+
+	sInfo := libs.SystemInfo(t)
 	clientList, _ = m.GetRPCClientList()
 	sortedClientList := make([]proto.ClientConf, 0)
 
@@ -393,7 +403,6 @@ func StartTask(ctx jiaweb.Context) error {
 }
 
 func Login(ctx jiaweb.Context) error {
-	fmt.Println("hahah")
 	var r = ctx.Request()
 	if r.Method == http.MethodPost {
 
@@ -425,7 +434,7 @@ func Login(ctx jiaweb.Context) error {
 			return nil
 		}
 
-		ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
+		return ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 			"error": "auth failed",
 		})
 
@@ -436,10 +445,12 @@ func Login(ctx jiaweb.Context) error {
 		// 	ctx.Redirect("/", http.StatusFound)
 		// 	return nil
 		// }
-		ctx.RenderHtml([]string{"login"}, nil)
+
+		err := ctx.RenderHtml([]string{"login"}, nil)
+		return err
 
 	}
-	return nil
+
 }
 
 func QuickStart(ctx jiaweb.Context) error {
@@ -450,24 +461,24 @@ func QuickStart(ctx jiaweb.Context) error {
 	addr := strings.TrimSpace(r.FormValue("addr"))
 	var reply []byte
 	if taskId == "" || addr == "" {
-		ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
+		return ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 			"error": "param error",
 		})
-		return nil
+
 	}
 
 	if err := m.RpcCall(addr, "Task.QuickStart", taskId, &reply); err != nil {
-		ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
+		return ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 			"error": err,
 		})
-		return nil
+
 	}
 	logList := strings.Split(string(reply), "\n")
-	ctx.RenderHtml([]string{"log"}, map[string]interface{}{
+	return ctx.RenderHtml([]string{"log"}, map[string]interface{}{
 		"logList": logList,
 		"addr":    addr,
 	})
-	return nil
+
 }
 
 func Logout(ctx jiaweb.Context) error {
@@ -566,4 +577,8 @@ func Model(ctx jiaweb.Context) error {
 	ctx.Redirect(url, http.StatusFound)
 	return nil
 
+}
+
+func SetApp(app *jiaweb.JiaWeb) {
+	app = app
 }

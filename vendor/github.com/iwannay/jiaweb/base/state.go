@@ -64,6 +64,18 @@ type (
 		Code int
 		Num  uint64
 	}
+
+	RuntimeInfo struct {
+		ServerStartTime      string
+		TotalRequestCount    string
+		TotalErrorCount      string
+		IntervalRequestData  map[string]interface{}
+		DetailRequestUrlData map[string]interface{}
+		IntervalErrorData    map[string]interface{}
+		DetailErrorPageData  map[string]interface{}
+		DetailErrorData      map[string]interface{}
+		DetailHttpCodeData   map[string]interface{}
+	}
 )
 
 func (s *State) QueryIntervalRequstData(key string) uint64 {
@@ -166,48 +178,51 @@ func (s *State) handleInfo() {
 	}
 }
 
+func (s *State) GetRuntimeInfo() RuntimeInfo {
+	return RuntimeInfo{
+		ServerStartTime:      s.ServerStartTime.Format(dateTimeLayout),
+		TotalRequestCount:    strconv.FormatUint(s.TotalRequestCount, 10),
+		TotalErrorCount:      strconv.FormatUint(s.TotalErrorCount, 10),
+		IntervalRequestData:  s.IntervalRequestData.All(),
+		DetailRequestUrlData: s.DetailRequstURLData.All(),
+		IntervalErrorData:    s.IntervalErrorData.All(),
+		DetailErrorPageData:  s.DetailErrorPageData.All(),
+		DetailErrorData:      s.DetailErrorData.All(),
+		DetailHttpCodeData:   s.DetailHTTPCodeData.All(),
+	}
+}
 func (s *State) ShowData(dataType string) string {
-
+	info := s.GetRuntimeInfo()
 	if dataType == "json" {
-		var dataMap = make(map[string]interface{})
-		dataMap["ServerStartTime"] = s.ServerStartTime.Format(dateTimeLayout)
-		dataMap["TotalRequestCount"] = strconv.FormatUint(s.TotalRequestCount, 10)
-		dataMap["TotalErrorCount"] = strconv.FormatUint(s.TotalErrorCount, 10)
-		dataMap["IntervalRequestData"] = s.IntervalRequestData.All()
-		dataMap["DetailRequestUrlData"] = s.DetailRequstURLData.All()
-		dataMap["IntervalErrorData"] = s.IntervalErrorData.All()
-		dataMap["DetailErrorPageData"] = s.DetailErrorPageData.All()
-		dataMap["DetailErrorData"] = s.DetailErrorData.All()
-		dataMap["DetailHttpCodeData"] = s.DetailHTTPCodeData.All()
-		return utils.GetJsonString(dataMap)
+		return utils.GetJsonString(info)
 	}
 
 	data := "<html><body><div>"
-	data += "ServerStartTime : " + s.ServerStartTime.Format(dateTimeLayout)
+	data += "ServerStartTime : " + info.ServerStartTime
 	data += "<br>"
-	data += "TotalRequestCount : " + strconv.FormatUint(s.TotalRequestCount, 10)
+	data += "TotalRequestCount : " + info.TotalRequestCount
 	data += "<br>"
-	data += "TotalErrorCount : " + strconv.FormatUint(s.TotalErrorCount, 10)
+	data += "TotalErrorCount : " + info.TotalErrorCount
 	data += "<br>"
-	data += "IntervalRequestData : " + utils.GetJsonString(s.IntervalRequestData.All())
-	data += "<br>"
-
-	data += "DetailRequestUrlData : " + utils.GetJsonString(s.DetailRequstURLData.All())
+	data += "IntervalRequestData : " + utils.GetJsonString(info.IntervalRequestData)
 	data += "<br>"
 
-	data += "IntervalErrorData : " + utils.GetJsonString(s.IntervalErrorData.All())
-
+	data += "DetailRequestUrlData : " + utils.GetJsonString(info.DetailRequestUrlData)
 	data += "<br>"
 
-	data += "DetailErrorPageData : " + utils.GetJsonString(s.DetailErrorPageData.All())
+	data += "IntervalErrorData : " + utils.GetJsonString(info.IntervalErrorData)
 
 	data += "<br>"
 
-	data += "DetailErrorData : " + utils.GetJsonString(s.DetailErrorData.All())
+	data += "DetailErrorPageData : " + utils.GetJsonString(info.DetailErrorPageData)
 
 	data += "<br>"
 
-	data += "DetailHttpCodeData : " + utils.GetJsonString(s.DetailHTTPCodeData.All())
+	data += "DetailErrorData : " + utils.GetJsonString(info.DetailErrorData)
+
+	data += "<br>"
+
+	data += "DetailHttpCodeData : " + utils.GetJsonString(info.DetailHttpCodeData)
 
 	data += "</div></body></html>"
 	return data

@@ -280,6 +280,10 @@ func (app *JiaWeb) DefaultMethodNotAllowedHandler(ctx Context) {
 	ctx.WriteStringAndStatus(http.StatusMethodNotAllowed, http.StatusText(http.StatusMethodNotAllowed))
 }
 
+func (app *JiaWeb) RuntimeState() base.RuntimeInfo {
+	return base.GlobalState.GetRuntimeInfo()
+}
+
 func initPProf(ctx Context) error {
 	querykey := ctx.QueryRouteParam("key")
 	runtime.GC()
