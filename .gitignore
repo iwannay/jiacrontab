@@ -44,4 +44,6 @@ server/server
 clent/client
 server/logsfile
 
+.vscode
+
 
