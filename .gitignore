@@ -33,7 +33,7 @@ client/*.json
 client/logs
 client/watchbin
 client/logsfile
-
+client/binTmp
 
 server/debug
 server/autobuild
@@ -43,6 +43,7 @@ server/.data
 server/server
 clent/client
 server/logsfile
+server/binTmp
 
 .vscode
 

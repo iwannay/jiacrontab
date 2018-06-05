@@ -27,6 +27,7 @@ func (c *MrpcClient) Call(serviceMethod string, args, reply interface{}) error {
 		return err
 
 	}
+
 	if err = c.client.Call(serviceMethod, args, reply); err != nil {
 		log.Printf("Rpc Call %s %s", serviceMethod, err)
 	}
