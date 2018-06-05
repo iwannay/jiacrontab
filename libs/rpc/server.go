@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
+	"net/http"
 	"net/rpc"
 	"time"
 )
@@ -67,7 +69,8 @@ func (c *gobServerCodec) Close() error {
 	return c.rwc.Close()
 }
 
-func Start(srcvr ...interface{}) {
+// Start 启动rpc server
+func Start(addr string, srcvr ...interface{}) error {
 	var err error
 	server := rpc.NewServer()
 	for _, v := range srcvr {
@@ -75,13 +78,13 @@ func Start(srcvr ...interface{}) {
 			return err
 		}
 	}
-	server.HandleHTTP(globalConfig.defaultRPCPath, globalConfig.defaultRPCDebugPath)
+	// server.HandleHTTP(globalConfig.defaultRPCPath, globalConfig.defaultRPCDebugPath)
 
-	l, err := net.Listen("tcp", globalConfig.rpcListenAddr)
+	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
 	}
-	log.Printf("rpc listen %s", globalConfig.rpcListenAddr)
+	log.Printf("rpc listen %s", addr)
 
 	return http.Serve(l, nil)
 }
