@@ -67,6 +67,25 @@ func (c *gobServerCodec) Close() error {
 	return c.rwc.Close()
 }
 
+func Start(srcvr ...interface{}) {
+	var err error
+	server := rpc.NewServer()
+	for _, v := range srcvr {
+		if err = server.Register(v); err != nil {
+			return err
+		}
+	}
+	server.HandleHTTP(globalConfig.defaultRPCPath, globalConfig.defaultRPCDebugPath)
+
+	l, err := net.Listen("tcp", globalConfig.rpcListenAddr)
+	if err != nil {
+		return err
+	}
+	log.Printf("rpc listen %s", globalConfig.rpcListenAddr)
+
+	return http.Serve(l, nil)
+}
+
 // func ListenRPC() {
 // 	rpc.Register(NewWorker())
 // 	l, e := net.Listen("tcp", ":4200")
