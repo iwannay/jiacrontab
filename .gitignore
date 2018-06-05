@@ -43,4 +43,6 @@ server/.data
 server/server
 clent/client
 
+.vscode
+
 
