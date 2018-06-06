@@ -16,7 +16,7 @@ import (
 func TimeoutCoder(f func(interface{}) error, e interface{}, msg string) error {
 	endChan := make(chan error, 1)
 	go func() { endChan <- f(e) }()
-	timer := time.NewTimer(time.Minute)
+	timer := time.NewTimer(20 * time.Second)
 	select {
 	case e := <-endChan:
 		return e
@@ -90,6 +90,7 @@ func Listen(addr string, srcvr ...interface{}) error {
 			continue
 		}
 		go func(conn net.Conn) {
+			time.Sleep(30 * time.Second)
 			buf := bufio.NewWriter(conn)
 			srv := &gobServerCodec{
 				rwc:    conn,
@@ -103,6 +104,7 @@ func Listen(addr string, srcvr ...interface{}) error {
 				log.Print("Error: server rpc request", err.Error())
 			}
 			srv.Close()
+
 		}(conn)
 	}
 
