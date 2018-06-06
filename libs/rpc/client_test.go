@@ -7,6 +7,7 @@ import (
 	_ "net/http/pprof"
 	"sync"
 	"testing"
+	"time"
 )
 
 type Person struct {
@@ -23,8 +24,10 @@ func TestCall(t *testing.T) {
 
 		done <- struct{}{}
 		log.Println("start server")
-
-		t.Fatal(Start(":6478", &Person{}))
+		err := Listen(":6478", &Person{})
+		if err != nil {
+			t.Fatal(err)
+		}
 
 	}()
 	<-done
@@ -36,12 +39,12 @@ func TestCall(t *testing.T) {
 			wg.Add(1)
 			defer wg.Done()
 			var ret string
-			var args string
-			err := Call(":6478", "person.say", &args, &ret)
+			// var args string
+			err := Call(":6478", "Person.Say", "", &ret)
 			if err != nil {
-				t.Log("error:", err)
+				t.Log(i, "error:", err)
 			}
-			t.Log(i)
+			t.Log(i, ret)
 
 		}(i)
 
@@ -53,4 +56,5 @@ func TestCall(t *testing.T) {
 	}()
 
 	wg.Wait()
+	time.Sleep(1 * time.Second)
 }

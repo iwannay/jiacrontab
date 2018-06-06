@@ -70,26 +70,55 @@ func (c *gobServerCodec) Close() error {
 }
 
 // Start 启动rpc server
-func Start(addr string, srcvr ...interface{}) error {
+func Listen(addr string, srcvr ...interface{}) error {
 	var err error
-	server := rpc.NewServer()
 	for _, v := range srcvr {
-		if err = server.Register(v); err != nil {
+		if err = rpc.Register(v); err != nil {
 			return err
 		}
 	}
-	// server.HandleHTTP(globalConfig.defaultRPCPath, globalConfig.defaultRPCDebugPath)
 
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
 	}
+
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			log.Print("Error: accept rpc connection", err.Error())
+			continue
+		}
+		go func(conn net.Conn) {
+			buf := bufio.NewWriter(conn)
+			srv := &gobServerCodec{
+				rwc:    conn,
+				dec:    gob.NewDecoder(conn),
+				enc:    gob.NewEncoder(buf),
+				encBuf: buf,
+			}
+
+			err = rpc.ServeRequest(srv)
+			if err != nil {
+				log.Print("Error: server rpc request", err.Error())
+			}
+			srv.Close()
+		}(conn)
+	}
+
+	// rpc.ServeCodec(&gobServerCodec{
+	// 	rwc:    conn,
+	// 	dec:    gob.NewDecoder(conn),
+	// 	enc:    gob.NewEncoder(buf),
+	// 	encBuf: buf,
+	// })
 	log.Printf("rpc listen %s", addr)
 
 	return http.Serve(l, nil)
 }
 
-// func ListenRPC() {
+//
+// func ListenTCP() {
 // 	rpc.Register(NewWorker())
 // 	l, e := net.Listen("tcp", ":4200")
 // 	if e != nil {
