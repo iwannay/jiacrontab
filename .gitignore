@@ -32,6 +32,9 @@ client/.data
 client/*.json
 client/logs
 client/watchbin
+client/binTmp
+client/logsfile
+clent/client
 
 
 
@@ -41,7 +44,8 @@ server/jiacrontab
 server/watchbin
 server/.data
 server/server
-clent/client
+server/binTmp
+server/logsfile
 
 .vscode
 
