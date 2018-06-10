@@ -3,7 +3,7 @@ package model
 import (
 	"fmt"
 	"jiacrontab/libs/proto"
-	"jiacrontab/server/rpc"
+	"jiacrontab/libs/rpc"
 	"log"
 )
 
@@ -55,10 +55,11 @@ func (self *Model) RpcCall(addr string, method string, args interface{}, reply i
 
 	v, ok := innerStore.searchRPCClientList(addr)
 	if !ok {
-		return fmt.Errorf("not found %s", addr)
+		return fmt.Errorf("cannot found %s", addr)
 	}
 
-	c, err := rpc.NewRpcClient(addr)
+	err = rpc.Call(addr, method, args, reply)
+
 	if err != nil {
 		innerStore.Wrap(func(s *Store) {
 			v.State = 0
@@ -67,10 +68,5 @@ func (self *Model) RpcCall(addr string, method string, args interface{}, reply i
 		}).Sync()
 		return err
 	}
-
-	if err = c.Call(method, args, reply); err != nil {
-		err = fmt.Errorf("failded to call %s %+v %s", method, args, err)
-	}
-	return err
-
+	return nil
 }

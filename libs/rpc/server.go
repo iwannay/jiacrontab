@@ -7,16 +7,17 @@ import (
 	"io"
 	"log"
 	"net"
-	"net/http"
 	"net/rpc"
 	"time"
 )
+
+var DefaultTimeout = 20
 
 // TimeoutCoder 超时检测
 func TimeoutCoder(f func(interface{}) error, e interface{}, msg string) error {
 	endChan := make(chan error, 1)
 	go func() { endChan <- f(e) }()
-	timer := time.NewTimer(time.Minute)
+	timer := time.NewTimer(time.Duration(DefaultTimeout) * time.Second)
 	select {
 	case e := <-endChan:
 		return e
@@ -70,68 +71,50 @@ func (c *gobServerCodec) Close() error {
 }
 
 // Start 启动rpc server
-func Start(addr string, srcvr ...interface{}) error {
+func listen(addr string, srcvr ...interface{}) error {
 	var err error
-	server := rpc.NewServer()
 	for _, v := range srcvr {
-		if err = server.Register(v); err != nil {
+		if err = rpc.Register(v); err != nil {
 			return err
 		}
 	}
-	// server.HandleHTTP(globalConfig.defaultRPCPath, globalConfig.defaultRPCDebugPath)
 
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
 	}
-	log.Printf("rpc listen %s", addr)
 
-	return http.Serve(l, nil)
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			log.Print("Error: accept rpc connection", err.Error())
+			continue
+		}
+		go func(conn net.Conn) {
+			buf := bufio.NewWriter(conn)
+			srv := &gobServerCodec{
+				rwc:    conn,
+				dec:    gob.NewDecoder(conn),
+				enc:    gob.NewEncoder(buf),
+				encBuf: buf,
+			}
+
+			err = rpc.ServeRequest(srv)
+			if err != nil {
+				log.Print("Error: server rpc request", err.Error())
+			}
+			srv.Close()
+
+		}(conn)
+	}
 }
 
-// func ListenRPC() {
-// 	rpc.Register(NewWorker())
-// 	l, e := net.Listen("tcp", ":4200")
-// 	if e != nil {
-// 		log.Fatal("Error: listen 4200 error:", e)
-// 	}
-// 	go func() {
-// 		for {
-// 			conn, err := l.Accept()
-// 			if err != nil {
-// 				log.Print("Error: accept rpc connection", err.Error())
-// 				continue
-// 			}
-// 			go func(conn net.Conn) {
-// 				buf := bufio.NewWriter(conn)
-// 				srv := &gobServerCodec{
-// 					rwc:    conn,
-// 					dec:    gob.NewDecoder(conn),
-// 					enc:    gob.NewEncoder(buf),
-// 					encBuf: buf,
-// 				}
-// 				err = rpc.ServeRequest(srv)
-// 				if err != nil {
-// 					log.Print("Error: server rpc request", err.Error())
-// 				}
-// 				srv.Close()
-// 			}(conn)
-// 		}
-// 	}()
-// }
+// ListenAndServe  run rpc server
+func ListenAndServe(addr string, srcvr ...interface{}) {
+	err := listen(addr, srcvr...)
+	if err != nil {
+		panic(err)
+	}
+	log.Println("rpc server listen:", addr)
 
-// func main() {
-// 	go ListenRPC()
-// 	N := 1000
-// 	mapChan := make(chan int, N)
-// 	for i := 0; i < N; i++ {
-// 		go func(i int) {
-// 			call("localhost", "Worker.DoJob", strconv.Itoa(i), new(string))
-// 			mapChan <- i
-// 		}(i)
-// 	}
-// 	for i := 0; i<N; i++ {
-// 		<-mapChan
-// 	}
-
-// }
+}

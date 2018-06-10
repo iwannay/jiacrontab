@@ -2,6 +2,7 @@ package main
 
 import (
 	"jiacrontab/client/store"
+	"jiacrontab/libs/rpc"
 	"log"
 	"os"
 	"os/signal"
@@ -78,13 +79,6 @@ func main() {
 
 	})
 
-	done := make(chan error, 0)
-	go func() {
-		done <- initSrvRpc(&Task{}, &Admin{})
-	}()
-
-	initClientRpc()
-	pingRpcSrv()
-
-	log.Println(<-done)
+	go RpcHeartBeat()
+	rpc.ListenAndServe(globalConfig.rpcListenAddr, &Task{}, &Admin{})
 }

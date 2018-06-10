@@ -113,11 +113,8 @@ func (s *HttpServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	s.pool.context.Put(httpctx)
 }
 
-func (s *HttpServer) SetEnableJwt(jwtConf *config.JwtNode) {
-	if jwtConf == nil {
-		jwtConf = s.JwtConfig()
-	}
-	if jwtConf != nil {
+func (s *HttpServer) SetEnableJwt() {
+	if jwtConf := s.JwtConfig(); jwtConf != nil {
 		jwtConf.EnableJwt = true
 		logger.Logger().Debug(
 			fmt.Sprintf(
@@ -164,14 +161,6 @@ func (s *HttpServer) ServerConfig() *config.ServerNode {
 
 func (s *HttpServer) TemplateConfig() *config.TemplateNode {
 	return s.JiaWeb.Config.Template
-}
-
-func (s *HttpServer) SetTempplateConfig(tplConf *config.TemplateNode) {
-	if tplConf != nil {
-		s.JiaWeb.Config.Template = tplConf
-		logger.Logger().Debug("JiaWeb:HttpServer set template config", LogTarget_HttpServer)
-	}
-
 }
 
 func (s *HttpServer) Group(prefix string) Group {

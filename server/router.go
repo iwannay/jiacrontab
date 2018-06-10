@@ -1,8 +1,11 @@
 package main
 
 import (
+	"path/filepath"
 	"reflect"
 	"strings"
+
+	"github.com/kataras/iris"
 
 	"jiacrontab/server/routes"
 
@@ -50,22 +53,21 @@ func registerController(i interface{}) jiaweb.HttpHandle {
 	}
 }
 
-func router(app *jiaweb.JiaWeb) {
-	var route = app.HttpServer.Route()
-	route.ServerFile("/static/<key:.*>", file.GetCurrentDirectory()+"/")
-	route.GET("/", routes.Index)
-	route.GET("/list", routes.ListTask)
-	route.GET("/log", routes.RecentLog)
-	route.GETPOST("/update", routes.UpdateTask)
-	route.GET("/stop", routes.StopTask)
-	route.GET("/start", routes.StartTask)
-	route.GETPOST("/login", routes.Login)
-	route.GET("/logout", routes.Logout)
-	route.GET("/readme", routes.Readme)
-	route.GET("/quickStart", routes.QuickStart)
-	route.GET("/reloadConfig", routes.ReloadConfig)
-	route.GET("/deleteClient", routes.DeleteClient)
-	route.GET("/viewConfig", routes.ViewConfig)
-	route.GET("/stopAllTask", routes.StopAllTask)
-	route.GET("/model", routes.Model)
+func router(app *iris.Application) {
+	app.StaticWeb("/static", filepath.Join(file.GetCurrentDirectory(), "static"))
+	app.Get("/", routes.Index)
+	app.Get("/list", routes.ListTask)
+	app.Get("/log", routes.RecentLog)
+	app.Any("/update", routes.UpdateTask)
+	app.Get("/stop", routes.StopTask)
+	app.Get("/start", routes.StartTask)
+	app.Any("/login", routes.Login)
+	app.Get("/logout", routes.Logout)
+	app.Get("/readme", routes.Readme)
+	app.Get("/quickStart", routes.QuickStart)
+	app.Get("/reloadConfig", routes.ReloadConfig)
+	app.Get("/deleteClient", routes.DeleteClient)
+	app.Get("/viewConfig", routes.ViewConfig)
+	app.Get("/stopAllTask", routes.StopAllTask)
+	app.Get("/model", routes.Model)
 }

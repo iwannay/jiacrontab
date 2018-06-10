@@ -1,10 +1,5 @@
-<!DOCTYPE html>
-<html lang="zh-cn">
-{{template "head" .}}
 
-<body>
-    {{template "header" .}}
-
+{{render "public/header.html"}}
     <div class="container-fluid">
         <div class="row-fluid">
             <div class="col-md-3">
@@ -47,7 +42,4 @@
         </div>
 
     </div>
-   {{template "footer" .}}
-</body>
-
-</html>
+{{render "public/footer.html"}}

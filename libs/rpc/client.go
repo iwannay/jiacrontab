@@ -55,7 +55,7 @@ func Call(addr string, serviceMethod string, args interface{}, reply interface{}
 	}
 	if err != nil {
 		return err
-	} else {
-		return errC
 	}
+	return errC
+
 }

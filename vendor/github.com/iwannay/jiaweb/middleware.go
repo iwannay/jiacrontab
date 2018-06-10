@@ -62,12 +62,12 @@ type RequestLogMiddleware struct {
 }
 
 func (m *RequestLogMiddleware) Handle(ctx Context) error {
-	err := m.Next(ctx)
+	m.Next(ctx)
 
 	timeTaken := int64(time.Now().Sub(ctx.(*HttpContext).startTime) / time.Millisecond)
 	log := fmt.Sprintf("%s %s", ctx.Request().Url(), httpLog(ctx, timeTaken))
 	logger.Logger().Debug(log, LogTarget_HttpRequest)
-	return err
+	return nil
 }
 
 func httpLog(ctx Context, timeTaken int64) string {
