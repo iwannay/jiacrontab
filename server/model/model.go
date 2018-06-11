@@ -11,6 +11,7 @@ var innerStore *Store
 
 func InitStore(path string) {
 	innerStore = NewStore(path)
+	innerStore.Load()
 }
 
 func recordError(err error) {

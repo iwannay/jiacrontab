@@ -50,25 +50,22 @@ func ListTask(ctx iris.Context) {
 		firstK := sortedClientList[0].Addr
 		addr = libs.ReplaceEmpty(r.FormValue("addr"), firstK)
 	} else {
-		ctx.View("public/error.html", map[string]interface{}{
-			"error": "nothing to show",
-		})
+		ctx.ViewData("error", "nothing to show")
+		ctx.View("public/error.html")
 
-		// ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
-		// 	"error": "nothing to show",
-		// })
-
+		return
 	}
 
 	locals = make(proto.Mdata)
 
 	if err := rpc.Call(addr, "Task.All", "", &locals); err != nil {
 		ctx.Redirect("/", http.StatusFound)
-
+		return
 	}
 
 	if err := rpc.Call(addr, "Admin.SystemInfo", "", &systemInfo); err != nil {
 		ctx.Redirect("/", http.StatusFound)
+		return
 
 	}
 
@@ -80,23 +77,20 @@ func ListTask(ctx iris.Context) {
 		return sortedTaskList[i].Create > sortedTaskList[j].Create
 	})
 
-	tpl := []string{"listTask"}
+	tpl := "listTask.html"
 	if cki, err := r.Cookie("model"); err == nil {
 		if cki.Value == "batch" {
-			tpl = []string{"batchListTask"}
+			tpl = "batchListTask"
 		}
 	}
 
-	ctx.View(tpl[0])
-	// ctx.RenderHtml(tpl, map[string]interface{}{
-	// 	"title":      "灵魂百度",
-	// 	"list":       sortedTaskList,
-	// 	"addrs":      sortedClientList,
-	// 	"client":     clientList[addr],
-	// 	"systemInfo": systemInfo,
-	// 	"taskIds":    strings.Join(taskIdSli, ","),
-	// 	"url":        r.Url(),
-	// })
+	ctx.ViewData("list", sortedTaskList)
+	ctx.ViewData("addrs", sortedClientList)
+	ctx.ViewData("client", clientList[addr])
+	ctx.ViewData("systemInfo", systemInfo)
+	ctx.ViewData("taskIds", strings.Join(taskIdSli, ","))
+	ctx.ViewData("url", r.RequestURI)
+	ctx.View(tpl)
 
 }
 
@@ -109,6 +103,7 @@ func Index(ctx iris.Context) {
 
 	sInfo := libs.SystemInfo(t)
 	clientList, _ = m.GetRPCClientList()
+	fmt.Println(clientList)
 	sortedClientList := make([]proto.ClientConf, 0)
 
 	for _, v := range clientList {
@@ -118,16 +113,11 @@ func Index(ctx iris.Context) {
 	sort.Slice(sortedClientList, func(i, j int) bool {
 		return (sortedClientList[i].Addr > sortedClientList[j].Addr) && (sortedClientList[i].State > sortedClientList[j].State)
 	})
-	ctx.View("index.html", map[string]interface{}{
-		"clientList": sortedClientList,
-		"systemInfo": sInfo,
-		"action":     "index",
-	})
+	ctx.Application().Logger().Debug(ctx.GetViewData())
 
-	// ctx.RenderHtml([]string{"index"}, map[string]interface{}{
-	// 	"clientList": sortedClientList,
-	// 	"systemInfo": sInfo,
-	// })
+	ctx.ViewData("clientList", sortedClientList)
+	ctx.ViewData("systemInfo", sInfo)
+	ctx.View("index.html")
 
 }
 
@@ -143,6 +133,7 @@ func UpdateTask(ctx iris.Context) {
 		// ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 		// 	"error": "params error",
 		// })
+		ctx.ViewData("error", "params error")
 		ctx.View("public/error.html")
 	}
 
@@ -243,15 +234,12 @@ func UpdateTask(ctx iris.Context) {
 				Weekday: weekday,
 			},
 		}, &reply); err != nil {
-			// ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
-			// 	"error": err.Error(),
-			// })
+			ctx.ViewData("error", err.Error())
 			ctx.View("public/error.html")
-
 		}
 		if reply {
 			ctx.Redirect("/list?addr="+addr, http.StatusFound)
-
+			return
 		}
 
 	} else {
@@ -262,6 +250,7 @@ func UpdateTask(ctx iris.Context) {
 			err := rpc.Call(addr, "Task.Get", id, &t)
 			if err != nil {
 				ctx.Redirect("/list?addr="+addr, http.StatusFound)
+				return
 
 			}
 		} else {
@@ -282,20 +271,17 @@ func UpdateTask(ctx iris.Context) {
 			firstK := sortedKeys[0]
 			addr = libs.ReplaceEmpty(r.FormValue("addr"), firstK)
 		} else {
-			// ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
-			// 	"error": "nothing to show",
-			// })
-			ctx.View("public/error.html")
 
+			ctx.ViewData("error", "nothing to show")
+			ctx.View("public/error.html")
+			return
 		}
 
-		// ctx.RenderHtml([]string{"updateTask"}, map[string]interface{}{
-		// 	"addr":          addr,
-		// 	"addrs":         sortedKeys,
-		// 	"rpcClientsMap": clientList,
-		// 	"task":          t,
-		// 	"allowCommands": conf.ConfigArgs.AllowCommands,
-		// })
+		ctx.ViewData("addr", addr)
+		ctx.ViewData("addrs", sortedKeys)
+		ctx.ViewData("rpcClientsMap", clientList)
+		ctx.ViewData("task", t)
+		ctx.ViewData("allowCommands", conf.ConfigArgs.AllowCommands)
 		ctx.View("public/error.html")
 	}
 
@@ -309,19 +295,11 @@ func StopTask(ctx iris.Context) {
 	action := libs.ReplaceEmpty(r.FormValue("action"), "stop")
 	var reply bool
 	if taskId == "" || addr == "" {
-		// ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
-		// 	"error": "param error",
-		// })
+		ctx.ViewData("error", "param error")
 		ctx.View("public/error.html")
-
+		return
 	}
 
-	// if c, err := newRpcClient(addr); err != nil {
-	// 	m.renderHtml2([]string{"public/error"}, map[string]interface{}{
-	// 		"error": "failed stop task" + taskId,
-	// 	}, nil)
-	// 	return
-	// } else {
 	var method string
 	if action == "stop" {
 		method = "Task.Stop"
@@ -331,22 +309,17 @@ func StopTask(ctx iris.Context) {
 		method = "Task.Kill"
 	}
 	if err := rpc.Call(addr, method, taskId, &reply); err != nil {
-		// ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
-		// 	"error": err,
-		// })
+		ctx.ViewData("error", err)
 		ctx.View("public/error.html")
-
+		return
 	}
 	if reply {
 		ctx.Redirect("/list?addr="+addr, http.StatusFound)
-
+		return
 	}
 
-	// ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
-	// 	"error": fmt.Sprintf("failed %s %s", method, taskId),
-	// })
+	ctx.ViewData("error", fmt.Sprintf("failed %s %s", method, taskId))
 	ctx.View("public/error.html")
-
 }
 
 func StopAllTask(ctx iris.Context) {
@@ -358,30 +331,23 @@ func StopAllTask(ctx iris.Context) {
 	taskIdSli := strings.Split(taskIds, ",")
 	var reply bool
 	if len(taskIdSli) == 0 || addr == "" {
-		// ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
-		// 	"error": "param error",
-		// })
+		ctx.ViewData("error", "param error")
 		ctx.View("public/error.html")
-
+		return
 	}
 
 	if err := rpc.Call(addr, method, taskIdSli, &reply); err != nil {
-		// ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
-		// 	"error": err,
-		// })
+		ctx.ViewData("error", err)
 		ctx.View("public/error.html")
-
+		return
 	}
 	if reply {
 		ctx.Redirect("/list?addr="+addr, http.StatusFound)
-
+		return
 	}
 
-	// ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
-	// 	"error": fmt.Sprintf("failed %s %v", method, taskIdSli),
-	// })
+	ctx.ViewData("error", fmt.Sprintf("failed %s %v", method, taskIdSli))
 	ctx.View("public/error.html")
-
 }
 
 func StartTask(ctx iris.Context) {
@@ -391,31 +357,24 @@ func StartTask(ctx iris.Context) {
 	addr := strings.TrimSpace(r.FormValue("addr"))
 	var reply bool
 	if taskId == "" || addr == "" {
-		// ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
-		// 	"error": "param error",
-		// })
+		ctx.ViewData("error", "param error")
 		ctx.View("public/error.html")
-
+		return
 	}
 
 	if err := rpc.Call(addr, "Task.Start", taskId, &reply); err != nil {
-		// ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
-		// 	"error": "param error",
-		// })
+		ctx.ViewData("error", "param error")
 		ctx.View("public/error.html")
-
+		return
 	}
 
 	if reply {
 		ctx.Redirect("/list?addr="+addr, http.StatusFound)
-
+		return
 	}
 
-	// ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
-	// 	"error": "failed start task" + taskId,
-	// })
+	ctx.ViewData("error", "failed start task"+taskId)
 	ctx.View("public/error.html")
-
 }
 
 func Login(ctx iris.Context) {
@@ -427,7 +386,6 @@ func Login(ctx iris.Context) {
 		remb := r.FormValue("remember")
 
 		if u == conf.ConfigArgs.User && pwd == conf.ConfigArgs.Passwd {
-			// md5p := fmt.Sprintf("%x", md5.Sum([]byte(pwd)))
 
 			clientFeature := ctx.RemoteAddr() + "-" + ctx.Request().Header.Get("User-Agent")
 			fmt.Println("client feature", clientFeature)
@@ -453,18 +411,14 @@ func Login(ctx iris.Context) {
 			}
 
 			ctx.Redirect("/", http.StatusFound)
-
+			return
 		}
 
-		// return ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
-		// 	"error": "auth failed",
-		// })
+		ctx.ViewData("error", "auth failed")
 		ctx.View("public/error.html")
-
+		return
 	}
 	ctx.View("login.html")
-	// err := ctx.RenderHtml([]string{"login"}, nil)
-	//
 
 }
 
@@ -475,24 +429,22 @@ func QuickStart(ctx iris.Context) {
 	addr := strings.TrimSpace(r.FormValue("addr"))
 	var reply []byte
 	if taskId == "" || addr == "" {
-		// return ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
-		// 	"error": "param error",
-		// })
+		ctx.ViewData("error", "param error")
 		ctx.View("public/error.html")
-
+		return
 	}
 
 	if err := rpc.Call(addr, "Task.QuickStart", taskId, &reply); err != nil {
+		ctx.ViewData("error", err.Error())
 		ctx.View("public/error.html")
+		return
 
 	}
-	// logList := strings.Split(string(reply), "\n")
-	// return ctx.RenderHtml([]string{"log"}, map[string]interface{}{
-	// 	"logList": logList,
-	// 	"addr":    addr,
-	// })
-	ctx.View("log.html")
+	logList := strings.Split(string(reply), "\n")
 
+	ctx.ViewData("logList", logList)
+	ctx.ViewData("addr", addr)
+	ctx.View("log.html")
 }
 
 func Logout(ctx iris.Context) {
@@ -512,32 +464,27 @@ func RecentLog(ctx iris.Context) {
 		// ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
 		// 	"error": "param error",
 		// })
+		ctx.ViewData("error", "param error")
 		ctx.View("public/error.html")
-		//
+		return
 	}
 	if err := rpc.Call(addr, "Task.Log", id, &content); err != nil {
-		// ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
-		// 	"error": err,
-		// })
-		ctx.View("public/error.html")
-		//
-	}
-	// logList := strings.Split(string(content), "\n")
 
-	// ctx.RenderHtml([]string{"log"}, map[string]interface{}{
-	// 	"logList": logList,
-	// 	"addr":    addr,
-	// })
+		ctx.ViewData("error", err)
+		ctx.View("public/error.html")
+		return
+
+	}
+	logList := strings.Split(string(content), "\n")
+
+	ctx.ViewData("logList", logList)
+	ctx.ViewData("addr", addr)
 	ctx.View("public/error.html")
 
 }
 
 func Readme(ctx iris.Context) {
-
 	ctx.View("readme.html")
-	// ctx.RenderHtml([]string{"readme"}, nil)
-	//
-
 }
 
 func ReloadConfig(ctx iris.Context) {
@@ -551,7 +498,6 @@ func DeleteClient(ctx iris.Context) {
 	r := ctx.Request()
 	addr := r.FormValue("addr")
 	m.InnerStore().Wrap(func(s *model.Store) {
-
 		if v, ok := s.RpcClientList[addr]; ok {
 			if v.State == 1 {
 				return
@@ -566,7 +512,7 @@ func DeleteClient(ctx iris.Context) {
 
 func ViewConfig(ctx iris.Context) {
 
-	// c := conf.ConfigArgs.Category()
+	c := conf.ConfigArgs.Category()
 	r := ctx.Request()
 
 	if r.Method == http.MethodPost {
@@ -574,12 +520,8 @@ func ViewConfig(ctx iris.Context) {
 		libs.SendMail("测试邮件", "测试邮件请勿回复", conf.ConfigArgs.MailHost, conf.ConfigArgs.MailUser, conf.ConfigArgs.MailPass, conf.ConfigArgs.MailPort, mailTo)
 	}
 
-	// ctx.RenderHtml([]string{"viewConfig"}, map[string]interface{}{
-	// 	"configs": c,
-	// })
-
+	ctx.ViewData("configs", c)
 	ctx.View("viewConfig.html")
-
 }
 
 func Model(ctx iris.Context) {
@@ -595,7 +537,3 @@ func Model(ctx iris.Context) {
 	ctx.Redirect(url, http.StatusFound)
 
 }
-
-// func SetApp(app *jiaweb.JiaWeb) {
-// 	app = app
-// }

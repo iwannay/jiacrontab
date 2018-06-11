@@ -1,13 +1,9 @@
-<!DOCTYPE html>
-<html lang="zh-cn">
-{{template "head" .}}
 <style>
     .border-bottom:last-child{
         border-bottom: none;
     }
 </style>
-<body>
-    {{template "header" .}}
+{{render "public/header.html"}}
     <div class="container-fluid">
         <div class="row">
             <div class="col-md-12">
@@ -148,6 +144,7 @@
             </div><!-- /.modal-content -->
         </div><!-- /.modal-dialog -->
     </div><!-- /.modal -->
+    {{render "public/footer.html"}}
 
     <script>
         function launch(url) {
@@ -192,5 +189,3 @@
 
 
     </script>
-</body>
-</html>

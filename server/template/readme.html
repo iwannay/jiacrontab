@@ -1,18 +1,13 @@
-<!DOCTYPE html>
-<html lang="zh-cn">
-{{template "head" .}}
+{{render "public/header.html"}}
 
-<body>
-    {{template "header" .}}
+<div class="container-fluid">
+    <ul class="breadcrumb">
+        <li><a href="/">Home</a> </li>
+        <li class="active">readme</li>
+    </ul>
 
-    <div class="container-fluid">
-        <ul class="breadcrumb">
-            <li><a href="/">Home</a> </li>
-            <li class="active">readme</li>
-        </ul>
-
-        <div class="row-fluid">
-            <pre>
+    <div class="row-fluid">
+        <pre>
 1、计划任务格式：
     Minute Hour Day Month Week command
     分钟 小时 天 月 星期 命令
@@ -49,10 +44,7 @@
     第10、20、30分钟输出到/tmp/cron1.txt：
     10,20,30 * * * * echo “第10、20、30分钟输出一次”
 </pre>
-        </div>
-
     </div>
-    {{template "footer" .}}
-</body>
 
-</html>
+</div>
+{{render "public/footer.html"}}

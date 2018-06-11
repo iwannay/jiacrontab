@@ -1,13 +1,9 @@
-<!DOCTYPE html>
-<html lang="zh-cn">
-{{template "head" .}}
 <style>
     .border-bottom:last-child{
         border-bottom: none;
     }
 </style>
-<body>
-    {{template "header" .}}
+{{render "public/header.html"}}
 
     <div class="container-fluid">
 
@@ -107,7 +103,4 @@
         </div>
     </div>
 
-    {{template "footer" .}}
-</body>
-
-</html>
+{{render "public/footer.html"}}

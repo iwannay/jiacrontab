@@ -55,6 +55,12 @@ func registerController(i interface{}) jiaweb.HttpHandle {
 
 func router(app *iris.Application) {
 	app.StaticWeb("/static", filepath.Join(file.GetCurrentDirectory(), "static"))
+	app.Use(func(ctx iris.Context) {
+		ctx.ViewData("action", ctx.Request().URL.Path)
+		ctx.ViewData("title", "jiacrontab")
+
+		ctx.Next()
+	})
 	app.Get("/", routes.Index)
 	app.Get("/list", routes.ListTask)
 	app.Get("/log", routes.RecentLog)

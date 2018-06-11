@@ -1,46 +1,38 @@
-<!DOCTYPE html>
-<html lang="zh-cn">
-{{template "head" .}}
+{{render "public/header.html"}}
+<div class="container-fluid">
+    
+    <ul class="breadcrumb">
+        <li><a href="/">Home</a> </li>
+        <li class="active">配置</li>
+    </ul>
 
-<body>
-    {{template "header" .}}
-    <div class="container-fluid">
+    <div class="row-fluid">
+        {{range $k,$v := .configs}}
+            <div class="panel panel-info">
+                <!-- Default panel contents -->
+                <div class="panel-heading">{{$k}}</div>
+                
+                <!-- List group -->
+                <ul class="list-group">
+                    {{range $kk,$vv := $v}}
+                    <li class="list-group-item">{{$kk}} : {{$vv}}</li>
+                    {{end}}
+                    {{if eq $k "mail"}}
+                    <li class="list-group-item">
+                        <form class="form-inline" method="post">
+                            <div class="form-group">
+                                <input type="text" class="form-control" name="mailTo" id="testEmail">
+                            </div>
+                            <button type="submit" class="btn btn-success">发送测试邮件</button>
+                        </form>
+                    </li>
+
+                    {{end}}
+                </ul>
+            </div>
+            {{end}}
         
-        <ul class="breadcrumb">
-            <li><a href="/">Home</a> </li>
-            <li class="active">配置</li>
-        </ul>
-
-        <div class="row-fluid">
-            {{range $k,$v := .configs}}
-             <div class="panel panel-info">
-                    <!-- Default panel contents -->
-                    <div class="panel-heading">{{$k}}</div>
-                    
-                    <!-- List group -->
-                    <ul class="list-group">
-                        {{range $kk,$vv := $v}}
-                        <li class="list-group-item">{{$kk}} : {{$vv}}</li>
-                        {{end}}
-                        {{if eq $k "mail"}}
-                        <li class="list-group-item">
-                            <form class="form-inline" method="post">
-                                <div class="form-group">
-                                    <input type="text" class="form-control" name="mailTo" id="testEmail">
-                                </div>
-                                <button type="submit" class="btn btn-success">发送测试邮件</button>
-                            </form>
-                        </li>
-
-                        {{end}}
-                    </ul>
-                </div>
-                {{end}}
-            
-        </div>
-
     </div>
-    {{template "footer" .}}
-</body>
 
-</html>
+</div>
+{{render "public/footer.html"}}
