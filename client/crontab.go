@@ -95,7 +95,6 @@ func (t *taskEntity) exec(logContent *[]byte) {
 	atomic.AddInt32(&t.taskArgs.NumberProcess, 1)
 	ctx, cancel := context.WithCancel(context.Background())
 	t.cancel = cancel
-	// args := strings.Split(t.taskArgs.Args, " ")
 	start := now.UnixNano()
 	t.taskArgs.LastExecTime = now.Unix()
 	t.taskArgs.State = 2
@@ -286,7 +285,6 @@ func (c *crontab) run() {
 		t := time.Tick(1 * time.Minute)
 		for {
 			now := <-t
-
 			// broadcast
 			c.lock.Lock()
 			for k, v := range c.handleMap {
@@ -333,7 +331,6 @@ func (c *crontab) run() {
 					} else {
 						c.lock.Unlock()
 					}
-
 					log.Printf("task %s %s exists", t.Name, t.Id)
 				}
 
@@ -479,18 +476,20 @@ func (t *taskEntity) waitDependsDone(ctx context.Context) bool {
 	}
 
 	// 默认所有依赖最终总超时3600
-	tick := time.Tick(3600 * time.Second)
+	c := time.NewTimer(3600 * time.Second)
 	for {
 		select {
 		case <-ctx.Done():
+			c.Stop()
 			return false
-		case <-tick:
+		case <-c.C:
 			log.Printf("%s failed to exec depends wait timeout!", t.name)
+			c.Stop()
 			return false
 		case <-t.ready:
+			c.Stop()
 			log.Printf("%s exec all depends done", t.name)
 			return true
-
 		}
 	}
 }
