@@ -35,6 +35,5 @@ func RpcHeartBeat() {
 }
 
 func rpcCall(serviceMethod string, args, reply interface{}) error {
-
 	return rpc.Call(globalConfig.rpcSrvAddr, serviceMethod, args, reply)
 }
