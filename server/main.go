@@ -11,7 +11,6 @@ import (
 
 	"jiacrontab/libs"
 
-	"fmt"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/middleware/logger"
 )
@@ -45,7 +44,7 @@ func main() {
 	// // globalJwt = newJwt(globalConfig.tokenExpires, globalConfig.tokenCookieName, globalConfig.JWTSigningKey, globalConfig.tokenCookieMaxAge)
 	config = conf.ConfigArgs
 	model.InitStore(config.DataFile)
-	fmt.Println(config.DataFile)
+
 	// app := jiaweb.Classic(func(app *jiaweb.JiaWeb) {
 	// 	app.SetLogPath("logsfile")
 	// 	app.SetEnableLog(true)

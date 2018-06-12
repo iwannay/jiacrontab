@@ -64,6 +64,12 @@
   revision = "ad9fb86c356f971f30319c40ddbdcf72129a2791"
 
 [[projects]]
+  name = "github.com/iris-contrib/middleware"
+  packages = ["jwt"]
+  revision = "1060fbb0ce08a72c50c612e8e5bdc8076c28343d"
+  version = "v10"
+
+[[projects]]
   branch = "master"
   name = "github.com/iwannay/jiaweb"
   packages = [
@@ -271,6 +277,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a5d1c44d2cb5fb0cd6b37926240404c8373ceb4dc79bbb287496b0fadf6ecaf7"
+  inputs-digest = "6388ce1fa53fa72daaeedd31760b6cac75fc96336d0c878a319eef75b43abe70"
   solver-name = "gps-cdcl"
   solver-version = 1
