@@ -14,7 +14,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
+	"net/url"
 )
 
 // var app *jiaweb.JiaWeb
@@ -388,29 +390,26 @@ func Login(ctx iris.Context) {
 		if u == conf.ConfigArgs.User && pwd == conf.ConfigArgs.Passwd {
 
 			clientFeature := ctx.RemoteAddr() + "-" + ctx.Request().Header.Get("User-Agent")
-			fmt.Println("client feature", clientFeature)
+
 			clientSign := fmt.Sprintf("%x", md5.Sum([]byte(clientFeature)))
-			fmt.Println("client md5", clientSign)
+			token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+				"user":       u,
+				"clientSign": clientSign,
+			}).SignedString(conf.ConfigArgs.JWTSigningKey)
+
+			if err != nil {
+				ctx.ViewData("error", fmt.Sprint("无法生成访问凭证:", err))
+				ctx.View("public/error.html")
+				return
+			}
 			if remb == "yes" {
-
-				// TODO 生成token
-				// ctx.GenerateToken(map[string]interface{}{
-				// 	"user":       u,
-				// 	"clientSign": clientSign,
-				// })
-				fmt.Println("hello boy")
-
-				// globalJwt.accessToken(rw, r, u, md5p)
+				ctx.SetCookieKV(conf.ConfigArgs.TokenCookieName, url.QueryEscape(token), iris.CookiePath("/"),
+					iris.CookieExpires(time.Duration(conf.ConfigArgs.TokenExpires)), iris.CookieHTTPOnly(true))
 			} else {
-				// globalJwt.accessTempToken(rw, r, u, md5p)
-				// ctx.GenerateSeesionToken(map[string]interface{}{
-				// 	"user":       u,
-				// 	"clientSign": clientSign,
-				// })
-				fmt.Println("hello boy")
+				ctx.SetCookieKV(conf.ConfigArgs.TokenCookieName, url.QueryEscape(token))
 			}
 
-			ctx.Redirect("/", http.StatusFound)
+			ctx.Redirect("/admin", http.StatusFound)
 			return
 		}
 

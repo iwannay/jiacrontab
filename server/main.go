@@ -42,8 +42,8 @@ var config *conf.Config
 func main() {
 	// runtime.GOMAXPROCS(runtime.NumCPU())
 	// // globalJwt = newJwt(globalConfig.tokenExpires, globalConfig.tokenCookieName, globalConfig.JWTSigningKey, globalConfig.tokenCookieMaxAge)
-	config = conf.ConfigArgs
-	model.InitStore(config.DataFile)
+
+	model.InitStore(conf.ConfigArgs.DataFile)
 
 	// app := jiaweb.Classic(func(app *jiaweb.JiaWeb) {
 	// 	app.SetLogPath("logsfile")
@@ -125,12 +125,6 @@ func main() {
 	app.RegisterView(html)
 
 	router(app)
-	go rpc.ListenAndServe(config.RpcAddr, &routes.Logic{})
+	go rpc.ListenAndServe(conf.ConfigArgs.RpcAddr, &routes.Logic{})
 	app.Run(iris.Addr(":20000"))
-	// go rpc.InitSrvRpc(config.DefaultRPCPath, config.DefaultRPCDebugPath, config.RpcAddr, &routes.Logic{})
-	// app.StartServer(20000)
-
-	// globalReqFilter = newReqFilter()
-
-	// initServer()
 }

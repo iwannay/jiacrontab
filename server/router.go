@@ -10,10 +10,15 @@ import (
 	"jiacrontab/server/routes"
 
 	"fmt"
+	"runtime"
+
+	"jiacrontab/server/conf"
+	"net/http"
+	"net/url"
+
 	"github.com/dgrijalva/jwt-go"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
 	"github.com/iwannay/jiaweb/utils/file"
-	"runtime"
 )
 
 func strFirstUpper(str string) string {
@@ -57,34 +62,34 @@ func strFirstUpper(str string) string {
 //}
 
 func h(ctx iris.Context) {
-	fmt.Println("hello boy")
+
 	user := ctx.Values().Get("jwt").(*jwt.Token)
-	fmt.Sprintln(user.SignedString(map[string]interface{}{
-		"hello": "boyd",
-	}))
-
-	ctx.Writef("This is an authenticated request\n")
-	ctx.Writef("Claim content:\n")
-
-	ctx.Writef("%s", user.Signature)
+	ctx.WriteString(fmt.Sprintf("%+v", user))
 }
 
 func router(app *iris.Application) {
 	jwtHandler := jwtmiddleware.New(jwtmiddleware.Config{
 		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
-			return config.JWTSigningKey, nil
+			return conf.ConfigArgs.JWTSigningKey, nil
+		},
+		Debug: true,
+		Extractor: func(ctx iris.Context) (string, error) {
+			token, err := url.QueryUnescape(ctx.GetCookie(conf.ConfigArgs.TokenCookieName))
+			return token, err
 		},
 
+		ErrorHandler: func(ctx iris.Context, data string) {
+			app.Logger().Error("jwt 认证失败", data)
+			ctx.Redirect("/login", http.StatusFound)
+		},
 		// When set, the middleware verifies that tokens are signed with the specific signing algorithm
 		// If the signing method is not constant the ValidationKeyGetter callback can be used to implement additional checks
 		// Important to avoid security issues described here: https://auth0.com/blog/2015/03/31/critical-vulnerabilities-in-json-web-token-libraries/
 		SigningMethod: jwt.SigningMethodHS256,
 	})
 
-	app.Use(jwtHandler.Serve)
-
-	app.StaticWeb("/static", filepath.Join(file.GetCurrentDirectory(), "static"))
 	app.Use(func(ctx iris.Context) {
+
 		ctx.ViewData("action", ctx.Request().URL.Path)
 		ctx.ViewData("title", "jiacrontab")
 		ctx.ViewData("goVersion", runtime.Version())
@@ -93,6 +98,13 @@ func router(app *iris.Application) {
 		ctx.ViewData("staticDir", "static")
 		ctx.Next()
 	})
+
+	app.StaticWeb("/static", filepath.Join(file.GetCurrentDirectory(), "static"))
+	admin := app.Party("/admin", jwtHandler.Serve)
+	{
+		admin.Get("/", h)
+	}
+
 	app.Get("/", routes.Index)
 	app.Get("/list", routes.ListTask)
 	app.Get("/log", routes.RecentLog)
@@ -108,10 +120,5 @@ func router(app *iris.Application) {
 	app.Get("/viewConfig", routes.ViewConfig)
 	app.Get("/stopAllTask", routes.StopAllTask)
 	app.Get("/model", routes.Model)
-
-	admin := app.Party("/admin")
-	{
-		admin.Get("/profile", jwtHandler.Serve)
-	}
 
 }
