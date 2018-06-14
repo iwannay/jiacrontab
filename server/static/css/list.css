@@ -1,0 +1,26 @@
+.layui-only-select .layui-form-select dl {
+    padding: 0;
+    top: 32px;
+    bottom: -166px;
+    overflow: hidden;
+}
+.layui-only-select .layui-form-select dl dd {
+    line-height: 32px;
+    position: relative;
+    top: -32px;
+}
+.layui-only-select .layui-table-cell{
+    overflow:visible !important;
+}
+.layui-only-select .layui-input{
+    height: 30px;
+}
+.reset-btn.layui-btn-xs {
+    height: 29px;
+    line-height: 29px;
+}
+
+.layui-layout-admin .layui-content {
+    left: 200px;
+    padding: 15px;
+}

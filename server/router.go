@@ -72,7 +72,6 @@ func router(app *iris.Application) {
 		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
 			return conf.ConfigArgs.JWTSigningKey, nil
 		},
-		Debug: true,
 		Extractor: func(ctx iris.Context) (string, error) {
 			token, err := url.QueryUnescape(ctx.GetCookie(conf.ConfigArgs.TokenCookieName))
 			return token, err
@@ -82,9 +81,7 @@ func router(app *iris.Application) {
 			app.Logger().Error("jwt 认证失败", data)
 			ctx.Redirect("/login", http.StatusFound)
 		},
-		// When set, the middleware verifies that tokens are signed with the specific signing algorithm
-		// If the signing method is not constant the ValidationKeyGetter callback can be used to implement additional checks
-		// Important to avoid security issues described here: https://auth0.com/blog/2015/03/31/critical-vulnerabilities-in-json-web-token-libraries/
+
 		SigningMethod: jwt.SigningMethodHS256,
 	})
 
@@ -100,12 +97,17 @@ func router(app *iris.Application) {
 	})
 
 	app.StaticWeb("/static", filepath.Join(file.GetCurrentDirectory(), "static"))
-	admin := app.Party("/admin", jwtHandler.Serve)
+	admin := app.Party("/admin", jwtHandler.Serve, func(ctx iris.Context) {
+		token := ctx.Values().Get("jwt").(*jwt.Token)
+		ctx.ViewData("user", token.Claims)
+		ctx.Next()
+	})
 	{
-		admin.Get("/", h)
+		admin.Get("/", routes.Index)
 	}
 
-	app.Get("/", routes.Index)
+	// app.Get("/", routes.Index)
+	// app.Get("/admin", routes.Index)
 	app.Get("/list", routes.ListTask)
 	app.Get("/log", routes.RecentLog)
 	app.Any("/update", routes.UpdateTask)

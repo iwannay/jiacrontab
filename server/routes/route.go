@@ -2,6 +2,8 @@ package routes
 
 import (
 	"crypto/md5"
+	"encoding/json"
+
 	"fmt"
 	"jiacrontab/libs"
 	"jiacrontab/libs/proto"
@@ -14,9 +16,10 @@ import (
 	"strings"
 	"time"
 
+	"net/url"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
-	"net/url"
 )
 
 // var app *jiaweb.JiaWeb
@@ -68,7 +71,6 @@ func ListTask(ctx iris.Context) {
 	if err := rpc.Call(addr, "Admin.SystemInfo", "", &systemInfo); err != nil {
 		ctx.Redirect("/", http.StatusFound)
 		return
-
 	}
 
 	for _, v := range locals {
@@ -119,6 +121,9 @@ func Index(ctx iris.Context) {
 
 	ctx.ViewData("clientList", sortedClientList)
 	ctx.ViewData("systemInfo", sInfo)
+	bts, _ := json.Marshal(sInfo)
+
+	ctx.ViewData("systemInfoList", string(bts))
 	ctx.View("index.html")
 
 }

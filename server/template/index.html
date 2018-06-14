@@ -1,45 +1,219 @@
+{{render "public/head.html"}}
 
-{{render "public/header.html"}}
-    <div class="container-fluid">
-        <div class="row-fluid">
-            <div class="col-md-3">
-                <div class="panel panel-primary">
-                    <!-- Default panel contents -->
-                    <div class="panel-heading">运行信息</div>
+<body class="layui-layout-body">
+    <div class="layui-layout layui-layout-admin">
+        {{render "public/header.html"}}
 
-                    <!-- List group -->
-                    <ul class="list-group">
-                        {{range $k,$v := .systemInfo}}
-                        <li class="list-group-item">{{$k}} : {{$v}}</li>
-                        {{end}}
-                    </ul>
-                </div>
-            </div>
-            <div class="col-md-9">
-
-                {{range $k,$client := .clientList}}
-                <div class="col-sm-3">
-                    <div class="panel panel-info">
-                        <div class="panel-heading">
-                            <h3 class="panel-title">服务器-{{$k}}</h3>
+        <div class="layui-body">
+            <!-- 内容主体区域 -->
+            <div class="layui-fluid">
+                <div class="layui-row layui-col-space15">
+                    <div class="layui-col-sm3">
+                        <div class="layui-card">
+                            <div class="layui-card-header">版本信息</div>
+                            <div class="layui-card-body layui-text">
+                                <table class="layui-table">
+                                    <colgroup>
+                                        <col width="100">
+                                        <col>
+                                    </colgroup>
+                                    <tbody>
+                                        <tr>
+                                            <td>当前版本</td>
+                                            <td>{{.appVersion}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>基于框架</td>
+                                            <td>layui-v2.3.0</td>
+                                        </tr>
+                                        <tr>
+                                            <td>主要特色</td>
+                                            <td> 方便 / 响应式 / 极简</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                        <div class="panel-body">
-                            <p>{{$client.Addr}}</p>
-                            <P>
-                            {{if eq $client.State 1}}
-                            正常
-                            {{else}}
-                            断开 <a href="/deleteClient?addr={{$client.Addr}}" onclick="return confirm('确定要删除吗？')" class="btn btn-danger btn-xs">删除</a>
-                            {{end}}                               
-                                
-                            </P>
-                            <p> <a href="/list?addr={{$client.Addr}}" role="button">GO</a></p>
+                        <div class="layui-card">
+                            <div class="layui-card-header">运行信息</div>
+                            <div class="layui-card-body">
+                                <div class="layui-carousel" id="test1">
+                                    <div carousel-item>
+                                        <div class="layadmin-backlog">
+                                            <ul class="layui-row layui-col-space10">
+                                                <li class="layui-col-xs6">
+                                                    <a lay-href="app/content/comment.html" class="layadmin-backlog-body">
+                                                        <h3>GC暂停时间总量</h3>
+                                                        <p>
+                                                            <cite>33.903s</cite>
+                                                        </p>
+                                                    </a>
+                                                </li>
+                                                <li class="layui-col-xs6">
+                                                    <a lay-href="app/forum/list.html" class="layadmin-backlog-body">
+                                                        <h3>cpu核心数</h3>
+                                                        <p>
+                                                            <cite>1</cite>
+                                                        </p>
+                                                    </a>
+                                                </li>
+                                                <li class="layui-col-xs6">
+                                                    <a href="javascript:;" onclick="layer.tips('不跳转', this, {tips: 3});" class="layadmin-backlog-body">
+                                                        <h3>goroute数量</h3>
+                                                        <p>
+                                                            <cite>545</cite>
+                                                        </p>
+                                                    </a>
+                                                </li>
+                                                <li class="layui-col-xs6">
+                                                    <a href="javascript:;" onclick="layer.tips('不跳转', this, {tips: 3});" class="layadmin-backlog-body">
+                                                        <h3>上次GC暂停时间</h3>
+                                                        <p>
+                                                            <cite> 0.000s</cite>
+                                                        </p>
+                                                    </a>
+                                                </li>
+                                                <li class="layui-col-xs6">
+                                                    <a href="javascript:;" onclick="layer.tips('不跳转', this, {tips: 3});" class="layadmin-backlog-body">
+                                                        <h3>下次GC内存回收量</h3>
+                                                        <p>
+                                                            <cite>21.102MB</cite>
+                                                        </p>
+                                                    </a>
+                                                </li>
+                                                <li class="layui-col-xs6">
+                                                    <a href="javascript:;" onclick="layer.tips('不跳转', this, {tips: 3});" class="layadmin-backlog-body">
+                                                        <h3>内存分配次数</h3>
+                                                        <p>
+                                                            <cite>6844495</cite>
+                                                        </p>
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        <div class="layadmin-backlog">
+                                            <ul class="layui-row layui-col-space10">
+                                                <li class="layui-col-xs6">
+                                                    <a lay-href="app/content/comment.html" class="layadmin-backlog-body">
+                                                        <h3>内存释放次数</h3>
+                                                        <p>
+                                                            <cite>6758385</cite>
+                                                        </p>
+                                                    </a>
+                                                </li>
+                                                <li class="layui-col-xs6">
+                                                    <a lay-href="app/forum/list.html" class="layadmin-backlog-body">
+                                                        <h3>当前内存使用量</h3>
+                                                        <p>
+                                                            <cite>10.53 MB</cite>
+                                                        </p>
+                                                    </a>
+                                                </li>
+                                                <li class="layui-col-xs6">
+                                                    <a lay-href="app/forum/list.html" class="layadmin-backlog-body">
+                                                        <h3>所有被分配的内存</h3>
+                                                        <p>
+                                                            <cite>456.26 MB</cite>
+                                                        </p>
+                                                    </a>
+                                                </li>
+                                                <li class="layui-col-xs6">
+                                                    <a lay-href="app/forum/list.html" class="layadmin-backlog-body">
+                                                        <h3>指针查找次数</h3>
+                                                        <p>
+                                                            <cite>56351</cite>
+                                                        </p>
+                                                    </a>
+                                                </li>
+                                                <li class="layui-col-xs6">
+                                                    <a lay-href="app/forum/list.html" class="layadmin-backlog-body">
+                                                        <h3>服务运行时间</h3>
+                                                        <p>
+                                                            <cite>29天18小时</cite>
+                                                        </p>
+                                                    </a>
+                                                </li>
+                                                <li class="layui-col-xs6">
+                                                    <a lay-href="app/forum/list.html" class="layadmin-backlog-body">
+                                                        <h3>距离上次GC时间</h3>
+                                                        <p>
+                                                            <cite>110.8s</cite>
+                                                        </p>
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-col-sm9">
+                        <div class="layui-card">
+                            <div class="layui-card-header">运行列表</div>
+                            <div class="layui-card-body layui-text">
+                                <table class="layui-table">
+                                    <colgroup>
+                                        <col width="150">
+                                        <col width="200">
+                                        <col width="150">
+                                        <col>
+                                    </colgroup>
+                                    <thead>
+                                        <tr>
+                                            <th>名称</th>
+                                            <th>IP</th>
+                                            <th>状态</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {{range $k,$client := .clientList}}
+                                        <tr>
+                                            <td>服务器-{{$k}}</td>
+                                            <td>{{$client.Addr}}</td>
+                                            <td>
+                                                {{if eq $client.State 1}}
+                                                正常
+                                                {{else}}
+                                                断开 <a href="/deleteClient?addr={{$client.Addr}}" onclick="return confirm('确定要删除吗？')" class="btn btn-danger btn-xs">删除</a>
+                                                {{end}}
+                                            </td>
+                                            <td>
+                                                <a href="/list?addr={{$client.Addr}}" class="layui-btn layui-btn-xs">查看</a>
+                                            </td>
+                                        </tr>
+                                        {{end}}
+
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
-                {{end}}
             </div>
         </div>
 
+        {{render "public/footer.html"}}
+
     </div>
-{{render "public/footer.html"}}
+    <script src="/static/lib/layui/layui.js"></script>
+    <script>
+        layui.use(['element', 'carousel'], function () {
+            var element = layui.element;
+            var carousel = layui.carousel;
+            console.log('{{.systemInfoList}}')
+            //建造实例
+            carousel.render({
+                elem: '#test1',
+                width: '100%',
+                arrow: 'none',
+                
+                autoplay: false,
+                trigger: 'hover',
+                // indicator: 'outside'
+            });
+
+        });
+    </script>
+</body>

@@ -1,29 +1,47 @@
-{{render "public/header.html"}}
-    <div class="container-fluid" style="margin-top:50px;">
-        <div class="col-md-4"></div>
-        <div class="col-md-4">
-            <div class="panel panel-info">
-                <div class="panel-heading">
-                    <h3 class="panel-title">login</h3>
-                </div>
-                <div class="panel-body">
-                    <form action="/login" method="post" class="form col-md-12 center-block">
-                        <div class="form-group">
-                            <input type="username" class="form-control input-lg" name="username" placeholder="Username">
-                        </div>
-                        <div class="form-group">
-                            <input type="password" class="form-control input-lg" name="passwd" placeholder="Password">
-                        </div>
-                        <div class="form-group">
-                            <input type="checkbox" value="yes" name="remember"> Remember me</label>
-                        </div>
-                        <div class="form-group">
-                            <button type="submit" class="btn btn-success btn-lg btn-block">Sign in</button>
-                        </div>
-                    </form>
+<body class="layui-layout-body">
+    <div class="layui-layout layui-layout-admin layui-login">
+        <form class="layui-form" method="POST">
+            <div class="layui-title txt-center">
+                <h2>登录</h2>
+                <p>jiacrontab可视化界面定时任务管理工具</p>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">
+                    <i class="layui-icon layui-icon-username"></i>
+                </label>
+                <div class="layui-input-block">
+                    <input type="text" name="username" lay-verify="required" placeholder="用户名" class="layui-input">
                 </div>
             </div>
-        </div>
-        <div class="col-md-4"></div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">
+                    <i class="layui-icon layui-icon-password"></i>
+                </label>
+                <div class="layui-input-block">
+                    <input type="password" name="passwd" lay-verify="required" placeholder="密码" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item" style="margin-bottom: 20px;">
+                <input type="checkbox" name="remember" title="记住密码" lay-skin="primary">
+            </div>
+
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button class="layui-btn layui-btn-fluid" lay-submit lay-filter="formDemo">登录</button>
+                </div>
+            </div>
+        </form>
+        {{render "public/footer.html"}}
     </div>
-{{render "public/footer.html"}}
+    <script src="/static/lib/layui/layui.js"></script>
+    <script>
+        //Demo
+        // layui.use('form', function () {
+        //     var form = layui.form;
+        //     //监听提交
+        //     form.on('submit(formDemo)', function (data) {
+        //         layer.msg(JSON.stringify(data.field));
+        //         return false;
+        //     });
+        // });
+    </script>

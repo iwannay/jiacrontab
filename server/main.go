@@ -122,6 +122,7 @@ func main() {
 	html.AddFunc("date", libs.Date)
 	html.AddFunc("formatMs", libs.Int2floatstr)
 	html.Layout("layouts/layout.html")
+	html.Reload(true)
 	app.RegisterView(html)
 
 	router(app)
