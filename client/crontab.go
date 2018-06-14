@@ -104,7 +104,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 
 	if ok := t.waitDependsDone(ctx); !ok {
 		cancel()
-		errMsg := fmt.Sprintf("[%s %s %s]>>  failded to exec depends\n", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, t.name)
+		errMsg := fmt.Sprintf("[%s %s %s]>>  Execution of dependency script failed\n", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, t.name)
 		t.logContent = append(t.logContent, []byte(errMsg)...)
 		writeLog(globalConfig.logPath, fmt.Sprintf("%s.log", t.name), &t.logContent)
 		t.taskArgs.LastExitStatus = exitDependError
@@ -118,7 +118,6 @@ func (t *taskEntity) exec(logContent *[]byte) {
 
 	} else {
 		// 执行脚本
-
 		if t.taskArgs.Timeout != 0 {
 			time.AfterFunc(time.Duration(t.taskArgs.Timeout)*time.Second, func() {
 				if flag {
@@ -434,7 +433,6 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 			}(now)
 		case <-ctx.Done():
 			// 等待所有的计划任务执行完毕
-
 			wgroup.Wait()
 			c.lock.Lock()
 			task.State = 0
