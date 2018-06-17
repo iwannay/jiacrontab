@@ -55,6 +55,13 @@ func ListTask(ctx iris.Context) {
 		firstK := sortedClientList[0].Addr
 		addr = libs.ReplaceEmpty(r.FormValue("addr"), firstK)
 	} else {
+		if ctx.IsAjax() {
+			ctx.JSON(map[string]interface{}{
+				"code": -1,
+			})
+			return
+		}
+
 		ctx.ViewData("error", "nothing to show")
 		ctx.View("public/error.html")
 
@@ -64,11 +71,24 @@ func ListTask(ctx iris.Context) {
 	locals = make(proto.Mdata)
 
 	if err := rpc.Call(addr, "Task.All", "", &locals); err != nil {
+
+		if ctx.IsAjax() {
+			ctx.JSON(map[string]interface{}{
+				"code": -1,
+			})
+			return
+		}
 		ctx.Redirect("/", http.StatusFound)
 		return
 	}
 
 	if err := rpc.Call(addr, "Admin.SystemInfo", "", &systemInfo); err != nil {
+		if ctx.IsAjax() {
+			ctx.JSON(map[string]interface{}{
+				"code": -1,
+			})
+			return
+		}
 		ctx.Redirect("/", http.StatusFound)
 		return
 	}
@@ -81,11 +101,24 @@ func ListTask(ctx iris.Context) {
 		return sortedTaskList[i].Create > sortedTaskList[j].Create
 	})
 
-	tpl := "listTask.html"
-	if cki, err := r.Cookie("model"); err == nil {
-		if cki.Value == "batch" {
-			tpl = "batchListTask"
-		}
+	// tpl := "listTask.html"
+	// if cki, err := r.Cookie("model"); err == nil {
+	// 	if cki.Value == "batch" {
+	// 		tpl = "batchListTask"
+	// 	}
+	// }
+	if ctx.IsAjax() {
+		ctx.JSON(map[string]interface{}{
+			"code": 0,
+			"data": map[string]interface{}{
+				"taskList":   sortedTaskList,
+				"clientList": sortedClientList,
+				"systemInfo": systemInfo,
+				"taskIdList": strings.Join(taskIdSli, ","),
+				"url":        r.RequestURI,
+			},
+		})
+		return
 	}
 
 	ctx.ViewData("list", sortedTaskList)
@@ -94,20 +127,32 @@ func ListTask(ctx iris.Context) {
 	ctx.ViewData("systemInfo", systemInfo)
 	ctx.ViewData("taskIds", strings.Join(taskIdSli, ","))
 	ctx.ViewData("url", r.RequestURI)
-	ctx.View(tpl)
+	ctx.View("list.html")
 
 }
 
+// Index 服务器列表页面
 func Index(ctx iris.Context) {
 	var clientList map[string]proto.ClientConf
 	var m = model.NewModel()
 
-	// TODO 运行时间
-	t, _ := time.Parse(dateTimeLayout, "2006-01")
+	sInfo := libs.SystemInfo(conf.ConfigArgs.ServerStartTime)
 
-	sInfo := libs.SystemInfo(t)
+	sInfoL, sInfoR := make(map[string]interface{}), make(map[string]interface{})
+
+	i := 0
+	for k, v := range sInfo {
+		if i <= 5 {
+			sInfoL[k] = v
+		} else {
+			sInfoR[k] = v
+		}
+		i++
+	}
+
+	fmt.Printf("%+v", sInfo)
+
 	clientList, _ = m.GetRPCClientList()
-	fmt.Println(clientList)
 	sortedClientList := make([]proto.ClientConf, 0)
 
 	for _, v := range clientList {
@@ -120,10 +165,14 @@ func Index(ctx iris.Context) {
 	ctx.Application().Logger().Debug(ctx.GetViewData())
 
 	ctx.ViewData("clientList", sortedClientList)
-	ctx.ViewData("systemInfo", sInfo)
+	ctx.ViewData("systemInfoLeft", sInfoL)
+	ctx.ViewData("systemInfoRight", sInfoR)
+
+	fmt.Printf("%+v", sInfo)
 	bts, _ := json.Marshal(sInfo)
 
 	ctx.ViewData("systemInfoList", string(bts))
+
 	ctx.View("index.html")
 
 }
@@ -414,7 +463,7 @@ func Login(ctx iris.Context) {
 				ctx.SetCookieKV(conf.ConfigArgs.TokenCookieName, url.QueryEscape(token))
 			}
 
-			ctx.Redirect("/admin", http.StatusFound)
+			ctx.Redirect("/", http.StatusFound)
 			return
 		}
 

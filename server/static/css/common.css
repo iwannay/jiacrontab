@@ -13,6 +13,24 @@
 }
 .layui-layout-admin .layui-logo {
     font-size: 26px;
+    width: 150px;
+}
+.layui-logo .min-w {
+    display: none;
+}
+.layui-layout-admin .flexible-icon {
+    position: absolute;
+    top: 0;
+    width: 50px;
+    height: 100%;
+    left: 150px;
+    color: #009688;
+    text-align: center;
+    vertical-align: middle;
+    display: inline-block;
+    line-height: 60px;
+    box-sizing: border-box;
+    cursor: pointer;
 }
 .layui-nav .layui-this:after, .layui-header .layui-nav-bar {
     background-color: #009688;
@@ -138,10 +156,43 @@
     height: 32px;
     line-height: 30px;
 }
+.layui-layout-admin .layui-content {
+    left: 200px;
+    padding: 15px;
+}
 
 /* side */
 .layui-layout-admin .layui-side {
     background-color: #23262E;
+}
+.layui-nav-tree .layui-nav-item a cite {
+    padding-left: 5px;
+}
+
+/* 侧边栏调整width样式 */
+.min-layout .layui-layout-admin .layui-side {
+    width: 60px;
+}
+.min-layout .layui-layout-admin .layui-content {
+    left: 60px;
+}
+.min-layout .layui-layout-admin .layui-logo {
+    width: 60px;
+}
+.min-layout .layui-layout-admin .flexible-icon {
+    left: 60px;
+}
+.min-layout .layui-nav.layui-layout-left {
+    left: 110px;
+}
+.min-layout .layui-nav-tree .layui-nav-item a cite {
+    display: none;
+}
+.min-layout .layui-logo .large-w {
+    display: none;
+}
+.min-layout .layui-logo .min-w {
+    display: block;
 }
 
 

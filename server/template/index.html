@@ -1,6 +1,3 @@
-{{render "public/head.html"}}
-
-<body class="layui-layout-body">
     <div class="layui-layout layui-layout-admin">
         {{render "public/header.html"}}
 
@@ -41,106 +38,30 @@
                                     <div carousel-item>
                                         <div class="layadmin-backlog">
                                             <ul class="layui-row layui-col-space10">
+                                                {{range $k,$v := .systemInfoLeft}}
                                                 <li class="layui-col-xs6">
-                                                    <a lay-href="app/content/comment.html" class="layadmin-backlog-body">
-                                                        <h3>GC暂停时间总量</h3>
+                                                    <a href="javascript:;" class="layadmin-backlog-body">
+                                                        <h3>{{$k}}</h3>
                                                         <p>
-                                                            <cite>33.903s</cite>
+                                                            <cite>{{$v}}</cite>
                                                         </p>
                                                     </a>
                                                 </li>
-                                                <li class="layui-col-xs6">
-                                                    <a lay-href="app/forum/list.html" class="layadmin-backlog-body">
-                                                        <h3>cpu核心数</h3>
-                                                        <p>
-                                                            <cite>1</cite>
-                                                        </p>
-                                                    </a>
-                                                </li>
-                                                <li class="layui-col-xs6">
-                                                    <a href="javascript:;" onclick="layer.tips('不跳转', this, {tips: 3});" class="layadmin-backlog-body">
-                                                        <h3>goroute数量</h3>
-                                                        <p>
-                                                            <cite>545</cite>
-                                                        </p>
-                                                    </a>
-                                                </li>
-                                                <li class="layui-col-xs6">
-                                                    <a href="javascript:;" onclick="layer.tips('不跳转', this, {tips: 3});" class="layadmin-backlog-body">
-                                                        <h3>上次GC暂停时间</h3>
-                                                        <p>
-                                                            <cite> 0.000s</cite>
-                                                        </p>
-                                                    </a>
-                                                </li>
-                                                <li class="layui-col-xs6">
-                                                    <a href="javascript:;" onclick="layer.tips('不跳转', this, {tips: 3});" class="layadmin-backlog-body">
-                                                        <h3>下次GC内存回收量</h3>
-                                                        <p>
-                                                            <cite>21.102MB</cite>
-                                                        </p>
-                                                    </a>
-                                                </li>
-                                                <li class="layui-col-xs6">
-                                                    <a href="javascript:;" onclick="layer.tips('不跳转', this, {tips: 3});" class="layadmin-backlog-body">
-                                                        <h3>内存分配次数</h3>
-                                                        <p>
-                                                            <cite>6844495</cite>
-                                                        </p>
-                                                    </a>
-                                                </li>
+                                                {{end}}
                                             </ul>
                                         </div>
                                         <div class="layadmin-backlog">
                                             <ul class="layui-row layui-col-space10">
+                                                {{range $k,$v := .systemInfoRight}}
                                                 <li class="layui-col-xs6">
-                                                    <a lay-href="app/content/comment.html" class="layadmin-backlog-body">
-                                                        <h3>内存释放次数</h3>
+                                                    <a href="javascript:;" class="layadmin-backlog-body">
+                                                        <h3>{{$k}}</h3>
                                                         <p>
-                                                            <cite>6758385</cite>
+                                                            <cite>{{$v}}</cite>
                                                         </p>
                                                     </a>
                                                 </li>
-                                                <li class="layui-col-xs6">
-                                                    <a lay-href="app/forum/list.html" class="layadmin-backlog-body">
-                                                        <h3>当前内存使用量</h3>
-                                                        <p>
-                                                            <cite>10.53 MB</cite>
-                                                        </p>
-                                                    </a>
-                                                </li>
-                                                <li class="layui-col-xs6">
-                                                    <a lay-href="app/forum/list.html" class="layadmin-backlog-body">
-                                                        <h3>所有被分配的内存</h3>
-                                                        <p>
-                                                            <cite>456.26 MB</cite>
-                                                        </p>
-                                                    </a>
-                                                </li>
-                                                <li class="layui-col-xs6">
-                                                    <a lay-href="app/forum/list.html" class="layadmin-backlog-body">
-                                                        <h3>指针查找次数</h3>
-                                                        <p>
-                                                            <cite>56351</cite>
-                                                        </p>
-                                                    </a>
-                                                </li>
-                                                <li class="layui-col-xs6">
-                                                    <a lay-href="app/forum/list.html" class="layadmin-backlog-body">
-                                                        <h3>服务运行时间</h3>
-                                                        <p>
-                                                            <cite>29天18小时</cite>
-                                                        </p>
-                                                    </a>
-                                                </li>
-                                                <li class="layui-col-xs6">
-                                                    <a lay-href="app/forum/list.html" class="layadmin-backlog-body">
-                                                        <h3>距离上次GC时间</h3>
-                                                        <p>
-                                                            <cite>110.8s</cite>
-                                                        </p>
-                                                    </a>
-                                                </li>
+                                                {{end}}
                                             </ul>
                                         </div>
                                     </div>
@@ -216,4 +137,3 @@
 
         });
     </script>
-</body>

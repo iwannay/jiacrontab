@@ -33,34 +33,6 @@ func strFirstUpper(str string) string {
 	return strings.ToUpper(sli[0])
 }
 
-//func registerController(i interface{}) jiaweb.HttpHandle {
-//	return func(ctx jiaweb.Context) error {
-//		action := strFirstUpper(ctx.QueryRouteParam("key"))
-//		t := reflect.TypeOf(i)
-//		if t.Kind() == reflect.Func {
-//			v := reflect.ValueOf(i)
-//			objSlice := v.Call([]reflect.Value{})
-//			if len(objSlice) >= 1 {
-//				v = objSlice[0]
-//				m := v.MethodByName(action)
-//				if m.IsValid() {
-//					errSli := m.Call([]reflect.Value{reflect.ValueOf(ctx)})
-//					if errSli[0].IsNil() {
-//						return nil
-//					}
-//					err := errSli[0].Interface().(error)
-//					return err
-//				}
-//			}
-//
-//		}
-//
-//		ctx.NotFound()
-//
-//		return nil
-//	}
-//}
-
 func h(ctx iris.Context) {
 
 	user := ctx.Values().Get("jwt").(*jwt.Token)
@@ -68,6 +40,8 @@ func h(ctx iris.Context) {
 }
 
 func router(app *iris.Application) {
+	app.StaticWeb("/static", filepath.Join(file.GetCurrentDirectory(), "static"))
+
 	jwtHandler := jwtmiddleware.New(jwtmiddleware.Config{
 		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
 			return conf.ConfigArgs.JWTSigningKey, nil
@@ -79,7 +53,12 @@ func router(app *iris.Application) {
 
 		ErrorHandler: func(ctx iris.Context, data string) {
 			app.Logger().Error("jwt 认证失败", data)
-			ctx.Redirect("/login", http.StatusFound)
+
+			if ctx.RequestPath(true) != "/login" {
+				ctx.Redirect("/login", http.StatusFound)
+				return
+			}
+			ctx.Next()
 		},
 
 		SigningMethod: jwt.SigningMethodHS256,
@@ -96,18 +75,16 @@ func router(app *iris.Application) {
 		ctx.Next()
 	})
 
-	app.StaticWeb("/static", filepath.Join(file.GetCurrentDirectory(), "static"))
-	admin := app.Party("/admin", jwtHandler.Serve, func(ctx iris.Context) {
-		token := ctx.Values().Get("jwt").(*jwt.Token)
-		ctx.ViewData("user", token.Claims)
+	app.Use(jwtHandler.Serve, func(ctx iris.Context) {
+		token, ok := ctx.Values().Get("jwt").(*jwt.Token)
+		if ok {
+			ctx.ViewData("user", token.Claims)
+		}
 		ctx.Next()
 	})
-	{
-		admin.Get("/", routes.Index)
-	}
 
-	// app.Get("/", routes.Index)
-	// app.Get("/admin", routes.Index)
+	app.Get("/", routes.Index)
+
 	app.Get("/list", routes.ListTask)
 	app.Get("/log", routes.RecentLog)
 	app.Any("/update", routes.UpdateTask)

@@ -2,6 +2,7 @@ package conf
 
 import (
 	"strings"
+	"time"
 
 	"io/ioutil"
 
@@ -24,6 +25,7 @@ type Config struct {
 	TplDir            string
 	DataFile          string
 	RpcAddr           string
+	ServerStartTime   time.Time
 
 	JWTSigningKey     []byte
 	TokenCookieName   string
@@ -44,14 +46,12 @@ type Config struct {
 }
 
 func NewConfig() *Config {
-	c := &Config{}
+	c := &Config{
+		ServerStartTime: time.Now(),
+	}
 	c.Reload()
 	return c
 
-}
-
-func init() {
-	ConfigArgs = NewConfig()
 }
 
 func InitConfig() {
@@ -132,4 +132,8 @@ func loadConfig() *ini.File {
 		panic(err)
 	}
 	return f
+}
+
+func init() {
+	ConfigArgs = NewConfig()
 }
