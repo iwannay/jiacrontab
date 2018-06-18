@@ -70,7 +70,7 @@
                 return Y+M+D+h+m+s;
             }
             function getRequest() {
-                var url = location.search; //获取url中"?"符后的字串
+                var url = decodeURIComponent(location.search); //获取url中"?"符后的字串
                 var theRequest = {};
                 if (url.indexOf("?") != -1) {
                     var str = url.substr(1);
@@ -110,7 +110,9 @@
                 }},
                 {field:'Timeout', width:120, sort: true, title: '超时'},
                 {field:'OpTimeout', width:120, title: '超时触发'},
-                {field:'NumberProcess', width:120, title: '进程/计时器'},
+                {field:'NumberProcess', width:120, title: '进程/计时器', templet: function(d) {
+                    return d.NumberProcess + '/' + d.TimerCounter;
+                }},
                 {field:'LastExitStatus', width:90, title: '上次执行', templet: function(d){
                     var lastExitHtml = '';
                     if (d.LastExitStatus == 'success') {

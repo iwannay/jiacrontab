@@ -145,8 +145,6 @@ func Index(ctx iris.Context) {
 		i++
 	}
 
-	fmt.Printf("%+v", sInfo)
-
 	clientList, _ = m.GetRPCClientList()
 	sortedClientList := make([]proto.ClientConf, 0)
 
@@ -157,13 +155,12 @@ func Index(ctx iris.Context) {
 	sort.Slice(sortedClientList, func(i, j int) bool {
 		return (sortedClientList[i].Addr > sortedClientList[j].Addr) && (sortedClientList[i].State > sortedClientList[j].State)
 	})
-	ctx.Application().Logger().Debug(ctx.GetViewData())
 
 	ctx.ViewData("clientList", sortedClientList)
+
 	ctx.ViewData("systemInfoLeft", sInfoL)
 	ctx.ViewData("systemInfoRight", sInfoR)
 
-	fmt.Printf("%+v", sInfo)
 	bts, _ := json.Marshal(sInfo)
 
 	ctx.ViewData("systemInfoList", string(bts))

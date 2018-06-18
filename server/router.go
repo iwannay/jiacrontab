@@ -86,6 +86,7 @@ func router(app *iris.Application) {
 		ctx.ViewData("appVersion", "v1.3.5")
 		ctx.ViewData("requestPath", ctx.Request().URL.Path)
 		ctx.ViewData("staticDir", "static")
+
 		ctx.ViewData("addr", ctx.FormValue("addr"))
 		ctx.Next()
 	})
