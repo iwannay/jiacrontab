@@ -29,6 +29,7 @@ _testmain.go
 
 client/autobuild
 client/.data
+client/data
 client/*.json
 client/logs
 client/watchbin
@@ -46,5 +47,6 @@ server/.data
 server/server
 server/binTmp
 server/logsfile
+server/data
 
 .vscode

@@ -33,6 +33,15 @@ func strFirstUpper(str string) string {
 	return strings.ToUpper(sli[0])
 }
 
+func notFound(ctx iris.Context) {
+	ctx.View("public/404.html")
+}
+
+func catchError(ctx iris.Context) {
+	ctx.ViewData("error", "服务不可用")
+	ctx.View("public/error.html")
+}
+
 func h(ctx iris.Context) {
 
 	user := ctx.Values().Get("jwt").(*jwt.Token)
@@ -41,6 +50,9 @@ func h(ctx iris.Context) {
 
 func router(app *iris.Application) {
 	app.StaticWeb("/static", filepath.Join(file.GetCurrentDirectory(), "static"))
+
+	app.OnAnyErrorCode(catchError)
+	app.OnErrorCode(iris.StatusNotFound, notFound)
 
 	jwtHandler := jwtmiddleware.New(jwtmiddleware.Config{
 		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
@@ -68,7 +80,7 @@ func router(app *iris.Application) {
 
 		path := ctx.Request().URL.Path
 		ctx.ViewData("action", filepath.Base(path))
-		ctx.ViewData("controller", filepath.Dir(path))
+		ctx.ViewData("controller", strings.Replace(filepath.Dir(path), `\`, `/`, -1))
 		ctx.ViewData("title", "jiacrontab")
 		ctx.ViewData("goVersion", runtime.Version())
 		ctx.ViewData("appVersion", "v1.3.5")
@@ -89,18 +101,17 @@ func router(app *iris.Application) {
 	app.Get("/", routes.Index)
 
 	app.Get("/crontab/task/list", routes.ListTask)
-	app.Get("/log", routes.RecentLog)
+	app.Get("/crontab/task/log", routes.RecentLog)
 	app.Any("/crontab/task/edit", routes.EditTask)
 	app.Get("/crontab/task/stop", routes.StopTask)
 	app.Get("/crontab/task/start", routes.StartTask)
 	app.Any("/login", routes.Login)
 	app.Get("/logout", routes.Logout)
 	app.Get("/readme", routes.Readme)
-	app.Get("/crontab/quickStart", routes.QuickStart)
+	app.Get("/crontab/task/quickStart", routes.QuickStart)
 	app.Get("/reloadConfig", routes.ReloadConfig)
 	app.Get("/deleteClient", routes.DeleteClient)
 	app.Get("/viewConfig", routes.ViewConfig)
-	app.Get("/crontab/stopAllTask", routes.StopAllTask)
-	app.Get("/model", routes.Model)
+	app.Get("/crontab/task/stopAll", routes.StopAllTask)
 
 }

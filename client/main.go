@@ -69,7 +69,7 @@ func main() {
 	daemon := newDaemon(100)
 	daemon.run()
 
-	db, err = gorm.Open("sqlite3", "store/jiacrontab_client.db")
+	db, err = gorm.Open("sqlite3", "data/jiacrontab_client.db")
 	if err != nil {
 		panic(err)
 	}
