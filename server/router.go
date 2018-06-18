@@ -7,7 +7,7 @@ import (
 
 	"github.com/kataras/iris"
 
-	"jiacrontab/server/routes"
+	"jiacrontab/server/handle"
 
 	"fmt"
 	"runtime"
@@ -98,20 +98,20 @@ func router(app *iris.Application) {
 		ctx.Next()
 	})
 
-	app.Get("/", routes.Index)
+	app.Get("/", handle.Index)
 
-	app.Get("/crontab/task/list", routes.ListTask)
-	app.Get("/crontab/task/log", routes.RecentLog)
-	app.Any("/crontab/task/edit", routes.EditTask)
-	app.Get("/crontab/task/stop", routes.StopTask)
-	app.Get("/crontab/task/start", routes.StartTask)
-	app.Any("/login", routes.Login)
-	app.Get("/logout", routes.Logout)
-	app.Get("/readme", routes.Readme)
-	app.Get("/crontab/task/quickStart", routes.QuickStart)
-	app.Get("/reloadConfig", routes.ReloadConfig)
-	app.Get("/deleteClient", routes.DeleteClient)
-	app.Get("/viewConfig", routes.ViewConfig)
-	app.Get("/crontab/task/stopAll", routes.StopAllTask)
+	app.Get("/crontab/task/list", handle.ListTask)
+	app.Get("/crontab/task/log", handle.RecentLog)
+	app.Any("/crontab/task/edit", handle.EditTask)
+	app.Get("/crontab/task/stop", handle.StopTask)
+	app.Get("/crontab/task/start", handle.StartTask)
+	app.Any("/login", handle.Login)
+	app.Get("/logout", handle.Logout)
+	app.Get("/readme", handle.Readme)
+	app.Get("/crontab/task/quickStart", handle.QuickStart)
+	app.Get("/reloadConfig", handle.ReloadConfig)
+	app.Get("/deleteClient", handle.DeleteClient)
+	app.Get("/viewConfig", handle.ViewConfig)
+	app.Get("/crontab/task/stopAll", handle.StopAllTask)
 
 }

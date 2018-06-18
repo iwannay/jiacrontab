@@ -3,6 +3,8 @@
     top: 32px;
     bottom: -166px;
     overflow: hidden;
+    left: auto;
+    right: 0;
 }
 .layui-only-select .layui-form-select dl dd {
     line-height: 32px;
@@ -18,5 +20,7 @@
 .reset-btn.layui-btn-xs {
     height: 29px;
     line-height: 29px;
+    margin-right: 6px;
 }
+
 

@@ -3,8 +3,8 @@ package main
 import (
 	"jiacrontab/libs/rpc"
 	"jiacrontab/server/conf"
+	"jiacrontab/server/handle"
 	"jiacrontab/server/model"
-	"jiacrontab/server/routes"
 	_ "net/http/pprof"
 
 	"github.com/kataras/iris/middleware/recover"
@@ -39,6 +39,6 @@ func main() {
 	html.Reload(true)
 	app.RegisterView(html)
 	router(app)
-	go rpc.ListenAndServe(conf.ConfigArgs.RpcAddr, &routes.Logic{})
+	go rpc.ListenAndServe(conf.ConfigArgs.RpcAddr, &handle.Logic{})
 	app.Run(iris.Addr(":20000"))
 }

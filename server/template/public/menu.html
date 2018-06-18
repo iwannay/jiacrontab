@@ -2,21 +2,21 @@
         <div class="layui-side layui-side-menu">
                 <div class="layui-side-scroll">
                     <ul class="layui-nav layui-nav-tree" lay-shrink="all" id="LAY-system-side-menu" lay-filter="layadmin-system-side-menu">
-                        <li data-name="home" class="layui-nav-item layui-this">
+                        <li data-name="home" class="layui-nav-item {{if eq .controller "/crontab/task"}}layui-this{{end}}">
                             <a href="javascript:;" lay-tips="定时任务" lay-direction="2">
                                 <i class="layui-icon layui-icon-log"></i>
-                                <cite>定时任务{{.action}}</cite>
+                                <cite>定时任务</cite>
                             </a>
                         </li>
     
-                        <li data-name="template" class="layui-nav-item">
+                        <li data-name="template" class="layui-nav-item {{if eq .controller "/daemon/task"}}layui-this{{end}}">
                             <a href="javascript:;" lay-tips="常驻任务" lay-direction="2">
                                 <i class="layui-icon layui-icon-template"></i>
                                 <cite>常驻任务</cite>
                             </a>
                         </li>
     
-                        <li data-name="get" class="layui-nav-item">
+                        <li data-name="get" class="layui-nav-item {{if eq .controller "/runtime/info"}}layui-this{{end}}">
                             <a href="javascript:;" lay-tips="运行信息" lay-direction="2">
                                 <i class="layui-icon layui-icon-auz"></i>
                                 <cite>运行信息</cite>
