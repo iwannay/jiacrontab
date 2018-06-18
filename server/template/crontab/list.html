@@ -1,0 +1,269 @@
+    <div class="layui-layout layui-layout-admin">
+        {{render "public/header.html"}}
+        {{$addr := .client.Addr}}
+
+        {{render "public/menu.html"}}
+
+
+        <div class="layui-body layui-content">
+            <!-- 内容主体区域 -->
+            <div class="layui-breadcrumb">
+                <a href="/">主页</a>
+                <a>
+                    <cite>计划任务列表</cite>
+                </a>
+            </div>
+            <div class="layui-form">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <select name="ip" lay-filter="select-menu">
+                        {{range $k,$v := .addrs}}
+                            {{if eq $v.State 1}}
+                                <option value="{{$v.Addr}}">{{$v.Addr}}</option>
+                            {{end}}
+                        {{end}}
+                           
+                        </select>
+                    </div>
+                    <div class="layui-inline">
+                        <button class="layui-btn" id="start-script">启动</button>
+                    </div>
+                    <div class="layui-inline">
+                        <button class="layui-btn layui-btn-danger" id="stop-script">停止</button>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-input-block layui-layout-right">
+                        <a href="/crontab/task/edit?addr={{.addr}}" class="layui-btn">添加</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-card layui-only-select" style="min-height: 284px;">
+                <div class="layui-card-header">运行列表</div>
+                <div class="layui-card-body">
+                    <table class="layui-table" lay-filter="listTable" style="max-height: 100px;" id="thisTable">
+                        <thead>
+                            <tr>
+                                <th lay-data="{type:'checkbox', fixed: 'left'}"></th>
+                                <th lay-data="{field: 'id', width:80, sort: true, fixed: 'left'}">ID</th>
+                                <th lay-data="{field:'name', width:150, fixed: 'left'}">名称</th>
+                                <th lay-data="{field:'js', width:150}">脚本</th>
+                                <th lay-data="{field:'static', width:90}">状态</th>
+                                <th lay-data="{field:'date', width:170}">创建日期</th>
+                                <th lay-data="{field:'start', width:170}">上次启动</th>
+                                <th lay-data="{field:'time', width:120, sort: true}">上次花费</th>
+                                <th lay-data="{field:'timeout', width:120, sort: true}">超时</th>
+                                <th lay-data="{field:'timetrigger', width:100}">超时触发</th>
+                                <th lay-data="{field:'process', width:120}">进程/计时器</th>
+                                <th lay-data="{field:'carried', width:100}">上次执行</th>
+                                <th lay-data="{field:'timer', width:200}">时间</th>
+                                <th lay-data="{field:'handler', width:190, fixed: 'right'}">编辑</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                            <tr>
+                                <td></td>
+                                <td>1</td>
+                                <td>concurrent_test</td>
+                                <td>php</td>
+                                <td>
+                                    <a href="#" class="layui-btn layui-btn-xs">计时中</a>
+                                </td>
+                                <td>2018-04-11 10:53:59</td>
+                                <td>2018-06-10 15:05:40</td>
+                                <td>0.114s</td>
+                                <td>0.00s</td>
+                                <td>ignore</td>
+                                <td>0/1</td>
+                                <td>
+                                    <a href="#" class="layui-btn layui-btn-xs">success</a>
+                                </td>
+                                <td>分:5 时:* 日:* 月:* 日/周:*</td>
+                                <td>
+                                    <a href="#" class="layui-btn layui-btn-xs layui-btn-danger reset-btn">停止任务</a>
+                                    <div class="layui-input-inline" style="width: 70px;" lay-event="operate">
+                                        <form action="">
+                                            <select lay-filter="selectTable">
+                                                <option value="">操作</option>
+                                                <option value="修改计划任务">修改计划任务</option>
+                                                <option value="删除计划任务">删除计划任务</option>
+                                                <option value="测试用户脚本">测试用户脚本</option>
+                                                <option value="强杀脚本进程">强杀脚本进程</option>
+                                                <option value="查看最近日志">查看最近日志</option>
+                                            </select>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td>2</td>
+                                <td>concurrent_test</td>
+                                <td>curl zixun.jia.com</td>
+                                <td>
+                                    <a href="#" class="layui-btn layui-btn-xs layui-btn-danger">已停止</a>
+                                </td>
+                                <td>2018-04-11 10:53:59</td>
+                                <td>2018-06-10 15:05:40</td>
+                                <td>0.114s</td>
+                                <td>0.00s</td>
+                                <td>ignore</td>
+                                <td>0/1</td>
+                                <td>
+                                    <a href="#" class="layui-btn layui-btn-xs layui-btn-danger">error</a>
+                                </td>
+                                <td>分:5 时:* 日:* 月:* 日/周:*</td>
+                                <td>
+                                    <a href="#" class="layui-btn layui-btn-xs reset-btn">启动任务</a>
+                                    <div class="layui-input-inline" style="width: 70px;" lay-event="operate">
+                                        <form action="">
+                                            <select lay-filter="selectTable">
+                                                <option value="">操作</option>
+                                                <option value="修改计划任务">修改计划任务</option>
+                                                <option value="删除计划任务">删除计划任务</option>
+                                                <option value="测试用户脚本">测试用户脚本</option>
+                                                <option value="强杀脚本进程">强杀脚本进程</option>
+                                                <option value="查看最近日志">查看最近日志</option>
+                                            </select>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td>3</td>
+                                <td>concurrent_test</td>
+                                <td>php</td>
+                                <td>
+                                    <a href="#" class="layui-btn layui-btn-xs">计时中</a>
+                                </td>
+                                <td>2018-04-11 10:53:59</td>
+                                <td>2018-06-10 15:05:40</td>
+                                <td>0.114s</td>
+                                <td>0.00s</td>
+                                <td>ignore</td>
+                                <td>0/1</td>
+                                <td>
+                                    <a href="#" class="layui-btn layui-btn-xs">success</a>
+                                </td>
+                                <td>分:5 时:* 日:* 月:* 日/周:*</td>
+                                <td>
+                                    <a href="#" class="layui-btn layui-btn-xs layui-btn-danger reset-btn">停止任务</a>
+                                    <div class="layui-input-inline" style="width: 70px;" lay-event="operate">
+                                        <form action="">
+                                            <select lay-filter="selectTable">
+                                                <option value="">操作</option>
+                                                <option value="修改计划任务">修改计划任务</option>
+                                                <option value="删除计划任务">删除计划任务</option>
+                                                <option value="测试用户脚本">测试用户脚本</option>
+                                                <option value="强杀脚本进程">强杀脚本进程</option>
+                                                <option value="查看最近日志">查看最近日志</option>
+                                            </select>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {{render "public/footer.html"}}
+    </div>
+    <script src="/static/lib/layui/layui.js"></script>
+    <script>
+        layui.use(['element', 'carousel', 'form', 'table', 'jquery'], function () {
+            var form = layui.form;
+            var element = layui.element;
+            var carousel = layui.carousel;
+            var table = layui.table;
+            var $ = layui.jquery;
+
+
+            //建造实例
+            carousel.render({
+                elem: '#test1',
+                width: '100%',
+                arrow: 'none',
+                autoplay: false,
+                trigger: 'hover',
+                // indicator: 'outside'
+            });
+            //转换静态表格
+            table.init('listTable');
+
+            // 监听top下拉框
+            form.on('select(select-menu)', function (data) {
+                console.log(data)
+                //执行重载
+                // table.reload('listTable', {
+                //     where: {
+                //         role: data.value
+                //     }
+                // });
+            });
+
+            // 监听表单里面是否选中状态
+            table.on('checkbox(listTable)', function (obj) {
+                console.log(obj.checked); //当前是否选中状态
+                console.log(obj.data); //选中行的相关数据
+                console.log(obj.type); //如果触发的是全选，则为：all，如果触发的是单选，则为：one
+            });
+
+            /*监听表单里面的select框*/
+            form.on('select(selectTable)', function (data) {
+                alert(data.value)
+                // var selectElem = $(data.elem);
+                // var selectText = data.value;
+                // console.log(selectText)
+                // console.log( selectElem.parents('tr').first().data('index'));
+            });
+
+            $('#start-script').on('click', function () {
+                var checkStatus = table.checkStatus('thisTable');
+                var checkData = checkStatus.data; //得到选中的数据
+                console.log(checkData)
+                if(checkData.length === 0){
+                    return layer.msg('请选择需要启动的脚本');
+                }
+                
+                layer.confirm('确定要启动选中的脚本吗？', function(index) {
+                    table.reload('listTable');
+                    layer.msg('启动成功');
+                })
+            })
+            $('#stop-script').on('click', function () {
+                alert('需要停止哪些脚本？');
+            })
+
+            $('#flexible-icon').on('click', function () {
+                if ($(this).hasClass('layui-icon-spread-left')) {
+                    $(this).addClass('layui-icon-shrink-right').removeClass('layui-icon-spread-left');
+                    $('.layui-layout-body').removeClass('min-layout');
+                } else {
+                    $(this).addClass('layui-icon-spread-left').removeClass('layui-icon-shrink-right');
+                    $('.layui-layout-body').addClass('min-layout');
+                }
+            })
+
+            if (window.innerWidth < 990) {
+                $('.layui-layout-body').addClass('min-layout');
+                $('#flexible-icon').addClass('layui-icon-spread-left').removeClass('layui-icon-shrink-right');
+            }
+            $(window).on('resize', function () {
+                if (window.innerWidth < 990) {
+                    $('.layui-layout-body').addClass('min-layout');
+                    $('#flexible-icon').addClass('layui-icon-spread-left').removeClass(
+                        'layui-icon-shrink-right');
+                } else {
+                    $('.layui-layout-body').removeClass('min-layout');
+                    $('#flexible-icon').addClass('layui-icon-shrink-right').removeClass(
+                        'layui-icon-spread-left');
+                }
+            })
+
+        });
+    </script>

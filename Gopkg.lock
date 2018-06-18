@@ -72,15 +72,23 @@
 [[projects]]
   branch = "master"
   name = "github.com/iwannay/jiaweb"
+  packages = ["utils/file"]
+  revision = "c88768ac3854835957472592c15e3a708cbddacf"
+
+[[projects]]
+  name = "github.com/jinzhu/gorm"
   packages = [
     ".",
-    "base",
-    "config",
-    "logger",
-    "utils",
-    "utils/file"
+    "dialects/sqlite"
   ]
-  revision = "c88768ac3854835957472592c15e3a708cbddacf"
+  revision = "6ed508ec6a4ecb3531899a69cbc746ccf65a4166"
+  version = "v1.9.1"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/jinzhu/inflection"
+  packages = ["."]
+  revision = "04140366298a54a039076d798123ffa108fff46c"
 
 [[projects]]
   branch = "master"
@@ -182,6 +190,12 @@
   version = "v0.0.3"
 
 [[projects]]
+  name = "github.com/mattn/go-sqlite3"
+  packages = ["."]
+  revision = "25ecb14adfc7543176f7d85291ec7dba82c6f7e4"
+  version = "v1.9.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/mgutz/ansi"
   packages = ["."]
@@ -277,6 +291,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6388ce1fa53fa72daaeedd31760b6cac75fc96336d0c878a319eef75b43abe70"
+  inputs-digest = "7235d258d6dc6a4c4a61d3648ab809f6f224cd421d4d4476572975a7b5c6f4d2"
   solver-name = "gps-cdcl"
   solver-version = 1

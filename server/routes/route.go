@@ -101,12 +101,6 @@ func ListTask(ctx iris.Context) {
 		return sortedTaskList[i].Create > sortedTaskList[j].Create
 	})
 
-	// tpl := "listTask.html"
-	// if cki, err := r.Cookie("model"); err == nil {
-	// 	if cki.Value == "batch" {
-	// 		tpl = "batchListTask"
-	// 	}
-	// }
 	if ctx.IsAjax() {
 		ctx.JSON(map[string]interface{}{
 			"code": 0,
@@ -122,12 +116,13 @@ func ListTask(ctx iris.Context) {
 	}
 
 	ctx.ViewData("list", sortedTaskList)
+	ctx.ViewData("addr", ctx.FormValue("addr"))
 	ctx.ViewData("addrs", sortedClientList)
 	ctx.ViewData("client", clientList[addr])
 	ctx.ViewData("systemInfo", systemInfo)
 	ctx.ViewData("taskIds", strings.Join(taskIdSli, ","))
 	ctx.ViewData("url", r.RequestURI)
-	ctx.View("list.html")
+	ctx.View("crontab/list.html")
 
 }
 
@@ -177,7 +172,7 @@ func Index(ctx iris.Context) {
 
 }
 
-func UpdateTask(ctx iris.Context) {
+func EditTask(ctx iris.Context) {
 	var reply bool
 	var r = ctx.Request()
 	var m = model.NewModel()
@@ -186,11 +181,9 @@ func UpdateTask(ctx iris.Context) {
 	addr := strings.TrimSpace(r.FormValue("addr"))
 	id := strings.TrimSpace(r.FormValue("taskId"))
 	if addr == "" {
-		// ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
-		// 	"error": "params error",
-		// })
 		ctx.ViewData("error", "params error")
 		ctx.View("public/error.html")
+		return
 	}
 
 	if r.Method == http.MethodPost {
@@ -305,7 +298,7 @@ func UpdateTask(ctx iris.Context) {
 		if id != "" {
 			err := rpc.Call(addr, "Task.Get", id, &t)
 			if err != nil {
-				ctx.Redirect("/list?addr="+addr, http.StatusFound)
+				ctx.Redirect("/crontab/task/list?addr="+addr, http.StatusFound)
 				return
 
 			}
@@ -338,7 +331,7 @@ func UpdateTask(ctx iris.Context) {
 		ctx.ViewData("rpcClientsMap", clientList)
 		ctx.ViewData("task", t)
 		ctx.ViewData("allowCommands", conf.ConfigArgs.AllowCommands)
-		ctx.View("public/error.html")
+		ctx.View("crontab/edit.html")
 	}
 
 }

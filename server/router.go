@@ -66,12 +66,15 @@ func router(app *iris.Application) {
 
 	app.Use(func(ctx iris.Context) {
 
-		ctx.ViewData("action", ctx.Request().URL.Path)
+		path := ctx.Request().URL.Path
+		ctx.ViewData("action", filepath.Base(path))
+		ctx.ViewData("controller", filepath.Dir(path))
 		ctx.ViewData("title", "jiacrontab")
 		ctx.ViewData("goVersion", runtime.Version())
 		ctx.ViewData("appVersion", "v1.3.5")
 		ctx.ViewData("requestPath", ctx.Request().URL.Path)
 		ctx.ViewData("staticDir", "static")
+		ctx.ViewData("addr", ctx.FormValue("addr"))
 		ctx.Next()
 	})
 
@@ -85,19 +88,19 @@ func router(app *iris.Application) {
 
 	app.Get("/", routes.Index)
 
-	app.Get("/list", routes.ListTask)
+	app.Get("/crontab/task/list", routes.ListTask)
 	app.Get("/log", routes.RecentLog)
-	app.Any("/update", routes.UpdateTask)
-	app.Get("/stop", routes.StopTask)
-	app.Get("/start", routes.StartTask)
+	app.Any("/crontab/task/edit", routes.EditTask)
+	app.Get("/crontab/task/stop", routes.StopTask)
+	app.Get("/crontab/task/start", routes.StartTask)
 	app.Any("/login", routes.Login)
 	app.Get("/logout", routes.Logout)
 	app.Get("/readme", routes.Readme)
-	app.Get("/quickStart", routes.QuickStart)
+	app.Get("/crontab/quickStart", routes.QuickStart)
 	app.Get("/reloadConfig", routes.ReloadConfig)
 	app.Get("/deleteClient", routes.DeleteClient)
 	app.Get("/viewConfig", routes.ViewConfig)
-	app.Get("/stopAllTask", routes.StopAllTask)
+	app.Get("/crontab/stopAllTask", routes.StopAllTask)
 	app.Get("/model", routes.Model)
 
 }
