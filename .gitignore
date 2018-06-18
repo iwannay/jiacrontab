@@ -33,7 +33,7 @@ client/data
 client/*.json
 client/logs
 client/watchbin
-client/binTmp
+client/binTmp*
 client/logsfile
 clent/client
 
@@ -45,7 +45,7 @@ server/jiacrontab
 server/watchbin
 server/.data
 server/server
-server/binTmp
+server/binTmp*
 server/logsfile
 server/data
 
