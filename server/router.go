@@ -100,7 +100,7 @@ func router(app *iris.Application) {
 
 	app.Get("/", handle.Index)
 
-	app.Get("/crontab/task/list", handle.ListTask)
+	app.Any("/crontab/task/list", handle.ListTask)
 	app.Get("/crontab/task/log", handle.RecentLog)
 	app.Any("/crontab/task/edit", handle.EditTask)
 	app.Get("/crontab/task/stop", handle.StopTask)

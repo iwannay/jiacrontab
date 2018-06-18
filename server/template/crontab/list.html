@@ -145,10 +145,12 @@
             ]]
 
             $.ajax({
-                type: 'GET',
-                url: window.location.href,
+                type: 'POST',
+                url: location.pathname,
+                data: {
+                    addr: getRequest().addr
+                },
                 success: function(res) {
-                    console.log(res)
                     var taskDatas = res.data.taskList;
                     table.render({
                         elem: '#taskTableId',
