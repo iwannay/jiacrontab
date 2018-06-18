@@ -287,7 +287,7 @@ func EditTask(ctx iris.Context) {
 			ctx.View("public/error.html")
 		}
 		if reply {
-			ctx.Redirect("/list?addr="+addr, http.StatusFound)
+			ctx.Redirect("/crontab/task/list?addr="+addr, http.StatusFound)
 			return
 		}
 
@@ -363,7 +363,7 @@ func StopTask(ctx iris.Context) {
 		return
 	}
 	if reply {
-		ctx.Redirect("/list?addr="+addr, http.StatusFound)
+		ctx.Redirect("/crontab/task/list?addr="+addr, http.StatusFound)
 		return
 	}
 
@@ -391,7 +391,7 @@ func StopAllTask(ctx iris.Context) {
 		return
 	}
 	if reply {
-		ctx.Redirect("/list?addr="+addr, http.StatusFound)
+		ctx.Redirect("/crontab/task/list?addr="+addr, http.StatusFound)
 		return
 	}
 
@@ -418,7 +418,7 @@ func StartTask(ctx iris.Context) {
 	}
 
 	if reply {
-		ctx.Redirect("/list?addr="+addr, http.StatusFound)
+		ctx.Redirect("/crontab/task/list?addr="+addr, http.StatusFound)
 		return
 	}
 
@@ -490,7 +490,7 @@ func QuickStart(ctx iris.Context) {
 
 	ctx.ViewData("logList", logList)
 	ctx.ViewData("addr", addr)
-	ctx.View("log.html")
+	ctx.View("crontab/task/log.html")
 }
 
 func Logout(ctx iris.Context) {
