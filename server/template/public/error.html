@@ -1,20 +1,9 @@
-<div class="container-fluid" style="margin-top:10%">
-    <div class="row"></div>
-    <div class="row">
-
-    
-        <div class="col-md-3"></div>
-        <div class="col-md-6">
-            <div class="panel panel-danger">
-                    <div class="panel-heading">
-                        <h3 class="panel-title">error</h3>
-                    </div>
-                    <div class="panel-body">
-                        {{.error}}
-                    </div>
+<div class="layui-layout layui-layout-admin">
+    <div class="layui-body">
+        <div class="layui-fluid txt-center">
+            <img src="/static/img/page_error.png" alt="">
+            <div style="font-size: 2rem;color: red;margin-top: 20px;">{{.error}}</div>
         </div>
-        </div>
-        <div class="col-md-3"></div>
-        </div>
+    </div>
+    {{render "public/footer.html"}}
 </div>
-{{render "public/footer.html"}}

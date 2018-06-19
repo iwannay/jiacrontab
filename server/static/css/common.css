@@ -1,6 +1,9 @@
 .txt-center {
     text-align: center;
 }
+.jia-btn-normal {
+    background-color: #5FB878;
+}
 
 .layui-layout-body {
     background: #f2f2f2;

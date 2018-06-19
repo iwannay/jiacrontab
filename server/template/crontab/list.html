@@ -26,7 +26,7 @@
                         </select>
                     </div>
                     <div class="layui-inline">
-                        <button class="layui-btn" id="start-script">启动</button>
+                        <button class="layui-btn jia-btn-normal" id="start-script">启动</button>
                     </div>
                     <div class="layui-inline">
                         <button class="layui-btn layui-btn-danger" id="stop-script">停止</button>
@@ -34,7 +34,7 @@
                 </div>
                 <div class="layui-form-item">
                     <div class="layui-input-block layui-layout-right">
-                        <a href="/crontab/task/edit?addr={{.addr}}" class="layui-btn">添加</a>
+                        <a href="/crontab/task/edit?addr={{.addr}}" class="layui-btn jia-btn-normal">添加</a>
                     </div>
                 </div>
             </div>
@@ -50,39 +50,20 @@
 
         {{render "public/footer.html"}}
     </div>
+    <script src="/static/lib/layui/layui.js"></script>
     <script>
-        
-        layui.use(['element', 'form', 'table', 'jquery'], function () {
+        //config的设置是全局的
+        layui.config({
+            base: '/static/js/' //假设这是你存放拓展模块的根目录
+        })
+        layui.use(['common', 'element', 'form', 'table', 'jquery'], function () {
+            var common = layui.common;
             var form = layui.form;
             var element = layui.element;
             var carousel = layui.carousel;
             var table = layui.table;
             var $ = layui.jquery;
 
-            function timestampToTime(timestamp) {
-                var date = new Date(timestamp * 1000);//时间戳为10位需*1000，时间戳为13位的话不需乘1000
-                Y = date.getFullYear() + '-';
-                M = (date.getMonth()+1 < 10 ? '0'+(date.getMonth()+1) : date.getMonth()+1) + '-';
-                D = date.getDate() + ' ';
-                h = date.getHours() + ':';
-                m = date.getMinutes() + ':';
-                s = date.getSeconds();
-                return Y+M+D+h+m+s;
-            }
-            function getRequest() {
-                var url = decodeURIComponent(location.search); //获取url中"?"符后的字串
-                var theRequest = {};
-                if (url.indexOf("?") != -1) {
-                    var str = url.substr(1);
-                    strs = str.split("&");
-                    for (var i = 0; i < strs.length; i++) {
-                        theRequest[strs[i].split("=")[0]] = (strs[i].split("=")[1]);
-                    }
-                }
-                return theRequest;
-            }
-
-            
             var tableCols = [[ //表头
                 {type:'checkbox', fixed: 'left'},
                 {field: 'LAY_TABLE_INDEX', width:60, sort: true, fixed: 'left', title: 'ID'},
@@ -93,20 +74,20 @@
                     if (d.State === 0) {
                         staticHtml = '<a href="#" class="layui-btn layui-btn-xs layui-btn-danger">已停止</a>';
                     } else if (d.State == 1) {
-                        staticHtml = '<a href="#" class="layui-btn layui-btn-xs">计时中</a>'
+                        staticHtml = '<a href="#" class="layui-btn layui-btn-xs layui-btn-normal">计时中</a>'
                     } else {
-                        staticHtml = '<a href="#" class="layui-btn layui-btn-xs layui-btn-normal">运行中</a>'
+                        staticHtml = '<a href="#" class="layui-btn layui-btn-xs jia-btn-normal">运行中</a>'
                     }
                     return staticHtml;
                 }},
                 {field:'Create', width:170, title: '创建日期', templet: function(d) {
-                    return timestampToTime(d.Create);
+                    return common.timestampToTime(d.Create);
                 }},
                 {field:'LastExecTime', width:170, title: '上次启动', templet: function(d) {
-                    return timestampToTime(d.LastExecTime);
+                    return common.timestampToTime(d.LastExecTime);
                 }},
                 {field:'LastCostTime', width:170, sort: true, title: '上次花费', templet: function(d) {
-                    return timestampToTime(d.LastCostTime);
+                    return common.timestampToTime(d.LastCostTime);
                 }},
                 {field:'Timeout', width:120, sort: true, title: '超时'},
                 {field:'OpTimeout', width:120, title: '超时触发'},
@@ -116,9 +97,11 @@
                 {field:'LastExitStatus', width:90, title: '上次执行', templet: function(d){
                     var lastExitHtml = '';
                     if (d.LastExitStatus == 'success') {
-                        lastExitHtml = '<a href="#" class="layui-btn layui-btn-xs">'+ d.LastExitStatus +'</a>';
+                        lastExitHtml = '<a href="#" class="layui-btn layui-btn-xs jia-btn-normal" style="width: 54px;">'+ d.LastExitStatus +'</a>';
+                    } else if (d.LastExitStatus == '') {
+                        lastExitHtml = '- -';
                     } else {
-                        lastExitHtml = '<a href="#" class="layui-btn layui-btn-xs layui-btn-danger">'+ d.LastExitStatus +'</a>';
+                        lastExitHtml = '<a href="#" class="layui-btn layui-btn-xs layui-btn-danger" style="width: 54px;">'+ d.LastExitStatus +'</a>';
                     }
                     return lastExitHtml;
                 }},
@@ -128,9 +111,9 @@
                 {field:'handle', width:140, fixed: 'right', title: '编辑', templet: function(d){
                     var isStartTask = '';
                     if (d.State == 0) {
-                        isStartTask = '<a href="/crontab/task/start?taskId='+ d.Id +'&addr='+ getRequest().addr +'" class="layui-btn layui-btn-xs reset-btn">启动</a>';
+                        isStartTask = '<a href="/crontab/task/start?taskId='+ d.Id +'&addr='+ common.getRequest().addr +'" class="layui-btn layui-btn-xs jia-btn-normal reset-btn">启动</a>';
                     } else {
-                        isStartTask = '<a href="/crontab/task/stop?taskId='+ d.Id +'&addr='+ getRequest().addr +'&action=stop" class="layui-btn layui-btn-xs layui-btn-danger reset-btn">停止</a>';
+                        isStartTask = '<a href="/crontab/task/stop?taskId='+ d.Id +'&addr='+ common.getRequest().addr +'&action=stop" class="layui-btn layui-btn-xs layui-btn-danger reset-btn">停止</a>';
                     }
                     var  editorHtml = isStartTask + '<div class="layui-input-inline" style="width: 70px;" lay-event="operate">' +
                                         '<select lay-filter="selectTable" id="'+ d.Id +'">' +
@@ -150,7 +133,7 @@
                 type: 'POST',
                 url: location.pathname,
                 data: {
-                    addr: getRequest().addr
+                    addr: common.getRequest().addr
                 },
                 success: function(res) {
                     var taskDatas = res.data.taskList;
@@ -175,19 +158,19 @@
                 var selectValue = data.value;
                 var selectId = $(data.elem).context.getAttribute('id');
                 if (selectValue == '修改计划任务') {
-                    window.location.href = '/crontab/task/edit?taskId='+ selectId +'&addr=' + getRequest().addr;
+                    window.location.href = '/crontab/task/edit?taskId='+ selectId +'&addr=' + common.getRequest().addr;
                 }
                 if (selectValue == '删除计划任务') {
-                    window.location.href = '/crontab/task/stop?taskId='+ selectId +'&addr=' + getRequest().addr + '&action=delete';
+                    window.location.href = '/crontab/task/stop?taskId='+ selectId +'&addr=' + common.getRequest().addr + '&action=delete';
                 }
                 if (selectValue == '测试用户脚本') {
-                    window.location.href = '/quickStart?taskId='+ selectId +'&addr=' + getRequest().addr;
+                    window.location.href = '/quickStart?taskId='+ selectId +'&addr=' + common.getRequest().addr;
                 }
                 if (selectValue == '强杀脚本进程') {
-                    window.location.href = '/crontab/task/stop?taskId='+ selectId +'&addr=' + getRequest().addr + '&action=kill';
+                    window.location.href = '/crontab/task/stop?taskId='+ selectId +'&addr=' + common.getRequest().addr + '&action=kill';
                 }
                 if (selectValue == '查看最近日志') {
-                    window.location.href = '/log?taskId='+ selectId +'&addr=' + getRequest().addr;
+                    window.location.href = '/log?taskId='+ selectId +'&addr=' + common.getRequest().addr;
                 }
                 
             });
@@ -202,7 +185,7 @@
                 for (var i=0; i < checkData.length; i++) {
                     checkIdList.push(checkData[i].Id)
                 }
-                location.href = "/crontab/task/start?&taskId="+checkIdList.join(",") + '&addr=' + getRequest().addr;
+                location.href = "/crontab/task/start?&taskId="+checkIdList.join(",") + '&addr=' + common.getRequest().addr;
                 
             })
             $('#stop-script').on('click', function () {
@@ -215,7 +198,7 @@
                 for (var i=0; i < checkData.length; i++) {
                     checkIdList.push(checkData[i].Id)
                 }
-                location.href = "/crontab/task/stop?&taskId="+checkIdList.join(",") + '&addr=' + getRequest().addr + '&action=stop';
+                location.href = "/crontab/task/stop?&taskId="+checkIdList.join(",") + '&addr=' + common.getRequest().addr + '&action=stop';
             })
 
 

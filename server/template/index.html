@@ -77,7 +77,9 @@
                                     <colgroup>
                                         <col width="150">
                                         <col width="200">
-                                        <col width="150">
+                                        <col width="140">
+                                        <col width="140">
+                                        <col width="140">
                                         <col>
                                     </colgroup>
                                     <thead>
@@ -85,6 +87,8 @@
                                             <th>名称</th>
                                             <th>IP</th>
                                             <th>状态</th>
+                                            <th>计划任务数</th>
+                                            <th>常驻任务数</th>
                                             <th>操作</th>
                                         </tr>
                                     </thead>
@@ -97,11 +101,13 @@
                                                 {{if eq $client.State 1}}
                                                 正常
                                                 {{else}}
-                                                断开 <a href="/deleteClient?addr={{$client.Addr}}" onclick="return confirm('确定要删除吗？')" class="btn btn-danger btn-xs">删除</a>
+                                                断开 <a href="/deleteClient?addr={{$client.Addr}}" onclick="return confirm('确定要删除吗？')" class="layui-btn layui-btn-xs layui-btn-danger">删除</a>
                                                 {{end}}
                                             </td>
+                                            <td>12</td>
+                                            <td>13</td>
                                             <td>
-                                                <a href="/crontab/task/list?addr={{$client.Addr}}" class="layui-btn layui-btn-xs">查看</a>
+                                                <a href="/crontab/task/list?addr={{$client.Addr}}" class="layui-btn layui-btn-xs jia-btn-normal">查看</a>
                                             </td>
                                         </tr>
                                         {{end}}
@@ -123,13 +129,11 @@
         layui.use(['element', 'carousel'], function () {
             var element = layui.element;
             var carousel = layui.carousel;
-            console.log('{{.systemInfoList}}')
             //建造实例
             carousel.render({
                 elem: '#test1',
                 width: '100%',
                 arrow: 'none',
-                
                 autoplay: false,
                 trigger: 'hover',
                 // indicator: 'outside'
