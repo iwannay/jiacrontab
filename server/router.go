@@ -115,4 +115,9 @@ func router(app *iris.Application) {
 	app.Get("/viewConfig", handle.ViewConfig)
 	app.Get("/crontab/task/stopAll", handle.StopAllTask)
 
+	app.Any("/daemon/task/list", handle.ListDaemonTask)
+	app.Any("/daemon/task/edit", handle.EditDaemonTask)
+	app.Get("/daemon/task/log", handle.RecentLog)
+	app.Get("/runtime/info", handle.RuntimeInfo)
+
 }

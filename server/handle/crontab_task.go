@@ -31,13 +31,18 @@ const (
 
 func ListTask(ctx iris.Context) {
 
-	var addr string
 	var systemInfo map[string]interface{}
 	var locals proto.Mdata
 	var clientList map[string]proto.ClientConf
 	var taskIdSli []string
 	var r = ctx.Request()
 	var m = model.NewModel()
+	addr := r.FormValue("addr")
+	if strings.TrimSpace(addr) == "" {
+		ctx.ViewData("error", "参数错误")
+		ctx.View("public/error.html")
+		return
+	}
 
 	sortedTaskList := make([]*proto.TaskArgs, 0)
 	sortedClientList := make([]proto.ClientConf, 0)
@@ -53,7 +58,7 @@ func ListTask(ctx iris.Context) {
 		})
 
 		firstK := sortedClientList[0].Addr
-		addr = libs.ReplaceEmpty(r.FormValue("addr"), firstK)
+		addr = libs.ReplaceEmpty(addr, firstK)
 	} else {
 		if ctx.IsAjax() {
 			ctx.JSON(map[string]interface{}{
@@ -341,7 +346,7 @@ func StopTask(ctx iris.Context) {
 	action := libs.ReplaceEmpty(r.FormValue("action"), "stop")
 	var reply bool
 	if taskId == "" || addr == "" {
-		ctx.ViewData("error", "param error")
+		ctx.ViewData("error", "参数错误")
 		ctx.View("public/error.html")
 		return
 	}
@@ -377,7 +382,7 @@ func StopAllTask(ctx iris.Context) {
 	taskIdSli := strings.Split(taskIds, ",")
 	var reply bool
 	if len(taskIdSli) == 0 || addr == "" {
-		ctx.ViewData("error", "param error")
+		ctx.ViewData("error", "参数错误")
 		ctx.View("public/error.html")
 		return
 	}
@@ -403,13 +408,13 @@ func StartTask(ctx iris.Context) {
 	addr := strings.TrimSpace(r.FormValue("addr"))
 	var reply bool
 	if taskId == "" || addr == "" {
-		ctx.ViewData("error", "param error")
+		ctx.ViewData("error", "参数错误")
 		ctx.View("public/error.html")
 		return
 	}
 
 	if err := rpc.Call(addr, "Task.Start", taskId, &reply); err != nil {
-		ctx.ViewData("error", "param error")
+		ctx.ViewData("error", "参数错误")
 		ctx.View("public/error.html")
 		return
 	}
@@ -472,7 +477,7 @@ func QuickStart(ctx iris.Context) {
 	addr := strings.TrimSpace(r.FormValue("addr"))
 	var reply []byte
 	if taskId == "" || addr == "" {
-		ctx.ViewData("error", "param error")
+		ctx.ViewData("error", "参数错误")
 		ctx.View("public/error.html")
 		return
 	}
@@ -491,8 +496,7 @@ func QuickStart(ctx iris.Context) {
 }
 
 func Logout(ctx iris.Context) {
-	// TOTO 清理token
-	// ctx.CleanToken()
+	ctx.RemoveCookie(conf.ConfigArgs.TokenCookieName)
 	ctx.Redirect("/login", http.StatusFound)
 
 }
@@ -504,10 +508,8 @@ func RecentLog(ctx iris.Context) {
 	addr := r.FormValue("addr")
 	var content []byte
 	if id == "" {
-		// ctx.RenderHtml([]string{"public/error"}, map[string]interface{}{
-		// 	"error": "param error",
-		// })
-		ctx.ViewData("error", "param error")
+
+		ctx.ViewData("error", "参数错误")
 		ctx.View("public/error.html")
 		return
 	}
@@ -522,7 +524,7 @@ func RecentLog(ctx iris.Context) {
 
 	ctx.ViewData("logList", logList)
 	ctx.ViewData("addr", addr)
-	ctx.View("public/error.html")
+	ctx.View("crontab/log.html")
 
 }
 
