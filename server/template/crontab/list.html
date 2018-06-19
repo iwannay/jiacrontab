@@ -68,7 +68,14 @@
                 {type:'checkbox', fixed: 'left'},
                 {field: 'LAY_TABLE_INDEX', width:60, sort: true, fixed: 'left', title: 'ID'},
                 {field:'Name', width:150, fixed: 'left', title: '名称'},
-                {field:'Command', width:150, title: '脚本'},
+                {field:'Command', width:170, title: '脚本', templet: function(d) {
+                    var oldStr = d.Command + ' ' + d.Args;
+                    newStr = oldStr.replace(/(.{0,20}).*/g,"$1")
+                    if (oldStr.length > newStr.length) {
+                        newStr += "..."
+                    }
+                    return newStr
+                }},
                 {field:'State', width:90, title: '状态', templet: function(d){
                     var staticHtml = '';
                     if (d.State === 0) {
@@ -80,14 +87,14 @@
                     }
                     return staticHtml;
                 }},
-                {field:'Create', width:170, title: '创建日期', templet: function(d) {
+                {field:'Create', width:170, title: '创建日期', sort: true, templet: function(d) {
                     return common.timestampToTime(d.Create);
                 }},
-                {field:'LastExecTime', width:170, title: '上次启动', templet: function(d) {
+                {field:'LastExecTime', width:170, title: '上次启动', sort: true, templet: function(d) {
                     return common.timestampToTime(d.LastExecTime);
                 }},
                 {field:'LastCostTime', width:170, sort: true, title: '上次花费', templet: function(d) {
-                    return common.timestampToTime(d.LastCostTime);
+                    return (d.LastCostTime / 1000000000).toFixed(3) + '秒';
                 }},
                 {field:'Timeout', width:120, sort: true, title: '超时'},
                 {field:'OpTimeout', width:120, title: '超时触发'},
@@ -164,13 +171,13 @@
                     window.location.href = '/crontab/task/stop?taskId='+ selectId +'&addr=' + common.getRequest().addr + '&action=delete';
                 }
                 if (selectValue == '测试用户脚本') {
-                    window.location.href = '/quickStart?taskId='+ selectId +'&addr=' + common.getRequest().addr;
+                    window.location.href = '/crontab/task/quickStart?taskId='+ selectId +'&addr=' + common.getRequest().addr;
                 }
                 if (selectValue == '强杀脚本进程') {
                     window.location.href = '/crontab/task/stop?taskId='+ selectId +'&addr=' + common.getRequest().addr + '&action=kill';
                 }
                 if (selectValue == '查看最近日志') {
-                    window.location.href = '/log?taskId='+ selectId +'&addr=' + common.getRequest().addr;
+                    window.location.href = '/crontab/task/log?taskId='+ selectId +'&addr=' + common.getRequest().addr;
                 }
                 
             });

@@ -491,8 +491,7 @@ func QuickStart(ctx iris.Context) {
 	logList := strings.Split(string(reply), "\n")
 
 	ctx.ViewData("logList", logList)
-	ctx.ViewData("addr", addr)
-	ctx.View("crontab/task/log.html")
+	ctx.View("crontab/log.html")
 }
 
 func Logout(ctx iris.Context) {

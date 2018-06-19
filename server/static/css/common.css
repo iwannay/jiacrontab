@@ -158,6 +158,7 @@
 .layui-table-cell {
     height: 32px;
     line-height: 30px;
+    overflow: hidden !important;
 }
 .layui-layout-admin .layui-content {
     left: 200px;
