@@ -1,6 +1,169 @@
 <div class="layui-layout layui-layout-admin">
     {{render "public/header.html"}}
     {{render "public/menu.html"}}
-    <h1>运行信息</h1>
+    <div class="layui-body layui-content">
+        <!-- 内容主体区域 -->
+        <div class="layui-breadcrumb">
+            <a href="/">主页</a>
+            <a>
+                <cite>运行信息</cite>
+            </a>
+        </div>
+        <div class="layui-fluid">
+            <div class="layui-row layui-col-space15">
+                <div class="layui-col-sm6 layui-col-md3">
+                    <div class="layui-card">
+                        <div class="layui-card-header">
+                            GC暂停时间总量
+                        </div>
+                        <div class="layui-card-body layuiadmin-card-list">
+                            <p class="layuiadmin-big-font">1.328s</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-col-sm6 layui-col-md3">
+                    <div class="layui-card">
+                        <div class="layui-card-header">
+                            cpu核心数
+                        </div>
+                        <div class="layui-card-body layuiadmin-card-list">
+                            <p class="layuiadmin-big-font">1</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-col-sm6 layui-col-md3">
+                    <div class="layui-card">
+                        <div class="layui-card-header">
+                            goroute数量
+                        </div>
+                        <div class="layui-card-body layuiadmin-card-list">
+                            <p class="layuiadmin-big-font">258</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-col-sm6 layui-col-md3">
+                    <div class="layui-card">
+                        <div class="layui-card-header">
+                            上次GC暂停时间
+                        </div>
+                        <div class="layui-card-body layuiadmin-card-list">
+                            <p class="layuiadmin-big-font">0.000s</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-col-sm6 layui-col-md3">
+                    <div class="layui-card">
+                        <div class="layui-card-header">
+                            下次GC内存回收量
+                        </div>
+                        <div class="layui-card-body layuiadmin-card-list">
+                            <p class="layuiadmin-big-font">11.057MB</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-col-sm6 layui-col-md3">
+                    <div class="layui-card">
+                        <div class="layui-card-header">
+                            内存分配次数
+                        </div>
+                        <div class="layui-card-body layuiadmin-card-list">
+                            <p class="layuiadmin-big-font">31778304</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-col-sm6 layui-col-md3">
+                    <div class="layui-card">
+                        <div class="layui-card-header">
+                            内存释放次数
+                        </div>
+                        <div class="layui-card-body layuiadmin-card-list">
+                            <p class="layuiadmin-big-font">31717154</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-col-sm6 layui-col-md3">
+                    <div class="layui-card">
+                        <div class="layui-card-header">
+                            当前内存使用量
+                        </div>
+                        <div class="layui-card-body layuiadmin-card-list">
+                            <p class="layuiadmin-big-font">6.23 MB</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-col-sm6 layui-col-md3">
+                    <div class="layui-card">
+                        <div class="layui-card-header">
+                            所有被分配的内存
+                        </div>
+                        <div class="layui-card-body layuiadmin-card-list">
+                            <p class="layuiadmin-big-font">7111.00 MB</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-col-sm6 layui-col-md3">
+                    <div class="layui-card">
+                        <div class="layui-card-header">
+                            指针查找次数
+                        </div>
+                        <div class="layui-card-body layuiadmin-card-list">
+                            <p class="layuiadmin-big-font">1440895</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-col-sm6 layui-col-md3">
+                    <div class="layui-card">
+                        <div class="layui-card-header">
+                            服务运行时间
+                        </div>
+                        <div class="layui-card-body layuiadmin-card-list">
+                            <p class="layuiadmin-big-font">23天20小时11分33秒</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-col-sm6 layui-col-md3">
+                    <div class="layui-card">
+                        <div class="layui-card-header">
+                            距离上次GC时间
+                        </div>
+                        <div class="layui-card-body layuiadmin-card-list">
+                            <p class="layuiadmin-big-font">93.4s</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     {{render "public/footer.html"}}
 </div>
+<script src="/static/lib/layui/layui.js"></script>
+<script>
+    layui.use(['element', 'jquery'], function () {
+        var $ = layui.jquery;
+        $('#flexible-icon').on('click', function () {
+            if ($(this).hasClass('layui-icon-spread-left')) {
+                $(this).addClass('layui-icon-shrink-right').removeClass('layui-icon-spread-left');
+                $('.layui-layout-body').removeClass('min-layout');
+            } else {
+                $(this).addClass('layui-icon-spread-left').removeClass('layui-icon-shrink-right');
+                $('.layui-layout-body').addClass('min-layout');
+            }
+        })
+
+        if (window.innerWidth < 990) {
+            $('.layui-layout-body').addClass('min-layout');
+            $('#flexible-icon').addClass('layui-icon-spread-left').removeClass('layui-icon-shrink-right');
+        }
+        $(window).on('resize', function () {
+            if (window.innerWidth < 990) {
+                $('.layui-layout-body').addClass('min-layout');
+                $('#flexible-icon').addClass('layui-icon-spread-left').removeClass(
+                    'layui-icon-shrink-right');
+            } else {
+                $('.layui-layout-body').removeClass('min-layout');
+                $('#flexible-icon').addClass('layui-icon-shrink-right').removeClass(
+                    'layui-icon-spread-left');
+            }
+        })
+    })
+</script>

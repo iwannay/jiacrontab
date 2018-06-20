@@ -199,6 +199,17 @@
     display: block;
 }
 
+.layuiadmin-card-list p.layuiadmin-big-font {
+    font-size: 22px;
+    line-height: 36px;
+    padding: 5px 0 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-all;
+    white-space: nowrap;
+    color: #009688;
+}
+
 
 /**
 滚动条样式
