@@ -1,38 +1,42 @@
-{{render "public/header.html"}}
-<div class="container-fluid">
-    
-    <ul class="breadcrumb">
-        <li><a href="/">Home</a> </li>
-        <li class="active">配置</li>
-    </ul>
-
-    <div class="row-fluid">
-        {{range $k,$v := .configs}}
-            <div class="panel panel-info">
-                <!-- Default panel contents -->
-                <div class="panel-heading">{{$k}}</div>
-                
-                <!-- List group -->
-                <ul class="list-group">
-                    {{range $kk,$vv := $v}}
-                    <li class="list-group-item">{{$kk}} : {{$vv}}</li>
-                    {{end}}
-                    {{if eq $k "mail"}}
-                    <li class="list-group-item">
-                        <form class="form-inline" method="post">
-                            <div class="form-group">
-                                <input type="text" class="form-control" name="mailTo" id="testEmail">
-                            </div>
-                            <button type="submit" class="btn btn-success">发送测试邮件</button>
-                        </form>
-                    </li>
-
-                    {{end}}
-                </ul>
+<div class="layui-layout layui-layout-admin">
+    {{render "public/header.html"}}
+    <div class="layui-body layui-content" style="left: 0;">       
+        <div class="layui-breadcrumb">
+            <a href="/">主页</a>
+            <a>
+                <cite>配置</cite>
+            </a>
+        </div>
+        <div class="layui-fluid">
+            <div class="layui-row layui-col-space15">
+                {{range $k,$v := .configs}}
+                <div class="layui-col-xs6">
+                    <fieldset class="layui-elem-field layui-field-title">
+                        <legend>{{$k}}</legend>
+                        {{range $kk,$vv := $v}}
+                            <p>{{$kk}} : {{$vv}}</p>
+                        {{end}}
+                        {{if eq $k "mail"}}
+                        <li class="list-group-item">
+                            <form class="form-inline" method="post">
+                                <div class="form-group">
+                                    <input type="text" class="form-control" name="mailTo" id="testEmail">
+                                </div>
+                                <button type="submit" class="btn btn-success">发送测试邮件</button>
+                            </form>
+                        </li>
+                        {{end}}
+                    </fieldset>
+                </div>
+                {{end}}
             </div>
-            {{end}}
-        
+        </div>
     </div>
-
+    {{render "public/footer.html"}}
 </div>
-{{render "public/footer.html"}}
+<script src="/static/lib/layui/layui.js"></script>
+<script>
+    layui.use('element', function(){
+        var element = layui.element;
+    });
+</script>
