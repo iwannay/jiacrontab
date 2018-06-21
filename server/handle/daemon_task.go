@@ -1,8 +1,18 @@
 package handle
 
-import "github.com/kataras/iris"
+import (
+	"github.com/kataras/iris"
+)
 
 func ListDaemonTask(ctx iris.Context) {
+
+	//	ctx.Params()
+	//	proto.DaemonTask{
+
+	//	}
+
+	// ctx.FormFile()
+
 	ctx.View("daemon/list.html")
 }
 
