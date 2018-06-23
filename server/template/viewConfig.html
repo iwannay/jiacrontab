@@ -11,22 +11,26 @@
             <div class="layui-row layui-col-space15">
                 {{range $k,$v := .configs}}
                 <div class="layui-col-xs6">
-                    <fieldset class="layui-elem-field layui-field-title">
-                        <legend>{{$k}}</legend>
-                        {{range $kk,$vv := $v}}
-                            <p>{{$kk}} : {{$vv}}</p>
-                        {{end}}
-                        {{if eq $k "mail"}}
-                        <li class="list-group-item">
-                            <form class="form-inline" method="post">
-                                <div class="form-group">
-                                    <input type="text" class="form-control" name="mailTo" id="testEmail">
-                                </div>
-                                <button type="submit" class="btn btn-success">发送测试邮件</button>
-                            </form>
-                        </li>
-                        {{end}}
-                    </fieldset>
+                    <div class="set-config-item">
+                        <fieldset class="layui-elem-field layui-field-title">
+                            <legend>{{$k}}</legend>
+                            {{range $kk,$vv := $v}}
+                                <p>{{$kk}} : {{$vv}}</p>
+                            {{end}}
+                            {{if eq $k "mail"}}
+                            <li class="list-group-item">
+                                <form class="layui-form" method="POST">
+                                    <div class="layui-form-item">
+                                        <div class="layui-input-inline" style="margin-top: 14px;">
+                                            <input type="text" placeholder="邮件地址" class="layui-input" name="mailTo" id="testEmail">
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="layui-btn jia-btn-normal">发送测试邮件</button>
+                                </form>
+                            </li>
+                            {{end}}
+                        </fieldset>
+                    </div>
                 </div>
                 {{end}}
             </div>

@@ -13,6 +13,3 @@ type DaemonTask struct {
 	Command    string
 	Args       string
 }
-
-
-

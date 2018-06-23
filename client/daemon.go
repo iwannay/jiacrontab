@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"jiacrontab/libs/proto"
 	"path/filepath"
 	"sync"
 	"time"
+	"jiacrontab/model"
 )
 
 const (
@@ -16,7 +16,7 @@ const (
 )
 
 type daemonTask struct {
-	task   *proto.DaemonTask
+	task   *model.DaemonTask
 	daemon *daemon
 
 	action     int
@@ -29,6 +29,7 @@ func (d *daemonTask) do(ctx context.Context) {
 	t := time.NewTimer(1 * time.Second)
 	d.daemon.wait.Add(1)
 	defer d.daemon.wait.Done()
+	db.Where("id = ?", d.task.ID).Update("status", startDaemonTask)
 
 	for {
 		var cmdList [][]string
@@ -54,6 +55,7 @@ func (d *daemonTask) do(ctx context.Context) {
 		}
 
 		if stop {
+			t.Stop()
 			break
 		}
 
@@ -76,14 +78,14 @@ func (d *daemonTask) do(ctx context.Context) {
 		d.daemon.lock.Unlock()
 
 		db.Where("id = ?", d.task.ID).Update("status", stopDaemonTask)
-		// 不会抵达
+
 	}
 
 }
 
 type daemon struct {
 	taskChannel chan *daemonTask
-	taskMap     map[int64]context.CancelFunc
+	taskMap     map[uint]context.CancelFunc
 	lock        sync.Mutex
 	wait        sync.WaitGroup
 }

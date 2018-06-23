@@ -1,21 +1,24 @@
 package proto
 
-import (
-	"time"
 
-	"github.com/jinzhu/gorm"
+const (
+	StopDaemonTask = iota
+	StartDaemonTask
+	DeleteDaemonTask
 )
 
-type DaemonTask struct {
-	gorm.Model
-	ID         int64
-	Name       string `gorm:"unique;not null"`
-	MailNofity bool
-	Status     int
-	MailTo     string
-	Command    string
-	Args       string
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	DeletedAt  time.Time
+//
+//type DaemonTask struct {
+//	gorm.Model
+//	Name       string `gorm:"unique;not null"`
+//	MailNofity bool
+//	Status     int
+//	MailTo     string
+//	Command    string
+//	Args       string
+//}
+
+type ActionDaemonTaskArgs struct {
+	Action int
+	TaskId int
 }

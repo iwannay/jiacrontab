@@ -2,7 +2,6 @@ package main
 
 import (
 	"jiacrontab/client/store"
-	"jiacrontab/libs/proto"
 	"jiacrontab/libs/rpc"
 	"log"
 	"os"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	"jiacrontab/model"
 )
 
 func newScheduler(config *config, crontab *crontab, store *store.Store) *scheduler {
@@ -31,6 +31,7 @@ var globalConfig *config
 var globalCrontab *crontab
 var globalStore *store.Store
 var globalDepend *depend
+var globalDaemon *daemon
 var startTime = time.Now()
 var db *gorm.DB
 
@@ -50,7 +51,9 @@ func listenSignal(fn func()) {
 
 func main() {
 
-	var err error
+	model.CreateDB("sqlite3", "data/jiacrontab_client.db")
+	model.DB().CreateTable(&model.DaemonTask{})
+
 	globalConfig = newConfig()
 	if globalConfig.debug == true {
 		initPprof(globalConfig.pprofAddr)
@@ -66,16 +69,9 @@ func main() {
 	globalDepend = newDepend()
 	globalDepend.run()
 
-	daemon := newDaemon(100)
-	daemon.run()
+	globalDaemon = newDaemon(100)
+	globalDaemon.run()
 
-	db, err = gorm.Open("sqlite3", "data/jiacrontab_client.db")
-	if err != nil {
-		panic(err)
-	}
-
-	db.CreateTable()
-	db.AutoMigrate(&proto.DaemonTask{})
 
 	go listenSignal(func() {
 		globalCrontab.lock.Lock()
@@ -92,12 +88,12 @@ func main() {
 			}
 		})
 
-		daemon.lock.Lock()
-		for _, v := range daemon.taskMap {
+		globalDaemon.lock.Lock()
+		for _, v := range globalDaemon.taskMap {
 			v()
 		}
-		daemon.lock.Unlock()
-		daemon.waitDone()
+		globalDaemon.lock.Unlock()
+		globalDaemon.waitDone()
 
 	})
 

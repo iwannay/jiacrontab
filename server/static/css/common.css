@@ -209,6 +209,15 @@
     white-space: nowrap;
     color: #009688;
 }
+.set-config-item {
+    background: #fff;
+    box-shadow: 0 8px 18px 2px #d6d6d6;
+    padding: 8px 20px;
+    min-height: 137px;
+}
+.set-config-item p {
+    padding-top: 12px;
+}
 
 
 /**

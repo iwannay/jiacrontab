@@ -88,7 +88,6 @@ func SystemInfo(startTime time.Time) map[string]interface{} {
 	}
 }
 
-
 func TryOpen(path string, flag int) (*os.File, error) {
 	fabs, err := filepath.Abs(path)
 	if err != nil {
