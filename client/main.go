@@ -74,6 +74,7 @@ func main() {
 		panic(err)
 	}
 
+	db.CreateTable()
 	db.AutoMigrate(&proto.DaemonTask{})
 
 	go listenSignal(func() {
