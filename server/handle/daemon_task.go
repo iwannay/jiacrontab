@@ -84,7 +84,7 @@ func EditDaemonTask(ctx iris.Context) {
 		err = rpc.Call(addr, "DaemonTask.CreateDaemonTask", remoteArgs, &reply)
 		if err != nil {
 			ctx.ViewData("formValues", ctx.FormValues())
-			ctx.ViewData("errorMsg", "参数不正确")
+			ctx.ViewData("errorMsg", err)
 			ctx.View("daemon/edit.html")
 			return
 		}
