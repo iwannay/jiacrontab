@@ -19,34 +19,49 @@ func ListDaemonTask(ctx iris.Context) {
 	page := ctx.FormValueDefault("page", "1")
 	pagesize := ctx.FormValueDefault("pagesize", "200")
 	addr := ctx.FormValue("addr")
-	if addr == "" {
-		ctx.ViewData("error", "client地址不能为空")
-		ctx.View("public/error.html")
-		return
-	}
 
-	pageInt, err1 := strconv.Atoi(page)
-	pagesizeInt, err2 := strconv.Atoi(pagesize)
+	if ctx.Request() == http.MethodPost {
+		if addr == "" {
+			ctx.ViewData("error", "client地址不能为空")
 
-	if err1 != nil || err2 != nil {
-		ctx.ViewData("error", "分页参数错误")
-		ctx.View("public/error.html")
-		return
-	}
-
-	var daemonTaskList []model.DaemonTask
-
-	err := rpc.Call(addr, "DaemonTask.ListDaemonTask", struct{ page, pagesize int }{
-		page:     pageInt,
-		pagesize: pagesizeInt,
-	}, &daemonTaskList)
-
-	if err != nil {
-		if err1 != nil || err2 != nil {
-			ctx.ViewData("error", err)
-			ctx.View("public/error.html")
+			ctx.JSON(map[string]interface{}{
+				"code": -1,
+				"msg":  "addr地址不能为空",
+			})
 			return
 		}
+
+		pageInt, err1 := strconv.Atoi(page)
+		pagesizeInt, err2 := strconv.Atoi(pagesize)
+
+		if err1 != nil || err2 != nil {
+			ctx.JSON(map[string]interface{}{
+				"code": -1,
+				"msg":  "分页参数错误",
+			})
+			return
+		}
+
+		var daemonTaskList []model.DaemonTask
+
+		err := rpc.Call(addr, "DaemonTask.ListDaemonTask", struct{ page, pagesize int }{
+			page:     pageInt,
+			pagesize: pagesizeInt,
+		}, &daemonTaskList)
+
+		if err != nil {
+
+			ctx.JSON(map[string]interface{}{
+				"code": -1,
+				"msg":  err,
+			})
+			return
+
+		}
+		ctx.JSON(map[string]interface{}{
+			"code": 0,
+			"data": daemonTaskList,
+		})
 	}
 
 	ctx.View("daemon/list.html")
