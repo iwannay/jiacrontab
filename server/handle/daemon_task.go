@@ -33,7 +33,7 @@ func ListDaemonTask(ctx iris.Context) {
 
 	var daemonTaskList []model.DaemonTask
 
-	err := rpc.Call(addr, "Logic.ListDaemonTask", struct{ page, pagesize int }{
+	err := rpc.Call(addr, "DaemonTask.ListDaemonTask", struct{ page, pagesize int }{
 		page:     pageInt,
 		pagesize: pagesizeInt,
 	}, &daemonTaskList)
@@ -79,7 +79,7 @@ func EditDaemonTask(ctx iris.Context) {
 			Args:       args,
 		}
 
-		err = rpc.Call(addr, "Logic.CreateDaemonTask", remoteArgs, &reply)
+		err = rpc.Call(addr, "DaemonTask.CreateDaemonTask", remoteArgs, &reply)
 		if err != nil {
 			ctx.ViewData("formValues", ctx.FormValues())
 			ctx.ViewData("errorMsg", "参数不正确")
@@ -92,7 +92,7 @@ func EditDaemonTask(ctx iris.Context) {
 
 	if addr != "" {
 		var daemonTask model.DaemonTask
-		err = rpc.Call(addr, "Logic.GetDaemonTask", taskId, &daemonTask)
+		err = rpc.Call(addr, "DaemonTask.GetDaemonTask", taskId, &daemonTask)
 		if err != nil {
 			ctx.ViewData("errorMsg", "查询不到任务")
 			ctx.View("daemon/edit.html")
@@ -134,7 +134,7 @@ func ActionDaemonTask(ctx iris.Context) {
 		return
 	}
 
-	err = rpc.Call(addr, "Logic.ActionDaemonTask", proto.ActionDaemonTaskArgs{
+	err = rpc.Call(addr, "DaemonTask.ActionDaemonTask", proto.ActionDaemonTaskArgs{
 		Action: op,
 		TaskId: taskId,
 	}, &replay)

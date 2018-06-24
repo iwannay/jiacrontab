@@ -8,9 +8,10 @@ import (
 	"os/signal"
 	"time"
 
+	"jiacrontab/model"
+
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
-	"jiacrontab/model"
 )
 
 func newScheduler(config *config, crontab *crontab, store *store.Store) *scheduler {
@@ -72,7 +73,6 @@ func main() {
 	globalDaemon = newDaemon(100)
 	globalDaemon.run()
 
-
 	go listenSignal(func() {
 		globalCrontab.lock.Lock()
 		for k, v := range globalCrontab.handleMap {
@@ -98,5 +98,5 @@ func main() {
 	})
 
 	go RpcHeartBeat()
-	rpc.ListenAndServe(globalConfig.rpcListenAddr, &Task{}, &Admin{})
+	rpc.ListenAndServe(globalConfig.rpcListenAddr, &DaemonTask{}, &Admin{}, &CrontabTask{})
 }

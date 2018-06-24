@@ -75,7 +75,7 @@ func ListTask(ctx iris.Context) {
 
 	locals = make(proto.Mdata)
 
-	if err := rpc.Call(addr, "Task.All", "", &locals); err != nil {
+	if err := rpc.Call(addr, "CrontabTask.All", "", &locals); err != nil {
 
 		if ctx.IsAjax() {
 			ctx.JSON(map[string]interface{}{
@@ -256,7 +256,7 @@ func EditTask(ctx iris.Context) {
 		hour := libs.ReplaceEmpty(strings.TrimSpace(r.FormValue("hour")), "*")
 		minute := libs.ReplaceEmpty(strings.TrimSpace(r.FormValue("minute")), "*")
 
-		if err := rpc.Call(addr, "Task.Update", proto.TaskArgs{
+		if err := rpc.Call(addr, "CrontabTask.Update", proto.TaskArgs{
 			Id:                 id,
 			Name:               n,
 			Command:            command,
@@ -298,7 +298,7 @@ func EditTask(ctx iris.Context) {
 		var clientList map[string]proto.ClientConf
 
 		if id != "" {
-			err := rpc.Call(addr, "Task.Get", id, &t)
+			err := rpc.Call(addr, "CrontabTask.Get", id, &t)
 			if err != nil {
 				ctx.Redirect("/crontab/task/list?addr="+addr, http.StatusFound)
 				return
@@ -353,11 +353,11 @@ func StopTask(ctx iris.Context) {
 
 	var method string
 	if action == "stop" {
-		method = "Task.Stop"
+		method = "CrontabTask.Stop"
 	} else if action == "delete" {
-		method = "Task.Delete"
+		method = "CrontabTask.Delete"
 	} else {
-		method = "Task.Kill"
+		method = "CrontabTask.Kill"
 	}
 	if err := rpc.Call(addr, method, taskId, &reply); err != nil {
 		ctx.ViewData("error", err)
@@ -378,7 +378,7 @@ func StopAllTask(ctx iris.Context) {
 
 	taskIds := strings.TrimSpace(r.FormValue("taskIds"))
 	addr := strings.TrimSpace(r.FormValue("addr"))
-	method := "Task.StopAll"
+	method := "CrontabTask.StopAll"
 	taskIdSli := strings.Split(taskIds, ",")
 	var reply bool
 	if len(taskIdSli) == 0 || addr == "" {
@@ -413,7 +413,7 @@ func StartTask(ctx iris.Context) {
 		return
 	}
 
-	if err := rpc.Call(addr, "Task.Start", taskId, &reply); err != nil {
+	if err := rpc.Call(addr, "CrontabTask.Start", taskId, &reply); err != nil {
 		ctx.ViewData("error", "参数错误")
 		ctx.View("public/error.html")
 		return
@@ -482,7 +482,7 @@ func QuickStart(ctx iris.Context) {
 		return
 	}
 
-	if err := rpc.Call(addr, "Task.QuickStart", taskId, &reply); err != nil {
+	if err := rpc.Call(addr, "CrontabTask.QuickStart", taskId, &reply); err != nil {
 		ctx.ViewData("error", err.Error())
 		ctx.View("public/error.html")
 		return
@@ -512,7 +512,7 @@ func RecentLog(ctx iris.Context) {
 		ctx.View("public/error.html")
 		return
 	}
-	if err := rpc.Call(addr, "Task.Log", id, &content); err != nil {
+	if err := rpc.Call(addr, "CrontabTask.Log", id, &content); err != nil {
 
 		ctx.ViewData("error", err)
 		ctx.View("public/error.html")

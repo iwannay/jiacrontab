@@ -14,10 +14,10 @@ import (
 	"time"
 )
 
-type Task struct {
+type CrontabTask struct {
 }
 
-func (t *Task) List(args struct{ page, pagesize int }, reply *[]*proto.TaskArgs) error {
+func (t *CrontabTask) List(args struct{ page, pagesize int }, reply *[]*proto.TaskArgs) error {
 	if taskList, ok := globalStore.GetTaskList(); ok {
 		for _, v := range taskList {
 			*reply = append(*reply, v)
@@ -26,7 +26,7 @@ func (t *Task) List(args struct{ page, pagesize int }, reply *[]*proto.TaskArgs)
 	return nil
 }
 
-func (t *Task) All(args string, reply *proto.Mdata) error {
+func (t *CrontabTask) All(args string, reply *proto.Mdata) error {
 	if taskList, ok := globalStore.GetTaskList(); ok {
 		*reply = taskList
 	}
@@ -35,7 +35,7 @@ func (t *Task) All(args string, reply *proto.Mdata) error {
 
 }
 
-func (t *Task) Update(args proto.TaskArgs, ok *bool) error {
+func (t *CrontabTask) Update(args proto.TaskArgs, ok *bool) error {
 	*ok = true
 	if args.MailTo == "" {
 		args.MailTo = globalConfig.mailTo
@@ -91,7 +91,7 @@ func (t *Task) Update(args proto.TaskArgs, ok *bool) error {
 
 	return nil
 }
-func (t *Task) Get(args string, task *proto.TaskArgs) error {
+func (t *CrontabTask) Get(args string, task *proto.TaskArgs) error {
 
 	if v, ok := globalStore.SearchTaskList(args); ok {
 		*task = *v
@@ -100,7 +100,7 @@ func (t *Task) Get(args string, task *proto.TaskArgs) error {
 	return nil
 }
 
-func (t *Task) Start(args string, ok *bool) error {
+func (t *CrontabTask) Start(args string, ok *bool) error {
 	*ok = true
 	ids := strings.Split(args, ",")
 	for _, v := range ids {
@@ -116,7 +116,7 @@ func (t *Task) Start(args string, ok *bool) error {
 	return nil
 }
 
-func (t *Task) Stop(args string, ok *bool) error {
+func (t *CrontabTask) Stop(args string, ok *bool) error {
 	*ok = true
 	ids := strings.Split(args, ",")
 	for _, v := range ids {
@@ -130,7 +130,7 @@ func (t *Task) Stop(args string, ok *bool) error {
 	return nil
 }
 
-func (t *Task) StopAll(args []string, ok *bool) error {
+func (t *CrontabTask) StopAll(args []string, ok *bool) error {
 	*ok = true
 	for _, v := range args {
 		if val, ok2 := globalStore.SearchTaskList(v); ok2 {
@@ -142,7 +142,7 @@ func (t *Task) StopAll(args []string, ok *bool) error {
 	return nil
 }
 
-func (t *Task) Delete(args string, ok *bool) error {
+func (t *CrontabTask) Delete(args string, ok *bool) error {
 	*ok = true
 	ids := strings.Split(args, ",")
 	for _, v := range ids {
@@ -157,7 +157,7 @@ func (t *Task) Delete(args string, ok *bool) error {
 	return nil
 }
 
-func (t *Task) Kill(args string, ok *bool) error {
+func (t *CrontabTask) Kill(args string, ok *bool) error {
 	if v, ok2 := globalStore.SearchTaskList(args); ok2 {
 		globalCrontab.kill(v)
 		*ok = true
@@ -168,7 +168,7 @@ func (t *Task) Kill(args string, ok *bool) error {
 	return nil
 }
 
-func (t *Task) QuickStart(args string, ret *[]byte) error {
+func (t *CrontabTask) QuickStart(args string, ret *[]byte) error {
 
 	if v, ok := globalStore.SearchTaskList(args); ok {
 		globalCrontab.quickStart(v, ret)
@@ -179,7 +179,7 @@ func (t *Task) QuickStart(args string, ret *[]byte) error {
 
 }
 
-func (t *Task) Log(args string, ret *[]byte) error {
+func (t *CrontabTask) Log(args string, ret *[]byte) error {
 	staticDir := filepath.Join(globalConfig.logPath, strconv.Itoa(time.Now().Year()), time.Now().Month().String())
 	var filename string
 
@@ -219,7 +219,7 @@ func (t *Task) Log(args string, ret *[]byte) error {
 	return err
 }
 
-func (t *Task) ResolvedDepends(args proto.MScript, ok *bool) error {
+func (t *CrontabTask) ResolvedDepends(args proto.MScript, ok *bool) error {
 
 	var err error
 	if args.Err != "" {
@@ -255,7 +255,7 @@ func (t *Task) ResolvedDepends(args proto.MScript, ok *bool) error {
 	return nil
 }
 
-func (t *Task) ExecDepend(args proto.MScript, reply *bool) error {
+func (t *CrontabTask) ExecDepend(args proto.MScript, reply *bool) error {
 
 	globalDepend.Add(&dependScript{
 		id:      args.TaskId,
