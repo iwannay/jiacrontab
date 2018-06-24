@@ -38,3 +38,11 @@ func (t *Task) ActionDaemonTask(args proto.ActionDaemonTaskArgs, reply *bool) er
 	})
 	return nil
 }
+
+func (t *Task) GetDaemonTask(args int, reply *model.DaemonTask) error {
+	ret := model.DB().Find(reply, "task_id", args)
+	if (*reply == model.DaemonTask{}) {
+		return ret.Error
+	}
+	return nil
+}
