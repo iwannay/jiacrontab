@@ -28,7 +28,7 @@ func (t *DaemonTask) ActionDaemonTask(args proto.ActionDaemonTaskArgs, reply *bo
 
 	*reply = false
 
-	ret := model.DB().Find(&task, "task_id=?", args.TaskId)
+	ret := model.DB().Find(&task, "id=?", args.TaskId)
 
 	if (task == model.DaemonTask{}) {
 

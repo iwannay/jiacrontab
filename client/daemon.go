@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"jiacrontab/model"
 	"path/filepath"
 	"sync"
 	"time"
-	"jiacrontab/model"
 )
 
 const (
@@ -29,7 +29,7 @@ func (d *daemonTask) do(ctx context.Context) {
 	t := time.NewTimer(1 * time.Second)
 	d.daemon.wait.Add(1)
 	defer d.daemon.wait.Done()
-	db.Where("id = ?", d.task.ID).Update("status", startDaemonTask)
+	model.DB().Table("daemon_tasks").Table("daemon_tasks").Where("id = ?", d.task.ID).Update("status", startDaemonTask)
 
 	for {
 		var cmdList [][]string
@@ -70,14 +70,14 @@ func (d *daemonTask) do(ctx context.Context) {
 		delete(d.daemon.taskMap, d.task.ID)
 		d.daemon.lock.Unlock()
 
-		db.Delete(d.task)
+		model.DB().Table("daemon_tasks").Delete(d.task)
 	case stopDaemonTask:
 
 		d.daemon.lock.Lock()
 		delete(d.daemon.taskMap, d.task.ID)
 		d.daemon.lock.Unlock()
 
-		db.Where("id = ?", d.task.ID).Update("status", stopDaemonTask)
+		model.DB().Table("daemon_tasks").Where("id = ?", d.task.ID).Update("status", stopDaemonTask)
 
 	}
 
@@ -93,6 +93,7 @@ type daemon struct {
 func newDaemon(taskChannelLength int) *daemon {
 
 	return &daemon{
+		taskMap:     make(map[uint]context.CancelFunc),
 		taskChannel: make(chan *daemonTask, taskChannelLength),
 	}
 }

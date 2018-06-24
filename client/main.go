@@ -10,7 +10,6 @@ import (
 
 	"jiacrontab/model"
 
-	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
@@ -34,7 +33,6 @@ var globalStore *store.Store
 var globalDepend *depend
 var globalDaemon *daemon
 var startTime = time.Now()
-var db *gorm.DB
 
 func listenSignal(fn func()) {
 	c := make(chan os.Signal)
