@@ -51,7 +51,6 @@ func ListDaemonTask(ctx iris.Context) {
 
 func EditDaemonTask(ctx iris.Context) {
 
-	var err error
 	var reply bool
 	addr := ctx.FormValue("addr")
 	taskId := ctx.FormValue("taskId")
@@ -90,9 +89,16 @@ func EditDaemonTask(ctx iris.Context) {
 		ctx.Redirect("/daemon/task/list?addr=" + addr)
 	}
 
-	if addr != "" {
+	if taskId != "" {
+
+		taskIdInt, err := strconv.Atoi(taskId)
+		if err != nil {
+			ctx.ViewData("errorMsg", "参数不正确")
+			ctx.View("daemon/edit.html")
+			return
+		}
 		var daemonTask model.DaemonTask
-		err = rpc.Call(addr, "DaemonTask.GetDaemonTask", taskId, &daemonTask)
+		err = rpc.Call(addr, "DaemonTask.GetDaemonTask", taskIdInt, &daemonTask)
 		if err != nil {
 			ctx.ViewData("errorMsg", "查询不到任务")
 			ctx.View("daemon/edit.html")
