@@ -42,9 +42,9 @@ func ListDaemonTask(ctx iris.Context) {
 
 		var daemonTaskList []model.DaemonTask
 
-		err := rpc.Call(addr, "DaemonTask.ListDaemonTask", struct{ page, pagesize int }{
-			page:     pageInt,
-			pagesize: pagesizeInt,
+		err := rpc.Call(addr, "DaemonTask.ListDaemonTask", struct{ Page, Pagesize int }{
+			Page:     pageInt,
+			Pagesize: pagesizeInt,
 		}, &daemonTaskList)
 
 		if err != nil {
