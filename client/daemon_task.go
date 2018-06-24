@@ -17,7 +17,7 @@ func (t *DaemonTask) CreateDaemonTask(args model.DaemonTask, reply *int64) error
 }
 
 func (t *DaemonTask) ListDaemonTask(args struct{ Page, Pagesize int }, reply *[]model.DaemonTask) error {
-	ret := model.DB().Find(reply).Offset((args.Page - 1) * args.Pagesize).Limit(args.pagesize).Order("update_at desc")
+	ret := model.DB().Find(reply).Offset((args.Page - 1) * args.Pagesize).Limit(args.Pagesize).Order("update_at desc")
 
 	return ret.Error
 }
