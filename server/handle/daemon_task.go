@@ -20,7 +20,7 @@ func ListDaemonTask(ctx iris.Context) {
 	pagesize := ctx.FormValueDefault("pagesize", "200")
 	addr := ctx.FormValue("addr")
 
-	if ctx.Request() == http.MethodPost {
+	if ctx.Request().Method == http.MethodPost {
 		if addr == "" {
 			ctx.ViewData("error", "client地址不能为空")
 
