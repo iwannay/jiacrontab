@@ -64,6 +64,7 @@ func EditDaemonTask(ctx iris.Context) {
 		if addr == "" || name == "" || command == "" {
 			ctx.ViewData("errorMsg", "参数不正确")
 			ctx.ViewData("formValues", ctx.FormValues())
+			ctx.View("daemon/edit.html")
 			return
 		}
 
@@ -78,7 +79,9 @@ func EditDaemonTask(ctx iris.Context) {
 		err = rpc.Call(addr, "Logic.CreateDaemonTask", remoteArgs, &reply)
 		if err != nil {
 			ctx.ViewData("formValues", ctx.FormValues())
+			ctx.ViewData("errorMsg", "参数不正确")
 			ctx.View("daemon/edit.html")
+			return
 		}
 
 		ctx.Redirect("/daemon/task/list?addr=" + addr)
@@ -124,5 +127,5 @@ func ActionDaemonTask(ctx iris.Context) {
 		return
 	}
 
-	ctx.Redirect("/daemon/task/list?addr="+addr)
+	ctx.Redirect("/daemon/task/list?addr=" + addr)
 }
