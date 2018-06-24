@@ -62,6 +62,7 @@ func ListDaemonTask(ctx iris.Context) {
 			"code": 0,
 			"data": daemonTaskList,
 		})
+		return
 	}
 
 	ctx.View("daemon/list.html")
