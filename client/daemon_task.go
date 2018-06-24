@@ -10,7 +10,7 @@ type DaemonTask struct {
 
 func (t *DaemonTask) CreateDaemonTask(args model.DaemonTask, reply *int64) error {
 
-	ret := model.DB().Create(args)
+	ret := model.DB().Create(&args)
 
 	*reply = ret.RowsAffected
 	return ret.Error
