@@ -4,6 +4,7 @@ import (
 	"github.com/kataras/iris"
 
 	"jiacrontab/libs/rpc"
+	"jiacrontab/server/conf"
 
 	"jiacrontab/libs/proto"
 	"jiacrontab/model"
@@ -54,6 +55,8 @@ func EditDaemonTask(ctx iris.Context) {
 	var reply bool
 	addr := ctx.FormValue("addr")
 	taskId := ctx.FormValue("taskId")
+
+	ctx.ViewData("allowCommands", conf.ConfigArgs.AllowCommands)
 
 	if ctx.Request().Method == http.MethodPost {
 
@@ -108,6 +111,7 @@ func EditDaemonTask(ctx iris.Context) {
 		ctx.ViewData("daemonTask", daemonTask)
 		ctx.ViewData("errorMsg", "参数不正确")
 		ctx.View("daemon/edit.html")
+		return
 
 	}
 
