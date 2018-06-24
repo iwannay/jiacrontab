@@ -165,6 +165,19 @@
     padding: 15px;
 }
 
+.jia-form-error {
+    height: 38px;
+    line-height: 38px;
+    padding: 0 15px;
+    position: relative;
+}
+.jia-tip-close {
+    width: 60px;
+    height: 38px;
+    text-align: center;
+    cursor: pointer;
+}
+
 /* side */
 .layui-layout-admin .layui-side {
     background-color: #23262E;

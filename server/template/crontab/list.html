@@ -16,10 +16,10 @@
             <div class="layui-form">
                 <div class="layui-form-item">
                     <div class="layui-inline">
-                        <select name="ip" lay-filter="select-menu">
+                        <select lay-filter="select-menu">
                         {{range $k,$v := .addrs}}
                             {{if eq $v.State 1}}
-                                <option value="{{$v.Addr}}">{{$v.Addr}}</option>
+                                <option value="{{$v.Addr}}" {{if eq $v.Addr $addr}}selected{{end}}>{{$v.Addr}}</option>
                             {{end}}
                         {{end}}
                            

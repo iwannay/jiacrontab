@@ -10,6 +10,16 @@ layui.define(function(exports){ //提示：模块也可以依赖其它模块，�
         s = date.getSeconds();
         return Y+M+D+h+m+s;
     },
+    UTCToTime: function(UTCTime) {
+        var date = new Date(UTCTime);//时间戳为10位需*1000，时间戳为13位的话不需乘1000
+        Y = date.getFullYear() + '-';
+        M = (date.getMonth()+1 < 10 ? '0'+(date.getMonth()+1) : date.getMonth()+1) + '-';
+        D = date.getDate() + ' ';
+        h = date.getHours() + ':';
+        m = date.getMinutes() + ':';
+        s = date.getSeconds();
+        return Y+M+D+h+m+s;
+    },
      getRequest: function() {
         var url = decodeURIComponent(location.search); //获取url中"?"符后的字串
         var theRequest = {};

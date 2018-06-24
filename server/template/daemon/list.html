@@ -1,5 +1,6 @@
 <div class="layui-layout layui-layout-admin">
     {{render "public/header.html"}}
+    {{$addr := .addr}}
     {{render "public/menu.html"}}
     <div class="layui-body layui-content">
         <!-- 内容主体区域 -->
@@ -12,10 +13,12 @@
         <div class="layui-form">
             <div class="layui-form-item">
                 <div class="layui-inline">
-                    <select name="ip" lay-filter="select-menu">
-                            <option value="0">localhost:20001</option>
-                            <option value="0">localhost:20002</option>
-                            <option value="0">localhost:20003</option>
+                    <select lay-filter="select-menu">
+                        {{range $k,$v := .addrs}}
+                            {{if eq $v.State 1}}
+                                <option value="{{$v.Addr}}" {{if eq $v.Addr $addr}}selected{{end}}>{{$v.Addr}}</option>
+                            {{end}}
+                        {{end}}
                     </select>
                 </div>
                 <div class="layui-inline">
@@ -52,7 +55,6 @@
         var common = layui.common;
         var form = layui.form;
         var element = layui.element;
-        var carousel = layui.carousel;
         var table = layui.table;
         var $ = layui.jquery;
 
@@ -68,60 +70,34 @@
                 }
                 return newStr
             }},
-            {field:'State', width:90, title: '状态', templet: function(d){
+            {field:'Status', width:90, title: '状态', templet: function(d){
                 var staticHtml = '';
-                if (d.State === 0) {
+                if (d.Status === 0) {
                     staticHtml = '<a href="#" class="layui-btn layui-btn-xs layui-btn-danger">已停止</a>';
-                } else if (d.State == 1) {
+                } else if (d.Status == 1) {
                     staticHtml = '<a href="#" class="layui-btn layui-btn-xs layui-btn-normal">计时中</a>'
                 } else {
                     staticHtml = '<a href="#" class="layui-btn layui-btn-xs jia-btn-normal">运行中</a>'
                 }
                 return staticHtml;
             }},
-            {field:'Create', width:170, title: '创建日期', sort: true, templet: function(d) {
-                return common.timestampToTime(d.Create);
-            }},
-            {field:'LastExecTime', width:170, title: '上次启动', sort: true, templet: function(d) {
-                return common.timestampToTime(d.LastExecTime);
-            }},
-            {field:'LastCostTime', width:170, sort: true, title: '上次花费', templet: function(d) {
-                return (d.LastCostTime / 1000000000).toFixed(3) + '秒';
-            }},
-            {field:'Timeout', width:120, sort: true, title: '超时'},
-            {field:'OpTimeout', width:120, title: '超时触发'},
-            {field:'NumberProcess', width:120, title: '进程/计时器', templet: function(d) {
-                return d.NumberProcess + '/' + d.TimerCounter;
-            }},
-            {field:'LastExitStatus', width:90, title: '上次执行', templet: function(d){
-                var lastExitHtml = '';
-                if (d.LastExitStatus == 'success') {
-                    lastExitHtml = '<a href="#" class="layui-btn layui-btn-xs jia-btn-normal" style="width: 54px;">'+ d.LastExitStatus +'</a>';
-                } else if (d.LastExitStatus == '') {
-                    lastExitHtml = '- -';
-                } else {
-                    lastExitHtml = '<a href="#" class="layui-btn layui-btn-xs layui-btn-danger" style="width: 54px;">'+ d.LastExitStatus +'</a>';
-                }
-                return lastExitHtml;
-            }},
-            {field:'C', width:200, title: '时间', templet: function(d) {
-                return '分:' + d.C.Minute + '时:' + d.C.Hour + '日:' + d.C.Day + '月:' + d.C.Month + '日/周:' + d.C.Weekday
+            {field:'CreatedAt', width:170, title: '创建日期', sort: true, templet: function(d) {
+                return common.UTCToTime(d.CreatedAt);
             }},
             {field:'handle', width:140, fixed: 'right', title: '编辑', templet: function(d){
                 var isStartTask = '';
-                if (d.State == 0) {
-                    isStartTask = '<a href="/crontab/task/start?taskId='+ d.Id +'&addr='+ common.getRequest().addr +'" class="layui-btn layui-btn-xs jia-btn-normal reset-btn">启动</a>';
+                if (d.Status == 0) {
+                    isStartTask = '<a href="/daemon/task/action?taskId='+ d.ID +'&addr='+ common.getRequest().addr +'&action=start" class="layui-btn layui-btn-xs jia-btn-normal reset-btn">启动</a>';
                 } else {
-                    isStartTask = '<a href="/crontab/task/stop?taskId='+ d.Id +'&addr='+ common.getRequest().addr +'&action=stop" class="layui-btn layui-btn-xs layui-btn-danger reset-btn">停止</a>';
+                    isStartTask = '<a href="/daemon/task/action?taskId='+ d.ID +'&addr='+ common.getRequest().addr +'&action=stop" class="layui-btn layui-btn-xs layui-btn-danger reset-btn">停止</a>';
                 }
                 var  editorHtml = isStartTask + '<div class="layui-input-inline" style="width: 70px;" lay-event="operate">' +
-                                    '<select lay-filter="selectTable" id="'+ d.Id +'">' +
+                                    '<select lay-filter="selectTable" id="'+ d.ID +'">' +
                                         '<option value="">操作</option>' +
-                                        '<option value="修改计划任务">修改计划任务</option>' +
-                                        '<option value="删除计划任务">删除计划任务</option>' +
-                                        '<option value="测试用户脚本">测试用户脚本</option>' +
-                                        '<option value="强杀脚本进程">强杀脚本进程</option>' +
-                                        '<option value="查看最近日志">查看最近日志</option>' +
+                                        '<option value="修改任务">修改任务</option>' +
+                                        '<option value="删除任务">删除任务</option>' +
+                                        '<option value="强杀任务">强杀任务</option>' +
+                                        '<option value="查看日志">查看日志</option>' +
                                     '</select>' +
                                 '</div>';
                 return editorHtml;
@@ -130,12 +106,13 @@
 
         $.ajax({
             type: 'POST',
-            url: 'http://localhost:20000/crontab/task/list',
+            url: 'http://localhost:20000/daemon/task/list',
             data: {
                 addr: common.getRequest().addr
             },
             success: function(res) {
-                var taskDatas = res.data.taskList;
+                console.log(res)
+                var taskDatas = res.data;
                 table.render({
                     elem: '#taskTableId',
                     data: taskDatas,
@@ -149,27 +126,24 @@
 
         // 监听top下拉框执行表格重载
         form.on('select(select-menu)', function (data) {
-            window.location.href = '/crontab/task/list?addr=' + data.value;
+            window.location.href = '/daemon/task/list?addr=' + data.value;
         });
 
         /*监听表单里面的select框*/
         form.on('select(selectTable)', function (data) {
             var selectValue = data.value;
             var selectId = $(data.elem).context.getAttribute('id');
-            if (selectValue == '修改计划任务') {
-                window.location.href = '/crontab/task/edit?taskId='+ selectId +'&addr=' + common.getRequest().addr;
+            if (selectValue == '修改任务') {
+                window.location.href = '/daemon/task/edit?taskId='+ selectId +'&addr=' + common.getRequest().addr;
             }
-            if (selectValue == '删除计划任务') {
-                window.location.href = '/crontab/task/stop?taskId='+ selectId +'&addr=' + common.getRequest().addr + '&action=delete';
+            if (selectValue == '删除任务') {
+                window.location.href = '/daemon/task/action?taskId='+ selectId +'&addr=' + common.getRequest().addr + '&action=delete';
             }
-            if (selectValue == '测试用户脚本') {
-                window.location.href = '/crontab/task/quickStart?taskId='+ selectId +'&addr=' + common.getRequest().addr;
+            if (selectValue == '强杀任务') {
+                window.location.href = '/daemon/task/action?taskId='+ selectId +'&addr=' + common.getRequest().addr + '&action=kill';
             }
-            if (selectValue == '强杀脚本进程') {
-                window.location.href = '/crontab/task/stop?taskId='+ selectId +'&addr=' + common.getRequest().addr + '&action=kill';
-            }
-            if (selectValue == '查看最近日志') {
-                window.location.href = '/crontab/task/log?taskId='+ selectId +'&addr=' + common.getRequest().addr;
+            if (selectValue == '查看日志') {
+                window.location.href = '/daemon/task/log?taskId='+ selectId +'&addr=' + common.getRequest().addr;
             }
             
         });
@@ -184,7 +158,7 @@
             for (var i=0; i < checkData.length; i++) {
                 checkIdList.push(checkData[i].Id)
             }
-            location.href = "/crontab/task/start?&taskId="+checkIdList.join(",") + '&addr=' + common.getRequest().addr;
+            location.href = "/daemon/task/start?&taskId="+checkIdList.join(",") + '&addr=' + common.getRequest().addr;
             
         })
         $('#stop-script').on('click', function () {
@@ -197,7 +171,7 @@
             for (var i=0; i < checkData.length; i++) {
                 checkIdList.push(checkData[i].Id)
             }
-            location.href = "/crontab/task/stop?&taskId="+checkIdList.join(",") + '&addr=' + common.getRequest().addr + '&action=stop';
+            location.href = "/daemon/task/stop?&taskId="+checkIdList.join(",") + '&addr=' + common.getRequest().addr + '&action=stop';
         })
 
 
