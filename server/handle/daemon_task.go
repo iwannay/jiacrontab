@@ -1,6 +1,8 @@
 package handle
 
 import (
+	"fmt"
+
 	"github.com/kataras/iris"
 
 	"jiacrontab/libs/rpc"
@@ -52,7 +54,6 @@ func ListDaemonTask(ctx iris.Context) {
 
 func EditDaemonTask(ctx iris.Context) {
 
-	var reply bool
 	addr := ctx.FormValue("addr")
 	taskId := ctx.FormValue("taskId")
 
@@ -80,8 +81,9 @@ func EditDaemonTask(ctx iris.Context) {
 			Command:    command,
 			Args:       args,
 		}
-
+		var reply int
 		err = rpc.Call(addr, "DaemonTask.CreateDaemonTask", remoteArgs, &reply)
+		fmt.Println(reply)
 		if err != nil {
 			ctx.ViewData("formValues", ctx.FormValues())
 			ctx.ViewData("errorMsg", err)
