@@ -22,8 +22,6 @@ func ListDaemonTask(ctx iris.Context) {
 
 	if ctx.Request().Method == http.MethodPost {
 		if addr == "" {
-			ctx.ViewData("error", "client地址不能为空")
-
 			ctx.JSON(map[string]interface{}{
 				"code": -1,
 				"msg":  "addr地址不能为空",
@@ -53,7 +51,7 @@ func ListDaemonTask(ctx iris.Context) {
 
 			ctx.JSON(map[string]interface{}{
 				"code": -1,
-				"msg":  err,
+				"msg":  err.Error(),
 			})
 			return
 
