@@ -80,6 +80,7 @@ func ListDaemonTask(ctx iris.Context) {
 	}
 
 	ctx.ViewData("addrs", sortedClientList)
+	ctx.ViewData("addr", addr)
 	ctx.View("daemon/list.html")
 }
 
