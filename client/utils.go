@@ -429,7 +429,7 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 		return nil, err
 	}
 
-	logPath := filepath.Join(logpath, strconv.Itoa(time.Now().Year()), time.Now().Month().String())
+	logPath := filepath.Join(logpath, time.Now().Format("2006/01"))
 	f, err := libs.TryOpen(filepath.Join(logPath, logname), os.O_APPEND|os.O_CREATE|os.O_RDWR)
 
 	if err != nil {
@@ -529,7 +529,7 @@ func pipeExecScript(ctx context.Context, cmdList [][]string, logname string, log
 		cmdEntryList...,
 	)
 
-	logPath = filepath.Join(logpath, strconv.Itoa(time.Now().Year()), time.Now().Month().String())
+	logPath = filepath.Join(logpath, time.Now().Format("2006/01"))
 	f, err = libs.TryOpen(filepath.Join(logPath, logname), os.O_APPEND|os.O_CREATE|os.O_RDWR)
 	if err != nil {
 		return f, err
@@ -578,7 +578,7 @@ func pipeExecScript(ctx context.Context, cmdList [][]string, logname string, log
 }
 
 func writeLog(logpath string, logname string, content *[]byte) {
-	logPath := filepath.Join(logpath, strconv.Itoa(time.Now().Year()), time.Now().Month().String())
+	logPath := filepath.Join(logpath, time.Now().Format("2006/01"))
 	f, err := libs.TryOpen(filepath.Join(logPath, logname), os.O_APPEND|os.O_CREATE|os.O_RDWR)
 	if err != nil {
 		log.Printf("write log %v", err)

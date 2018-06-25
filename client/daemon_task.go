@@ -1,8 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"jiacrontab/libs/proto"
 	"jiacrontab/model"
+	"os"
+	"path/filepath"
+	"time"
 )
 
 type DaemonTask struct {
@@ -48,4 +52,33 @@ func (t *DaemonTask) GetDaemonTask(args int, reply *model.DaemonTask) error {
 		return ret.Error
 	}
 	return nil
+}
+
+func (t *DaemonTask) Log(args int, ret *[]byte) error {
+	fp := filepath.Join(globalConfig.logPath, "daemon_task", time.Now().Format("2006/01"), fmt.Sprint(args, ".log"))
+	f, err := os.Open(fp)
+	defer f.Close()
+	if err != nil {
+		return err
+	}
+	fStat, err := f.Stat()
+	if err != nil {
+		return err
+	}
+	limit := int64(1024 * 1024)
+	var offset int64
+	var buffer []byte
+	if fStat.Size() > limit {
+		buffer = make([]byte, limit)
+		offset = fStat.Size() - limit
+	} else {
+		offset = 0
+		buffer = make([]byte, fStat.Size())
+	}
+	f.Seek(offset, os.SEEK_CUR)
+
+	_, err = f.Read(buffer)
+	*ret = buffer
+
+	return err
 }

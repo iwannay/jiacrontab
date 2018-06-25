@@ -5,28 +5,85 @@
         <!-- 内容主体区域 -->
         <div class="layui-breadcrumb">
             <a href="/">主页</a>
-            <a href="/daemon/task/list?addr={{.addr}}">{{.addr}}</a>
+            <a href="/crontab/task/list?addr={{.addr}}">{{.addr}}</a>
             <a>
                 <cite>日志</cite>
             </a>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-inline">
+                <input type="text" name="search" placeholder="搜索日志" class="layui-input search-txt">
+            </div>
+            <div class="layui-input-inline" style="width: 120px;">
+                <input type="text" id="start-date" class="layui-input"placeholder="开始日期" >
+            </div>
+            <div class="layui-input-inline" style="width: 120px;">
+                <input type="text" id="end-date" class="layui-input"placeholder="结束日期" >
+            </div>
+            <div class="layui-btn" id="search">搜索</div>
         </div>
         <table class="layui-table" lay-size="sm">
             <colgroup>
                 <col>
             </colgroup>
             <tbody>
-                <tr><td>这是很多很多的日志列表</td></tr>
+                {{range $k,$v := .logList}}
+                <tr><td>{{$v}}</td></tr>
+                {{end}}
             </tbody>
         </table>
+
     </div>
     {{render "public/footer.html"}}
 </div>
 <script src="/static/lib/layui/layui.js"></script>
 <script>
-    layui.use(['element'], function () {})
-</script>
+    layui.use(['element', 'jquery', 'layer', 'laydate'], function () {
+        var layer = layui.layer;
+        var $ = layui.jquery;
+        var laydate = layui.laydate;
+        // 监听搜索事件
+        $('#search').on('click', function() {
+            var searchText = $('.search-txt').val();
+            if ($.trim(searchText) == '') {
+                return layer.msg('请输入搜索内容');
+            } else {
+                window.location.href = 'search?tpl=' + searchText;
+            }
+        })
 
+        laydate.render({ 
+            elem: '#start-date'
+        });
+        laydate.render({ 
+            elem: '#end-date'
+        });
 
+        $('#flexible-icon').on('click', function () {
+            if ($(this).hasClass('layui-icon-spread-left')) {
+                $(this).addClass('layui-icon-shrink-right').removeClass('layui-icon-spread-left');
+                $('.layui-layout-body').removeClass('min-layout');
+            } else {
+                $(this).addClass('layui-icon-spread-left').removeClass('layui-icon-shrink-right');
+                $('.layui-layout-body').addClass('min-layout');
+            }
+        })
+
+        if (window.innerWidth < 990) {
+            $('.layui-layout-body').addClass('min-layout');
+            $('#flexible-icon').addClass('layui-icon-spread-left').removeClass('layui-icon-shrink-right');
+        }
+        $(window).on('resize', function () {
+            if (window.innerWidth < 990) {
+                $('.layui-layout-body').addClass('min-layout');
+                $('#flexible-icon').addClass('layui-icon-spread-left').removeClass(
+                    'layui-icon-shrink-right');
+            } else {
+                $('.layui-layout-body').removeClass('min-layout');
+                $('#flexible-icon').addClass('layui-icon-shrink-right').removeClass(
+                    'layui-icon-spread-left');
+            }
+        })
         
-
-    
+    })
+</script>

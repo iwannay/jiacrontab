@@ -16,9 +16,8 @@ const (
 )
 
 type daemonTask struct {
-	task   *model.DaemonTask
-	daemon *daemon
-
+	task       *model.DaemonTask
+	daemon     *daemon
 	action     int
 	processNum int
 }
@@ -55,7 +54,6 @@ func (d *daemonTask) do(ctx context.Context) {
 		}
 
 		if stop {
-			t.Stop()
 			break
 		}
 
@@ -70,7 +68,7 @@ func (d *daemonTask) do(ctx context.Context) {
 		delete(d.daemon.taskMap, d.task.ID)
 		d.daemon.lock.Unlock()
 
-		model.DB().Table("daemon_tasks").Delete(d.task)
+		model.DB().Delete(d.task, "id=?", d.task.ID)
 	case stopDaemonTask:
 
 		d.daemon.lock.Lock()
@@ -102,6 +100,7 @@ func (d *daemon) add(t *daemonTask) {
 	if t != nil {
 		t.daemon = d
 		d.taskChannel <- t
+		fmt.Println(*t)
 	}
 }
 
@@ -129,6 +128,7 @@ func (d *daemon) run() {
 					d.lock.Unlock()
 					cancel()
 				} else {
+					model.DB().Delete(v.task, "id=?", v.task.ID)
 					d.lock.Unlock()
 				}
 			case stopDaemonTask:
@@ -137,6 +137,7 @@ func (d *daemon) run() {
 					d.lock.Unlock()
 					cancel()
 				} else {
+					model.DB().Table("daemon_tasks").Where("id = ?", v.task.ID).Update("status", stopDaemonTask)
 					d.lock.Unlock()
 				}
 			}

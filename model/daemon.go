@@ -1,6 +1,8 @@
 package model
 
 import (
+	"time"
+
 	"github.com/jinzhu/gorm"
 )
 
@@ -10,6 +12,7 @@ type DaemonTask struct {
 	MailNofity bool
 	Status     int
 	MailTo     string
+	StartTime  time.Time
 	Command    string
 	Args       string
 }

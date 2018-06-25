@@ -3,6 +3,8 @@ package handle
 import (
 	"fmt"
 	"sort"
+	"strings"
+	"time"
 
 	"github.com/kataras/iris"
 
@@ -111,6 +113,7 @@ func EditDaemonTask(ctx iris.Context) {
 			MailNofity: mailNotify,
 			MailTo:     mailTo,
 			Command:    command,
+			StartTime:  time.Now(),
 			Args:       args,
 		}
 		var reply int
@@ -170,7 +173,7 @@ func ActionDaemonTask(ctx iris.Context) {
 	case "stop":
 		op = proto.StopDaemonTask
 	case "delete":
-		op = proto.StopDaemonTask
+		op = proto.DeleteDaemonTask
 	default:
 		ctx.View("public/error.html", map[string]interface{}{
 			"error": "invalid action",
@@ -190,4 +193,34 @@ func ActionDaemonTask(ctx iris.Context) {
 	}
 
 	ctx.Redirect("/daemon/task/list?addr=" + addr)
+}
+
+func RecentDaemonLog(ctx iris.Context) {
+	var r = ctx.Request()
+
+	id, err := strconv.Atoi(r.FormValue("taskId"))
+	if err != nil {
+
+		ctx.ViewData("error", "参数错误")
+		ctx.View("public/error.html")
+		return
+
+	}
+	addr := r.FormValue("addr")
+
+	var content []byte
+
+	if err := rpc.Call(addr, "DaemonTask.Log", id, &content); err != nil {
+
+		ctx.ViewData("error", err)
+		ctx.View("public/error.html")
+		return
+
+	}
+	logList := strings.Split(string(content), "\n")
+
+	ctx.ViewData("logList", logList)
+	ctx.ViewData("addr", addr)
+	ctx.View("daemon/log.html")
+
 }

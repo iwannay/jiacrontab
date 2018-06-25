@@ -9,6 +9,7 @@ import (
 	"jiacrontab/libs"
 	"jiacrontab/libs/proto"
 	"log"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -28,6 +29,7 @@ type taskEntity struct {
 	name       string
 	command    string
 	args       string
+	logPath    string
 	taskArgs   *proto.TaskArgs
 	state      int
 	timeout    int64
@@ -84,6 +86,7 @@ func newTaskEntity(t *proto.TaskArgs) *taskEntity {
 		command:  t.Command,
 		sync:     t.Sync,
 		taskArgs: t,
+		logPath:  filepath.Join(globalConfig.logPath, "crontab_task"),
 		ready:    make(chan struct{}),
 		depends:  depends,
 	}
@@ -106,7 +109,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 		cancel()
 		errMsg := fmt.Sprintf("[%s %s %s]>>  Execution of dependency script failed\n", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, t.name)
 		t.logContent = append(t.logContent, []byte(errMsg)...)
-		writeLog(globalConfig.logPath, fmt.Sprintf("%s.log", t.name), &t.logContent)
+		writeLog(t.logPath, fmt.Sprintf("%s.log", t.name), &t.logContent)
 		t.taskArgs.LastExitStatus = exitDependError
 		isExceptError = true
 		if t.taskArgs.UnexpectedExitMail {
@@ -154,7 +157,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 			cmdList = append(cmdList, t.taskArgs.PipeCommands...)
 		}
 
-		err := wrapExecScript(ctx, fmt.Sprintf("%s.log", t.name), cmdList, globalConfig.logPath, &t.logContent)
+		err := wrapExecScript(ctx, fmt.Sprintf("%s.log", t.name), cmdList, t.logPath, &t.logContent)
 		flag = false
 
 		if err != nil {

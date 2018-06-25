@@ -180,7 +180,7 @@ func (t *CrontabTask) QuickStart(args string, ret *[]byte) error {
 }
 
 func (t *CrontabTask) Log(args string, ret *[]byte) error {
-	staticDir := filepath.Join(globalConfig.logPath, strconv.Itoa(time.Now().Year()), time.Now().Month().String())
+	staticDir := filepath.Join(globalConfig.logPath, "crontab", time.Now().Format("2006/01"))
 	var filename string
 
 	if v, ok := globalStore.SearchTaskList(args); ok {
