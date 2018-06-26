@@ -81,8 +81,14 @@
                 }
                 return staticHtml;
             }},
+            {field:'ProcessNum', width:140, title: '进程', sort: true, templet: function(d) {
+                return d.ProcessNum;
+            }},
             {field:'CreatedAt', width:170, title: '创建日期', sort: true, templet: function(d) {
                 return common.UTCToTime(d.CreatedAt);
+            }},
+            {field:'StartAt', width:170, title: '执行日期', sort: true, templet: function(d) {
+                return common.UTCToTime(d.StartAt);
             }},
             {field:'handle', width:140, fixed: 'right', title: '编辑', templet: function(d){
                 var isStartTask = '';
@@ -94,10 +100,10 @@
                 var  editorHtml = isStartTask + '<div class="layui-input-inline" style="width: 70px;" lay-event="operate">' +
                                     '<select lay-filter="selectTable" id="'+ d.ID +'">' +
                                         '<option value="">操作</option>' +
-                                        '<option value="修改任务">修改任务</option>' +
-                                        '<option value="删除任务">删除任务</option>' +
-                                        '<option value="强杀任务">强杀任务</option>' +
-                                        '<option value="查看日志">查看日志</option>' +
+                                        '<option value="修改常驻任务">修改常驻任务</option>' +
+                                        '<option value="删除常驻任务">删除常驻任务</option>' +
+                                        '<option value="强杀常驻任务">强杀常驻任务</option>' +
+                                        '<option value="查看常驻日志">查看常驻日志</option>' +
                                     '</select>' +
                                 '</div>';
                 return editorHtml;
@@ -133,16 +139,16 @@
         form.on('select(selectTable)', function (data) {
             var selectValue = data.value;
             var selectId = $(data.elem).context.getAttribute('id');
-            if (selectValue == '修改任务') {
+            if (selectValue == '修改常驻任务') {
                 window.location.href = '/daemon/task/edit?taskId='+ selectId +'&addr=' + common.getRequest().addr;
             }
-            if (selectValue == '删除任务') {
+            if (selectValue == '删除常驻任务') {
                 window.location.href = '/daemon/task/action?taskId='+ selectId +'&addr=' + common.getRequest().addr + '&action=delete';
             }
-            if (selectValue == '强杀任务') {
+            if (selectValue == '强杀常驻任务') {
                 window.location.href = '/daemon/task/action?taskId='+ selectId +'&addr=' + common.getRequest().addr + '&action=kill';
             }
-            if (selectValue == '查看日志') {
+            if (selectValue == '查看常驻日志') {
                 window.location.href = '/daemon/task/log?taskId='+ selectId +'&addr=' + common.getRequest().addr;
             }
             

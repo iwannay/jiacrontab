@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"jiacrontab/model"
+	"log"
 	"path/filepath"
 	"sync"
 	"time"
@@ -19,16 +20,20 @@ type daemonTask struct {
 	task       *model.DaemonTask
 	daemon     *daemon
 	action     int
+	cancel     context.CancelFunc
 	processNum int
 }
 
 func (d *daemonTask) do(ctx context.Context) {
 
 	d.processNum = 1
-	t := time.NewTimer(1 * time.Second)
+	t := time.NewTicker(1 * time.Second)
 	d.daemon.wait.Add(1)
 	defer d.daemon.wait.Done()
-	model.DB().Table("daemon_tasks").Table("daemon_tasks").Where("id = ?", d.task.ID).Update("status", startDaemonTask)
+	model.DB().Table("daemon_tasks").Table("daemon_tasks").Where("id = ?", d.task.ID).Update(map[string]interface{}{
+		"status":      startDaemonTask,
+		"start_at":    time.Now(),
+		"process_num": d.processNum})
 
 	for {
 		var cmdList [][]string
@@ -37,7 +42,7 @@ func (d *daemonTask) do(ctx context.Context) {
 		cmdList = append(cmdList, cmd)
 		var logContent []byte
 		logPath := filepath.Join(globalConfig.logPath, "daemon_task")
-
+		log.Println("daemon exec task_name:", d.task.Name, "task_id", d.task.ID)
 		err := wrapExecScript(ctx, fmt.Sprintf("%d.log", d.task.ID), cmdList, logPath, &logContent)
 		if err != nil {
 			if d.task.MailNofity {
@@ -60,7 +65,6 @@ func (d *daemonTask) do(ctx context.Context) {
 	}
 	t.Stop()
 
-	d.processNum = 0
 	switch d.action {
 	case deleteDaemonTask:
 
@@ -74,16 +78,20 @@ func (d *daemonTask) do(ctx context.Context) {
 		d.daemon.lock.Lock()
 		delete(d.daemon.taskMap, d.task.ID)
 		d.daemon.lock.Unlock()
-
-		model.DB().Table("daemon_tasks").Where("id = ?", d.task.ID).Update("status", stopDaemonTask)
-
 	}
+
+	d.processNum = 0
+	model.DB().Table("daemon_tasks").Where("id = ?", d.task.ID).Update(map[string]interface{}{
+		"status":      stopDaemonTask,
+		"process_num": d.processNum})
+
+	fmt.Println("end", d.task.Name)
 
 }
 
 type daemon struct {
 	taskChannel chan *daemonTask
-	taskMap     map[uint]context.CancelFunc
+	taskMap     map[uint]*daemonTask
 	lock        sync.Mutex
 	wait        sync.WaitGroup
 }
@@ -91,7 +99,7 @@ type daemon struct {
 func newDaemon(taskChannelLength int) *daemon {
 
 	return &daemon{
-		taskMap:     make(map[uint]context.CancelFunc),
+		taskMap:     make(map[uint]*daemonTask),
 		taskChannel: make(chan *daemonTask, taskChannelLength),
 	}
 }
@@ -100,45 +108,70 @@ func (d *daemon) add(t *daemonTask) {
 	if t != nil {
 		t.daemon = d
 		d.taskChannel <- t
-		fmt.Println(*t)
 	}
 }
 
 func (d *daemon) run() {
+
+	// init daemon task
+	var taskList []model.DaemonTask
+	err := model.DB().Find(&taskList).Error
+	if err != nil {
+		log.Println("init daemon task error:", err)
+	}
+	for _, v := range taskList {
+		log.Println("init daemon task_name:", v.Name, "task_id:", v.ID, "status:", v.Status)
+		task := v
+		d.add(&daemonTask{
+			task:   &task,
+			action: v.Status,
+		})
+	}
+
 	go func() {
 		var ctx context.Context
-		var cancel context.CancelFunc
+
 		for v := range d.taskChannel {
+
 			switch v.action {
 			case startDaemonTask:
 				d.lock.Lock()
-				if d.taskMap[v.task.ID] == nil {
-					ctx, cancel = context.WithCancel(context.Background())
-					d.taskMap[v.task.ID] = cancel
+				if t := d.taskMap[v.task.ID]; t == nil {
+					d.taskMap[v.task.ID] = v
 					d.lock.Unlock()
-
+					ctx, v.cancel = context.WithCancel(context.Background())
 					go v.do(ctx)
-
+					log.Println("start", v.task.Name)
 				} else {
 					d.lock.Unlock()
+					t.action = v.action
+					if t.processNum == 0 {
+
+						ctx, v.cancel = context.WithCancel(context.Background())
+						go v.do(ctx)
+					}
+
 				}
 			case deleteDaemonTask:
 				d.lock.Lock()
-				if cancel = d.taskMap[v.task.ID]; cancel != nil {
+				if t := d.taskMap[v.task.ID]; t != nil {
 					d.lock.Unlock()
-					cancel()
+					t.action = v.action
+					t.cancel()
 				} else {
 					model.DB().Delete(v.task, "id=?", v.task.ID)
 					d.lock.Unlock()
 				}
 			case stopDaemonTask:
 				d.lock.Lock()
-				if cancel = d.taskMap[v.task.ID]; cancel != nil {
+				if t := d.taskMap[v.task.ID]; t != nil {
 					d.lock.Unlock()
-					cancel()
+					t.action = v.action
+					t.cancel()
 				} else {
-					model.DB().Table("daemon_tasks").Where("id = ?", v.task.ID).Update("status", stopDaemonTask)
 					d.lock.Unlock()
+					model.DB().Table("daemon_tasks").Where("id = ?", v.task.ID).Update("status", stopDaemonTask)
+
 				}
 			}
 

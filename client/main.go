@@ -52,6 +52,7 @@ func main() {
 
 	model.CreateDB("sqlite3", "data/jiacrontab_client.db")
 	model.DB().CreateTable(&model.DaemonTask{})
+	model.DB().AutoMigrate(&model.DaemonTask{})
 
 	globalConfig = newConfig()
 	if globalConfig.debug == true {
@@ -88,7 +89,7 @@ func main() {
 
 		globalDaemon.lock.Lock()
 		for _, v := range globalDaemon.taskMap {
-			v()
+			v.cancel()
 		}
 		globalDaemon.lock.Unlock()
 		globalDaemon.waitDone()

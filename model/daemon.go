@@ -12,7 +12,8 @@ type DaemonTask struct {
 	MailNofity bool
 	Status     int
 	MailTo     string
-	StartTime  time.Time
+	ProcessNum int
+	StartAt    time.Time
 	Command    string
 	Args       string
 }

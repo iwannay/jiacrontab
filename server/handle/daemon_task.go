@@ -1,10 +1,8 @@
 package handle
 
 import (
-	"fmt"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/kataras/iris"
 
@@ -113,12 +111,11 @@ func EditDaemonTask(ctx iris.Context) {
 			MailNofity: mailNotify,
 			MailTo:     mailTo,
 			Command:    command,
-			StartTime:  time.Now(),
 			Args:       args,
 		}
 		var reply int
 		err = rpc.Call(addr, "DaemonTask.CreateDaemonTask", remoteArgs, &reply)
-		fmt.Println(reply)
+
 		if err != nil {
 			ctx.ViewData("formValues", ctx.FormValues())
 			ctx.ViewData("errorMsg", err)
