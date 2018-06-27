@@ -59,3 +59,6 @@ $ nohup ./client &> client.log &
 
 ## 演示地址
 [demo](http://jiacrontab.wzjg520.com) 账号：admin 密码：123456
+
+## qq群成立啦
+813377930 欢迎反馈问题
