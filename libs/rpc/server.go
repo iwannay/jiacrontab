@@ -70,7 +70,7 @@ func (c *gobServerCodec) Close() error {
 	return c.rwc.Close()
 }
 
-// Start 启动rpc server
+// listen Start rpc server
 func listen(addr string, srcvr ...interface{}) error {
 	var err error
 	for _, v := range srcvr {
@@ -91,6 +91,11 @@ func listen(addr string, srcvr ...interface{}) error {
 			continue
 		}
 		go func(conn net.Conn) {
+			defer func() {
+				if err := recover(); err != nil {
+					log.Println("Error: Rpc Call Recover", err)
+				}
+			}()
 			buf := bufio.NewWriter(conn)
 			srv := &gobServerCodec{
 				rwc:    conn,
@@ -98,12 +103,12 @@ func listen(addr string, srcvr ...interface{}) error {
 				enc:    gob.NewEncoder(buf),
 				encBuf: buf,
 			}
-
+			defer srv.Close()
 			err = rpc.ServeRequest(srv)
+
 			if err != nil {
-				log.Print("Error: server rpc request", err.Error())
+				log.Print("Error: rpc server", err.Error())
 			}
-			srv.Close()
 
 		}(conn)
 	}
