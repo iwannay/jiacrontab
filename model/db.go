@@ -1,10 +1,12 @@
 package model
 
 import (
+	"errors"
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"os"
 	"path/filepath"
+
+	"github.com/jinzhu/gorm"
 )
 
 var db *gorm.DB
@@ -30,7 +32,7 @@ func createSqlite3(dialect string, args ...interface{}) {
 		panic(fmt.Errorf("sqlite3:%s", err))
 	}
 
-	db, err = gorm.Open("sqlite3", "data/jiacrontab_client.db")
+	db, err = gorm.Open(dialect, args...)
 	if err != nil {
 		panic(err)
 	}
@@ -42,4 +44,21 @@ func DB() *gorm.DB {
 		panic("you must call CreateDb first")
 	}
 	return db
+}
+
+func Transactions(fn func(tx *gorm.DB) error) error {
+	if fn == nil {
+		return errors.New("fn is nil")
+	}
+	tx := DB().Begin()
+	defer func() {
+		if err := recover(); err != nil {
+			DB().Rollback()
+		}
+	}()
+
+	if fn(tx) != nil {
+		tx.Rollback()
+	}
+	return tx.Commit().Error
 }

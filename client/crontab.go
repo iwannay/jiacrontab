@@ -494,3 +494,11 @@ func (t *taskEntity) waitDependsDone(ctx context.Context) bool {
 		}
 	}
 }
+
+// TDDO select db
+func (c *crontab) count() int {
+	c.lock.Lock()
+	total := len(c.handleMap)
+	c.lock.Unlock()
+	return total
+}

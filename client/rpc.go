@@ -4,6 +4,7 @@ import (
 	"jiacrontab/client/store"
 	"jiacrontab/libs/proto"
 	"jiacrontab/libs/rpc"
+	"jiacrontab/model"
 	"log"
 	"time"
 )
@@ -14,12 +15,13 @@ func RpcHeartBeat() {
 	var mail proto.MailArgs
 
 	log.Println("heart beat", globalConfig.rpcSrvAddr, "start")
-	err := rpc.Call(globalConfig.rpcSrvAddr, "Logic.Register", proto.ClientConf{
-		Addr:  globalConfig.addr,
-		State: 1,
-		Mail:  globalConfig.mailTo,
+	err := rpc.Call(globalConfig.rpcSrvAddr, "Logic.Register", model.Client{
+		Addr:           globalConfig.addr,
+		DaemonTaskNum:  globalDaemon.count(),
+		CrontabTaskNum: globalCrontab.count(),
+		State:          1,
+		Mail:           globalConfig.mailTo,
 	}, &mail)
-	log.Println("heart beat", globalConfig.rpcSrvAddr, "end")
 
 	if err != nil {
 		log.Println(" heart beat error:", err, "server addr:", globalConfig.rpcSrvAddr)

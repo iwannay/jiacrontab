@@ -1,19 +1,16 @@
 package handle
 
 import (
-	"jiacrontab/libs"
 	"jiacrontab/libs/proto"
+	"jiacrontab/model"
 	"jiacrontab/server/conf"
-	"jiacrontab/server/model"
 	"log"
 )
 
 type Logic struct{}
 
-func (l *Logic) Register(args proto.ClientConf, reply *proto.MailArgs) error {
-	defer libs.MRecover()
+func (l *Logic) Register(args model.Client, reply *proto.MailArgs) error {
 
-	modelInstance := model.NewModel()
 	*reply = proto.MailArgs{
 		Host: conf.ConfigArgs.MailHost,
 		User: conf.ConfigArgs.MailUser,
@@ -21,20 +18,19 @@ func (l *Logic) Register(args proto.ClientConf, reply *proto.MailArgs) error {
 		Port: conf.ConfigArgs.MailPort,
 	}
 
-	modelInstance.InnerStore().Wrap(func(s *model.Store) {
-		s.RpcClientList[args.Addr] = args
-	}).Sync()
+	if model.DB().Model(&model.Client{}).Where("addr=?", args.Addr).Update(&args).Error != nil {
+		model.DB().Create(&args)
+	}
 
 	log.Println("register client", args)
 	return nil
 }
 
 func (l *Logic) Depends(args []proto.MScript, reply *bool) error {
-	modelInstance := model.NewModel()
 	log.Printf("Callee Logic.Depend taskId %s", args[0].TaskId)
 	*reply = true
 	for _, v := range args {
-		if err := modelInstance.RpcCall(v.Dest, "Task.ExecDepend", v, &reply); err != nil {
+		if err := rpcCall(v.Dest, "Task.ExecDepend", v, &reply); err != nil {
 			*reply = false
 			return err
 		}
@@ -44,10 +40,9 @@ func (l *Logic) Depends(args []proto.MScript, reply *bool) error {
 }
 
 func (l *Logic) DependDone(args proto.MScript, reply *bool) error {
-	modelInstance := model.NewModel()
 	log.Printf("Callee Logic.DependDone task %s", args.Name)
 	*reply = true
-	if err := modelInstance.RpcCall(args.Dest, "Task.ResolvedDepends", args, &reply); err != nil {
+	if err := rpcCall(args.Dest, "Task.ResolvedDepends", args, &reply); err != nil {
 		*reply = false
 		return err
 	}

@@ -179,6 +179,12 @@ func (d *daemon) run() {
 	}()
 }
 
+func (d *daemon) count() int {
+	var count int
+	model.DB().Model(&model.DaemonTask{}).Count(&count)
+	return count
+}
+
 func (d *daemon) waitDone() {
 	d.wait.Wait()
 }

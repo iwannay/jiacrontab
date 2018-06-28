@@ -3,6 +3,7 @@ package handle
 import (
 	"crypto/md5"
 	"encoding/json"
+	db "jiacrontab/model"
 
 	"fmt"
 	"jiacrontab/libs"
@@ -133,11 +134,7 @@ func ListTask(ctx iris.Context) {
 
 // Index 服务器列表页面
 func Index(ctx iris.Context) {
-	var clientList map[string]proto.ClientConf
-	var m = model.NewModel()
-
 	sInfo := libs.SystemInfo(conf.ConfigArgs.ServerStartTime)
-
 	sInfoL, sInfoR := make(map[string]interface{}), make(map[string]interface{})
 
 	i := 0
@@ -150,16 +147,8 @@ func Index(ctx iris.Context) {
 		i++
 	}
 
-	clientList, _ = m.GetRPCClientList()
-	sortedClientList := make([]proto.ClientConf, 0)
-
-	for _, v := range clientList {
-		sortedClientList = append(sortedClientList, v)
-	}
-
-	sort.Slice(sortedClientList, func(i, j int) bool {
-		return (sortedClientList[i].Addr > sortedClientList[j].Addr) && (sortedClientList[i].State > sortedClientList[j].State)
-	})
+	var sortedClientList []db.Client
+	db.DB().Find(&sortedClientList)
 
 	ctx.ViewData("clientList", sortedClientList)
 
@@ -298,7 +287,7 @@ func EditTask(ctx iris.Context) {
 		var clientList map[string]proto.ClientConf
 
 		if id != "" {
-			err := rpc.Call(addr, "CrontabTask.Get", id, &t)
+			err := rpcCall(addr, "CrontabTask.Get", id, &t)
 			if err != nil {
 				ctx.Redirect("/crontab/task/list?addr="+addr, http.StatusFound)
 				return
@@ -568,16 +557,16 @@ func ViewConfig(ctx iris.Context) {
 	ctx.View("viewConfig.html")
 }
 
-func Model(ctx iris.Context) {
-	val := ctx.FormValue("type")
-	url := ctx.FormValue("url")
-	ctx.SetCookie(&http.Cookie{
-		Name:     "model",
-		Path:     "/",
-		Value:    val,
-		HttpOnly: true,
-	})
+// func Model(ctx iris.Context) {
+// 	val := ctx.FormValue("type")
+// 	url := ctx.FormValue("url")
+// 	ctx.SetCookie(&http.Cookie{
+// 		Name:     "model",
+// 		Path:     "/",
+// 		Value:    val,
+// 		HttpOnly: true,
+// 	})
 
-	ctx.Redirect(url, http.StatusFound)
+// 	ctx.Redirect(url, http.StatusFound)
 
-}
+// }

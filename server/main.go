@@ -2,6 +2,7 @@ package main
 
 import (
 	"jiacrontab/libs/rpc"
+	db "jiacrontab/model"
 	"jiacrontab/server/conf"
 	"jiacrontab/server/handle"
 	"jiacrontab/server/model"
@@ -11,6 +12,7 @@ import (
 
 	"jiacrontab/libs"
 
+	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/middleware/logger"
 )
@@ -23,6 +25,10 @@ const (
 var config *conf.Config
 
 func main() {
+
+	db.CreateDB("sqlite3", "data/jiacrontab_server.db")
+	db.DB().CreateTable(&db.Client{})
+	db.DB().AutoMigrate(&db.Client{})
 
 	model.InitStore(conf.ConfigArgs.DataFile)
 

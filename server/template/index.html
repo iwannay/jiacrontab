@@ -104,8 +104,8 @@
                                                 断开 <a href="/deleteClient?addr={{$client.Addr}}" onclick="return confirm('确定要删除吗？')" class="layui-btn layui-btn-xs layui-btn-danger">删除</a>
                                                 {{end}}
                                             </td>
-                                            <td>12</td>
-                                            <td>13</td>
+                                            <td>{{$client.CrontabTaskNum}}</td>
+                                            <td>{{$client.DaemonTaskNum}}</td>
                                             <td>
                                                 <a href="/crontab/task/list?addr={{$client.Addr}}" class="layui-btn layui-btn-xs jia-btn-normal">查看</a>
                                             </td>
