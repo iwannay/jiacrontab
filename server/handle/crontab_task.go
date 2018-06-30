@@ -520,12 +520,6 @@ func Readme(ctx iris.Context) {
 	ctx.View("readme.html")
 }
 
-func ReloadConfig(ctx iris.Context) {
-	conf.ConfigArgs.Reload()
-	ctx.Redirect("/", http.StatusFound)
-
-}
-
 func DeleteClient(ctx iris.Context) {
 	m := model.NewModel()
 	r := ctx.Request()
@@ -541,20 +535,6 @@ func DeleteClient(ctx iris.Context) {
 	}).Sync()
 	ctx.Redirect("/", http.StatusFound)
 
-}
-
-func ViewConfig(ctx iris.Context) {
-
-	c := conf.ConfigArgs.Category()
-	r := ctx.Request()
-
-	if r.Method == http.MethodPost {
-		mailTo := strings.TrimSpace(r.FormValue("mailTo"))
-		libs.SendMail("测试邮件", "测试邮件请勿回复", conf.ConfigArgs.MailHost, conf.ConfigArgs.MailUser, conf.ConfigArgs.MailPass, conf.ConfigArgs.MailPort, mailTo)
-	}
-
-	ctx.ViewData("configs", c)
-	ctx.View("viewConfig.html")
 }
 
 // func Model(ctx iris.Context) {

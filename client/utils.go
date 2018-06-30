@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"jiacrontab/libs"
+	"jiacrontab/libs/mailer"
 	"jiacrontab/libs/proto"
 	"log"
 	"net/http"
@@ -654,6 +655,11 @@ func sendMail(mailTo, title, content string) {
 	port := globalStore.Mail.Port
 
 	go libs.SendMail(title, content, host, from, pass, port, mailTo)
+}
+
+func sendJobErrorMail(to []string, subject, content string) {
+	msg := mailer.NewMessage(to, subject, content)
+	mailer.Send(msg)
 }
 
 func pushDepends(dpds []*dependScript) bool {

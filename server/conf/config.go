@@ -14,7 +14,10 @@ import (
 const configFile = "server.ini"
 const versionFile = "template/.VERSION"
 
-var ConfigArgs *Config
+var (
+	ConfigArgs *Config
+	cf         *ini.File
+)
 
 type Config struct {
 	Debug             bool
@@ -59,7 +62,7 @@ func InitConfig() {
 }
 
 func (c *Config) Reload() {
-	cf := loadConfig()
+	cf = loadConfig()
 	base := cf.Section("base")
 	srvc := cf.Section("server")
 	jwt := cf.Section("jwt")
@@ -136,4 +139,5 @@ func loadConfig() *ini.File {
 
 func init() {
 	ConfigArgs = NewConfig()
+	newMailService()
 }

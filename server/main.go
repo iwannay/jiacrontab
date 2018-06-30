@@ -1,6 +1,7 @@
 package main
 
 import (
+	"jiacrontab/libs/mailer"
 	"jiacrontab/libs/rpc"
 	db "jiacrontab/model"
 	"jiacrontab/server/conf"
@@ -29,6 +30,16 @@ func main() {
 	db.CreateDB("sqlite3", "data/jiacrontab_server.db")
 	db.DB().CreateTable(&db.Client{})
 	db.DB().AutoMigrate(&db.Client{})
+
+	// mail
+	mailer.InitMailer(&mailer.Mailer{
+		QueueLength:   100,
+		SubjectPrefix: DefaultTitle,
+		From:          conf.ConfigArgs.MailUser,
+		Host:          conf.ConfigArgs.MailHost + ":" + conf.ConfigArgs.MailPort,
+		User:          conf.ConfigArgs.MailUser,
+		Passwd:        conf.ConfigArgs.MailPass,
+	})
 
 	model.InitStore(conf.ConfigArgs.DataFile)
 
