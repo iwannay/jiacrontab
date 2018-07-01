@@ -18,12 +18,13 @@ func (l *Logic) Register(args model.Client, reply *proto.MailArgs) error {
 		Port: conf.ConfigArgs.MailPort,
 	}
 
-	if model.DB().Model(&model.Client{}).Where("addr=?", args.Addr).Update(&args).Error != nil {
-		model.DB().Create(&args)
+	ret := model.DB().Model(&model.Client{}).Where("addr=?", args.Addr).Update(&args)
+	if ret.Error != nil {
+		ret = model.DB().Create(&args)
 	}
 
 	log.Println("register client", args)
-	return nil
+	return ret.Error
 }
 
 func (l *Logic) Depends(args model.DependsTasks, reply *bool) error {
