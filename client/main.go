@@ -79,15 +79,13 @@ func main() {
 			for _, item := range v.taskPool {
 				item.cancel()
 			}
-			log.Printf("kill %s", k)
+			log.Printf("kill %d", k)
 		}
 		globalCrontab.lock.Unlock()
-		globalStore.Update(func(s *store.Store) {
-			for _, v := range s.TaskList {
-				v.NumberProcess = 0
-			}
+		model.DB().Model(&model.CrontabTask{}).Update(map[string]interface{}{
+			"number_process": 0,
+			"timer_counter":  0,
 		})
-
 		globalDaemon.lock.Lock()
 		for _, v := range globalDaemon.taskMap {
 			v.cancel()
