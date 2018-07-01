@@ -3,7 +3,6 @@ package store
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"jiacrontab/libs"
 	"jiacrontab/libs/proto"
@@ -166,7 +165,6 @@ func (s *Store) GetDataFile() (string, bool) {
 // }
 
 func (s *Store) Export2DB() {
-	fmt.Println(s.TaskList, "hahahhahhah")
 	for _, v := range s.TaskList {
 		ret := model.DB().Create(&v)
 		if ret.Error == nil {
