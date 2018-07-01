@@ -3,13 +3,11 @@ package main
 import (
 	"errors"
 	"fmt"
-	"jiacrontab/client/store"
 	"jiacrontab/libs"
-	"jiacrontab/libs/proto"
+	"jiacrontab/model"
 	"log"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -17,99 +15,90 @@ import (
 type CrontabTask struct {
 }
 
-func (t *CrontabTask) List(args struct{ page, pagesize int }, reply *[]*proto.TaskArgs) error {
-	if taskList, ok := globalStore.GetTaskList(); ok {
-		for _, v := range taskList {
-			*reply = append(*reply, v)
-		}
-	}
-	return nil
+func (t *CrontabTask) List(args struct{ Page, Pagesize int }, reply *[]model.CrontabTask) error {
+	return model.DB().Offset(args.Page - 1).Limit(args.Pagesize).Find(reply).Error
+}
+func (t *CrontabTask) All(args string, reply *[]model.CrontabTask) error {
+	return model.DB().Find(reply).Error
 }
 
-func (t *CrontabTask) All(args string, reply *proto.Mdata) error {
-	if taskList, ok := globalStore.GetTaskList(); ok {
-		*reply = taskList
-	}
-
-	return nil
-
-}
-
-func (t *CrontabTask) Update(args proto.TaskArgs, ok *bool) error {
+func (t *CrontabTask) Update(args model.CrontabTask, ok *bool) error {
 	*ok = true
 	if args.MailTo == "" {
 		args.MailTo = globalConfig.mailTo
 	}
 
-	if args.Id == "" {
-
-		args.Id = strconv.Itoa(int(libs.RandNum()))
-		for k := range args.Depends {
-			args.Depends[k].TaskId = args.Id
+	if args.ID == 0 {
+		// for k := range args.Depends {
+		// 	args.Depends[k].TaskId = args.ID
+		// }
+		ret := model.DB().Create(&args)
+		if ret.Error == nil {
+			var crontabTask model.CrontabTask
+			// for k := range crontabTask.Depends {
+			// 	crontabTask.Depends[k].TaskId = args.ID
+			// }
+			model.DB().Debug().Update(&crontabTask, "id=? and number_process=0", crontabTask.ID)
 		}
-		globalStore.Update(func(s *store.Store) {
-			s.TaskList[args.Id] = &args
-		}).Sync()
-
 		globalCrontab.add(&args)
 
 	} else {
-		if v, ok2 := globalStore.SearchTaskList(args.Id); ok2 {
-
-			if v.NumberProcess > 0 {
+		var crontabTask model.CrontabTask
+		ret := model.DB().Find(&crontabTask, "id=?", args.ID)
+		if ret.Error == nil {
+			if crontabTask.NumberProcess > 0 {
 				return errors.New("can not update when task is running")
 			}
 
-			v.Name = args.Name
-			v.Command = args.Command
-			v.Args = args.Args
-			v.MailTo = args.MailTo
-			v.Depends = args.Depends
-			v.UnexpectedExitMail = args.UnexpectedExitMail
-			v.PipeCommands = args.PipeCommands
-			v.Sync = args.Sync
+			crontabTask.Name = args.Name
+			crontabTask.Command = args.Command
+			crontabTask.Args = args.Args
+			crontabTask.MailTo = args.MailTo
+			crontabTask.Depends = args.Depends
+			crontabTask.UnexpectedExitMail = args.UnexpectedExitMail
+			crontabTask.PipeCommands = args.PipeCommands
+			crontabTask.Sync = args.Sync
 
-			for k := range v.Depends {
-				v.Depends[k].TaskId = args.Id
+			// for k := range crontabTask.Depends {
+			// 	crontabTask.Depends[k].TaskId = args.ID
 
+			// }
+			crontabTask.Timeout = args.Timeout
+			crontabTask.MaxConcurrent = args.MaxConcurrent
+			if crontabTask.MaxConcurrent == 0 {
+				crontabTask.MaxConcurrent = 1
 			}
-			v.Timeout = args.Timeout
-			v.MaxConcurrent = args.MaxConcurrent
-			if v.MaxConcurrent == 0 {
-				v.MaxConcurrent = 1
-			}
 
-			v.MailTo = args.MailTo
-			v.OpTimeout = args.OpTimeout
-			v.C = args.C
+			crontabTask.MailTo = args.MailTo
+			crontabTask.OpTimeout = args.OpTimeout
+			crontabTask.C = args.C
+
+			model.DB().Debug().Update(&crontabTask, "id=? and number_process=0", crontabTask.ID)
+
 		} else {
 			*ok = false
 		}
-		globalStore.Sync()
 
 	}
 
 	return nil
 }
-func (t *CrontabTask) Get(args string, task *proto.TaskArgs) error {
-
-	if v, ok := globalStore.SearchTaskList(args); ok {
-		*task = *v
-	}
-
-	return nil
+func (t *CrontabTask) Get(args uint, reply *model.CrontabTask) error {
+	return model.DB().Find(reply, "id=?", args).Error
 }
 
 func (t *CrontabTask) Start(args string, ok *bool) error {
 	*ok = true
 	ids := strings.Split(args, ",")
 	for _, v := range ids {
-		if val, ok2 := globalStore.SearchTaskList(v); ok2 {
-			if val.TimerCounter == 0 {
-				globalCrontab.add(val)
-			}
-		} else {
+		var crontabTask model.CrontabTask
+		ret := model.DB().Find(&crontabTask, "id=?", libs.ParseInt(v))
+		if ret.Error != nil {
 			*ok = false
+		} else {
+			if crontabTask.TimerCounter == 0 {
+				globalCrontab.add(&crontabTask)
+			}
 		}
 	}
 
@@ -120,10 +109,13 @@ func (t *CrontabTask) Stop(args string, ok *bool) error {
 	*ok = true
 	ids := strings.Split(args, ",")
 	for _, v := range ids {
-		if val, ok2 := globalStore.SearchTaskList(v); ok2 {
-			globalCrontab.stop(val)
-		} else {
+		var crontabTask model.CrontabTask
+		fmt.Printf("id", libs.ParseInt(v))
+		ret := model.DB().Find(&crontabTask, "id=?", libs.ParseInt(v))
+		if ret.Error != nil {
 			*ok = false
+		} else {
+			globalCrontab.stop(&crontabTask)
 		}
 	}
 
@@ -133,10 +125,12 @@ func (t *CrontabTask) Stop(args string, ok *bool) error {
 func (t *CrontabTask) StopAll(args []string, ok *bool) error {
 	*ok = true
 	for _, v := range args {
-		if val, ok2 := globalStore.SearchTaskList(v); ok2 {
-			globalCrontab.stop(val)
-		} else {
+		var crontabTask model.CrontabTask
+		ret := model.DB().Find(&crontabTask, "id", libs.ParseInt(v))
+		if ret.Error != nil {
 			*ok = false
+		} else {
+			globalCrontab.stop(&crontabTask)
 		}
 	}
 	return nil
@@ -146,11 +140,12 @@ func (t *CrontabTask) Delete(args string, ok *bool) error {
 	*ok = true
 	ids := strings.Split(args, ",")
 	for _, v := range ids {
-		if val, ok2 := globalStore.SearchTaskList(v); ok2 {
-			globalCrontab.delete(val)
-
-		} else {
+		var crontabTask model.CrontabTask
+		ret := model.DB().Find(&crontabTask, "id=?", libs.ParseInt(v))
+		if ret.Error != nil {
 			*ok = false
+		} else {
+			globalCrontab.delete(&crontabTask)
 		}
 	}
 
@@ -158,34 +153,41 @@ func (t *CrontabTask) Delete(args string, ok *bool) error {
 }
 
 func (t *CrontabTask) Kill(args string, ok *bool) error {
-	if v, ok2 := globalStore.SearchTaskList(args); ok2 {
-		globalCrontab.kill(v)
-		*ok = true
-	} else {
+
+	var crontabTask model.CrontabTask
+	ret := model.DB().Find(&crontabTask, "id=?", libs.ParseInt(args))
+	if ret.Error != nil {
 		*ok = false
-	}
-
-	return nil
-}
-
-func (t *CrontabTask) QuickStart(args string, ret *[]byte) error {
-
-	if v, ok := globalStore.SearchTaskList(args); ok {
-		globalCrontab.quickStart(v, ret)
 	} else {
-		*ret = []byte("failed to start")
+		globalCrontab.kill(&crontabTask)
+	}
+
+	return nil
+}
+
+func (t *CrontabTask) QuickStart(args string, reply *[]byte) error {
+
+	var crontabTask model.CrontabTask
+	ret := model.DB().Find(&crontabTask, "id=?", libs.ParseInt(args))
+
+	if ret.Error == nil {
+		globalCrontab.quickStart(&crontabTask, reply)
+	} else {
+		*reply = []byte("failed to start")
 	}
 	return nil
 
 }
 
-func (t *CrontabTask) Log(args string, ret *[]byte) error {
-	staticDir := filepath.Join(globalConfig.logPath, "crontab", time.Now().Format("2006/01"))
+func (t *CrontabTask) Log(args string, reply *[]byte) error {
+	staticDir := filepath.Join(globalConfig.logPath, "crontab_task", time.Now().Format("2006/01"))
 	var filename string
+	var crontabTask model.CrontabTask
 
-	if v, ok := globalStore.SearchTaskList(args); ok {
+	ret := model.DB().Find(&crontabTask, "id=?", args)
 
-		filename = fmt.Sprintf("%s.log", v.Name)
+	if ret.Error == nil {
+		filename = fmt.Sprintf("%d.log", crontabTask.ID)
 	}
 
 	if filename == "" {
@@ -214,12 +216,12 @@ func (t *CrontabTask) Log(args string, ret *[]byte) error {
 	f.Seek(offset, os.SEEK_CUR)
 
 	_, err = f.Read(buffer)
-	*ret = buffer
+	*reply = buffer
 
 	return err
 }
 
-func (t *CrontabTask) ResolvedDepends(args proto.MScript, ok *bool) error {
+func (t *CrontabTask) ResolvedDepends(args model.DependsTask, reply *bool) error {
 
 	var err error
 	if args.Err != "" {
@@ -228,7 +230,8 @@ func (t *CrontabTask) ResolvedDepends(args proto.MScript, ok *bool) error {
 
 	idArr := strings.Split(args.TaskId, "-")
 	globalCrontab.lock.Lock()
-	if h, ok2 := globalCrontab.handleMap[idArr[0]]; ok2 {
+	i := uint(libs.ParseInt(idArr[0]))
+	if h, ok := globalCrontab.handleMap[i]; ok {
 		globalCrontab.lock.Unlock()
 		for _, v := range h.taskPool {
 			if v.id == idArr[1] {
@@ -239,7 +242,7 @@ func (t *CrontabTask) ResolvedDepends(args proto.MScript, ok *bool) error {
 						v2.logContent = args.LogContent
 						v2.err = err
 						v2.done = true
-						*ok = filterDepend(v2)
+						*reply = filterDepend(v2)
 						return nil
 					}
 				}
@@ -251,11 +254,11 @@ func (t *CrontabTask) ResolvedDepends(args proto.MScript, ok *bool) error {
 
 	log.Printf("resolvedDepends: %s is not exists", args.Name)
 
-	*ok = false
+	*reply = false
 	return nil
 }
 
-func (t *CrontabTask) ExecDepend(args proto.MScript, reply *bool) error {
+func (t *CrontabTask) ExecDepend(args model.DependsTask, reply *bool) error {
 
 	globalDepend.Add(&dependScript{
 		id:      args.TaskId,

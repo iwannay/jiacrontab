@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"jiacrontab/libs"
-	"jiacrontab/libs/proto"
 	"log"
 	"os"
 	"path/filepath"
@@ -38,20 +37,20 @@ type handle func(s *Store)
 
 func NewStore(path string) *Store {
 	s := &Store{
-		dataFile:      path,
-		swapFile:      filepath.Join(filepath.Dir(path), ".swap"),
-		requests:      make(chan request),
-		RpcClientList: make(map[string]proto.ClientConf),
+		dataFile: path,
+		swapFile: filepath.Join(filepath.Dir(path), ".swap"),
+		requests: make(chan request),
+		// RpcClientList: make(map[string]proto.ClientConf),
 	}
 	go s.server()
 	return s
 }
 
 type Store struct {
-	RpcClientList map[string]proto.ClientConf
-	dataFile      string
-	swapFile      string
-	requests      chan request
+	// RpcClientList map[string]proto.ClientConf
+	dataFile string
+	swapFile string
+	requests chan request
 }
 
 func (s *Store) server() {
@@ -92,20 +91,20 @@ func (s *Store) requestHandle(req request) {
 	}
 
 	switch req.key {
-	case "RpcClientList":
-		if req.state == stateSearch && req.body != "" {
-			if v, ok := s.RpcClientList[req.body]; ok {
-				req.response <- result{value: v}
-			} else {
-				req.response <- result{value: nil}
-			}
-		} else {
-			var rpcClientList map[string]proto.ClientConf
-			if b, err := json.Marshal(s.RpcClientList); err == nil {
-				json.Unmarshal(b, &rpcClientList)
-			}
-			req.response <- result{value: rpcClientList}
-		}
+	// case "RpcClientList":
+	// 	if req.state == stateSearch && req.body != "" {
+	// 		if v, ok := s.RpcClientList[req.body]; ok {
+	// 			req.response <- result{value: v}
+	// 		} else {
+	// 			req.response <- result{value: nil}
+	// 		}
+	// 	} else {
+	// 		var rpcClientList map[string]proto.ClientConf
+	// 		if b, err := json.Marshal(s.RpcClientList); err == nil {
+	// 			json.Unmarshal(b, &rpcClientList)
+	// 		}
+	// 		req.response <- result{value: rpcClientList}
+	// 	}
 
 	case "dataFile":
 		req.response <- result{value: s.dataFile}
@@ -115,15 +114,15 @@ func (s *Store) requestHandle(req request) {
 
 }
 
-func (s *Store) getRPCClientList() (map[string]proto.ClientConf, bool) {
-	ret, ok := (s.Get("RpcClientList")).value.(map[string]proto.ClientConf)
-	return ret, ok
-}
+// func (s *Store) getRPCClientList() (map[string]proto.ClientConf, bool) {
+// 	ret, ok := (s.Get("RpcClientList")).value.(map[string]proto.ClientConf)
+// 	return ret, ok
+// }
 
-func (s *Store) searchRPCClientList(args string) (proto.ClientConf, bool) {
-	ret, ok := s.Search("RpcClientList", args).value.(proto.ClientConf)
-	return ret, ok
-}
+// func (s *Store) searchRPCClientList(args string) (proto.ClientConf, bool) {
+// 	ret, ok := s.Search("RpcClientList", args).value.(proto.ClientConf)
+// 	return ret, ok
+// }
 
 func (s *Store) Get(key string) result {
 	return s.Query(key, stateSelect, nil, "")

@@ -17,7 +17,7 @@
                 <div class="layui-form-item">
                     <div class="layui-inline">
                         <select lay-filter="select-menu">
-                        {{range $k,$v := .addrs}}
+                        {{range $k,$v := .clientList}}
                             {{if eq $v.State 1}}
                                 <option value="{{$v.Addr}}" {{if eq $v.Addr $addr}}selected{{end}}>{{$v.Addr}}</option>
                             {{end}}
@@ -66,7 +66,7 @@
 
             var tableCols = [[ //表头
                 {type:'checkbox', fixed: 'left'},
-                {field: 'LAY_TABLE_INDEX', width:60, sort: true, fixed: 'left', title: 'ID'},
+                {field: 'ID', width:60, sort: true, fixed: 'left', title: 'ID'},
                 {field:'Name', width:150, fixed: 'left', title: '名称'},
                 {field:'Command', width:170, title: '脚本', templet: function(d) {
                     var oldStr = d.Command + ' ' + d.Args;
@@ -118,12 +118,12 @@
                 {field:'handle', width:140, fixed: 'right', title: '编辑', templet: function(d){
                     var isStartTask = '';
                     if (d.State == 0) {
-                        isStartTask = '<a href="/crontab/task/start?taskId='+ d.Id +'&addr='+ common.getRequest().addr +'" class="layui-btn layui-btn-xs jia-btn-normal reset-btn">启动</a>';
+                        isStartTask = '<a href="/crontab/task/start?taskId='+ d.ID +'&addr='+ common.getRequest().addr +'" class="layui-btn layui-btn-xs jia-btn-normal reset-btn">启动</a>';
                     } else {
-                        isStartTask = '<a href="/crontab/task/stop?taskId='+ d.Id +'&addr='+ common.getRequest().addr +'&action=stop" class="layui-btn layui-btn-xs layui-btn-danger reset-btn">停止</a>';
+                        isStartTask = '<a href="/crontab/task/stop?taskId='+ d.ID +'&addr='+ common.getRequest().addr +'&action=stop" class="layui-btn layui-btn-xs layui-btn-danger reset-btn">停止</a>';
                     }
                     var  editorHtml = isStartTask + '<div class="layui-input-inline" style="width: 70px;" lay-event="operate">' +
-                                        '<select lay-filter="selectTable" id="'+ d.Id +'">' +
+                                        '<select lay-filter="selectTable" id="'+ d.ID +'">' +
                                             '<option value="">操作</option>' +
                                             '<option value="修改计划任务">修改计划任务</option>' +
                                             '<option value="删除计划任务">删除计划任务</option>' +

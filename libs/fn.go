@@ -3,6 +3,7 @@ package libs
 import (
 	"bufio"
 	"reflect"
+	"strconv"
 
 	"bytes"
 	"encoding/base64"
@@ -259,4 +260,9 @@ func SendMail(title, content, host, from, pass, port, mailTo string) {
 
 	err := smtp.SendMail(host+":"+port, auth, from, to, []byte(message))
 	log.Printf("send mail to %s %v", toStr, err)
+}
+
+func ParseInt(i string) int {
+	v, _ := strconv.Atoi(i)
+	return v
 }

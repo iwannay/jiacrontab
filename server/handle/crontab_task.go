@@ -3,16 +3,13 @@ package handle
 import (
 	"crypto/md5"
 	"encoding/json"
-	db "jiacrontab/model"
 
 	"fmt"
 	"jiacrontab/libs"
-	"jiacrontab/libs/proto"
 	"jiacrontab/libs/rpc"
+	"jiacrontab/model"
 	"jiacrontab/server/conf"
-	"jiacrontab/server/model"
 	"net/http"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -33,34 +30,21 @@ const (
 func ListTask(ctx iris.Context) {
 
 	var systemInfo map[string]interface{}
-	var locals proto.Mdata
-	var clientList map[string]proto.ClientConf
-	var taskIdSli []string
+	var locals []model.CrontabTask
+	var clientList []model.Client
+	var client model.Client
 	var r = ctx.Request()
-	var m = model.NewModel()
-	addr := r.FormValue("addr")
+
+	addr := ctx.FormValue("addr")
 	if strings.TrimSpace(addr) == "" {
 		ctx.ViewData("error", "参数错误")
 		ctx.View("public/error.html")
 		return
 	}
 
-	sortedTaskList := make([]*proto.TaskArgs, 0)
-	sortedClientList := make([]proto.ClientConf, 0)
+	model.DB().Model(&model.Client{}).Find(&clientList)
 
-	clientList, _ = m.GetRPCClientList()
-
-	if clientList != nil && len(clientList) > 0 {
-		for _, v := range clientList {
-			sortedClientList = append(sortedClientList, v)
-		}
-		sort.SliceStable(sortedClientList, func(i, j int) bool {
-			return sortedClientList[i].Addr > sortedClientList[j].Addr
-		})
-
-		firstK := sortedClientList[0].Addr
-		addr = libs.ReplaceEmpty(addr, firstK)
-	} else {
+	if len(clientList) == 0 {
 		if ctx.IsAjax() {
 			ctx.JSON(map[string]interface{}{
 				"code": -1,
@@ -70,11 +54,15 @@ func ListTask(ctx iris.Context) {
 
 		ctx.ViewData("error", "nothing to show")
 		ctx.View("public/error.html")
-
 		return
 	}
 
-	locals = make(proto.Mdata)
+	for _, v := range clientList {
+		if v.Addr == addr {
+			client = v
+			break
+		}
+	}
 
 	if err := rpc.Call(addr, "CrontabTask.All", "", &locals); err != nil {
 
@@ -84,6 +72,7 @@ func ListTask(ctx iris.Context) {
 			})
 			return
 		}
+		fmt.Println(err)
 		ctx.Redirect("/", http.StatusFound)
 		return
 	}
@@ -99,34 +88,24 @@ func ListTask(ctx iris.Context) {
 		return
 	}
 
-	for _, v := range locals {
-		taskIdSli = append(taskIdSli, v.Id)
-		sortedTaskList = append(sortedTaskList, v)
-	}
-	sort.SliceStable(sortedTaskList, func(i, j int) bool {
-		return sortedTaskList[i].Create > sortedTaskList[j].Create
-	})
-
 	if ctx.IsAjax() {
 		ctx.JSON(map[string]interface{}{
 			"code": 0,
 			"data": map[string]interface{}{
-				"taskList":   sortedTaskList,
-				"clientList": sortedClientList,
+				"taskList":   locals,
+				"clientList": clientList,
 				"systemInfo": systemInfo,
-				"taskIdList": strings.Join(taskIdSli, ","),
 				"url":        r.RequestURI,
 			},
 		})
 		return
 	}
 
-	ctx.ViewData("list", sortedTaskList)
-	ctx.ViewData("addr", ctx.FormValue("addr"))
-	ctx.ViewData("addrs", sortedClientList)
-	ctx.ViewData("client", clientList[addr])
+	ctx.ViewData("tasklist", locals)
+	ctx.ViewData("addr", addr)
+	ctx.ViewData("clientList", clientList)
+	ctx.ViewData("client", client)
 	ctx.ViewData("systemInfo", systemInfo)
-	ctx.ViewData("taskIds", strings.Join(taskIdSli, ","))
 	ctx.ViewData("url", r.RequestURI)
 	ctx.View("crontab/list.html")
 
@@ -147,10 +126,10 @@ func Index(ctx iris.Context) {
 		i++
 	}
 
-	var sortedClientList []db.Client
-	db.DB().Find(&sortedClientList)
+	var clientList []model.Client
+	model.DB().Find(&clientList)
 
-	ctx.ViewData("clientList", sortedClientList)
+	ctx.ViewData("clientList", clientList)
 
 	ctx.ViewData("systemInfoLeft", sInfoL)
 	ctx.ViewData("systemInfoRight", sInfoR)
@@ -166,11 +145,10 @@ func Index(ctx iris.Context) {
 func EditTask(ctx iris.Context) {
 	var reply bool
 	var r = ctx.Request()
-	var m = model.NewModel()
 
 	sortedKeys := make([]string, 0)
-	addr := strings.TrimSpace(r.FormValue("addr"))
-	id := strings.TrimSpace(r.FormValue("taskId"))
+	addr := ctx.FormValue("addr")
+	id := uint(libs.ParseInt(ctx.FormValue("taskId")))
 	if addr == "" {
 		ctx.ViewData("error", "params error")
 		ctx.View("public/error.html")
@@ -180,21 +158,22 @@ func EditTask(ctx iris.Context) {
 	if r.Method == http.MethodPost {
 		var unExitM, sync bool
 		var pipeCommandList [][]string
-		n := strings.TrimSpace(r.FormValue("taskName"))
-		command := strings.TrimSpace(r.FormValue("command"))
-		timeoutStr := strings.TrimSpace(r.FormValue("timeout"))
-		mConcurrentStr := strings.TrimSpace(r.FormValue("maxConcurrent"))
+
+		n := ctx.PostValueTrim("taskName")
+		command := ctx.PostValueTrim("command")
+		timeoutStr := ctx.PostValueTrim("timeout")
+		mConcurrentStr := ctx.PostValueTrim("maxConcurrent")
 		unpdExitM := r.FormValue("unexpectedExitMail")
 		mSync := r.FormValue("sync")
-		mailTo := strings.TrimSpace(r.FormValue("mailTo"))
-		optimeout := strings.TrimSpace(r.FormValue("optimeout"))
+		mailTo := ctx.PostValueTrim("mailTo")
+		optimeout := ctx.PostValueTrim("optimeout")
 		pipeCommands := r.PostForm["command[]"]
 		pipeArgs := r.PostForm["args[]"]
 		destSli := r.PostForm["depends[dest]"]
 		cmdSli := r.PostForm["depends[command]"]
 		argsSli := r.PostForm["depends[args]"]
 		timeoutSli := r.PostForm["depends[timeout]"]
-		depends := make([]proto.MScript, len(destSli))
+		depends := make(model.DependsTasks, len(destSli))
 
 		for k, v := range pipeCommands {
 			pipeCommandList = append(pipeCommandList, []string{v, pipeArgs[k]})
@@ -245,8 +224,7 @@ func EditTask(ctx iris.Context) {
 		hour := libs.ReplaceEmpty(strings.TrimSpace(r.FormValue("hour")), "*")
 		minute := libs.ReplaceEmpty(strings.TrimSpace(r.FormValue("minute")), "*")
 
-		if err := rpc.Call(addr, "CrontabTask.Update", proto.TaskArgs{
-			Id:                 id,
+		rpcArgs := model.CrontabTask{
 			Name:               n,
 			Command:            command,
 			Args:               a,
@@ -273,7 +251,10 @@ func EditTask(ctx iris.Context) {
 				Minute:  minute,
 				Weekday: weekday,
 			},
-		}, &reply); err != nil {
+		}
+		rpcArgs.ID = id
+
+		if err := rpc.Call(addr, "CrontabTask.Update", rpcArgs, &reply); err != nil {
 			ctx.ViewData("error", err.Error())
 			ctx.View("public/error.html")
 		}
@@ -283,10 +264,10 @@ func EditTask(ctx iris.Context) {
 		}
 
 	} else {
-		var t proto.TaskArgs
-		var clientList map[string]proto.ClientConf
+		var t model.CrontabTask
+		var clientList []model.Client
 
-		if id != "" {
+		if id != 0 {
 			err := rpcCall(addr, "CrontabTask.Get", id, &t)
 			if err != nil {
 				ctx.Redirect("/crontab/task/list?addr="+addr, http.StatusFound)
@@ -294,24 +275,18 @@ func EditTask(ctx iris.Context) {
 
 			}
 		} else {
-			client, _ := m.SearchRPCClientList(addr)
+			var client model.Client
+			model.DB().Find(&client, "addr", addr)
+			// client, _ := m.SearchRPCClientList(addr)
 			t.MailTo = client.Mail
 		}
 		if t.MaxConcurrent == 0 {
 			t.MaxConcurrent = 1
 		}
 
-		clientList, _ = m.GetRPCClientList()
+		model.DB().Find(&clientList)
 
-		if len(clientList) > 0 {
-			for k := range clientList {
-				sortedKeys = append(sortedKeys, k)
-			}
-			sort.Strings(sortedKeys)
-			firstK := sortedKeys[0]
-			addr = libs.ReplaceEmpty(r.FormValue("addr"), firstK)
-		} else {
-
+		if len(clientList) == 0 {
 			ctx.ViewData("error", "nothing to show")
 			ctx.View("public/error.html")
 			return
@@ -330,8 +305,8 @@ func EditTask(ctx iris.Context) {
 func StopTask(ctx iris.Context) {
 	var r = ctx.Request()
 
-	taskId := strings.TrimSpace(r.FormValue("taskId"))
-	addr := strings.TrimSpace(r.FormValue("addr"))
+	taskId := ctx.FormValue("taskId")
+	addr := ctx.FormValue("addr")
 	action := libs.ReplaceEmpty(r.FormValue("action"), "stop")
 	var reply bool
 	if taskId == "" || addr == "" {
@@ -521,32 +496,10 @@ func Readme(ctx iris.Context) {
 }
 
 func DeleteClient(ctx iris.Context) {
-	m := model.NewModel()
+
 	r := ctx.Request()
 	addr := r.FormValue("addr")
-	m.InnerStore().Wrap(func(s *model.Store) {
-		if v, ok := s.RpcClientList[addr]; ok {
-			if v.State == 1 {
-				return
-			}
-		}
-		delete(s.RpcClientList, addr)
-
-	}).Sync()
+	model.DB().Delete(&model.CrontabTask{}, "addr", addr)
 	ctx.Redirect("/", http.StatusFound)
 
 }
-
-// func Model(ctx iris.Context) {
-// 	val := ctx.FormValue("type")
-// 	url := ctx.FormValue("url")
-// 	ctx.SetCookie(&http.Cookie{
-// 		Name:     "model",
-// 		Path:     "/",
-// 		Value:    val,
-// 		HttpOnly: true,
-// 	})
-
-// 	ctx.Redirect(url, http.StatusFound)
-
-// }

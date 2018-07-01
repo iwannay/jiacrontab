@@ -1,6 +1,5 @@
 package proto
 
-
 const (
 	StopDaemonTask = iota
 	StartDaemonTask

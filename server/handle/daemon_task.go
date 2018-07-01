@@ -1,7 +1,6 @@
 package handle
 
 import (
-	"sort"
 	"strings"
 
 	"github.com/kataras/iris"
@@ -11,7 +10,6 @@ import (
 
 	"jiacrontab/libs/proto"
 	"jiacrontab/model"
-	storeModel "jiacrontab/server/model"
 	"net/http"
 	"strconv"
 )
@@ -22,19 +20,8 @@ func ListDaemonTask(ctx iris.Context) {
 	pagesize := ctx.FormValueDefault("pagesize", "200")
 	addr := ctx.FormValue("addr")
 
-	sortedClientList := make([]proto.ClientConf, 0)
-
-	var m = storeModel.NewModel()
-	clientList, _ := m.GetRPCClientList()
-
-	if clientList != nil && len(clientList) > 0 {
-		for _, v := range clientList {
-			sortedClientList = append(sortedClientList, v)
-		}
-		sort.SliceStable(sortedClientList, func(i, j int) bool {
-			return sortedClientList[i].Addr > sortedClientList[j].Addr
-		})
-	}
+	var clientList []model.Client
+	model.DB().Find(&clientList)
 
 	if ctx.Request().Method == http.MethodPost {
 		if addr == "" {
@@ -79,7 +66,7 @@ func ListDaemonTask(ctx iris.Context) {
 		return
 	}
 
-	ctx.ViewData("addrs", sortedClientList)
+	ctx.ViewData("addrs", clientList)
 	ctx.ViewData("addr", addr)
 	ctx.View("daemon/list.html")
 }

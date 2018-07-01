@@ -51,8 +51,8 @@ func listenSignal(fn func()) {
 func main() {
 
 	model.CreateDB("sqlite3", "data/jiacrontab_client.db")
-	model.DB().CreateTable(&model.DaemonTask{})
-	model.DB().AutoMigrate(&model.DaemonTask{})
+	model.DB().CreateTable(&model.DaemonTask{}, &model.CrontabTask{})
+	model.DB().AutoMigrate(&model.DaemonTask{}, &model.CrontabTask{})
 
 	globalConfig = newConfig()
 	if globalConfig.debug == true {
@@ -62,6 +62,7 @@ func main() {
 	globalStore = store.NewStore(globalConfig.dataFile)
 	globalStore.Load()
 	globalStore.Sync()
+	globalStore.Export2DB()
 
 	globalCrontab = newCrontab(10)
 	globalCrontab.run()
