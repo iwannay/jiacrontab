@@ -127,7 +127,7 @@ func Index(ctx iris.Context) {
 	}
 
 	var clientList []model.Client
-	model.DB().Model(&model.Client{})Find(&clientList)
+	model.DB().Model(&model.Client{}).Find(&clientList)
 
 	ctx.ViewData("clientList", clientList)
 
