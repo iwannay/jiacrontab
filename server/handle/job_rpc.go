@@ -18,9 +18,10 @@ func (l *Logic) Register(args model.Client, reply *proto.MailArgs) error {
 		Port: conf.ConfigArgs.MailPort,
 	}
 
-	ret := model.DB().Model(&model.Client{}).Where("addr=?", args.Addr).Update(&args)
-	if ret.Error != nil {
-		ret = model.DB().Create(&args)
+	ret := model.DB().Debug().Model(&model.Client{}).Where("addr=?", args.Addr).Update(&args)
+
+	if ret.RowsAffected == 0 {
+		ret = model.DB().Debug().Create(&args)
 	}
 
 	log.Println("register client", args)
