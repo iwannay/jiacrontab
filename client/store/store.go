@@ -176,7 +176,6 @@ func (s *Store) Export2DB() {
 	}
 }
 func (s *Store) sync(fpath string) error {
-
 	f, err := libs.TryOpen(fpath, os.O_CREATE|os.O_RDWR|os.O_TRUNC)
 	defer func() {
 		f.Close()
