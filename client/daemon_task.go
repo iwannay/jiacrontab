@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"jiacrontab/libs/proto"
 	"jiacrontab/model"
@@ -12,10 +13,21 @@ import (
 type DaemonTask struct {
 }
 
-func (t *DaemonTask) CreateDaemonTask(args model.DaemonTask, reply *int64) error {
+func (t *DaemonTask) UpdateDaemonTask(args model.DaemonTask, reply *int64) error {
+
+	if args.ID != 0 {
+		var daemonTask model.DaemonTask
+		ret := model.DB().Find(&daemonTask, "id=?", args.ID)
+		if daemonTask.ProcessNum != 0 {
+			return errors.New("can not update when task is running")
+		}
+
+		ret = model.DB().Model(&model.DaemonTask{}).Where("id=?", args.ID).Update(&args)
+		*reply = ret.RowsAffected
+		return ret.Error
+	}
 
 	ret := model.DB().Create(&args)
-
 	*reply = ret.RowsAffected
 	return ret.Error
 }
@@ -47,7 +59,7 @@ func (t *DaemonTask) ActionDaemonTask(args proto.ActionDaemonTaskArgs, reply *bo
 }
 
 func (t *DaemonTask) GetDaemonTask(args int, reply *model.DaemonTask) error {
-	ret := model.DB().Find(reply, "task_id", args)
+	ret := model.DB().Find(reply, "id=?", args)
 	if (*reply == model.DaemonTask{}) {
 		return ret.Error
 	}

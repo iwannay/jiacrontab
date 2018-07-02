@@ -34,13 +34,13 @@ func (t *CrontabTask) Update(args model.CrontabTask, ok *bool) error {
 		// }
 		ret := model.DB().Create(&args)
 		if ret.Error == nil {
-			var crontabTask model.CrontabTask
+			// var crontabTask model.CrontabTask
 			// for k := range crontabTask.Depends {
 			// 	crontabTask.Depends[k].TaskId = args.ID
 			// }
-			model.DB().Debug().Update(&crontabTask, "id=? and number_process=0", crontabTask.ID)
+			// model.DB().Debug().Update(&crontabTask, "id=? and number_process=0", crontabTask.ID)
+			globalCrontab.add(&args)
 		}
-		globalCrontab.add(&args)
 
 	} else {
 		var crontabTask model.CrontabTask
@@ -72,8 +72,7 @@ func (t *CrontabTask) Update(args model.CrontabTask, ok *bool) error {
 			crontabTask.MailTo = args.MailTo
 			crontabTask.OpTimeout = args.OpTimeout
 			crontabTask.C = args.C
-
-			model.DB().Debug().Update(&crontabTask, "id=? and number_process=0", crontabTask.ID)
+			model.DB().Debug().Model(&model.CrontabTask{}).Where("id=? and number_process=0", crontabTask.ID).Update(&crontabTask)
 
 		} else {
 			*ok = false

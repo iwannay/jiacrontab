@@ -60,7 +60,7 @@
 
         var tableCols = [[ //表头
             {type:'checkbox', fixed: 'left'},
-            {field: 'LAY_TABLE_INDEX', width:60, sort: true, fixed: 'left', title: 'ID'},
+            {field: 'ID', width:60, sort: true, fixed: 'left', title: 'ID'},
             {field:'Name', width:150, fixed: 'left', title: '名称'},
             {field:'Command', width:170, title: '脚本', templet: function(d) {
                 var oldStr = d.Command + ' ' + d.Args;
@@ -112,7 +112,7 @@
 
         $.ajax({
             type: 'POST',
-            url: 'http://localhost:20000/daemon/task/list',
+            url: '/daemon/task/list',
             data: {
                 addr: common.getRequest().addr
             },

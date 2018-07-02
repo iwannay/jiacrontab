@@ -1,6 +1,7 @@
 package handle
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/kataras/iris"
@@ -72,7 +73,7 @@ func ListDaemonTask(ctx iris.Context) {
 }
 
 func EditDaemonTask(ctx iris.Context) {
-
+	var daemonTask model.DaemonTask
 	addr := ctx.FormValue("addr")
 	taskId := ctx.FormValue("taskId")
 
@@ -88,23 +89,28 @@ func EditDaemonTask(ctx iris.Context) {
 
 		if addr == "" || name == "" || command == "" {
 			ctx.ViewData("errorMsg", "参数不正确")
-			ctx.ViewData("formValues", ctx.FormValues())
+			ctx.ViewData("daemonTask", daemonTask)
 			ctx.View("daemon/edit.html")
 			return
 		}
 
-		remoteArgs := model.DaemonTask{
+		daemonTask = model.DaemonTask{
 			Name:       name,
 			MailNofity: mailNotify,
 			MailTo:     mailTo,
 			Command:    command,
 			Args:       args,
 		}
+
+		if taskId != "" {
+			v, _ := strconv.Atoi(taskId)
+			daemonTask.ID = uint(v)
+		}
 		var reply int
-		err = rpc.Call(addr, "DaemonTask.CreateDaemonTask", remoteArgs, &reply)
+		err = rpc.Call(addr, "DaemonTask.UpdateDaemonTask", daemonTask, &reply)
 
 		if err != nil {
-			ctx.ViewData("formValues", ctx.FormValues())
+			ctx.ViewData("daemonTask", daemonTask)
 			ctx.ViewData("errorMsg", err)
 			ctx.View("daemon/edit.html")
 			return
@@ -117,25 +123,23 @@ func EditDaemonTask(ctx iris.Context) {
 
 		taskIdInt, err := strconv.Atoi(taskId)
 		if err != nil {
-			ctx.ViewData("errorMsg", "参数不正确")
+			ctx.ViewData("errorMsg", err)
+			ctx.ViewData("daemonTask", daemonTask)
 			ctx.View("daemon/edit.html")
 			return
 		}
-		var daemonTask model.DaemonTask
+
 		err = rpc.Call(addr, "DaemonTask.GetDaemonTask", taskIdInt, &daemonTask)
+		fmt.Println(taskIdInt, daemonTask)
 		if err != nil {
 			ctx.ViewData("errorMsg", "查询不到任务")
+			ctx.ViewData("daemonTask", daemonTask)
 			ctx.View("daemon/edit.html")
 			return
 		}
 
-		ctx.ViewData("daemonTask", daemonTask)
-		ctx.ViewData("errorMsg", "参数不正确")
-		ctx.View("daemon/edit.html")
-		return
-
 	}
-
+	ctx.ViewData("daemonTask", daemonTask)
 	ctx.View("daemon/edit.html")
 }
 

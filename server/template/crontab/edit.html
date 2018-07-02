@@ -303,9 +303,6 @@
                     if($.trim(value) == ''){
                         return '请输入脚本名称';
                     }
-                    if(!/^[a-zA-Z\d_-]+$/.test(value)){
-                        return '请使用字母、数字、“_”、“-”';
-                    }
                 },
                 minute: function(value, item) {
                     if ($.isNumeric(value)) {
