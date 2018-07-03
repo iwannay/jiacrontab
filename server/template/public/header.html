@@ -8,18 +8,18 @@
     </div>
     <ul class="layui-nav layui-layout-left">
         <li class="layui-nav-item {{if eq .action "/"}}layui-this{{end}}">
-            <a href="/">Home</a>
+            <a href="/">主页</a>
         </li>
 
         <li class="layui-nav-item {{if eq .action "readme"}}layui-this{{end}}">
-            <a href="/readme">Readme</a>
+            <a href="/readme">说明</a>
         </li>
     </ul>
     {{if  .user}}
     <ul class="layui-nav layui-layout-right">
         <li class="layui-nav-item">
             <a href="javascript:;">
-                <img src="http://t.cn/RCzsdCq" class="layui-nav-img"> admin
+                <img src="http://t.cn/RCzsdCq" style="display: none" class="layui-nav-img"> admin
             </a>
             <dl class="layui-nav-child">
                 <dd>

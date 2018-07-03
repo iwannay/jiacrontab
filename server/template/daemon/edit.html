@@ -1,7 +1,7 @@
 <div class="layui-layout layui-layout-admin">
     {{render "public/header.html"}}
     {{render "public/menu.html"}}
-    
+    {{$daemonTask := .daemonTask}}
     <div class="layui-body layui-content">
         <!-- 内容主体区域 -->
         <div class="layui-breadcrumb">
@@ -24,7 +24,7 @@
             {{end}}
             <div class="layui-card-body">
                 <form class="layui-form" method="POST">
-                    <input type="hidden" name="taskId" value="{{.task.Id}}">
+                    <input type="hidden" name="taskId" value="{{$daemonTask.ID}}">
                     <div class="layui-form-item">
                         <label class="layui-form-label">地址</label>
                         <div class="layui-input-block">
@@ -34,7 +34,7 @@
                     <div class="layui-form-item">
                         <label class="layui-form-label">脚本名称</label>
                         <div class="layui-input-block">
-                            <input type="text" name="name" value="{{.task.Name}}" lay-verify="taskname" placeholder="请输入脚本名称" class="layui-input">
+                            <input type="text" name="name" value="{{$daemonTask.Name}}" lay-verify="taskname" placeholder="请输入脚本名称" class="layui-input">
                         </div>
                     </div>
                     <div class="layui-form-item">
@@ -42,13 +42,14 @@
                         <div class="order-list">
                             <div class="layui-input-inline">
                                 <select name="command">
+                                    
                                     {{range $k, $v := .allowCommands}}
-                                        <option value="{{$v}}">{{$v}}</option>
+                                        <option {{if eq $daemonTask.Command $v }}selected {{end}} value="{{$v}}">{{$v}}</option>
                                     {{end}}
                                 </select>
                             </div>
                             <div class="layui-input-inline" style="width: 120px;">
-                                <input type="text" name="args"  value="{{.task.Args}}" placeholder="args" class="layui-input">
+                                <input type="text" name="args"  value="{{$daemonTask.Args}}" placeholder="args" class="layui-input">
                             </div>
                         </div>
                     </div>
@@ -56,21 +57,21 @@
                     <div class="layui-form-item">
                         <label class="layui-form-label">失败重启</label>
                         <div class="layui-input-block">
-                            <input type="radio" name="failRestart" checked value="true" title="是">
-                            <input type="radio" name="failRestart" value="false" title="否">
+                            <input type="radio" name="failedRestart" {{if eq $daemonTask.FailedRestart true}}checked {{end}} value="true" title="是">
+                            <input type="radio" name="failedRestart" {{if eq $daemonTask.FailedRestart false}}checked {{end}} value="false" title="否">
                         </div>
                     </div>
                     <div class="layui-form-item">
                         <label class="layui-form-label">邮箱地址</label>
                         <div class="layui-input-block">
-                            <input type="email" name="mailTo" value="{{.task.MailTo}}" placeholder="请输入邮箱地址" class="layui-input">
+                            <input type="email" name="mailTo" value="{{$daemonTask.MailTo}}" placeholder="请输入邮箱地址" class="layui-input">
                         </div>
                     </div>
                     
                     <div class="layui-form-item">
                         <label class="layui-form-label"></label>
                         <div class="layui-input-block">
-                            <input type="checkbox" value="1" {{if .task.mailNotify}}checked{{end}} name="mailNotify" title="脚本异常退出时邮件通知" lay-skin="primary">
+                            <input type="checkbox" value="1" {{if eq $daemonTask.MailNofity true}}checked{{end}} name="mailNotify" title="脚本异常退出时邮件通知" lay-skin="primary">
                         </div>
                     </div>
                     <div class="layui-form-item">
@@ -102,9 +103,6 @@
                 if($.trim(value) == ''){
                     return '请输入脚本名称';
                 }
-                if(!/^[a-zA-Z\d_-]+$/.test(value)){
-                    return '请使用字母、数字、“_”、“-”';
-                }
             }
         }); 
 
@@ -116,8 +114,6 @@
         $('.jia-tip-close').on('click', function (){
             $(this).parent('.jia-form-error').remove();
         })
-
-
 
         $('#flexible-icon').on('click', function () {
             if ($(this).hasClass('layui-icon-spread-left')) {

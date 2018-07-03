@@ -8,12 +8,13 @@ import (
 
 type DaemonTask struct {
 	gorm.Model
-	Name       string `gorm:"unique;not null"`
-	MailNofity bool
-	Status     int
-	MailTo     string
-	ProcessNum int
-	StartAt    time.Time
-	Command    string
-	Args       string
+	Name          string `gorm:"unique;not null"`
+	MailNofity    bool
+	Status        int
+	MailTo        string
+	FailedRestart bool
+	ProcessNum    int
+	StartAt       time.Time
+	Command       string
+	Args          string
 }
