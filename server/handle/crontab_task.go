@@ -158,17 +158,18 @@ func EditTask(ctx iris.Context) {
 	if r.Method == http.MethodPost {
 		var unExitM, sync bool
 		var pipeCommandList [][]string
+		var command string
+		var args string
 
 		n := ctx.PostValueTrim("taskName")
-		command := ctx.PostValueTrim("command")
 		timeoutStr := ctx.PostValueTrim("timeout")
 		mConcurrentStr := ctx.PostValueTrim("maxConcurrent")
 		unpdExitM := r.FormValue("unexpectedExitMail")
 		mSync := r.FormValue("sync")
 		mailTo := ctx.PostValueTrim("mailTo")
 		optimeout := ctx.PostValueTrim("optimeout")
-		pipeCommands := r.PostForm["command[]"]
-		pipeArgs := r.PostForm["args[]"]
+		pipeCommands := r.PostForm["command"]
+		pipeArgs := r.PostForm["args"]
 		destSli := r.PostForm["depends[dest]"]
 		cmdSli := r.PostForm["depends[command]"]
 		argsSli := r.PostForm["depends[args]"]
@@ -176,7 +177,13 @@ func EditTask(ctx iris.Context) {
 		depends := make(model.DependsTasks, len(destSli))
 
 		for k, v := range pipeCommands {
-			pipeCommandList = append(pipeCommandList, []string{v, pipeArgs[k]})
+			if k == 0 {
+				command = v
+				args = pipeArgs[0]
+			} else {
+				pipeCommandList = append(pipeCommandList, []string{v, pipeArgs[k]})
+			}
+
 		}
 
 		for k, v := range destSli {
@@ -217,7 +224,6 @@ func EditTask(ctx iris.Context) {
 			maxConcurrent = 10
 		}
 
-		a := r.FormValue("args")
 		month := libs.ReplaceEmpty(strings.TrimSpace(r.FormValue("month")), "*")
 		weekday := libs.ReplaceEmpty(strings.TrimSpace(r.FormValue("weekday")), "*")
 		day := libs.ReplaceEmpty(strings.TrimSpace(r.FormValue("day")), "*")
@@ -227,7 +233,7 @@ func EditTask(ctx iris.Context) {
 		rpcArgs := model.CrontabTask{
 			Name:               n,
 			Command:            command,
-			Args:               a,
+			Args:               args,
 			PipeCommands:       pipeCommandList,
 			Timeout:            int64(timeout),
 			OpTimeout:          optimeout,
@@ -294,7 +300,7 @@ func EditTask(ctx iris.Context) {
 
 		ctx.ViewData("addr", addr)
 		ctx.ViewData("addrs", sortedKeys)
-		ctx.ViewData("rpcClientsMap", clientList)
+		ctx.ViewData("clientList", clientList)
 		ctx.ViewData("task", t)
 		ctx.ViewData("allowCommands", conf.ConfigArgs.AllowCommands)
 		ctx.View("crontab/edit.html")

@@ -433,22 +433,22 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 
 	logPath := filepath.Join(logpath, time.Now().Format("2006/01"))
 	f, err := libs.TryOpen(filepath.Join(logPath, logname), os.O_APPEND|os.O_CREATE|os.O_RDWR)
-
 	if err != nil {
 		return f, err
 	}
 
 	cmd := exec.CommandContext(ctx, binpath, args...)
 	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return f, err
+	}
 	defer stdout.Close()
-	if err != nil {
-		return f, err
-	}
 	stderr, err := cmd.StderrPipe()
-	defer stderr.Close()
+
 	if err != nil {
 		return f, err
 	}
+	defer stderr.Close()
 
 	if err := cmd.Start(); err != nil {
 		return f, err

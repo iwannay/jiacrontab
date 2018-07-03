@@ -318,6 +318,8 @@ func (c *crontab) run() {
 					log.Printf("clock:%d is closed", k)
 					continue
 				}
+
+				// TODO 风险
 				select {
 				case v.clockChan <- now:
 				case <-time.After(1 * time.Second):

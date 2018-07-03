@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/rpc"
 	"time"
@@ -41,6 +42,7 @@ func (c *gobClientCodec) Close() error {
 
 // Call 调用
 func Call(addr string, serviceMethod string, args interface{}, reply interface{}) error {
+	log.Printf("RPC call %s %s %+v", addr, serviceMethod, args)
 	conn, err := net.DialTimeout("tcp", addr, time.Second*10)
 	if err != nil {
 		return err

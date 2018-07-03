@@ -3,8 +3,7 @@
         {{render "public/menu.html"}}
 
         {{$addr := .addr}}
-        {{$clients := .rpcClientsMap}}
-        {{$rpcClientsMap := .rpcClientsMap}}
+        {{$clientList := .clientList}}
         {{$addrs := .addrs}}
         {{$allowCommands := .allowCommands}}
 
@@ -38,61 +37,64 @@
                         <div class="layui-form-item">
                             <label class="layui-form-label">命令</label>
                             <div class="order-list">
-                                {{$command := .task.Command}}
-                                <div class="layui-input-inline">
-                                    <select name="command">
-                                        {{range $k, $v := .allowCommands}}
-                                            <option {{if eq $v $command}}selected{{end}} value="{{$v}}">{{$v}}</option>
-                                        {{end}}
-                                    </select>
-                                </div>
-                                <div class="layui-input-inline" style="width: 120px;">
-                                    <input type="text" name="args"  value="{{.task.Args}}" placeholder="args" class="layui-input">
-                                </div>
-                                <div class="layui-input-inline">
-                                    <select name="execType">
-                                        <option value="0">pipe</option>
-                                    </select>
-                                </div>
-                                <div class="layui-input-inline">
-                                    <div class="layui-btn" id="addOrderBtn">
-                                        <i class="layui-icon layui-icon-add-1"></i>
+                                    {{$command := .task.Command}}
+                                    <div class="layui-input-inline">
+                                        <select name="command">
+                                            {{range $k, $v := .allowCommands}}
+                                                <option {{if eq $v $command}}selected{{end}} value="{{$v}}">{{$v}}</option>
+                                            {{end}}
+                                        </select>
                                     </div>
-                                </div>
-                            </div>
-                            <div class="order-list">
-                                {{range $k, $v := .task.PipeCommands}}
-                                {{$command := index $v 0}}
-                                <div class="layui-form-item">
-                                    <label class="layui-form-label"></label>
-                                    <div class="template-list">
-                                        <div class="layui-input-inline">
-                                            <select name="command[]">
-                                                {{range $k, $v := $allowCommands}}
-                                                    <option {{if eq $v $command}}selected{{end}} value="{{$v}}">{{$v}}</option>
-                                                {{end}}
-                                            </select>
-                                        </div>
-                                        <div class="layui-input-inline" style="width: 120px;">
-                                            <input type="text" name="args[]" value="{{range $key,$val := $v}}{{if ne $key 0}} {{$val}}{{end}}{{end}}" placeholder="args" class="layui-input">
-                                        </div>
-                                        <div class="layui-input-inline">
-                                            <select name="execType">
-                                                <option value="0">pipe</option>
-                                            </select>
-                                        </div>
-    
-                                        <div class="layui-input-inline">
-                                            <div class="layui-btn layui-btn-danger delete-order-btn">
-                                                <i class="layui-icon layui-icon-delete"></i>
-                                            </div>
+
+                                    <div class="layui-input-inline" style="width:450px;">
+                                        <input type="text" name="args"  value="{{.task.Args}}" placeholder="args" class="layui-input">
+                                    </div>
+
+                                    <div class="layui-input-inline">
+                                        <select name="execType">
+                                            <option value="0">pipe</option>
+                                        </select>
+                                    </div>
+                                    <div class="layui-input-inline">
+                                        <div class="layui-btn" id="addOrderBtn">
+                                            <i class="layui-icon layui-icon-add-1"></i>
                                         </div>
                                     </div>
-                                </div> 
-                                {{end}}
                             </div>
                         </div>
-                        <div id="add-list"></div>
+                           
+                        <div id="add-list">
+
+                            {{range $k, $v := .task.PipeCommands}}
+                            {{$command := index $v 0}}
+                            <div class="layui-form-item">
+                                <label class="layui-form-label"></label>
+                                <div class="template-list">
+                                    <div class="layui-input-inline">
+                                        <select name="command">
+                                            {{range $k, $v := $allowCommands}}
+                                                <option {{if eq $v $command}}selected{{end}} value="{{$v}}">{{$v}}</option>
+                                            {{end}}
+                                        </select>
+                                    </div>
+                                    <div class="layui-input-inline" style="width: 450px;">
+                                        <input type="text" name="args" value="{{range $key,$val := $v}}{{if ne $key 0}} {{$val}}{{end}}{{end}}" placeholder="args" class="layui-input">
+                                    </div>
+                                    <div class="layui-input-inline">
+                                        <select name="execType">
+                                            <option value="0">pipe</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="layui-input-inline">
+                                        <div class="layui-btn layui-btn-danger delete-order-btn">
+                                            <i class="layui-icon layui-icon-delete"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> 
+                            {{end}}
+                        </div>
                         
                         <div class="layui-form-item">
                             <label class="layui-form-label">脚本超时</label>
@@ -163,46 +165,43 @@
                             </div>
                         </div>
                         {{$task := .task}}
-                        
-                        {{range $key,$value:= .task.Depends}}
-                        <div class="layui-form-item">
-                            <label class="layui-form-label"></label>
-                            <div class="template-list">
-                                <div class="layui-input-inline">
-                                    <select name="depends[dest]">
-                                        {{range $k,$v := $addrs}}
-                                        {{$info := index $clients $v}}
-                                            <option value="{{$v}}" class="list-group-item"  {{if eq $v $value.Dest}}selected{{end}}>
-                                                {{$v}} {{if eq $info.State 0}}断开{{end}}
-                                            </option>
-                                        {{end}}
-                                    </select>
-                                </div>
-                                <div class="layui-input-inline">
-                                    <select name="depends[command]">
-                                        {{range $k, $v := $allowCommands}}
-                                            <option {{if eq $v $value.Command}}selected{{end}} value="{{$v}}">{{$v}}</option>
-                                        {{end}}
-                                    </select>
-                                </div>
-                                <div class="layui-input-inline" style="width: 120px;">
-                                    <input type="text" value="{{$value.Args}}" name="depends[args]" placeholder="args" class="layui-input">
-                                </div>
-                                
-                                <div class="layui-input-inline" style="width: 100px;">
-                                    <input type="text" value="{{$value.Timeout}}" name="depends[timeout]" placeholder="超时(s)" class="layui-input">
-                                </div>
-                
-                                <div class="layui-input-inline">
-                                    <div class="layui-btn layui-btn-danger delete-order-btn">
-                                        <i class="layui-icon layui-icon-delete"></i>
+                        <div id="depend-list">
+                            {{range $key,$value:= .task.Depends}}
+                            <div class="layui-form-item">
+                                <label class="layui-form-label"></label>
+                                <div class="template-list">
+                                    <div class="layui-input-inline">
+                                        <select name="depends[dest]">
+                                            {{range $k,$v := $clientList}}
+                                                <option value="{{$v.Addr}}" class="list-group-item"  {{if eq $v.Addr $addr}}selected{{end}}>{{$v.Addr}} {{if eq $v.State 0}}断开{{end}}</option>
+                                            {{end}}
+                                        </select>
+                                    </div>
+                                    <div class="layui-input-inline">
+                                        <select name="depends[command]">
+                                            {{range $k, $v := $allowCommands}}
+                                                <option {{if eq $v $value.Command}}selected{{end}} value="{{$v}}">{{$v}}</option>
+                                            {{end}}
+                                        </select>
+                                    </div>
+                                    <div class="layui-input-inline" style="width: 120px;">
+                                        <input type="text" value="{{$value.Args}}" name="depends[args]" placeholder="args" class="layui-input">
+                                    </div>
+                                    
+                                    <div class="layui-input-inline" style="width: 100px;">
+                                        <input type="text" value="{{$value.Timeout}}" name="depends[timeout]" placeholder="超时(s)" class="layui-input">
+                                    </div>
+                    
+                                    <div class="layui-input-inline">
+                                        <div class="layui-btn layui-btn-danger delete-order-btn">
+                                            <i class="layui-icon layui-icon-delete"></i>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div> 
-                        {{end}}
+                            </div> 
+                            {{end}}
 
-                        <div id="depend-list"></div>
+                       </div>
                         <div class="layui-form-item">
                             <label class="layui-form-label"></label>
                             <div class="layui-input-block">
@@ -228,14 +227,14 @@
             <label class="layui-form-label"></label>
             <div class="template-list">
                 <div class="layui-input-inline">
-                    <select name="command[]">
+                    <select name="command">
                         {{range $k, $v := .allowCommands}}
                             <option value="{{$v}}">{{$v}}</option>
                         {{end}}
                     </select>
                 </div>
-                <div class="layui-input-inline" style="width: 120px;">
-                    <input type="text" name="args[]" value="" placeholder="args" class="layui-input">
+                <div class="layui-input-inline" style="width: 450px;">
+                    <input type="text" name="args" value="" placeholder="args" class="layui-input">
                 </div>
                 <div class="layui-input-inline">
                     <select name="sync">
@@ -258,10 +257,10 @@
             <div class="template-list">
                 <div class="layui-input-inline">
                     <select name="depends[dest]">
-                        {{range $k,$v := .addrs}}
-                        {{$info := index $clients $v}}
-                            <option {{$v}} class="list-group-item">
-                                {{$v}} {{if eq $info.State 0}}断开{{end}}
+                        {{range $k,$v := $clientList}}
+                            
+                            <option value="{{$v.Addr}}" class="list-group-item">
+                                {{$v.Addr}} {{if eq $v.State 0}}断开{{end}}
                             </option>
                         {{end}}
                     </select>
