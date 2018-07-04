@@ -113,17 +113,6 @@ func ListTask(ctx iris.Context) {
 // Index 服务器列表页面
 func Index(ctx iris.Context) {
 	sInfo := libs.SystemInfo(conf.ConfigArgs.ServerStartTime)
-	// sInfoL, sInfoR := make(map[string]interface{}), make(map[string]interface{})
-
-	// i := 0
-	// for k, v := range sInfo {
-	// 	if i <= 5 {
-	// 		sInfoL[k] = v
-	// 	} else {
-	// 		sInfoR[k] = v
-	// 	}
-	// 	i++
-	// }
 
 	var clientList []model.Client
 	model.DB().Model(&model.Client{}).Find(&clientList)

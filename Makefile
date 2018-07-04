@@ -13,7 +13,6 @@ SERVERDIR=$(WORKDIR)/jiacrontab/server
 CLIENTDIR=$(WORKDIR)/jiacrontab/client
 
 
-
 .PHONY: all build test clean run build-linux build-windows
 all: test build
 build:
