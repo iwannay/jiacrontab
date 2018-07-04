@@ -148,7 +148,7 @@
             if (selectValue == '强杀常驻任务') {
                 window.location.href = '/daemon/task/action?taskId='+ selectId +'&addr=' + common.getRequest().addr + '&action=kill';
             }
-            if (selectValue == '查看常驻日志') {
+            if (selectValue == '查看任务日志') {
                 window.location.href = '/daemon/task/log?taskId='+ selectId +'&addr=' + common.getRequest().addr;
             }
             
@@ -162,9 +162,9 @@
                 return layer.msg('请选择需要启动的脚本');
             }
             for (var i=0; i < checkData.length; i++) {
-                checkIdList.push(checkData[i].Id)
+                checkIdList.push(checkData[i].ID)
             }
-            location.href = "/daemon/task/start?&taskId="+checkIdList.join(",") + '&addr=' + common.getRequest().addr;
+            location.href = "/daemon/task/action?action=start&taskId="+checkIdList.join(",") + '&addr=' + common.getRequest().addr;
             
         })
         $('#stop-script').on('click', function () {
@@ -175,9 +175,9 @@
                 return layer.msg('请选择需要启动的脚本');
             }
             for (var i=0; i < checkData.length; i++) {
-                checkIdList.push(checkData[i].Id)
+                checkIdList.push(checkData[i].ID)
             }
-            location.href = "/daemon/task/stop?&taskId="+checkIdList.join(",") + '&addr=' + common.getRequest().addr + '&action=stop';
+            location.href = "/daemon/task/action?action=stop&taskId="+checkIdList.join(",") + '&addr=' + common.getRequest().addr + '&action=stop';
         })
 
 

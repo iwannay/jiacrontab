@@ -86,12 +86,12 @@ func SystemInfo(startTime time.Time) map[string]interface{} {
 		"内存释放次数":   mstat.Frees,
 		"距离上次GC时间": afterLastGC,
 
-		"当前 Heap 内存使用量": file.FileSize(int64(mstat.HeapAlloc)),
-		"Heap 内存占用量":    file.FileSize(int64(mstat.HeapSys)),
-		"Heap 内存空闲量":    file.FileSize(int64(mstat.HeapIdle)),
-		"正在使用的 Heap 内存": file.FileSize(int64(mstat.HeapInuse)),
-		"被释放的 Heap 内存":  file.FileSize(int64(mstat.HeapReleased)),
-		"Heap 对象数量":     mstat.HeapObjects,
+		// "当前 Heap 内存使用量": file.FileSize(int64(mstat.HeapAlloc)),
+		// "Heap 内存占用量":    file.FileSize(int64(mstat.HeapSys)),
+		// "Heap 内存空闲量":    file.FileSize(int64(mstat.HeapIdle)),
+		// "正在使用的 Heap 内存": file.FileSize(int64(mstat.HeapInuse)),
+		// "被释放的 Heap 内存":  file.FileSize(int64(mstat.HeapReleased)),
+		// "Heap 对象数量":     mstat.HeapObjects,
 
 		"下次GC内存回收量": fmt.Sprintf("%.3fMB", float64(mstat.NextGC)/float64(mb)),
 		"GC暂停时间总量":  fmt.Sprintf("%.3fs", float64(mstat.PauseTotalNs)/1000/1000/1000),

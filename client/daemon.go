@@ -58,7 +58,7 @@ func (d *daemonTask) do(ctx context.Context) {
 		case <-t.C:
 		}
 
-		if stop {
+		if stop || d.task.FailedRestart == false {
 			break
 		}
 
@@ -81,11 +81,11 @@ func (d *daemonTask) do(ctx context.Context) {
 	}
 
 	d.processNum = 0
-	model.DB().Table("daemon_tasks").Where("id = ?", d.task.ID).Update(map[string]interface{}{
+	model.DB().Model(&model.DaemonTask{}).Where("id = ?", d.task.ID).Update(map[string]interface{}{
 		"status":      stopDaemonTask,
 		"process_num": d.processNum})
 
-	fmt.Println("end", d.task.Name)
+	log.Println("end", d.task.Name)
 
 }
 
@@ -132,7 +132,6 @@ func (d *daemon) run() {
 		var ctx context.Context
 
 		for v := range d.taskChannel {
-
 			switch v.action {
 			case startDaemonTask:
 				d.lock.Lock()
@@ -146,7 +145,6 @@ func (d *daemon) run() {
 					d.lock.Unlock()
 					t.action = v.action
 					if t.processNum == 0 {
-
 						ctx, v.cancel = context.WithCancel(context.Background())
 						go v.do(ctx)
 					}
@@ -170,7 +168,7 @@ func (d *daemon) run() {
 					t.cancel()
 				} else {
 					d.lock.Unlock()
-					model.DB().Table("daemon_tasks").Where("id = ?", v.task.ID).Update("status", stopDaemonTask)
+					model.DB().Model(&model.DaemonTask{}).Where("id = ?", v.task.ID).Update("status", stopDaemonTask)
 
 				}
 			}

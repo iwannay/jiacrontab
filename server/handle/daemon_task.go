@@ -147,13 +147,8 @@ func ActionDaemonTask(ctx iris.Context) {
 	var replay bool
 	action := ctx.FormValue("action")
 	addr := ctx.FormValue("addr")
-	taskId, err := strconv.Atoi(ctx.FormValue("taskId"))
-	if err != nil {
-		ctx.View("public/error.html", map[string]interface{}{
-			"error": "invalid taskId",
-		})
-		return
-	}
+	taskIds := ctx.FormValue("taskId")
+
 	var op int
 	switch action {
 	case "start":
@@ -169,9 +164,9 @@ func ActionDaemonTask(ctx iris.Context) {
 		return
 	}
 
-	err = rpc.Call(addr, "DaemonTask.ActionDaemonTask", proto.ActionDaemonTaskArgs{
-		Action: op,
-		TaskId: taskId,
+	err := rpc.Call(addr, "DaemonTask.ActionDaemonTask", proto.ActionDaemonTaskArgs{
+		Action:  op,
+		TaskIds: taskIds,
 	}, &replay)
 	if err != nil {
 		ctx.View("public/error.html", map[string]interface{}{

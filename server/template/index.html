@@ -9,7 +9,7 @@
                         <div class="layui-card">
                             <div class="layui-card-header">版本信息</div>
                             <div class="layui-card-body layui-text">
-                                <table class="layui-table">
+                                <table class="layui-table" >
                                     <colgroup>
                                         <col width="100">
                                         <col>
@@ -34,38 +34,20 @@
                         <div class="layui-card">
                             <div class="layui-card-header">运行信息</div>
                             <div class="layui-card-body">
-                                <div class="layui-carousel" id="test1">
-                                    <div carousel-item>
-                                        <div class="layadmin-backlog">
-                                            <ul class="layui-row layui-col-space10">
-                                                {{range $k,$v := .systemInfoLeft}}
-                                                <li class="layui-col-xs6">
-                                                    <a href="javascript:;" class="layadmin-backlog-body">
-                                                        <h3>{{$k}}</h3>
-                                                        <p>
-                                                            <cite>{{$v}}</cite>
-                                                        </p>
-                                                    </a>
-                                                </li>
-                                                {{end}}
-                                            </ul>
-                                        </div>
-                                        <div class="layadmin-backlog">
-                                            <ul class="layui-row layui-col-space10">
-                                                {{range $k,$v := .systemInfoRight}}
-                                                <li class="layui-col-xs6">
-                                                    <a href="javascript:;" class="layadmin-backlog-body">
-                                                        <h3>{{$k}}</h3>
-                                                        <p>
-                                                            <cite>{{$v}}</cite>
-                                                        </p>
-                                                    </a>
-                                                </li>
-                                                {{end}}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div>
+                                <table class="layui-table" >
+                                    <colgroup>
+                                        <col width="170">
+                                        <col>
+                                    </colgroup>
+                                    <tbody>
+                                        {{range $k,$v := .systemInfoList}}
+                                        <tr>
+                                            <td>{{$k}}</td>
+                                            <td>{{$v}}</td>
+                                        </tr>
+                                        {{end}}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -84,7 +66,7 @@
                                     </colgroup>
                                     <thead>
                                         <tr>
-                                            <th>名称</th>
+                                            <th>序号</th>
                                             <th>IP</th>
                                             <th>状态</th>
                                             <th>计划任务数</th>
@@ -95,7 +77,7 @@
                                     <tbody>
                                         {{range $k,$client := .clientList}}
                                         <tr>
-                                            <td>服务器-{{$k}}</td>
+                                            <td>{{$client.ID}}</td>
                                             <td>{{$client.Addr}}</td>
                                             <td>
                                                 {{if eq $client.State 1}}
@@ -126,18 +108,9 @@
     </div>
     <script src="/static/lib/layui/layui.js"></script>
     <script>
-        layui.use(['element', 'carousel'], function () {
+        layui.use(['element'], function () {
             var element = layui.element;
-            var carousel = layui.carousel;
-            //建造实例
-            carousel.render({
-                elem: '#test1',
-                width: '100%',
-                arrow: 'none',
-                autoplay: false,
-                trigger: 'hover',
-                // indicator: 'outside'
-            });
+            document.getElementById('flexible-icon').style.display = 'none';
 
         });
     </script>

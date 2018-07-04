@@ -2,7 +2,6 @@ package handle
 
 import (
 	"crypto/md5"
-	"encoding/json"
 
 	"fmt"
 	"jiacrontab/libs"
@@ -114,29 +113,29 @@ func ListTask(ctx iris.Context) {
 // Index 服务器列表页面
 func Index(ctx iris.Context) {
 	sInfo := libs.SystemInfo(conf.ConfigArgs.ServerStartTime)
-	sInfoL, sInfoR := make(map[string]interface{}), make(map[string]interface{})
+	// sInfoL, sInfoR := make(map[string]interface{}), make(map[string]interface{})
 
-	i := 0
-	for k, v := range sInfo {
-		if i <= 5 {
-			sInfoL[k] = v
-		} else {
-			sInfoR[k] = v
-		}
-		i++
-	}
+	// i := 0
+	// for k, v := range sInfo {
+	// 	if i <= 5 {
+	// 		sInfoL[k] = v
+	// 	} else {
+	// 		sInfoR[k] = v
+	// 	}
+	// 	i++
+	// }
 
 	var clientList []model.Client
 	model.DB().Model(&model.Client{}).Find(&clientList)
 
 	ctx.ViewData("clientList", clientList)
 
-	ctx.ViewData("systemInfoLeft", sInfoL)
-	ctx.ViewData("systemInfoRight", sInfoR)
+	// ctx.ViewData("systemInfoLeft", sInfoL)
+	// ctx.ViewData("systemInfoRight", sInfoR)
 
-	bts, _ := json.Marshal(sInfo)
+	// bts, _ := json.Marshal(sInfo)
 
-	ctx.ViewData("systemInfoList", string(bts))
+	ctx.ViewData("systemInfoList", sInfo)
 
 	ctx.View("index.html")
 

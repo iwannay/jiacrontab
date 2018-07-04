@@ -7,6 +7,7 @@ import (
 	"jiacrontab/model"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -40,21 +41,24 @@ func (t *DaemonTask) ListDaemonTask(args struct{ Page, Pagesize int }, reply *[]
 
 func (t *DaemonTask) ActionDaemonTask(args proto.ActionDaemonTaskArgs, reply *bool) error {
 
-	var task model.DaemonTask
+	var tasks []model.DaemonTask
 
 	*reply = false
 
-	ret := model.DB().Find(&task, "id=?", args.TaskId)
+	ret := model.DB().Debug().Model(&model.DaemonTask{}).Find(&tasks, "id in(?)", strings.Split(args.TaskIds, ","))
 
-	if (task == model.DaemonTask{}) {
-
+	if ret.Error != nil {
 		return ret.Error
 	}
 
-	globalDaemon.add(&daemonTask{
-		task:   &task,
-		action: args.Action,
-	})
+	for _, v := range tasks {
+		task := v
+		globalDaemon.add(&daemonTask{
+			task:   &task,
+			action: args.Action,
+		})
+	}
+
 	return nil
 }
 

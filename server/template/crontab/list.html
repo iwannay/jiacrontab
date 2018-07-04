@@ -190,7 +190,7 @@
                     return layer.msg('请选择需要启动的脚本');
                 }
                 for (var i=0; i < checkData.length; i++) {
-                    checkIdList.push(checkData[i].Id)
+                    checkIdList.push(checkData[i].ID)
                 }
                 location.href = "/crontab/task/start?&taskId="+checkIdList.join(",") + '&addr=' + common.getRequest().addr;
                 
@@ -203,7 +203,7 @@
                     return layer.msg('请选择需要启动的脚本');
                 }
                 for (var i=0; i < checkData.length; i++) {
-                    checkIdList.push(checkData[i].Id)
+                    checkIdList.push(checkData[i].ID)
                 }
                 location.href = "/crontab/task/stop?&taskId="+checkIdList.join(",") + '&addr=' + common.getRequest().addr + '&action=stop';
             })

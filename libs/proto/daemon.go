@@ -18,6 +18,6 @@ const (
 //}
 
 type ActionDaemonTaskArgs struct {
-	Action int
-	TaskId int
+	Action  int
+	TaskIds string
 }
