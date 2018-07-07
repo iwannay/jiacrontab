@@ -22,8 +22,15 @@ func (t *DaemonTask) UpdateDaemonTask(args model.DaemonTask, reply *int64) error
 		if daemonTask.ProcessNum != 0 {
 			return errors.New("can not update when task is running")
 		}
-
-		ret = model.DB().Model(&model.DaemonTask{}).Where("id=?", args.ID).Update(&args)
+		ret = model.DB().Model(&model.DaemonTask{}).Where("id=?", args.ID).Update(map[string]interface{}{
+			"name":           args.Name,
+			"mail_to":        args.MailTo,
+			"mail_notify":    args.MailNotify,
+			"failed_restart": args.FailedRestart,
+			"command":        args.Command,
+			"args":           args.Args,
+			"status":         args.Status,
+		})
 		*reply = ret.RowsAffected
 		return ret.Error
 	}

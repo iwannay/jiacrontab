@@ -29,16 +29,9 @@ func (t *CrontabTask) Update(args model.CrontabTask, ok *bool) error {
 	}
 
 	if args.ID == 0 {
-		// for k := range args.Depends {
-		// 	args.Depends[k].TaskId = args.ID
-		// }
 		ret := model.DB().Create(&args)
 		if ret.Error == nil {
-			// var crontabTask model.CrontabTask
-			// for k := range crontabTask.Depends {
-			// 	crontabTask.Depends[k].TaskId = args.ID
-			// }
-			// model.DB().Debug().Update(&crontabTask, "id=? and number_process=0", crontabTask.ID)
+
 			globalCrontab.add(&args)
 		}
 
@@ -58,11 +51,6 @@ func (t *CrontabTask) Update(args model.CrontabTask, ok *bool) error {
 			crontabTask.UnexpectedExitMail = args.UnexpectedExitMail
 			crontabTask.PipeCommands = args.PipeCommands
 			crontabTask.Sync = args.Sync
-
-			// for k := range crontabTask.Depends {
-			// 	crontabTask.Depends[k].TaskId = args.ID
-
-			// }
 			crontabTask.Timeout = args.Timeout
 			crontabTask.MaxConcurrent = args.MaxConcurrent
 			if crontabTask.MaxConcurrent == 0 {
@@ -72,7 +60,20 @@ func (t *CrontabTask) Update(args model.CrontabTask, ok *bool) error {
 			crontabTask.MailTo = args.MailTo
 			crontabTask.OpTimeout = args.OpTimeout
 			crontabTask.C = args.C
-			model.DB().Debug().Model(&model.CrontabTask{}).Where("id=? and number_process=0", crontabTask.ID).Update(&crontabTask)
+			model.DB().Debug().Model(&model.CrontabTask{}).Where("id=? and number_process=0", crontabTask.ID).Update(map[string]interface{}{
+				"name":                 args.Name,
+				"command":              args.Command,
+				"args":                 args.Args,
+				"mail_to":              args.MailTo,
+				"depends":              args.Depends,
+				"upexpected_exit_mail": args.UnexpectedExitMail,
+				"pipe_commands":        args.PipeCommands,
+				"sync":                 args.Sync,
+				"timeout":              args.Timeout,
+				"max_concurrent":       args.MaxConcurrent,
+				"op_timeout":           args.OpTimeout,
+				"c":                    args.C,
+			})
 
 		} else {
 			*ok = false

@@ -9,7 +9,7 @@ import (
 type DaemonTask struct {
 	gorm.Model
 	Name          string `gorm:"unique;not null"`
-	MailNofity    bool
+	MailNotify    bool
 	Status        int
 	MailTo        string
 	FailedRestart bool

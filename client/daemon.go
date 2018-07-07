@@ -29,7 +29,13 @@ func (d *daemonTask) do(ctx context.Context) {
 	d.processNum = 1
 	t := time.NewTicker(1 * time.Second)
 	d.daemon.wait.Add(1)
-	defer d.daemon.wait.Done()
+
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("%s exec panic %s \n", d.task.Name, err)
+		}
+		d.daemon.wait.Done()
+	}()
 	model.DB().Table("daemon_tasks").Table("daemon_tasks").Where("id = ?", d.task.ID).Update(map[string]interface{}{
 		"status":      startDaemonTask,
 		"start_at":    time.Now(),
@@ -45,7 +51,7 @@ func (d *daemonTask) do(ctx context.Context) {
 		log.Println("daemon exec task_name:", d.task.Name, "task_id", d.task.ID)
 		err := wrapExecScript(ctx, fmt.Sprintf("%d.log", d.task.ID), cmdList, logPath, &logContent)
 		if err != nil {
-			if d.task.MailNofity {
+			if d.task.MailNotify && d.task.MailTo != "" {
 				sendMail(d.task.MailTo, globalConfig.addr+"提醒常驻脚本异常退出", fmt.Sprintf(
 					"任务名：%s\n详情：%s %v\n开始时间：%s\n异常：%s",
 					d.task.Name, d.task.Command, d.task.Args, time.Now().Format("2006-01-02 15:04:05"), err.Error()))

@@ -83,11 +83,13 @@ func EditDaemonTask(ctx iris.Context) {
 
 		name := ctx.PostValueTrim("name")
 		mailNotify, err := ctx.PostValueBool("mailNotify")
+
 		mailTo := ctx.PostValueTrim("mailTo")
 		command := ctx.PostValue("command")
 		args := ctx.PostValue("args")
+		failedRestart, err2 := ctx.PostValueBool("failedRestart")
 
-		if addr == "" || name == "" || command == "" {
+		if addr == "" || name == "" || command == "" || err != nil || err2 != nil {
 			ctx.ViewData("errorMsg", "参数不正确")
 			ctx.ViewData("daemonTask", daemonTask)
 			ctx.View("daemon/edit.html")
@@ -95,11 +97,12 @@ func EditDaemonTask(ctx iris.Context) {
 		}
 
 		daemonTask = model.DaemonTask{
-			Name:       name,
-			MailNofity: mailNotify,
-			MailTo:     mailTo,
-			Command:    command,
-			Args:       args,
+			Name:          name,
+			MailNotify:    mailNotify,
+			MailTo:        mailTo,
+			Command:       command,
+			FailedRestart: failedRestart,
+			Args:          args,
 		}
 
 		if taskId != "" {

@@ -671,6 +671,7 @@ func pushDepends(dpds []*dependScript) bool {
 			// 检测目标服务器为本机时直接执行脚本
 			if v.dest == globalConfig.addr {
 				globalDepend.Add(v)
+				fmt.Println("本机哈")
 			} else {
 				ndpds = append(ndpds, model.DependsTask{
 					Name:    v.name,
@@ -747,17 +748,15 @@ func filterDepend(args *dependScript) bool {
 		return false
 	}
 
-	idArr := strings.Split(args.id, "-")
 	isAllDone := true
 	globalCrontab.lock.Lock()
-	i := libs.ParseInt(idArr[0])
-	if h, ok := globalCrontab.handleMap[uint(i)]; ok {
-
+	if h, ok := globalCrontab.handleMap[args.taskId]; ok {
 		globalCrontab.lock.Unlock()
+
 		var logContent []byte
 		var currTaskEntity *taskEntity
 		for _, v := range h.taskPool {
-			if v.id == idArr[1] {
+			if v.id == args.pid {
 				currTaskEntity = v
 				for _, v2 := range v.depends {
 
@@ -777,7 +776,7 @@ func filterDepend(args *dependScript) bool {
 		}
 
 		if currTaskEntity == nil {
-			log.Printf("cant find task entity %s %s %s", args.name, args.command, args.args)
+			log.Printf("cannot find task entity %s %s %s", args.name, args.command, args.args)
 			return true
 		}
 
@@ -793,7 +792,7 @@ func filterDepend(args *dependScript) bool {
 		}
 
 	} else {
-		log.Printf("cant find task handle %s %s %s", args.name, args.command, args.args)
+		log.Printf("cannot find task handle %s %s %s", args.name, args.command, args.args)
 		globalCrontab.lock.Unlock()
 	}
 

@@ -39,8 +39,9 @@ type taskEntity struct {
 }
 
 type dependScript struct {
-	pid        string
-	id         string
+	taskId     uint   // 定时任务id
+	pid        string // 当前依赖的父级任务（可能存在多个并发的task）id
+	id         string // 当前依赖id
 	from       string
 	command    string
 	args       string
@@ -56,7 +57,7 @@ func newTaskEntity(t *model.CrontabTask) *taskEntity {
 	var depends []*dependScript
 	var dependSubName string
 	var md5Sum string
-	id := fmt.Sprintf("%d-%d", t.ID, time.Now().Unix())
+	id := fmt.Sprintf("%d_%d", t.ID, time.Now().Unix())
 
 	for k, v := range t.Depends {
 		md5Sum = fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s-%s-%d", v.Command, v.Args, k))))
@@ -67,13 +68,14 @@ func newTaskEntity(t *model.CrontabTask) *taskEntity {
 		}
 		depends = append(depends, &dependScript{
 			pid:     id,
-			id:      fmt.Sprintf("%s-%s", id, dependSubName),
+			taskId:  t.ID,
+			id:      fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%d-%s", k, dependSubName)))),
 			from:    v.From,
 			dest:    v.Dest,
 			command: v.Command,
 			timeout: v.Timeout,
 			args:    v.Args,
-			name:    fmt.Sprintf("%s-%s", t.Name, dependSubName),
+			name:    fmt.Sprintf("%d-%s", k, dependSubName),
 			done:    false,
 		})
 	}
@@ -92,6 +94,9 @@ func newTaskEntity(t *model.CrontabTask) *taskEntity {
 
 func (t *taskEntity) exec(logContent *[]byte) {
 	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("%s exec panic %s \n", t.taskArgs.Name, err)
+		}
 		model.DB().Model(&model.CrontabTask{}).Where("id=?", t.taskArgs.ID).Update(map[string]interface{}{
 			"state":            t.taskArgs.State,
 			"lat_cost_time":    t.taskArgs.LastCostTime,
@@ -129,7 +134,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 		writeLog(t.logPath, fmt.Sprintf("%d.log", t.taskArgs.ID), &t.logContent)
 		t.taskArgs.LastExitStatus = exitDependError
 		isExceptError = true
-		if t.taskArgs.UnexpectedExitMail {
+		if t.taskArgs.UnexpectedExitMail && t.taskArgs.MailTo != "" {
 			costTime := time.Now().UnixNano() - start
 			sendMail(t.taskArgs.MailTo, globalConfig.addr+"提醒脚本依赖异常退出", fmt.Sprintf(
 				"任务名：%s\n详情：%s %v\n开始时间：%s\n耗时：%.4f\n异常：%s",
@@ -442,6 +447,10 @@ func (c *crontab) deal(task *model.CrontabTask, ctx context.Context) {
 	c.lock.Lock()
 	h := c.handleMap[task.ID]
 	c.lock.Unlock()
+	if h == nil {
+		return
+	}
+
 	for {
 
 		select {
@@ -483,14 +492,14 @@ func (c *crontab) deal(task *model.CrontabTask, ctx context.Context) {
 			wgroup.Wait()
 			c.lock.Lock()
 			task.State = 0
-			if task.NumberProcess == 0 {
-				close(c.handleMap[task.ID].clockChan)
-				delete(c.handleMap, task.ID)
-			} else {
-				close(c.handleMap[task.ID].clockChan)
-				c.handleMap[task.ID].cancel = nil
-			}
-
+			delete(c.handleMap, task.ID)
+			// if task.NumberProcess == 0 {
+			// 	close(c.handleMap[task.ID].clockChan)
+			// 	delete(c.handleMap, task.ID)
+			// } else {
+			// 	close(c.handleMap[task.ID].clockChan)
+			// 	c.handleMap[task.ID].cancel = nil
+			// }
 			c.lock.Unlock()
 			log.Printf("stop %s (ID:%d) ok", task.Name, task.ID)
 			return
@@ -511,6 +520,7 @@ func (t *taskEntity) waitDependsDone(ctx context.Context) bool {
 		// 同步模式
 		syncFlag = pushPipeDepend(t.depends, "")
 	} else {
+		// 并发模式
 		syncFlag = pushDepends(t.depends)
 	}
 	if !syncFlag {
