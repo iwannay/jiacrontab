@@ -27,11 +27,6 @@ func (d DataQueue) Len() int {
 	return len(d)
 }
 
-// var (
-// 	matchDataQueue DataQueue
-// 	group          sync.WaitGroup
-// )
-
 type Finder struct {
 	matchDataQueue DataQueue
 	expr           string
@@ -87,7 +82,7 @@ func (fd *Finder) find(fpath string, modifyTime time.Time) error {
 func (fd *Finder) walkFunc(fpath string, info os.FileInfo, err error) error {
 
 	if !info.IsDir() {
-		if filepath.Ext(fpath) == ".go" {
+		if filepath.Ext(fpath) == fd.filterExt {
 			go fd.find(fpath, info.ModTime())
 		}
 
@@ -98,12 +93,9 @@ func (fd *Finder) walkFunc(fpath string, info os.FileInfo, err error) error {
 }
 
 func (fd *Finder) Search(root string, data *[]byte) {
-	filepath.Walk("/home/john/goproject/src/jiacrontab", fd.walkFunc)
-
+	filepath.Walk(root, fd.walkFunc)
 	fd.group.Wait()
-
 	sort.Stable(fd.matchDataQueue)
-
 	for _, v := range fd.matchDataQueue {
 		*data = append(*data, v.matchData...)
 	}
