@@ -1,7 +1,6 @@
 package handle
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/kataras/iris"
@@ -133,7 +132,6 @@ func EditDaemonTask(ctx iris.Context) {
 		}
 
 		err = rpc.Call(addr, "DaemonTask.GetDaemonTask", taskIdInt, &daemonTask)
-		fmt.Println(taskIdInt, daemonTask)
 		if err != nil {
 			ctx.ViewData("errorMsg", "查询不到任务")
 			ctx.ViewData("daemonTask", daemonTask)

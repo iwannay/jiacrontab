@@ -61,6 +61,7 @@ func (d *daemonTask) do(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			stop = true
+			fmt.Println("stop")
 		case <-t.C:
 		}
 
