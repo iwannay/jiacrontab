@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"jiacrontab/libs"
+	"jiacrontab/libs/finder"
+	"jiacrontab/libs/proto"
 	"jiacrontab/model"
 	"log"
 	"os"
@@ -179,46 +181,29 @@ func (t *CrontabTask) QuickStart(args string, reply *[]byte) error {
 
 }
 
-func (t *CrontabTask) Log(args string, reply *[]byte) error {
-	staticDir := filepath.Join(globalConfig.logPath, "crontab_task", time.Now().Format("2006/01"))
-	var filename string
-	var crontabTask model.CrontabTask
+func (t *CrontabTask) Log(args proto.SearchLog, reply *proto.SearchLogResult) error {
 
-	ret := model.DB().Find(&crontabTask, "id=?", args)
+	fd := finder.NewFinder(1000000, func(info os.FileInfo) bool {
+		basename := filepath.Base(info.Name())
+		arr := strings.Split(basename, ".")
+		if len(arr) != 2 {
+			return false
+		}
+		if arr[1] == "log" && arr[0] == fmt.Sprint(args.TaskId) {
+			return true
+		}
+		return false
+	})
 
-	if ret.Error == nil {
-		filename = fmt.Sprintf("%d.log", crontabTask.ID)
+	if args.Date == "" {
+		args.Date = time.Now().Format("2006/01/02")
 	}
 
-	if filename == "" {
-		return errors.New("log file not found")
-	}
-	fp := filepath.Join(staticDir, filename)
-	f, err := os.Open(fp)
-	defer f.Close()
-	if err != nil {
-		return err
-	}
-	fStat, err := f.Stat()
-	if err != nil {
-		return err
-	}
-	limit := int64(1024 * 1024)
-	var offset int64
-	var buffer []byte
-	if fStat.Size() > limit {
-		buffer = make([]byte, limit)
-		offset = fStat.Size() - limit
-	} else {
-		offset = 0
-		buffer = make([]byte, fStat.Size())
-	}
-	f.Seek(offset, os.SEEK_CUR)
-
-	_, err = f.Read(buffer)
-	*reply = buffer
-
+	rootpath := filepath.Join(globalConfig.logPath, "crontab_task", args.Date)
+	err := fd.Search(rootpath, args.Pattern, &reply.Content, args.Page, args.Pagesize)
+	reply.Total = int(fd.Count())
 	return err
+
 }
 
 func (t *CrontabTask) ResolvedDepends(args model.DependsTask, reply *bool) error {

@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"jiacrontab/libs/finder"
 	"jiacrontab/libs/proto"
 	"jiacrontab/model"
 	"os"
@@ -77,31 +78,27 @@ func (t *DaemonTask) GetDaemonTask(args int, reply *model.DaemonTask) error {
 	return nil
 }
 
-func (t *DaemonTask) Log(args int, ret *[]byte) error {
-	fp := filepath.Join(globalConfig.logPath, "daemon_task", time.Now().Format("2006/01"), fmt.Sprint(args, ".log"))
-	f, err := os.Open(fp)
-	defer f.Close()
-	if err != nil {
-		return err
-	}
-	fStat, err := f.Stat()
-	if err != nil {
-		return err
-	}
-	limit := int64(1024 * 1024)
-	var offset int64
-	var buffer []byte
-	if fStat.Size() > limit {
-		buffer = make([]byte, limit)
-		offset = fStat.Size() - limit
-	} else {
-		offset = 0
-		buffer = make([]byte, fStat.Size())
-	}
-	f.Seek(offset, os.SEEK_CUR)
+func (t *DaemonTask) Log(args proto.SearchLog, reply *proto.SearchLogResult) error {
 
-	_, err = f.Read(buffer)
-	*ret = buffer
+	fd := finder.NewFinder(1000000, func(info os.FileInfo) bool {
+		basename := filepath.Base(info.Name())
+		arr := strings.Split(basename, ".")
+		if len(arr) != 2 {
+			return false
+		}
+		if arr[1] == "log" && arr[0] == fmt.Sprint(args.TaskId) {
+			return true
+		}
+		return false
+	})
 
+	if args.Date == "" {
+		args.Date = time.Now().Format("2006/01/02")
+	}
+
+	rootpath := filepath.Join(globalConfig.logPath, "daemon_task", args.Date)
+	err := fd.Search(rootpath, args.Pattern, &reply.Content, args.Page, args.Pagesize)
+	reply.Total = int(fd.Count())
 	return err
+
 }

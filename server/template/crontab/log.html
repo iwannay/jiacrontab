@@ -15,10 +15,7 @@
                 <input type="text" name="search" placeholder="搜索日志" class="layui-input search-txt">
             </div>
             <div class="layui-input-inline" style="width: 120px;">
-                <input type="text" id="start-date" class="layui-input"placeholder="开始日期" >
-            </div>
-            <div class="layui-input-inline" style="width: 120px;">
-                <input type="text" id="end-date" class="layui-input"placeholder="结束日期" >
+                <input type="text" id="search-date" class="layui-input" placeholder="开始日期" >
             </div>
             <div class="layui-btn" id="search">搜索</div>
         </div>
@@ -26,39 +23,67 @@
             <colgroup>
                 <col>
             </colgroup>
-            <tbody>
+            <tbody id="log-list"  total="{{.total}}" pagesize="{{.pagesize}}">
                 {{range $k,$v := .logList}}
                 <tr><td>{{$v}}</td></tr>
                 {{end}}
             </tbody>
         </table>
-
+        <div id="log-page"></div>
     </div>
     {{render "public/footer.html"}}
 </div>
 <script src="/static/lib/layui/layui.js"></script>
 <script>
-    layui.use(['element', 'jquery', 'layer', 'laydate'], function () {
+    //config的设置是全局的
+    layui.config({
+        base: '/static/js/' //假设这是你存放拓展模块的根目录
+    })
+    layui.use(['common', 'element', 'jquery', 'layer', 'laydate', 'laypage'], function () {
+        var common = layui.common;
         var layer = layui.layer;
         var $ = layui.jquery;
         var laydate = layui.laydate;
+        var laypage = layui.laypage;
+
+        //总页数大于页码总数
+        laypage.render({
+            elem: 'log-page',
+            count: $("#log-list").attr("total"), //数据总数,
+            limit: $("#log-list").attr("pagesize"), //每页显示的条数
+            curr: common.getRequest().page ? common.getRequest().page : 1,
+            jump: function(obj, first){
+                //首次不执行
+                if(!first){
+                    window.location.href = common.getRequest().add("page", obj.curr).search();
+                }
+            }
+        });
+        // 搜索默认值
+        if (common.getRequest().pattern) {
+            $('.search-txt').val(common.getRequest().pattern);
+        }
+        if (common.getRequest().date) {
+            $('#search-date').val(common.getRequest().date);
+        }
+
         // 监听搜索事件
         $('#search').on('click', function() {
             var searchText = $('.search-txt').val();
-            if ($.trim(searchText) == '') {
-                return layer.msg('请输入搜索内容');
-            } else {
-                window.location.href = 'search?tpl=' + searchText;
-            }
+            var time = $('#search-date').val();
+
+            var urlObj = common.getRequest().add("pattern", searchText);
+            urlObj.add("date",time);
+            urlObj.add("page", 1);
+            window.location.href = urlObj.search();
         })
 
         laydate.render({ 
-            elem: '#start-date'
-        });
-        laydate.render({ 
-            elem: '#end-date'
+            format: "yyyy/MM/dd",
+            elem: '#search-date'
         });
 
+        
         $('#flexible-icon').on('click', function () {
             if ($(this).hasClass('layui-icon-spread-left')) {
                 $(this).addClass('layui-icon-shrink-right').removeClass('layui-icon-spread-left');

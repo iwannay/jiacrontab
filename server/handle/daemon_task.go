@@ -183,7 +183,8 @@ func ActionDaemonTask(ctx iris.Context) {
 
 func RecentDaemonLog(ctx iris.Context) {
 	var r = ctx.Request()
-
+	var searchRet proto.SearchLogResult
+	pagesize := 50
 	id, err := strconv.Atoi(r.FormValue("taskId"))
 	if err != nil {
 
@@ -192,21 +193,33 @@ func RecentDaemonLog(ctx iris.Context) {
 		return
 
 	}
+	page, err := strconv.Atoi(r.FormValue("page"))
+	if err != nil || page == 0 {
+		page = 1
+	}
+
+	date := r.FormValue("date")
+	pattern := r.FormValue("pattern")
 	addr := r.FormValue("addr")
 
-	var content []byte
-
-	if err := rpc.Call(addr, "DaemonTask.Log", id, &content); err != nil {
+	if err := rpc.Call(addr, "DaemonTask.Log", proto.SearchLog{
+		TaskId:   id,
+		Page:     page,
+		Pagesize: pagesize,
+		Date:     date,
+		Pattern:  pattern,
+	}, &searchRet); err != nil {
 
 		ctx.ViewData("error", err)
 		ctx.View("public/error.html")
 		return
 
 	}
-	logList := strings.Split(string(content), "\n")
-
+	logList := strings.Split(string(searchRet.Content), "\n")
 	ctx.ViewData("logList", logList)
 	ctx.ViewData("addr", addr)
+	ctx.ViewData("total", searchRet.Total)
+	ctx.ViewData("pagesize", pagesize)
 	ctx.View("daemon/log.html")
 
 }

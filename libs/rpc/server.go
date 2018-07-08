@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"net/rpc"
+	"runtime/debug"
 	"time"
 )
 
@@ -93,7 +94,7 @@ func listen(addr string, srcvr ...interface{}) error {
 		go func(conn net.Conn) {
 			defer func() {
 				if err := recover(); err != nil {
-					log.Println("Error: Rpc Call Recover", err)
+					log.Println("Error: Rpc Call Recover", err, string(debug.Stack()))
 				}
 			}()
 			buf := bufio.NewWriter(conn)

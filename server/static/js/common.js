@@ -20,9 +20,28 @@ layui.define(function(exports){ //提示：模块也可以依赖其它模块，�
         s = date.getSeconds();
         return Y+M+D+h+m+s;
     },
-     getRequest: function() {
+    getRequest: function() {
         var url = decodeURIComponent(location.search); //获取url中"?"符后的字串
-        var theRequest = {};
+        var theRequest = {
+            add:function(key, val) {
+                 this[key] = val;
+                 return this;
+            },
+            search:function()  {
+                var query = "?";
+                for (var i in this) {
+                    if (typeof this[i] == "function") {
+                        continue;
+                    }
+                    if (query == "?") {
+                        query += i +"=" + this[i];
+                    } else {
+                        query += "&" + i +"=" + this[i];
+                    }  
+                }
+               return query;
+            }
+        };
         if (url.indexOf("?") != -1) {
             var str = url.substr(1);
             strs = str.split("&");
@@ -30,6 +49,7 @@ layui.define(function(exports){ //提示：模块也可以依赖其它模块，�
                 theRequest[strs[i].split("=")[0]] = (strs[i].split("=")[1]);
             }
         }
+
         return theRequest;
     }
   };

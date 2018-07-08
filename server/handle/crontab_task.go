@@ -5,6 +5,7 @@ import (
 
 	"fmt"
 	"jiacrontab/libs"
+	"jiacrontab/libs/proto"
 	"jiacrontab/libs/rpc"
 	"jiacrontab/model"
 	"jiacrontab/server/conf"
@@ -118,14 +119,7 @@ func Index(ctx iris.Context) {
 	model.DB().Model(&model.Client{}).Find(&clientList)
 
 	ctx.ViewData("clientList", clientList)
-
-	// ctx.ViewData("systemInfoLeft", sInfoL)
-	// ctx.ViewData("systemInfoRight", sInfoR)
-
-	// bts, _ := json.Marshal(sInfo)
-
 	ctx.ViewData("systemInfoList", sInfo)
-
 	ctx.View("index.html")
 
 }
@@ -460,27 +454,44 @@ func Logout(ctx iris.Context) {
 
 func RecentLog(ctx iris.Context) {
 	var r = ctx.Request()
-
-	id := r.FormValue("taskId")
+	var searchRet proto.SearchLogResult
 	addr := r.FormValue("addr")
-	var content []byte
-	if id == "" {
+	pagesize := 50
+	id, err := strconv.Atoi(r.FormValue("taskId"))
 
+	if err != nil {
 		ctx.ViewData("error", "参数错误")
 		ctx.View("public/error.html")
 		return
 	}
-	if err := rpc.Call(addr, "CrontabTask.Log", id, &content); err != nil {
+
+	page, err := strconv.Atoi(r.FormValue("page"))
+	if err != nil || page == 0 {
+		page = 1
+	}
+
+	date := r.FormValue("date")
+	pattern := r.FormValue("pattern")
+
+	if err := rpc.Call(addr, "CrontabTask.Log", proto.SearchLog{
+		TaskId:   id,
+		Page:     page,
+		Pagesize: pagesize,
+		Date:     date,
+		Pattern:  pattern,
+	}, &searchRet); err != nil {
 
 		ctx.ViewData("error", err)
 		ctx.View("public/error.html")
 		return
 
 	}
-	logList := strings.Split(string(content), "\n")
+	logList := strings.Split(string(searchRet.Content), "\n")
 
 	ctx.ViewData("logList", logList)
 	ctx.ViewData("addr", addr)
+	ctx.ViewData("total", searchRet.Total)
+	ctx.ViewData("pagesize", pagesize)
 	ctx.View("crontab/log.html")
 
 }

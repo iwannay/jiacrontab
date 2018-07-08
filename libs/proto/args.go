@@ -83,3 +83,15 @@ type MailArgs struct {
 // type Mdata map[string]*TaskArgs
 
 // var Data = make(Mdata)
+
+type SearchLog struct {
+	TaskId         int
+	Page, Pagesize int
+	Date           string
+	Pattern        string
+}
+
+type SearchLogResult struct {
+	Content []byte
+	Total   int
+}

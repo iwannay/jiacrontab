@@ -2,11 +2,14 @@ package finder
 
 import (
 	"bufio"
+	"errors"
+	"jiacrontab/libs/file"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -28,27 +31,31 @@ func (d DataQueue) Len() int {
 }
 
 type Finder struct {
-	matchDataQueue DataQueue
-	expr           string
-	filterExt      string
-	group          sync.WaitGroup
+	matchDataQueue    DataQueue
+	curr              uint64
+	regexp            *regexp.Regexp
+	seekCurr, seekEnd int
+	maxRows           uint64
+	errors            []error
+	patternAll        bool
+	filter            func(os.FileInfo) bool
+	group             sync.WaitGroup
 }
 
-func NewFinder(expr, filterExt string) *Finder {
+func NewFinder(maxRows uint64, filter func(os.FileInfo) bool) *Finder {
 	return &Finder{
-		expr:      expr,
-		filterExt: filterExt,
+		maxRows: maxRows,
+		filter:  filter,
 	}
+}
+
+func (fd *Finder) Count() uint64 {
+	return fd.curr
 }
 
 func (fd *Finder) find(fpath string, modifyTime time.Time) error {
-	fd.group.Add(1)
-	defer fd.group.Done()
+
 	var matchData []byte
-	re, err := regexp.Compile(fd.expr)
-	if err != nil {
-		return err
-	}
 
 	f, err := os.Open(fpath)
 	if err != nil {
@@ -57,16 +64,22 @@ func (fd *Finder) find(fpath string, modifyTime time.Time) error {
 	defer f.Close()
 
 	reader := bufio.NewReader(f)
-
 	for {
+		if atomic.LoadUint64(&fd.curr) >= fd.maxRows {
+			break
+		}
+
 		bts, _, err := reader.ReadLine()
 		if err != nil {
 			break
 		}
 
-		if re.Match(bts) {
-			matchData = append(matchData, re.ReplaceAll(bts, []byte(`<span style="color:red">$0</span>`))...)
-			matchData = append(matchData, []byte("\n")...)
+		if fd.patternAll || fd.regexp.Match(bts) {
+			if fd.curr >= uint64(fd.seekCurr) && fd.curr <= uint64(fd.seekEnd) {
+				matchData = append(matchData, bts...)
+				matchData = append(matchData, []byte("\n")...)
+			}
+			atomic.AddUint64(&fd.curr, 1)
 		}
 
 	}
@@ -80,10 +93,16 @@ func (fd *Finder) find(fpath string, modifyTime time.Time) error {
 }
 
 func (fd *Finder) walkFunc(fpath string, info os.FileInfo, err error) error {
-
 	if !info.IsDir() {
-		if filepath.Ext(fpath) == fd.filterExt {
-			go fd.find(fpath, info.ModTime())
+		if fd.filter != nil && fd.filter(info) {
+			fd.group.Add(1)
+			go func() {
+				defer fd.group.Done()
+				err := fd.find(fpath, info.ModTime())
+				if err != nil {
+					fd.errors = append(fd.errors, err)
+				}
+			}()
 		}
 
 	}
@@ -92,12 +111,31 @@ func (fd *Finder) walkFunc(fpath string, info os.FileInfo, err error) error {
 
 }
 
-func (fd *Finder) Search(root string, data *[]byte) {
+func (fd *Finder) Search(root string, expr string, data *[]byte, page, pagesize int) error {
+	var err error
+	fd.seekCurr = (page - 1) * pagesize
+	fd.seekEnd = fd.seekCurr + pagesize
+	if expr == "" {
+		fd.patternAll = true
+	}
+
+	if !file.Exist(root) {
+		return errors.New(root + " not exist")
+	}
+
+	fd.regexp, err = regexp.Compile(expr)
+	if err != nil {
+		return err
+	}
 	filepath.Walk(root, fd.walkFunc)
 	fd.group.Wait()
 	sort.Stable(fd.matchDataQueue)
 	for _, v := range fd.matchDataQueue {
 		*data = append(*data, v.matchData...)
 	}
+	return nil
+}
 
+func (fd *Finder) GetErrors() []error {
+	return fd.errors
 }

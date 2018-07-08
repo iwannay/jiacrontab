@@ -16,7 +16,6 @@ func RuntimeInfo(ctx iris.Context) {
 		return
 	}
 
-	ctx.Application().Logger().Infof("%+v", systemInfo)
 	ctx.ViewData("systemInfo", systemInfo)
 	ctx.View("runtime/info.html")
 }
