@@ -150,11 +150,11 @@ func (d *daemon) run() {
 					log.Println("start", v.task.Name)
 				} else {
 					d.lock.Unlock()
-					t.action = v.action
-					if t.processNum == 0 {
-						ctx, v.cancel = context.WithCancel(context.Background())
-						go v.do(ctx)
-					}
+					// t.action = v.action
+					// if t.processNum == 0 {
+					// 	ctx, v.cancel = context.WithCancel(context.Background())
+					// 	go v.do(ctx)
+					// }
 
 				}
 			case deleteDaemonTask:
