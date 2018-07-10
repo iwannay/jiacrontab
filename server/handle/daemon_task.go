@@ -73,26 +73,29 @@ func ListDaemonTask(ctx iris.Context) {
 
 func EditDaemonTask(ctx iris.Context) {
 	var daemonTask model.DaemonTask
+
 	addr := ctx.FormValue("addr")
 	taskId := ctx.FormValue("taskId")
 
 	ctx.ViewData("allowCommands", conf.ConfigArgs.AllowCommands)
 
 	if ctx.Request().Method == http.MethodPost {
-
+		var mailNotify bool
 		name := ctx.PostValueTrim("name")
-		mailNotify, err := ctx.PostValueBool("mailNotify")
 
 		mailTo := ctx.PostValueTrim("mailTo")
 		command := ctx.PostValue("command")
 		args := ctx.PostValue("args")
-		failedRestart, err2 := ctx.PostValueBool("failedRestart")
 
-		if addr == "" || name == "" || command == "" || err != nil || err2 != nil {
+		failedRestart, err := ctx.PostValueBool("failedRestart")
+		if addr == "" || name == "" || command == "" || err != nil {
 			ctx.ViewData("errorMsg", "参数不正确")
 			ctx.ViewData("daemonTask", daemonTask)
 			ctx.View("daemon/edit.html")
 			return
+		}
+		if ctx.PostValue("mailNotify") == "true" {
+			mailNotify = true
 		}
 
 		daemonTask = model.DaemonTask{

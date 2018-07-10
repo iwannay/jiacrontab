@@ -10,10 +10,10 @@ var (
 )
 
 type Mailer struct {
-	QueueLength       int
-	SubjectPrefix     string
-	Host              string
-	From              string
+	QueueLength       int    `json:"queue_length"`
+	SubjectPrefix     string `json:"Subject_Prefix"`
+	Host              string `json:"host"`
+	From              string `json:"from"`
 	FromEmail         string
 	User, Passwd      string
 	DisableHelo       bool
@@ -26,26 +26,26 @@ type Mailer struct {
 
 func newMailService() {
 	sec := cf.Section("mailer")
-	if !sec.Key("ENABLED").MustBool() {
+	if !sec.Key("enabled").MustBool() {
 		return
 	}
 
 	MailService = &Mailer{
-		QueueLength:    sec.Key("SEND_BUFFER_LEN").MustInt(100),
-		SubjectPrefix:  sec.Key("SUBJECT_PREFIX").MustString("[" + "jiacrontab" + "] "),
-		Host:           sec.Key("HOST").String(),
-		User:           sec.Key("USER").String(),
-		Passwd:         sec.Key("PASSWD").String(),
-		DisableHelo:    sec.Key("DISABLE_HELO").MustBool(),
-		HeloHostname:   sec.Key("HELO_HOSTNAME").String(),
-		SkipVerify:     sec.Key("SKIP_VERIFY").MustBool(),
-		UseCertificate: sec.Key("USE_CERTIFICATE").MustBool(),
-		CertFile:       sec.Key("CERT_FILE").String(),
-		KeyFile:        sec.Key("KEY_FILE").String(),
-		UsePlainText:   sec.Key("USE_PLAIN_TEXT").MustBool(),
+		QueueLength:    sec.Key("send_buffer_len").MustInt(100),
+		SubjectPrefix:  sec.Key("subject_prefix").MustString("[" + "jiacrontab" + "] "),
+		Host:           sec.Key("host").String(),
+		User:           sec.Key("user").String(),
+		Passwd:         sec.Key("passwd").String(),
+		DisableHelo:    sec.Key("disable_helo").MustBool(),
+		HeloHostname:   sec.Key("helo_hostname").String(),
+		SkipVerify:     sec.Key("skip_verify").MustBool(),
+		UseCertificate: sec.Key("use_certificate").MustBool(),
+		CertFile:       sec.Key("cert_file").String(),
+		KeyFile:        sec.Key("key_file").String(),
+		UsePlainText:   sec.Key("use_plain_text").MustBool(),
 	}
 
-	MailService.From = sec.Key("FROM").MustString(MailService.User)
+	MailService.From = sec.Key("from").MustString(MailService.User)
 
 	if len(MailService.From) > 0 {
 		parsed, err := mail.ParseAddress(MailService.From)

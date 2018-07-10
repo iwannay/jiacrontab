@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/gob"
+	"encoding/json"
 
 	"errors"
 	"fmt"
@@ -24,7 +25,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"runtime/debug"
 	"strings"
 	"time"
 )
@@ -37,7 +37,7 @@ func ReplaceEmpty(str, replaceStr string) string {
 }
 
 func RandNum() int64 {
-	rand.Seed(int64(time.Now().Nanosecond()))
+	rand.Seed(23423334422)
 	return rand.Int63()
 }
 
@@ -51,11 +51,6 @@ func Date(t int64) string {
 
 func Int2floatstr(f string, n int64, l int) string {
 	return fmt.Sprintf(f, float64(n)/float64(l))
-}
-func MRecover() {
-	if err := recover(); err != nil {
-		log.Printf("panic:%s\n%s", err, debug.Stack())
-	}
 }
 
 func SystemInfo(startTime time.Time) map[string]interface{} {
@@ -275,4 +270,19 @@ func SendMail(title, content, host, from, pass, port, mailTo string) {
 func ParseInt(i string) int {
 	v, _ := strconv.Atoi(i)
 	return v
+}
+
+func Struct2Map(i interface{}, o *map[string]interface{}) error {
+
+	if o == nil {
+		return errors.New("o not nil")
+	}
+
+	bts, err := json.Marshal(i)
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(bts, &o)
+
 }

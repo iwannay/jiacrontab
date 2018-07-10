@@ -53,7 +53,7 @@ func (t *DaemonTask) ActionDaemonTask(args proto.ActionDaemonTaskArgs, reply *bo
 
 	*reply = false
 
-	ret := model.DB().Debug().Model(&model.DaemonTask{}).Find(&tasks, "id in(?)", strings.Split(args.TaskIds, ","))
+	ret := model.DB().Model(&model.DaemonTask{}).Find(&tasks, "id in(?)", strings.Split(args.TaskIds, ","))
 
 	if ret.Error != nil {
 		return ret.Error

@@ -1,6 +1,7 @@
 package conf
 
 import (
+	"jiacrontab/libs"
 	"strings"
 	"time"
 
@@ -35,17 +36,15 @@ type Config struct {
 	TokenExpires      int64
 	TokenCookieMaxAge int64
 
-	AppName             string
-	User                string
-	Passwd              string
-	AllowCommands       []string
-	DefaultRPCPath      string
-	DefaultRPCDebugPath string
-	MailUser            string
-	MailHost            string
-	MailPass            string
-	MailPort            string
-	Version             string
+	AppName       string
+	User          string
+	Passwd        string
+	AllowCommands []string
+	MailUser      string
+	MailHost      string
+	MailPass      string
+	MailPort      string
+	Version       string
 }
 
 func NewConfig() *Config {
@@ -86,8 +85,7 @@ func (c *Config) Reload() {
 	c.Passwd = base.Key("app_passwd").MustString("john")
 	c.AppName = base.Key("app_name").MustString("jiacrontab")
 	c.AllowCommands = strings.Split(script.Key("allow_commands").MustString("php,/usr/local/bin/php,python,node,curl,wget,lua"), ",")
-	c.DefaultRPCDebugPath = "/debug/rpc"
-	c.DefaultRPCPath = "/__myrpc__"
+
 	b, _ := ioutil.ReadFile(versionFile)
 	c.MailHost = mail.Key("host").MustString("")
 	c.MailUser = mail.Key("user").MustString("")
@@ -96,8 +94,8 @@ func (c *Config) Reload() {
 	c.Version = string(b)
 }
 
-func (c *Config) Category() map[string]map[string]string {
-	cat := make(map[string]map[string]string)
+func (c *Config) Category() map[string]interface{} {
+	cat := make(map[string]interface{})
 
 	cat["base"] = map[string]string{
 		"version": c.Version,
@@ -109,11 +107,10 @@ func (c *Config) Category() map[string]map[string]string {
 		"tokenExpires":    fmt.Sprintf("%d", c.TokenExpires),
 	}
 
-	cat["mail"] = map[string]string{
-		"mailUser": c.MailUser,
-		"mailHost": c.MailUser + ":" + c.MailPort,
-	}
-
+	mail := make(map[string]interface{})
+	fmt.Println(libs.Struct2Map(MailService, &mail), MailService)
+	cat["mail"] = mail
+	fmt.Println(mail)
 	cat["server"] = map[string]string{
 		"listen":    c.Addr,
 		"staticDir": c.StaticDir,
@@ -122,9 +119,7 @@ func (c *Config) Category() map[string]map[string]string {
 	}
 
 	cat["rpc"] = map[string]string{
-		"listen":              c.RpcAddr,
-		"defaultRPCPath":      c.DefaultRPCPath,
-		"defaultRPCDebugPath": c.DefaultRPCPath,
+		"listen": c.RpcAddr,
 	}
 	return cat
 }

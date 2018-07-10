@@ -62,7 +62,7 @@ func (t *CrontabTask) Update(args model.CrontabTask, ok *bool) error {
 			crontabTask.MailTo = args.MailTo
 			crontabTask.OpTimeout = args.OpTimeout
 			crontabTask.C = args.C
-			model.DB().Debug().Model(&model.CrontabTask{}).Where("id=? and number_process=0", crontabTask.ID).Update(map[string]interface{}{
+			model.DB().Model(&model.CrontabTask{}).Where("id=? and number_process=0", crontabTask.ID).Update(map[string]interface{}{
 				"name":                 args.Name,
 				"command":              args.Command,
 				"args":                 args.Args,
