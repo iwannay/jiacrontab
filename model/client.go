@@ -4,7 +4,7 @@ import "github.com/jinzhu/gorm"
 
 type Client struct {
 	gorm.Model
-	Name           string `gorm:"unique;not null"`
+	Name           string `gorm:"not null"`
 	State          int
 	DaemonTaskNum  int
 	CrontabTaskNum int
