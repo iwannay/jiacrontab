@@ -6,6 +6,7 @@ import (
 	"jiacrontab/model"
 	"jiacrontab/server/conf"
 	"log"
+	"time"
 )
 
 type Logic struct{}
@@ -21,6 +22,7 @@ func (l *Logic) Register(args model.Client, reply *proto.MailArgs) error {
 	ret := model.DB().Model(&model.Client{}).Where("addr=?", args.Addr).Update(&args)
 
 	if ret.RowsAffected == 0 {
+		args.Name = time.Now().Format("20060102150405")
 		ret = model.DB().Create(&args)
 	}
 
