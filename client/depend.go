@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"jiacrontab/libs/proto"
+	"jiacrontab/model"
 	"log"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -44,8 +45,9 @@ func (d *depend) run() {
 					startTime := time.Now()
 					start := startTime.UnixNano()
 					cmdList := [][]string{args}
+					logPath := filepath.Join(globalConfig.logPath, "depend_task")
 
-					err := wrapExecScript(ctx, fmt.Sprintf("%s.log", t.name), cmdList, globalConfig.logPath, &logContent)
+					err := wrapExecScript(ctx, fmt.Sprintf("%d-%s.log", t.taskId, t.id), cmdList, logPath, &logContent)
 					cancel()
 					costTime := time.Now().UnixNano() - start
 					log.Printf("exec %s %s %s cost %.4fs %v", t.name, t.command, t.args, float64(costTime)/1000000000, err)
@@ -63,7 +65,7 @@ func (d *depend) run() {
 					t.dest, t.from = t.from, t.dest
 
 					if !filterDepend(t) {
-						err = rpcCall("Logic.DependDone", proto.MScript{
+						err = rpcCall("Logic.DependDone", model.DependsTask{
 							Name:       t.name,
 							Dest:       t.dest,
 							From:       t.from,

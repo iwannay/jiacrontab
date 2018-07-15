@@ -1,13 +1,5 @@
-{{define "footer"}}
-<footer >
-    <div class="container-fluid">
-        <div class="text-center">
-				© 2017 {{.appInfo}}  页面:{{.pageCostTime}} 模板:{{.tempCostTime}} {{.goVersion}} </div>
-    </div>
-</footer>
 
-<script src="/static/js/jquery-3.2.0.min.js"></script>
-<script src="/static/bootstrap/js/bootstrap.min.js"></script>
-<script>
-</script>
-{{end}}
+<div class="layui-footer">
+    <!-- 底部固定区域 -->
+    © 2017 {{.appName}} 当前版本：{{.appVersion}} golang版本: {{.goVersion}}
+</div>

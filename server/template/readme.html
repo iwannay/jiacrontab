@@ -1,18 +1,14 @@
-<!DOCTYPE html>
-<html lang="zh-cn">
-{{template "head" .}}
 
-<body>
-    {{template "header" .}}
+    <div class="layui-layout layui-layout-admin">
+        {{render "public/header.html"}}
 
-    <div class="container-fluid">
-        <ul class="breadcrumb">
-            <li><a href="/">Home</a> </li>
-            <li class="active">readme</li>
-        </ul>
-
-        <div class="row-fluid">
-            <pre>
+        <div class="layui-body">
+            <!-- 内容主体区域 -->
+            <div class="layui-fluid">
+                <div class="layui-row layui-col-space15">
+                    <div class="layui-card">
+                        <div class="layui-card-body">
+                            <pre>
 1、计划任务格式：
     Minute Hour Day Month Week command
     分钟 小时 天 月 星期 命令
@@ -48,11 +44,23 @@
 
     第10、20、30分钟输出到/tmp/cron1.txt：
     10,20,30 * * * * echo “第10、20、30分钟输出一次”
-</pre>
+                            </pre>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
         </div>
 
+        {{render "public/footer.html"}}
     </div>
-    {{template "footer" .}}
+    <script src="/static/lib/layui/layui.js"></script>
+    <script>
+        layui.use(['element'], function () {
+            var element = layui.element;
+            document.getElementById('flexible-icon').style.display = 'none';
+        });
+    </script>
 </body>
 
 </html>
