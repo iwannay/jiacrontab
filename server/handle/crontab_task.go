@@ -409,6 +409,7 @@ func Login(ctx iris.Context) {
 				ctx.SetCookieKV(conf.JwtService.TokenCookieName, url.QueryEscape(token), iris.CookiePath("/"),
 					iris.CookieExpires(time.Duration(conf.JwtService.TokenExpires)*time.Second),
 					iris.CookieHTTPOnly(true))
+
 			} else {
 				log.Println("noooooo")
 				ctx.SetCookieKV(conf.JwtService.TokenCookieName, url.QueryEscape(token))
