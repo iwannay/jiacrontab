@@ -1,0 +1,145 @@
+<div class="layui-layout layui-layout-admin">
+    {{render "public/header.html"}}
+    {{render "public/menu.html"}}
+    {{$daemonTask := .daemonTask}}
+    <div class="layui-body layui-content">
+        <!-- 内容主体区域 -->
+        <div class="layui-breadcrumb">
+            <a href="/">首页</a>
+            <a href="/daemon/task/list?addr={{.addr}}">常驻任务列表</a>
+            <a>
+                <cite>编辑</cite>
+            </a>
+        </div>
+
+        <div class="layui-card">
+            <div class="layui-card-header">添加脚本</div>
+            {{if .errorMsg}}
+                <div class="layui-bg-red jia-form-error">
+                    {{.errorMsg}} 
+                    <div class="layui-layout-right jia-tip-close">
+                        <span class="layui-icon layui-icon-close"></span>
+                    </div>
+                </div>
+            {{end}}
+            <div class="layui-card-body">
+                <form class="layui-form" method="POST">
+                    <input type="hidden" name="taskId" value="{{$daemonTask.ID}}">
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">地址</label>
+                        <div class="layui-input-block">
+                            <input type="text" id="inputAddr" class="layui-input" name="addr" disabled value="{{.addr}}">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">脚本名称</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="name" value="{{$daemonTask.Name}}" lay-verify="taskname" placeholder="请输入脚本名称" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">命令</label>
+                        <div class="order-list">
+                            <div class="layui-input-inline">
+                                <select name="command">
+                                    
+                                    {{range $k, $v := .allowCommands}}
+                                        <option {{if eq $daemonTask.Command $v }}selected {{end}} value="{{$v}}">{{$v}}</option>
+                                    {{end}}
+                                </select>
+                            </div>
+                            <div class="layui-input-inline">
+                                <input type="text" name="args"  value="{{$daemonTask.Args}}" placeholder="args" class="layui-input" style="width:400px;">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">失败重启</label>
+                        <div class="layui-input-block">
+                            <input type="radio" name="failedRestart" {{if eq $daemonTask.FailedRestart true}}checked {{end}} value="true" title="是">
+                            <input type="radio" name="failedRestart" {{if eq $daemonTask.FailedRestart false}}checked {{end}} value="false" title="否">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">邮箱地址</label>
+                        <div class="layui-input-block">
+                            <input type="email" name="mailTo" value="{{$daemonTask.MailTo}}" placeholder="请输入邮箱地址" class="layui-input">
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label"></label>
+                        <div class="layui-input-block">
+                            <input type="checkbox" value="true" {{if eq $daemonTask.MailNotify true}}checked{{end}} name="mailNotify" title="脚本异常退出时邮件通知" lay-skin="primary">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <div class="layui-input-block">
+                            <button class="layui-btn" lay-submit lay-filter="add-script">立即提交</button>
+                            <button type="reset" class="layui-btn layui-btn-primary">取消</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <h1>{{.formValues}}</h1>
+
+    {{render "public/footer.html"}}
+</div>
+
+<script src="/static/lib/layui/layui.js"></script>
+<script>
+    layui.use(['element', 'form', 'jquery', 'laytpl'], function () {
+        var form = layui.form;
+        var element = layui.element;
+        var $ = layui.jquery;
+        var laytpl = layui.laytpl;
+
+        form.verify({
+            taskname: function(value, item){ //value：表单的值、item：表单的DOM对象
+                if($.trim(value) == ''){
+                    return '请输入脚本名称';
+                }
+            }
+        }); 
+
+        //监听提交
+        form.on('submit(add-script)', function(data){
+            
+        });
+
+        $('.jia-tip-close').on('click', function (){
+            $(this).parent('.jia-form-error').remove();
+        })
+
+        $('#flexible-icon').on('click', function () {
+            if ($(this).hasClass('layui-icon-spread-left')) {
+                $(this).addClass('layui-icon-shrink-right').removeClass('layui-icon-spread-left');
+                $('.layui-layout-body').removeClass('min-layout');
+            } else {
+                $(this).addClass('layui-icon-spread-left').removeClass('layui-icon-shrink-right');
+                $('.layui-layout-body').addClass('min-layout');
+            }
+        })
+
+        if (window.innerWidth < 990) {
+            $('.layui-layout-body').addClass('min-layout');
+            $('#flexible-icon').addClass('layui-icon-spread-left').removeClass('layui-icon-shrink-right');
+        }
+        $(window).on('resize', function () {
+            if (window.innerWidth < 990) {
+                $('.layui-layout-body').addClass('min-layout');
+                $('#flexible-icon').addClass('layui-icon-spread-left').removeClass(
+                    'layui-icon-shrink-right');
+            } else {
+                $('.layui-layout-body').removeClass('min-layout');
+                $('#flexible-icon').addClass('layui-icon-shrink-right').removeClass(
+                    'layui-icon-spread-left');
+            }
+        })
+
+    });
+</script>

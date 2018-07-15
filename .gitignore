@@ -29,11 +29,15 @@ _testmain.go
 
 client/autobuild
 client/.data
+client/data
 client/*.json
 client/logs
 client/watchbin
+client/binTmp*
+client/logsfile
+clent/client
 
-
+.idea
 
 server/debug
 server/autobuild
@@ -41,6 +45,9 @@ server/jiacrontab
 server/watchbin
 server/.data
 server/server
-clent/client
+server/binTmp*
+server/logsfile
+server/data
 
-
+.vscode
+app

@@ -1,0 +1,114 @@
+<div class="layui-layout layui-layout-admin">
+    {{render "public/header.html"}}
+    {{render "public/menu.html"}}
+    <div class="layui-body layui-content">
+        <!-- 内容主体区域 -->
+        <div class="layui-breadcrumb">
+            <a href="/">主页</a>
+            <a href="/crontab/task/list?addr={{.addr}}">{{.addr}}</a>
+            <a>
+                <cite>日志</cite>
+            </a>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-inline">
+                <input type="text" name="search" placeholder="搜索日志" class="layui-input search-txt">
+            </div>
+            <div class="layui-input-inline" style="width: 120px;">
+                <input type="text" id="search-date" class="layui-input" placeholder="开始日期" >
+            </div>
+            <div class="layui-btn" id="search">搜索</div>
+        </div>
+        <table class="layui-table" lay-size="sm">
+            <colgroup>
+                <col>
+            </colgroup>
+            <tbody id="log-list"  total="{{.total}}" pagesize="{{.pagesize}}">
+                {{range $k,$v := .logList}}
+                <tr><td>{{$v}}</td></tr>
+                {{end}}
+            </tbody>
+        </table>
+        <div id="log-page"></div>
+    </div>
+    {{render "public/footer.html"}}
+</div>
+<script src="/static/lib/layui/layui.js"></script>
+<script>
+    //config的设置是全局的
+    layui.config({
+        base: '/static/js/' //假设这是你存放拓展模块的根目录
+    })
+    layui.use(['common', 'element', 'jquery', 'layer', 'laydate', 'laypage'], function () {
+        var common = layui.common;
+        var layer = layui.layer;
+        var $ = layui.jquery;
+        var laydate = layui.laydate;
+        var laypage = layui.laypage;
+
+        //总页数大于页码总数
+        laypage.render({
+            elem: 'log-page',
+            count: $("#log-list").attr("total"), //数据总数,
+            limit: $("#log-list").attr("pagesize"), //每页显示的条数
+            curr: common.getRequest().page ? common.getRequest().page : 1,
+            jump: function(obj, first){
+                //首次不执行
+                if(!first){
+                    window.location.href = common.getRequest().add("page", obj.curr).search();
+                }
+            }
+        });
+        // 搜索默认值
+        if (common.getRequest().pattern) {
+            $('.search-txt').val(common.getRequest().pattern);
+        }
+        if (common.getRequest().date) {
+            $('#search-date').val(common.getRequest().date);
+        }
+
+        // 监听搜索事件
+        $('#search').on('click', function() {
+            var searchText = $('.search-txt').val();
+            var time = $('#search-date').val();
+
+            var urlObj = common.getRequest().add("pattern", searchText);
+            urlObj.add("date",time);
+            urlObj.add("page", 1);
+            window.location.href = urlObj.search();
+        })
+
+        laydate.render({ 
+            format: "yyyy/MM/dd",
+            elem: '#search-date'
+        });
+
+        
+        $('#flexible-icon').on('click', function () {
+            if ($(this).hasClass('layui-icon-spread-left')) {
+                $(this).addClass('layui-icon-shrink-right').removeClass('layui-icon-spread-left');
+                $('.layui-layout-body').removeClass('min-layout');
+            } else {
+                $(this).addClass('layui-icon-spread-left').removeClass('layui-icon-shrink-right');
+                $('.layui-layout-body').addClass('min-layout');
+            }
+        })
+
+        if (window.innerWidth < 990) {
+            $('.layui-layout-body').addClass('min-layout');
+            $('#flexible-icon').addClass('layui-icon-spread-left').removeClass('layui-icon-shrink-right');
+        }
+        $(window).on('resize', function () {
+            if (window.innerWidth < 990) {
+                $('.layui-layout-body').addClass('min-layout');
+                $('#flexible-icon').addClass('layui-icon-spread-left').removeClass(
+                    'layui-icon-shrink-right');
+            } else {
+                $('.layui-layout-body').removeClass('min-layout');
+                $('#flexible-icon').addClass('layui-icon-shrink-right').removeClass(
+                    'layui-icon-spread-left');
+            }
+        })
+        
+    })
+</script>

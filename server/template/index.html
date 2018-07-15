@@ -1,53 +1,116 @@
-<!DOCTYPE html>
-<html lang="zh-cn">
-{{template "head" .}}
+    <div class="layui-layout layui-layout-admin">
+        {{render "public/header.html"}}
 
-<body>
-    {{template "header" .}}
-
-    <div class="container-fluid">
-        <div class="row-fluid">
-            <div class="col-md-3">
-                <div class="panel panel-primary">
-                    <!-- Default panel contents -->
-                    <div class="panel-heading">运行信息</div>
-
-                    <!-- List group -->
-                    <ul class="list-group">
-                        {{range $k,$v := .systemInfo}}
-                        <li class="list-group-item">{{$k}} : {{$v}}</li>
-                        {{end}}
-                    </ul>
-                </div>
-            </div>
-            <div class="col-md-9">
-
-                {{range $k,$client := .clientList}}
-                <div class="col-sm-3">
-                    <div class="panel panel-info">
-                        <div class="panel-heading">
-                            <h3 class="panel-title">服务器-{{$k}}</h3>
+        <div class="layui-body">
+            <!-- 内容主体区域 -->
+            <div class="layui-fluid">
+                <div class="layui-row layui-col-space15">
+                    <div class="layui-col-sm3">
+                        <div class="layui-card">
+                            <div class="layui-card-header">版本信息</div>
+                            <div class="layui-card-body layui-text">
+                                <table class="layui-table" >
+                                    <colgroup>
+                                        <col width="100">
+                                        <col>
+                                    </colgroup>
+                                    <tbody>
+                                        <tr>
+                                            <td>当前版本</td>
+                                            <td>{{.appVersion}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>作者</td>
+                                            <td>iwannay</td>
+                                        </tr>
+                                        <tr>
+                                            <td>联系方式</td>
+                                            <td>QQ:772648576</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                        <div class="panel-body">
-                            <p>{{$client.Addr}}</p>
-                            <P>
-                            {{if eq $client.State 1}}
-                            正常
-                            {{else}}
-                            断开 <a href="/deleteClient?addr={{$client.Addr}}" onclick="return confirm('确定要删除吗？')" class="btn btn-danger btn-xs">删除</a>
-                            {{end}}                               
-                                
-                            </P>
-                            <p> <a href="/list?addr={{$client.Addr}}" role="button">GO</a></p>
+                        <div class="layui-card">
+                            <div class="layui-card-header">运行信息</div>
+                            <div class="layui-card-body">
+                                <table class="layui-table" >
+                                    <colgroup>
+                                        <col width="170">
+                                        <col>
+                                    </colgroup>
+                                    <tbody>
+                                        {{range $k,$v := .systemInfoList}}
+                                        <tr>
+                                            <td>{{$k}}</td>
+                                            <td>{{$v}}</td>
+                                        </tr>
+                                        {{end}}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-col-sm9">
+                        <div class="layui-card">
+                            <div class="layui-card-header">运行列表</div>
+                            <div class="layui-card-body layui-text">
+                                <table class="layui-table">
+                                    <colgroup>
+                                        <col width="150">
+                                        <col width="200">
+                                        <col width="140">
+                                        <col width="140">
+                                        <col width="140">
+                                        <col>
+                                    </colgroup>
+                                    <thead>
+                                        <tr>
+                                            <th>序号</th>
+                                            <th>IP</th>
+                                            <th>状态</th>
+                                            <th>计划任务数</th>
+                                            <th>常驻任务数</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {{range $k,$client := .clientList}}
+                                        <tr>
+                                            <td>{{$client.ID}}</td>
+                                            <td>{{$client.Addr}}</td>
+                                            <td>
+                                                {{if eq $client.State 1}}
+                                                正常
+                                                {{else}}
+                                                断开 <a href="/deleteClient?addr={{$client.Addr}}" onclick="return confirm('确定要删除吗？')" class="layui-btn layui-btn-xs layui-btn-danger">删除</a>
+                                                {{end}}
+                                            </td>
+                                            <td>{{$client.CrontabTaskNum}}</td>
+                                            <td>{{$client.DaemonTaskNum}}</td>
+                                            <td>
+                                                <a href="/crontab/task/list?addr={{$client.Addr}}" class="layui-btn layui-btn-xs jia-btn-normal">查看</a>
+                                            </td>
+                                        </tr>
+                                        {{end}}
+
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
-                {{end}}
             </div>
         </div>
 
-    </div>
-   {{template "footer" .}}
-</body>
+        {{render "public/footer.html"}}
 
-</html>
+    </div>
+    <script src="/static/lib/layui/layui.js"></script>
+    <script>
+        layui.use(['element'], function () {
+            var element = layui.element;
+            document.getElementById('flexible-icon').style.display = 'none';
+
+        });
+    </script>

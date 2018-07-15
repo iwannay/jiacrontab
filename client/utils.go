@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"io"
 	"jiacrontab/libs"
+	"jiacrontab/libs/mailer"
 	"jiacrontab/libs/proto"
+	"jiacrontab/model"
 	"log"
 	"net/http"
 	"net/http/pprof"
@@ -21,7 +23,7 @@ import (
 	"time"
 )
 
-func storge(data map[string]*proto.TaskArgs) error {
+func storge(data []model.CrontabTask) error {
 	var lock sync.RWMutex
 	lock.Lock()
 
@@ -43,7 +45,7 @@ func storge(data map[string]*proto.TaskArgs) error {
 	return err
 }
 
-func checkMonth(check proto.CrontabArgs, month time.Month) bool {
+func checkMonth(check model.CrontabArgs, month time.Month) bool {
 	var flag = false
 	if check.Month != "*" {
 		if strings.Contains(check.Month, "/") {
@@ -110,7 +112,7 @@ end:
 	return flag
 }
 
-func checkWeekday(check proto.CrontabArgs, weekday time.Weekday) bool {
+func checkWeekday(check model.CrontabArgs, weekday time.Weekday) bool {
 	var flag = false
 	if check.Weekday != "*" {
 		if strings.Contains(check.Weekday, "/") {
@@ -175,7 +177,7 @@ end:
 	return flag
 }
 
-func checkDay(check proto.CrontabArgs, day int) bool {
+func checkDay(check model.CrontabArgs, day int) bool {
 	var flag = false
 	if check.Day != "*" {
 		if strings.Contains(check.Day, "/") {
@@ -240,7 +242,7 @@ end:
 	return flag
 }
 
-func checkHour(check proto.CrontabArgs, hour int) bool {
+func checkHour(check model.CrontabArgs, hour int) bool {
 	var flag = false
 	if check.Hour != "*" {
 		if strings.Contains(check.Hour, "/") {
@@ -305,7 +307,7 @@ end:
 	return flag
 }
 
-func checkMinute(check proto.CrontabArgs, minute int) bool {
+func checkMinute(check model.CrontabArgs, minute int) bool {
 	var flag = false
 	if check.Minute != "*" {
 		if strings.Contains(check.Minute, "/") {
@@ -429,24 +431,24 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 		return nil, err
 	}
 
-	logPath := filepath.Join(logpath, strconv.Itoa(time.Now().Year()), time.Now().Month().String())
+	logPath := filepath.Join(logpath, time.Now().Format("2006/01/02"))
 	f, err := libs.TryOpen(filepath.Join(logPath, logname), os.O_APPEND|os.O_CREATE|os.O_RDWR)
-
 	if err != nil {
 		return f, err
 	}
 
 	cmd := exec.CommandContext(ctx, binpath, args...)
 	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return f, err
+	}
 	defer stdout.Close()
-	if err != nil {
-		return f, err
-	}
 	stderr, err := cmd.StderrPipe()
-	defer stderr.Close()
+
 	if err != nil {
 		return f, err
 	}
+	defer stderr.Close()
 
 	if err := cmd.Start(); err != nil {
 		return f, err
@@ -529,7 +531,7 @@ func pipeExecScript(ctx context.Context, cmdList [][]string, logname string, log
 		cmdEntryList...,
 	)
 
-	logPath = filepath.Join(logpath, strconv.Itoa(time.Now().Year()), time.Now().Month().String())
+	logPath = filepath.Join(logpath, time.Now().Format("2006/01/02"))
 	f, err = libs.TryOpen(filepath.Join(logPath, logname), os.O_APPEND|os.O_CREATE|os.O_RDWR)
 	if err != nil {
 		return f, err
@@ -578,7 +580,7 @@ func pipeExecScript(ctx context.Context, cmdList [][]string, logname string, log
 }
 
 func writeLog(logpath string, logname string, content *[]byte) {
-	logPath := filepath.Join(logpath, strconv.Itoa(time.Now().Year()), time.Now().Month().String())
+	logPath := filepath.Join(logpath, time.Now().Format("2006/01/02"))
 	f, err := libs.TryOpen(filepath.Join(logPath, logname), os.O_APPEND|os.O_CREATE|os.O_RDWR)
 	if err != nil {
 		log.Printf("write log %v", err)
@@ -656,16 +658,22 @@ func sendMail(mailTo, title, content string) {
 	go libs.SendMail(title, content, host, from, pass, port, mailTo)
 }
 
+func sendJobErrorMail(to []string, subject, content string) {
+	msg := mailer.NewMessage(to, subject, content)
+	mailer.Send(msg)
+}
+
 func pushDepends(dpds []*dependScript) bool {
 
 	if len(dpds) > 0 {
-		var ndpds []proto.MScript
+		var ndpds []model.DependsTask
 		for _, v := range dpds {
 			// 检测目标服务器为本机时直接执行脚本
 			if v.dest == globalConfig.addr {
 				globalDepend.Add(v)
+				fmt.Println("本机哈")
 			} else {
-				ndpds = append(ndpds, proto.MScript{
+				ndpds = append(ndpds, model.DependsTask{
 					Name:    v.name,
 					Dest:    v.dest,
 					From:    v.from,
@@ -704,7 +712,7 @@ func pushPipeDepend(dpds []*dependScript, dependScriptId string) bool {
 					globalDepend.Add(v)
 				} else {
 					var reply bool
-					err := rpcCall("Logic.Depends", []proto.MScript{{
+					err := rpcCall("Logic.Depends", []model.DependsTask{{
 						Name:    v.name,
 						Dest:    v.dest,
 						From:    v.from,
@@ -740,16 +748,15 @@ func filterDepend(args *dependScript) bool {
 		return false
 	}
 
-	idArr := strings.Split(args.id, "-")
 	isAllDone := true
 	globalCrontab.lock.Lock()
-	if h, ok := globalCrontab.handleMap[idArr[0]]; ok {
-
+	if h, ok := globalCrontab.handleMap[args.taskId]; ok {
 		globalCrontab.lock.Unlock()
+
 		var logContent []byte
 		var currTaskEntity *taskEntity
 		for _, v := range h.taskPool {
-			if v.id == idArr[1] {
+			if v.id == args.pid {
 				currTaskEntity = v
 				for _, v2 := range v.depends {
 
@@ -769,7 +776,7 @@ func filterDepend(args *dependScript) bool {
 		}
 
 		if currTaskEntity == nil {
-			log.Printf("cant find task entity %s %s %s", args.name, args.command, args.args)
+			log.Printf("cannot find task entity %s %s %s", args.name, args.command, args.args)
 			return true
 		}
 
@@ -785,7 +792,7 @@ func filterDepend(args *dependScript) bool {
 		}
 
 	} else {
-		log.Printf("cant find task handle %s %s %s", args.name, args.command, args.args)
+		log.Printf("cannot find task handle %s %s %s", args.name, args.command, args.args)
 		globalCrontab.lock.Unlock()
 	}
 

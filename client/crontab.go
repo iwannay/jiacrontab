@@ -5,10 +5,11 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
-	"jiacrontab/client/store"
-	"jiacrontab/libs"
 	"jiacrontab/libs/proto"
+	"jiacrontab/model"
 	"log"
+	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -24,11 +25,12 @@ const (
 
 type taskEntity struct {
 	id         string
-	pid        string
+	pid        uint
 	name       string
 	command    string
 	args       string
-	taskArgs   *proto.TaskArgs
+	logPath    string
+	taskArgs   *model.CrontabTask
 	state      int
 	timeout    int64
 	sync       bool
@@ -39,8 +41,9 @@ type taskEntity struct {
 }
 
 type dependScript struct {
-	pid        string
-	id         string
+	taskId     uint   // 定时任务id
+	pid        string // 当前依赖的父级任务（可能存在多个并发的task）id
+	id         string // 当前依赖id
 	from       string
 	command    string
 	args       string
@@ -52,11 +55,11 @@ type dependScript struct {
 	logContent []byte
 }
 
-func newTaskEntity(t *proto.TaskArgs) *taskEntity {
+func newTaskEntity(t *model.CrontabTask) *taskEntity {
 	var depends []*dependScript
 	var dependSubName string
 	var md5Sum string
-	id := fmt.Sprintf("%d", time.Now().Unix())
+	id := fmt.Sprintf("%d_%d", t.ID, time.Now().Unix())
 
 	for k, v := range t.Depends {
 		md5Sum = fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s-%s-%d", v.Command, v.Args, k))))
@@ -67,35 +70,49 @@ func newTaskEntity(t *proto.TaskArgs) *taskEntity {
 		}
 		depends = append(depends, &dependScript{
 			pid:     id,
-			id:      fmt.Sprintf("%s-%s-%s", t.Id, id, md5Sum),
+			taskId:  t.ID,
+			id:      fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%d-%s", k, dependSubName)))),
 			from:    v.From,
 			dest:    v.Dest,
 			command: v.Command,
 			timeout: v.Timeout,
 			args:    v.Args,
-			name:    fmt.Sprintf("%s-%s", t.Name, dependSubName),
+			name:    fmt.Sprintf("%d-%s", k, dependSubName),
 			done:    false,
 		})
 	}
 	return &taskEntity{
 		id:       id,
-		pid:      t.Id,
+		pid:      t.ID,
 		name:     t.Name,
 		command:  t.Command,
 		sync:     t.Sync,
 		taskArgs: t,
+		logPath:  filepath.Join(globalConfig.logPath, "crontab_task"),
 		ready:    make(chan struct{}),
 		depends:  depends,
 	}
 }
 
 func (t *taskEntity) exec(logContent *[]byte) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("%s exec panic %s \n", t.taskArgs.Name, err)
+		}
+		model.DB().Model(&model.CrontabTask{}).Where("id=?", t.taskArgs.ID).Update(map[string]interface{}{
+			"state":            t.taskArgs.State,
+			"lat_cost_time":    t.taskArgs.LastCostTime,
+			"last_exec_time":   t.taskArgs.LastExecTime,
+			"last_exit_status": t.taskArgs.LastExitStatus,
+			"number_process":   t.taskArgs.NumberProcess,
+			"timer_counter":    t.taskArgs.TimerCounter,
+		})
+	}()
 	var err error
 	now := time.Now()
 	atomic.AddInt32(&t.taskArgs.NumberProcess, 1)
 	ctx, cancel := context.WithCancel(context.Background())
 	t.cancel = cancel
-	// args := strings.Split(t.taskArgs.Args, " ")
 	start := now.UnixNano()
 	t.taskArgs.LastExecTime = now.Unix()
 	t.taskArgs.State = 2
@@ -103,14 +120,23 @@ func (t *taskEntity) exec(logContent *[]byte) {
 	flag := true
 	isExceptError := false
 
+	model.DB().Model(&model.CrontabTask{}).Where("id=?", t.taskArgs.ID).Update(map[string]interface{}{
+		"state":            t.taskArgs.State,
+		"lat_cost_time":    t.taskArgs.LastCostTime,
+		"last_exec_time":   t.taskArgs.LastExecTime,
+		"last_exit_status": t.taskArgs.LastExitStatus,
+		"number_process":   t.taskArgs.NumberProcess,
+		"timer_counter":    t.taskArgs.TimerCounter,
+	})
+
 	if ok := t.waitDependsDone(ctx); !ok {
 		cancel()
-		errMsg := fmt.Sprintf("[%s %s %s]>>  failded to exec depends\n", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, t.name)
+		errMsg := fmt.Sprintf("[%s %s %s]>>  Execution of dependency script failed\n", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, t.name)
 		t.logContent = append(t.logContent, []byte(errMsg)...)
-		writeLog(globalConfig.logPath, fmt.Sprintf("%s.log", t.name), &t.logContent)
+		writeLog(t.logPath, fmt.Sprintf("%d.log", t.taskArgs.ID), &t.logContent)
 		t.taskArgs.LastExitStatus = exitDependError
 		isExceptError = true
-		if t.taskArgs.UnexpectedExitMail {
+		if t.taskArgs.UnexpectedExitMail && t.taskArgs.MailTo != "" {
 			costTime := time.Now().UnixNano() - start
 			sendMail(t.taskArgs.MailTo, globalConfig.addr+"提醒脚本依赖异常退出", fmt.Sprintf(
 				"任务名：%s\n详情：%s %v\n开始时间：%s\n耗时：%.4f\n异常：%s",
@@ -119,18 +145,23 @@ func (t *taskEntity) exec(logContent *[]byte) {
 
 	} else {
 		// 执行脚本
-
 		if t.taskArgs.Timeout != 0 {
 			time.AfterFunc(time.Duration(t.taskArgs.Timeout)*time.Second, func() {
 				if flag {
-
+					var reply bool
 					isExceptError = true
 					switch t.taskArgs.OpTimeout {
 					case "email":
 						t.taskArgs.LastExitStatus = exitTimeout
-						sendMail(t.taskArgs.MailTo, globalConfig.addr+"提醒脚本执行超时", fmt.Sprintf(
-							"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
-							t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), t.taskArgs.Timeout))
+
+						rpcCall("Logic.SendMail", proto.SendMail{
+							MailTo:  strings.Split(t.taskArgs.MailTo, ","),
+							Subject: globalConfig.addr + "提醒脚本执行超时",
+							Content: fmt.Sprintf(
+								"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
+								t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), t.taskArgs.Timeout),
+						}, &reply)
+
 					case "kill":
 						t.taskArgs.LastExitStatus = exitTimeout
 						cancel()
@@ -138,9 +169,14 @@ func (t *taskEntity) exec(logContent *[]byte) {
 					case "email_and_kill":
 						t.taskArgs.LastExitStatus = exitTimeout
 						cancel()
-						sendMail(t.taskArgs.MailTo, globalConfig.addr+"提醒脚本执行超时", fmt.Sprintf(
-							"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
-							t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), t.taskArgs.Timeout))
+						rpcCall("Logic.SendMail", proto.SendMail{
+							MailTo:  strings.Split(t.taskArgs.MailTo, ","),
+							Subject: globalConfig.addr + "提醒脚本执行超时",
+							Content: fmt.Sprintf(
+								"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
+								t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), t.taskArgs.Timeout),
+						}, &reply)
+
 					case "ignore":
 					default:
 					}
@@ -156,7 +192,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 			cmdList = append(cmdList, t.taskArgs.PipeCommands...)
 		}
 
-		err := wrapExecScript(ctx, fmt.Sprintf("%s.log", t.name), cmdList, globalConfig.logPath, &t.logContent)
+		err := wrapExecScript(ctx, fmt.Sprintf("%d.log", t.taskArgs.ID), cmdList, t.logPath, &t.logContent)
 		flag = false
 
 		if err != nil {
@@ -183,7 +219,6 @@ func (t *taskEntity) exec(logContent *[]byte) {
 	} else {
 		t.taskArgs.State = 0
 	}
-	globalStore.Sync()
 
 	if logContent != nil {
 		*logContent = t.logContent
@@ -200,38 +235,38 @@ type handle struct {
 }
 
 type crontab struct {
-	taskChan     chan *proto.TaskArgs
-	stopTaskChan chan *proto.TaskArgs
-	killTaskChan chan *proto.TaskArgs
-	handleMap    map[string]*handle
+	taskChan     chan *model.CrontabTask
+	stopTaskChan chan *model.CrontabTask
+	killTaskChan chan *model.CrontabTask
+	handleMap    map[uint]*handle
 	lock         sync.RWMutex
 }
 
 func newCrontab(taskChanSize int) *crontab {
 	return &crontab{
-		taskChan:     make(chan *proto.TaskArgs, taskChanSize),
-		stopTaskChan: make(chan *proto.TaskArgs, taskChanSize),
-		killTaskChan: make(chan *proto.TaskArgs, taskChanSize),
-		handleMap:    make(map[string]*handle),
+		taskChan:     make(chan *model.CrontabTask, taskChanSize),
+		stopTaskChan: make(chan *model.CrontabTask, taskChanSize),
+		killTaskChan: make(chan *model.CrontabTask, taskChanSize),
+		handleMap:    make(map[uint]*handle),
 	}
 }
 
-func (c *crontab) add(t *proto.TaskArgs) {
+func (c *crontab) add(t *model.CrontabTask) {
 	c.taskChan <- t
 }
 
-func (c *crontab) quickStart(t *proto.TaskArgs, content *[]byte) {
+func (c *crontab) quickStart(t *model.CrontabTask, content *[]byte) {
 	taskEty := newTaskEntity(t)
 	c.lock.Lock()
-	if _, ok := c.handleMap[t.Id]; !ok {
+	if _, ok := c.handleMap[t.ID]; !ok {
 
 		taskPool := make([]*taskEntity, 0)
-		c.handleMap[t.Id] = &handle{
+		c.handleMap[t.ID] = &handle{
 			taskPool: append(taskPool, taskEty),
 		}
 		c.lock.Unlock()
 	} else {
-		c.handleMap[t.Id].taskPool = append(c.handleMap[t.Id].taskPool, taskEty)
+		c.handleMap[t.ID].taskPool = append(c.handleMap[t.ID].taskPool, taskEty)
 		c.lock.Unlock()
 	}
 
@@ -239,27 +274,29 @@ func (c *crontab) quickStart(t *proto.TaskArgs, content *[]byte) {
 }
 
 // stop 停止计划任务并杀死正在执行的脚本进程
-func (c *crontab) stop(t *proto.TaskArgs) {
+func (c *crontab) stop(t *model.CrontabTask) {
 	c.kill(t)
 	c.stopTaskChan <- t
 }
 
 // 杀死正在执行的脚本进程
-func (c *crontab) kill(t *proto.TaskArgs) {
+func (c *crontab) kill(t *model.CrontabTask) {
 	c.killTaskChan <- t
 }
 
 // 删除计划任务
-func (c *crontab) delete(t *proto.TaskArgs) {
-	globalStore.Update(func(s *store.Store) {
-		delete(s.TaskList, t.Id)
-	})
+func (c *crontab) delete(t *model.CrontabTask) {
+	if model.DB().Delete(t).Error != nil {
+		log.Println("failed delete", t.Name, fmt.Sprint("(", t.ID, ")"))
+		return
+	}
+
 	c.stop(t)
-	log.Println("delete", t.Name, t.Id)
+	log.Println("delete", t.Name, t.ID)
 }
 
-func (c *crontab) ids() []string {
-	var sli []string
+func (c *crontab) ids() []uint {
+	var sli []uint
 	c.lock.Lock()
 	for k := range c.handleMap {
 		sli = append(sli, k)
@@ -272,13 +309,19 @@ func (c *crontab) ids() []string {
 func (c *crontab) run() {
 	// initialize
 	go func() {
-		globalStore.Update(func(s *store.Store) {
-			for _, v := range s.TaskList {
-				if v.State != 0 {
-					c.add(v)
-				}
+		var crontabTaskList []model.CrontabTask
+		model.DB().Model(&model.CrontabTask{}).Update(map[string]interface{}{
+			"timer_counter":  0,
+			"number_process": 0,
+		})
+		model.DB().Model(&model.CrontabTask{}).Find(&crontabTaskList)
+
+		for _, v := range crontabTaskList {
+			t := v
+			if v.State != 0 {
+				c.add(&t)
 			}
-		}).Sync()
+		}
 
 	}()
 	// global clock
@@ -286,14 +329,15 @@ func (c *crontab) run() {
 		t := time.Tick(1 * time.Minute)
 		for {
 			now := <-t
-
 			// broadcast
 			c.lock.Lock()
 			for k, v := range c.handleMap {
 				if v.clockChan == nil {
-					log.Printf("clock:%s is closed", k)
+					log.Printf("clock:%d is closed", k)
 					continue
 				}
+
+				// TODO 风险
 				select {
 				case v.clockChan <- now:
 				case <-time.After(1 * time.Second):
@@ -310,31 +354,30 @@ func (c *crontab) run() {
 			select {
 			case t := <-c.taskChan:
 				c.lock.Lock()
-				if h, ok := c.handleMap[t.Id]; !ok {
+				if h, ok := c.handleMap[t.ID]; !ok {
 					ctx, cancel := context.WithCancel(context.Background())
 					taskPool := make([]*taskEntity, 0)
-					c.handleMap[t.Id] = &handle{
+					c.handleMap[t.ID] = &handle{
 						cancel:    cancel,
 						clockChan: make(chan time.Time),
 						taskPool:  taskPool,
 					}
 					c.lock.Unlock()
 					go c.deal(t, ctx)
-					log.Printf("add task %s %s", t.Name, t.Id)
+					log.Printf("add task %s (ID:%d)", t.Name, t.ID)
 				} else {
 					if h.cancel == nil {
 						ctx, cancel := context.WithCancel(context.Background())
-						c.handleMap[t.Id].cancel = cancel
-						if c.handleMap[t.Id].clockChan == nil {
-							c.handleMap[t.Id].clockChan = make(chan time.Time)
+						c.handleMap[t.ID].cancel = cancel
+						if c.handleMap[t.ID].clockChan == nil {
+							c.handleMap[t.ID].clockChan = make(chan time.Time)
 						}
 						c.lock.Unlock()
 						go c.deal(t, ctx)
 					} else {
 						c.lock.Unlock()
 					}
-
-					log.Printf("task %s %s exists", t.Name, t.Id)
+					log.Printf("task %s (ID:%d) exists", t.Name, t.ID)
 				}
 
 			}
@@ -346,7 +389,7 @@ func (c *crontab) run() {
 			select {
 			case task := <-c.stopTaskChan:
 				c.lock.Lock()
-				if handle, ok := c.handleMap[task.Id]; ok {
+				if handle, ok := c.handleMap[task.ID]; ok {
 					if handle.cancel != nil {
 						handle.cancel()
 						log.Printf("try to stop timer %s", task.Name)
@@ -369,15 +412,15 @@ func (c *crontab) run() {
 			select {
 			case task := <-c.killTaskChan:
 				c.lock.Lock()
-				if handle, ok := c.handleMap[task.Id]; ok {
+				if handle, ok := c.handleMap[task.ID]; ok {
 					c.lock.Unlock()
 					if handle.taskPool != nil {
 						for k, v := range handle.taskPool {
 							if v.cancel == nil {
-								log.Println("kill", task.Name, task.Id, k, "but cancel handler is nul")
+								log.Println("kill", task.Name, task.ID, k, "but cancel handler is nul")
 							} else {
 								v.cancel()
-								log.Println("kill", task.Name, task.Id, k)
+								log.Println("kill", task.Name, task.ID, k)
 							}
 						}
 
@@ -392,15 +435,35 @@ func (c *crontab) run() {
 
 }
 
-func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
+func (c *crontab) deal(task *model.CrontabTask, ctx context.Context) {
 	var wgroup sync.WaitGroup
 	// 定时计数器用于统计有多少个定时期，当定时器为0时说明没有正在执行的计划
 	atomic.AddInt32(&task.TimerCounter, 1)
 	task.State = 1
-	defer atomic.AddInt32(&task.TimerCounter, -1)
+	defer func() {
+		atomic.AddInt32(&task.TimerCounter, -1)
+		model.DB().Model(&model.CrontabTask{}).Where("id=?", task.ID).Update(map[string]interface{}{
+			"state":            task.State,
+			"lat_cost_time":    task.LastCostTime,
+			"last_exec_time":   task.LastExecTime,
+			"last_exit_status": task.LastExitStatus,
+			"number_process":   task.NumberProcess,
+			"timer_counter":    task.TimerCounter,
+		})
+	}()
+
+	model.DB().Model(&model.CrontabTask{}).Where("id=?", task.ID).Update(map[string]interface{}{
+		"state":         task.State,
+		"timer_counter": task.TimerCounter,
+	})
+
 	c.lock.Lock()
-	h := c.handleMap[task.Id]
+	h := c.handleMap[task.ID]
 	c.lock.Unlock()
+	if h == nil {
+		return
+	}
+
 	for {
 
 		select {
@@ -408,7 +471,9 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 
 			go func(now time.Time) {
 				defer func() {
-					libs.MRecover()
+					if err := recover(); err != nil {
+						log.Printf("task panic:%+v\n", *task)
+					}
 					wgroup.Done()
 				}()
 
@@ -437,21 +502,19 @@ func (c *crontab) deal(task *proto.TaskArgs, ctx context.Context) {
 			}(now)
 		case <-ctx.Done():
 			// 等待所有的计划任务执行完毕
-
 			wgroup.Wait()
 			c.lock.Lock()
 			task.State = 0
-			if task.NumberProcess == 0 {
-				close(c.handleMap[task.Id].clockChan)
-				delete(c.handleMap, task.Id)
-			} else {
-				close(c.handleMap[task.Id].clockChan)
-				c.handleMap[task.Id].cancel = nil
-			}
-
+			delete(c.handleMap, task.ID)
+			// if task.NumberProcess == 0 {
+			// 	close(c.handleMap[task.ID].clockChan)
+			// 	delete(c.handleMap, task.ID)
+			// } else {
+			// 	close(c.handleMap[task.ID].clockChan)
+			// 	c.handleMap[task.ID].cancel = nil
+			// }
 			c.lock.Unlock()
-			log.Printf("stop %s %s ok", task.Name, task.Id)
-			globalStore.Sync()
+			log.Printf("stop %s (ID:%d) ok", task.Name, task.ID)
 			return
 		}
 
@@ -470,6 +533,7 @@ func (t *taskEntity) waitDependsDone(ctx context.Context) bool {
 		// 同步模式
 		syncFlag = pushPipeDepend(t.depends, "")
 	} else {
+		// 并发模式
 		syncFlag = pushDepends(t.depends)
 	}
 	if !syncFlag {
@@ -479,18 +543,28 @@ func (t *taskEntity) waitDependsDone(ctx context.Context) bool {
 	}
 
 	// 默认所有依赖最终总超时3600
-	tick := time.Tick(3600 * time.Second)
+	c := time.NewTimer(3600 * time.Second)
 	for {
 		select {
 		case <-ctx.Done():
+			c.Stop()
 			return false
-		case <-tick:
+		case <-c.C:
 			log.Printf("%s failed to exec depends wait timeout!", t.name)
+			c.Stop()
 			return false
 		case <-t.ready:
+			c.Stop()
 			log.Printf("%s exec all depends done", t.name)
 			return true
-
 		}
 	}
+}
+
+// TDDO select db
+func (c *crontab) count() int {
+	c.lock.Lock()
+	total := len(c.handleMap)
+	c.lock.Unlock()
+	return total
 }
