@@ -95,3 +95,9 @@ type SearchLogResult struct {
 	Content []byte
 	Total   int
 }
+
+type SendMail struct {
+	MailTo  []string
+	Subject string
+	Content string
+}

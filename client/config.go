@@ -41,9 +41,6 @@ func newConfig() *config {
 		dataFile:      base.Key("data_file").MustString("data.json"),
 		logPath:       logc.Key("dir").MustString("./logs"),
 		mailTo:        mail.Key("to").MustString(""),
-
-		defaultRPCDebugPath: "/debug/rpc",
-		defaultRPCPath:      "/__myrpc__",
 	}
 	log.Printf("config:%v", *c)
 	return c

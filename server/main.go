@@ -19,11 +19,8 @@ import (
 )
 
 const (
-	DefaultTitle  = "jiacrontab"
 	DefaultLayout = "layouts/layout.html"
 )
-
-var config *conf.Config
 
 func main() {
 
@@ -32,30 +29,40 @@ func main() {
 	db.DB().AutoMigrate(&db.Client{})
 
 	// mail
+
 	mailer.InitMailer(&mailer.Mailer{
-		QueueLength:   100,
-		SubjectPrefix: DefaultTitle,
-		From:          conf.ConfigArgs.MailUser,
-		Host:          conf.ConfigArgs.MailHost + ":" + conf.ConfigArgs.MailPort,
-		User:          conf.ConfigArgs.MailUser,
-		Passwd:        conf.ConfigArgs.MailPass,
+		QueueLength:    conf.MailService.QueueLength,
+		SubjectPrefix:  conf.MailService.SubjectPrefix,
+		From:           conf.MailService.From,
+		Host:           conf.MailService.Host,
+		User:           conf.MailService.User,
+		Passwd:         conf.MailService.Passwd,
+		FromEmail:      conf.MailService.FromEmail,
+		DisableHelo:    conf.MailService.DisableHelo,
+		HeloHostname:   conf.MailService.HeloHostname,
+		SkipVerify:     conf.MailService.SkipVerify,
+		UseCertificate: conf.MailService.UseCertificate,
+		CertFile:       conf.MailService.CertFile,
+		KeyFile:        conf.MailService.KeyFile,
+		UsePlainText:   conf.MailService.UsePlainText,
 	})
 
-	model.InitStore(conf.ConfigArgs.DataFile)
+	model.InitStore(conf.AppService.DataFile)
 
 	app := iris.New()
-	app.Logger().SetLevel("debug")
+	if conf.AppService.Debug {
+		app.Logger().SetLevel("debug")
+		app.Use(logger.New())
+	}
 
 	app.Use(recover.New())
-	app.Use(logger.New())
-
-	html := iris.HTML(conf.ConfigArgs.TplDir, conf.ConfigArgs.TplExt)
+	html := iris.HTML(conf.AppService.TplDir, conf.AppService.TplExt)
 	html.AddFunc("date", libs.Date)
 	html.AddFunc("formatMs", libs.Int2floatstr)
 	html.Layout("layouts/layout.html")
 	html.Reload(true)
 	app.RegisterView(html)
 	router(app)
-	go rpc.ListenAndServe(conf.ConfigArgs.RpcAddr, &handle.Logic{})
-	app.Run(iris.Addr(":20000"))
+	go rpc.ListenAndServe(conf.AppService.RpcListenAddr, &handle.Logic{})
+	app.Run(iris.Addr(conf.AppService.HttpListenAddr))
 }

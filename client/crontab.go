@@ -5,9 +5,11 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
+	"jiacrontab/libs/proto"
 	"jiacrontab/model"
 	"log"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -146,14 +148,20 @@ func (t *taskEntity) exec(logContent *[]byte) {
 		if t.taskArgs.Timeout != 0 {
 			time.AfterFunc(time.Duration(t.taskArgs.Timeout)*time.Second, func() {
 				if flag {
-
+					var reply bool
 					isExceptError = true
 					switch t.taskArgs.OpTimeout {
 					case "email":
 						t.taskArgs.LastExitStatus = exitTimeout
-						sendMail(t.taskArgs.MailTo, globalConfig.addr+"提醒脚本执行超时", fmt.Sprintf(
-							"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
-							t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), t.taskArgs.Timeout))
+
+						rpcCall("Logic.SendMail", proto.SendMail{
+							MailTo:  strings.Split(t.taskArgs.MailTo, ","),
+							Subject: globalConfig.addr + "提醒脚本执行超时",
+							Content: fmt.Sprintf(
+								"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
+								t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), t.taskArgs.Timeout),
+						}, &reply)
+
 					case "kill":
 						t.taskArgs.LastExitStatus = exitTimeout
 						cancel()
@@ -161,9 +169,14 @@ func (t *taskEntity) exec(logContent *[]byte) {
 					case "email_and_kill":
 						t.taskArgs.LastExitStatus = exitTimeout
 						cancel()
-						sendMail(t.taskArgs.MailTo, globalConfig.addr+"提醒脚本执行超时", fmt.Sprintf(
-							"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
-							t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), t.taskArgs.Timeout))
+						rpcCall("Logic.SendMail", proto.SendMail{
+							MailTo:  strings.Split(t.taskArgs.MailTo, ","),
+							Subject: globalConfig.addr + "提醒脚本执行超时",
+							Content: fmt.Sprintf(
+								"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
+								t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), t.taskArgs.Timeout),
+						}, &reply)
+
 					case "ignore":
 					default:
 					}

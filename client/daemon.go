@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"jiacrontab/libs/proto"
 	"jiacrontab/model"
 	"log"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -52,9 +54,13 @@ func (d *daemonTask) do(ctx context.Context) {
 		err := wrapExecScript(ctx, fmt.Sprintf("%d.log", d.task.ID), cmdList, logPath, &logContent)
 		if err != nil {
 			if d.task.MailNotify && d.task.MailTo != "" {
-				sendMail(d.task.MailTo, globalConfig.addr+"提醒常驻脚本异常退出", fmt.Sprintf(
-					"任务名：%s\n详情：%s %v\n开始时间：%s\n异常：%s",
-					d.task.Name, d.task.Command, d.task.Args, time.Now().Format("2006-01-02 15:04:05"), err.Error()))
+				var reply bool
+				rpcCall("Logic.SendMail", proto.SendMail{
+					MailTo:  strings.Split(d.task.MailTo, ","),
+					Subject: globalConfig.addr + "提醒常驻脚本异常退出",
+					Content: fmt.Sprintf(
+						"任务名：%s\n详情：%s %v\n开始时间：%s\n异常：%s", d.task.Name, d.task.Command, d.task.Args, time.Now().Format("2006-01-02 15:04:05"), err.Error()),
+				}, &reply)
 			}
 		}
 

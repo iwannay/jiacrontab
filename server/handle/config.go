@@ -11,14 +11,14 @@ import (
 
 func ViewConfig(ctx iris.Context) {
 
-	c := conf.ConfigArgs.Category()
+	c := conf.Category()
 	r := ctx.Request()
 
 	if r.Method == http.MethodPost {
 		mailTo := strings.TrimSpace(r.FormValue("mailTo"))
 
 		mailer.SendMail([]string{mailTo}, "测试邮件", "测试邮件请勿回复")
-		// libs.SendMail("测试邮件", "测试邮件请勿回复", conf.ConfigArgs.MailHost, conf.ConfigArgs.MailUser, conf.ConfigArgs.MailPass, conf.ConfigArgs.MailPort, mailTo)
+
 	}
 
 	ctx.ViewData("configs", c)
@@ -26,7 +26,7 @@ func ViewConfig(ctx iris.Context) {
 }
 
 func ReloadConfig(ctx iris.Context) {
-	conf.ConfigArgs.Reload()
+	conf.Reload()
 	ctx.Redirect("/", http.StatusFound)
 
 }

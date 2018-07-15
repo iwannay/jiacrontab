@@ -10,21 +10,24 @@ var (
 )
 
 type Mailer struct {
-	QueueLength       int    `json:"queue_length"`
-	SubjectPrefix     string `json:"Subject_Prefix"`
-	Host              string `json:"host"`
-	From              string `json:"from"`
-	FromEmail         string
-	User, Passwd      string
-	DisableHelo       bool
-	HeloHostname      string
-	SkipVerify        bool
-	UseCertificate    bool
-	CertFile, KeyFile string
-	UsePlainText      bool
+	Enabled        bool   `json:"enabled"`
+	QueueLength    int    `json:"queue_length"`
+	SubjectPrefix  string `json:"subject_Prefix"`
+	Host           string `json:"host"`
+	From           string `json:"from"`
+	FromEmail      string `json:"from_email"`
+	User           string `json:"user"`
+	Passwd         string `json:"passwd"`
+	DisableHelo    bool   `json:"disable_helo"`
+	HeloHostname   string `json:"helo_hostname"`
+	SkipVerify     bool   `json:"skip_verify"`
+	UseCertificate bool   `json:"use_certificate"`
+	CertFile       string `json:"cert_file"`
+	KeyFile        string `json:"key_file"`
+	UsePlainText   bool   `json:"use_plain_text"`
 }
 
-func newMailService() {
+func LoadMailService() {
 	sec := cf.Section("mailer")
 	if !sec.Key("enabled").MustBool() {
 		return

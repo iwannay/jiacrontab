@@ -2,125 +2,35 @@ package conf
 
 import (
 	"jiacrontab/libs"
-	"strings"
-	"time"
-
-	"io/ioutil"
-
-	"fmt"
 
 	"gopkg.in/ini.v1"
 )
 
 const configFile = "server.ini"
-const versionFile = "template/.VERSION"
 
 var (
-	ConfigArgs *Config
-	cf         *ini.File
+	cf *ini.File
 )
 
-type Config struct {
-	Debug             bool
-	Addr              string
-	StaticDir         string
-	DefaultFaviconDir string
-	TplExt            string
-	TplDir            string
-	DataFile          string
-	RpcAddr           string
-	ServerStartTime   time.Time
-
-	JWTSigningKey     []byte
-	TokenCookieName   string
-	TokenExpires      int64
-	TokenCookieMaxAge int64
-
-	AppName       string
-	User          string
-	Passwd        string
-	AllowCommands []string
-	MailUser      string
-	MailHost      string
-	MailPass      string
-	MailPort      string
-	Version       string
-}
-
-func NewConfig() *Config {
-	c := &Config{
-		ServerStartTime: time.Now(),
-	}
-	c.Reload()
-	return c
-
-}
-
-func InitConfig() {
-	ConfigArgs = NewConfig()
-}
-
-func (c *Config) Reload() {
+func Reload() {
 	cf = loadConfig()
-	base := cf.Section("base")
-	srvc := cf.Section("server")
-	jwt := cf.Section("jwt")
-	rpc := cf.Section("rpc")
-	script := cf.Section("script")
-	mail := cf.Section("mail")
-
-	c.Debug = base.Key("debug").MustBool(false)
-	c.Addr = srvc.Key("listen").MustString("0.0.0.0:20000")
-	c.StaticDir = srvc.Key("static_dir").MustString("/static")
-	c.TplExt = ".html"
-	c.TplDir = "template"
-	c.DataFile = srvc.Key("data_file").MustString("data.json")
-	c.DefaultFaviconDir = srvc.Key("favicon").MustString("favicon.ico")
-	c.JWTSigningKey = []byte(jwt.Key("signing_key").MustString("eyJhbGciOiJIUzI1"))
-	c.RpcAddr = rpc.Key("listen").MustString(":20003")
-	c.TokenCookieName = jwt.Key("token_cookie_name").MustString("access_token")
-	c.TokenExpires = jwt.Key("expires").MustInt64(3000)
-	c.TokenCookieMaxAge = jwt.Key("token_cookie_maxage").MustInt64(3000)
-	c.User = base.Key("app_user").MustString("john")
-	c.Passwd = base.Key("app_passwd").MustString("john")
-	c.AppName = base.Key("app_name").MustString("jiacrontab")
-	c.AllowCommands = strings.Split(script.Key("allow_commands").MustString("php,/usr/local/bin/php,python,node,curl,wget,lua"), ",")
-
-	b, _ := ioutil.ReadFile(versionFile)
-	c.MailHost = mail.Key("host").MustString("")
-	c.MailUser = mail.Key("user").MustString("")
-	c.MailPass = mail.Key("pass").MustString("")
-	c.MailPort = mail.Key("port").MustString("25")
-	c.Version = string(b)
+	LoadMailService()
+	LoadJwtService()
+	LoadAppService()
 }
 
-func (c *Config) Category() map[string]interface{} {
-	cat := make(map[string]interface{})
-
-	cat["base"] = map[string]string{
-		"version": c.Version,
-		"appName": c.AppName,
-	}
-	cat["jwt"] = map[string]string{
-		"JWTSigningKey":   string(c.JWTSigningKey),
-		"tokenCookieName": c.TokenCookieName,
-		"tokenExpires":    fmt.Sprintf("%d", c.TokenExpires),
-	}
-
+func Category() map[string]interface{} {
 	mail := make(map[string]interface{})
-	fmt.Println(libs.Struct2Map(MailService, &mail), MailService)
-	cat["mail"] = mail
-	fmt.Println(mail)
-	cat["server"] = map[string]string{
-		"listen":    c.Addr,
-		"staticDir": c.StaticDir,
-		"tplExt":    c.TplExt,
-		"tplDir":    c.TplDir,
-	}
+	app := make(map[string]interface{})
+	cat := make(map[string]interface{})
+	jwt := make(map[string]interface{})
+	libs.Struct2Map(MailService, &mail)
+	libs.Struct2Map(AppService, &app)
+	libs.Struct2Map(JwtService, &jwt)
 
-	cat["rpc"] = map[string]string{
-		"listen": c.RpcAddr,
-	}
+	cat["app"] = app
+	cat["jwt"] = jwt
+	cat["mail"] = mail
 	return cat
 }
 
@@ -133,6 +43,5 @@ func loadConfig() *ini.File {
 }
 
 func init() {
-	ConfigArgs = NewConfig()
-	newMailService()
+	Reload()
 }

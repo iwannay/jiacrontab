@@ -77,7 +77,7 @@ func EditDaemonTask(ctx iris.Context) {
 	addr := ctx.FormValue("addr")
 	taskId := ctx.FormValue("taskId")
 
-	ctx.ViewData("allowCommands", conf.ConfigArgs.AllowCommands)
+	ctx.ViewData("allowCommands", conf.AppService.AllowCommands)
 
 	if ctx.Request().Method == http.MethodPost {
 		var mailNotify bool

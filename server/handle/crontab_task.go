@@ -2,6 +2,7 @@ package handle
 
 import (
 	"crypto/md5"
+	"log"
 
 	"fmt"
 	"jiacrontab/libs"
@@ -113,7 +114,7 @@ func ListTask(ctx iris.Context) {
 
 // Index 服务器列表页面
 func Index(ctx iris.Context) {
-	sInfo := libs.SystemInfo(conf.ConfigArgs.ServerStartTime)
+	sInfo := libs.SystemInfo(conf.AppService.ServerStartTime)
 
 	var clientList []model.Client
 	model.DB().Model(&model.Client{}).Find(&clientList)
@@ -284,7 +285,7 @@ func EditTask(ctx iris.Context) {
 		ctx.ViewData("addrs", sortedKeys)
 		ctx.ViewData("clientList", clientList)
 		ctx.ViewData("task", t)
-		ctx.ViewData("allowCommands", conf.ConfigArgs.AllowCommands)
+		ctx.ViewData("allowCommands", conf.AppService.AllowCommands)
 		ctx.View("crontab/edit.html")
 	}
 
@@ -388,7 +389,7 @@ func Login(ctx iris.Context) {
 		pwd := r.FormValue("passwd")
 		remb := r.FormValue("remember")
 
-		if u == conf.ConfigArgs.User && pwd == conf.ConfigArgs.Passwd {
+		if u == conf.AppService.User && pwd == conf.AppService.Passwd {
 
 			clientFeature := ctx.RemoteAddr() + "-" + ctx.Request().Header.Get("User-Agent")
 
@@ -396,18 +397,21 @@ func Login(ctx iris.Context) {
 			token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 				"user":       u,
 				"clientSign": clientSign,
-			}).SignedString(conf.ConfigArgs.JWTSigningKey)
+			}).SignedString([]byte(conf.JwtService.JWTSigningKey))
 
 			if err != nil {
 				ctx.ViewData("error", fmt.Sprint("无法生成访问凭证:", err))
 				ctx.View("public/error.html")
 				return
 			}
-			if remb == "yes" {
-				ctx.SetCookieKV(conf.ConfigArgs.TokenCookieName, url.QueryEscape(token), iris.CookiePath("/"),
-					iris.CookieExpires(time.Duration(conf.ConfigArgs.TokenExpires)), iris.CookieHTTPOnly(true))
+			if remb == "on" {
+				log.Println("yesssss", conf.JwtService)
+				ctx.SetCookieKV(conf.JwtService.TokenCookieName, url.QueryEscape(token), iris.CookiePath("/"),
+					iris.CookieExpires(time.Duration(conf.JwtService.TokenExpires)*time.Second),
+					iris.CookieHTTPOnly(true))
 			} else {
-				ctx.SetCookieKV(conf.ConfigArgs.TokenCookieName, url.QueryEscape(token))
+				log.Println("noooooo")
+				ctx.SetCookieKV(conf.JwtService.TokenCookieName, url.QueryEscape(token))
 			}
 
 			ctx.Redirect("/", http.StatusFound)
@@ -417,6 +421,11 @@ func Login(ctx iris.Context) {
 		ctx.ViewData("error", "auth failed")
 		ctx.View("public/error.html")
 		return
+	}
+
+	_, ok := ctx.Values().Get("jwt").(*jwt.Token)
+	if ok {
+		ctx.Redirect("/", http.StatusFound)
 	}
 	ctx.View("login.html")
 
@@ -447,7 +456,7 @@ func QuickStart(ctx iris.Context) {
 }
 
 func Logout(ctx iris.Context) {
-	ctx.RemoveCookie(conf.ConfigArgs.TokenCookieName)
+	ctx.RemoveCookie(conf.JwtService.TokenCookieName)
 	ctx.Redirect("/login", http.StatusFound)
 
 }

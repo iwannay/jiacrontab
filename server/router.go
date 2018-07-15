@@ -9,7 +9,6 @@ import (
 
 	"jiacrontab/server/handle"
 
-	"fmt"
 	"runtime"
 
 	"jiacrontab/server/conf"
@@ -42,24 +41,18 @@ func catchError(ctx iris.Context) {
 	ctx.View("public/error.html")
 }
 
-func h(ctx iris.Context) {
-
-	user := ctx.Values().Get("jwt").(*jwt.Token)
-	ctx.WriteString(fmt.Sprintf("%+v", user))
-}
-
 func router(app *iris.Application) {
-	app.StaticWeb("/static", filepath.Join(file.GetCurrentDirectory(), "static"))
+	app.StaticWeb(conf.AppService.StaticDir, filepath.Join(file.GetCurrentDirectory(), conf.AppService.StaticDir))
 
 	app.OnAnyErrorCode(catchError)
 	app.OnErrorCode(iris.StatusNotFound, notFound)
 
 	jwtHandler := jwtmiddleware.New(jwtmiddleware.Config{
 		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
-			return conf.ConfigArgs.JWTSigningKey, nil
+			return []byte(conf.JwtService.JWTSigningKey), nil
 		},
 		Extractor: func(ctx iris.Context) (string, error) {
-			token, err := url.QueryUnescape(ctx.GetCookie(conf.ConfigArgs.TokenCookieName))
+			token, err := url.QueryUnescape(ctx.GetCookie(conf.JwtService.TokenCookieName))
 			return token, err
 		},
 
@@ -70,6 +63,7 @@ func router(app *iris.Application) {
 				ctx.Redirect("/login", http.StatusFound)
 				return
 			}
+
 			ctx.Next()
 		},
 
@@ -83,9 +77,9 @@ func router(app *iris.Application) {
 		ctx.ViewData("controller", strings.Replace(filepath.Dir(path), `\`, `/`, -1))
 		ctx.ViewData("title", "jiacrontab")
 		ctx.ViewData("goVersion", runtime.Version())
-		ctx.ViewData("appVersion", "v1.3.5")
+		ctx.ViewData("appVersion", conf.Version)
 		ctx.ViewData("requestPath", ctx.Request().URL.Path)
-		ctx.ViewData("staticDir", "static")
+		ctx.ViewData("staticDir", conf.AppService.StaticDir)
 
 		ctx.ViewData("addr", ctx.FormValue("addr"))
 		ctx.Next()
