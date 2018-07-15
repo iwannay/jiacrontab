@@ -42,7 +42,6 @@ func newConfig() *config {
 		logPath:       logc.Key("dir").MustString("./logs"),
 		mailTo:        mail.Key("to").MustString(""),
 	}
-
 	log.Printf("config:%v", *c)
 	return c
 }
