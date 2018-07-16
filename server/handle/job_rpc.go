@@ -27,7 +27,6 @@ func (l *Logic) Register(args model.Client, reply *proto.MailArgs) error {
 	}
 
 	log.Println("register client", args)
-
 	return ret.Error
 }
 
