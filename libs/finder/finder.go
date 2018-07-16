@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"jiacrontab/libs/file"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -138,4 +139,36 @@ func (fd *Finder) Search(root string, expr string, data *[]byte, page, pagesize 
 
 func (fd *Finder) GetErrors() []error {
 	return fd.errors
+}
+
+func SearchAndDeleteFileOnDisk(dir string, d time.Duration, size int64) {
+	t := time.NewTicker(1 * time.Minute)
+	for {
+		select {
+		case <-t.C:
+			filepath.Walk(dir, func(fpath string, info os.FileInfo, err error) error {
+				if !info.IsDir() {
+					if time.Now().Sub(info.ModTime()) > d {
+						os.Remove(fpath)
+						return nil
+					}
+
+					if info.Size() > size && size != 0 {
+						os.Remove(fpath)
+						return nil
+					}
+				}
+
+				if info.IsDir() {
+					// 删除空目录
+					err := os.Remove(fpath)
+					if err == nil {
+						log.Println("delete ", fpath)
+					}
+				}
+
+				return nil
+			})
+		}
+	}
 }

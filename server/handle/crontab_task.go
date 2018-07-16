@@ -2,7 +2,6 @@ package handle
 
 import (
 	"crypto/md5"
-	"log"
 
 	"fmt"
 	"jiacrontab/libs"
@@ -118,6 +117,12 @@ func Index(ctx iris.Context) {
 
 	var clientList []model.Client
 	model.DB().Model(&model.Client{}).Find(&clientList)
+
+	for k, v := range clientList {
+		if time.Now().Sub(v.UpdatedAt) > 10*time.Minute {
+			clientList[k].State = 0
+		}
+	}
 
 	ctx.ViewData("clientList", clientList)
 	ctx.ViewData("systemInfoList", sInfo)
@@ -405,13 +410,11 @@ func Login(ctx iris.Context) {
 				return
 			}
 			if remb == "on" {
-				log.Println("yesssss", conf.JwtService)
 				ctx.SetCookieKV(conf.JwtService.TokenCookieName, url.QueryEscape(token), iris.CookiePath("/"),
 					iris.CookieExpires(time.Duration(conf.JwtService.TokenExpires)*time.Second),
 					iris.CookieHTTPOnly(true))
 
 			} else {
-				log.Println("noooooo")
 				ctx.SetCookieKV(conf.JwtService.TokenCookieName, url.QueryEscape(token))
 			}
 
@@ -516,5 +519,4 @@ func DeleteClient(ctx iris.Context) {
 	addr := r.FormValue("addr")
 	model.DB().Delete(&model.CrontabTask{}, "addr", addr)
 	ctx.Redirect("/", http.StatusFound)
-
 }
