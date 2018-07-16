@@ -2,6 +2,7 @@ package main
 
 import (
 	"jiacrontab/client/store"
+	"jiacrontab/libs/finder"
 	"jiacrontab/libs/rpc"
 	"log"
 	"os"
@@ -96,5 +97,8 @@ func main() {
 	})
 
 	go RpcHeartBeat()
+
+	go finder.SearchAndDeleteFileOnDisk(globalConfig.logPath, 24*time.Hour, 1<<30)
+
 	rpc.ListenAndServe(globalConfig.rpcListenAddr, &DaemonTask{}, &Admin{}, &CrontabTask{})
 }

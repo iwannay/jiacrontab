@@ -799,3 +799,13 @@ func filterDepend(args *dependScript) bool {
 	return true
 
 }
+
+func cleanLog() {
+	t := time.NewTicker(1 * time.Minute)
+	for {
+		select {
+		case <-t.C:
+
+		}
+	}
+}
