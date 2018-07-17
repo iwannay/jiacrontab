@@ -192,7 +192,10 @@ func (d *daemon) run() {
 
 func (d *daemon) count() int {
 	var count int
-	model.DB().Model(&model.DaemonTask{}).Count(&count)
+	// model.DB().Model(&model.DaemonTask{}).Count(&count)
+	d.lock.Lock()
+	count = len(d.taskMap)
+	d.lock.Unlock()
 	return count
 }
 
