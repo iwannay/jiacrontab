@@ -97,12 +97,11 @@
                 } else {
                     isStartTask = '<a href="/daemon/task/action?taskId='+ d.ID +'&addr='+ common.getRequest().addr +'&action=stop" class="layui-btn layui-btn-xs layui-btn-danger reset-btn">停止</a>';
                 }
-                var  editorHtml = isStartTask + '<div class="layui-input-inline" style="width: 70px;" lay-event="operate">' +
+                var  editorHtml = isStartTask + '<div class="layui-input-inline select-bottom" style="width: 70px;" lay-event="operate">' +
                                     '<select lay-filter="selectTable" id="'+ d.ID +'">' +
                                         '<option value="">操作</option>' +
                                         '<option value="修改常驻任务">修改常驻任务</option>' +
                                         '<option value="删除常驻任务">删除常驻任务</option>' +
-                                        '<option value="强杀常驻任务">强杀常驻任务</option>' +
                                         '<option value="查看任务日志">查看任务日志</option>' +
                                     '</select>' +
                                 '</div>';

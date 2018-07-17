@@ -39,42 +39,49 @@ func (t *CrontabTask) Update(args model.CrontabTask, ok *bool) error {
 
 	} else {
 		var crontabTask model.CrontabTask
-		ret := model.DB().Find(&crontabTask, "id=?", args.ID)
-		if ret.Error == nil {
-			if crontabTask.NumberProcess > 0 {
+		// ret := model.DB().Find(&crontabTask, "id=?", args.ID)
+
+		err := globalCrontab.update(args.ID, func(t *model.CrontabTask) error {
+
+			if t.NumberProcess > 0 {
 				return errors.New("can not update when task is running")
 			}
-
-			crontabTask.Name = args.Name
-			crontabTask.Command = args.Command
-			crontabTask.Args = args.Args
-			crontabTask.MailTo = args.MailTo
-			crontabTask.Depends = args.Depends
-			crontabTask.UnexpectedExitMail = args.UnexpectedExitMail
-			crontabTask.PipeCommands = args.PipeCommands
-			crontabTask.Sync = args.Sync
-			crontabTask.Timeout = args.Timeout
-			crontabTask.MaxConcurrent = args.MaxConcurrent
-			if crontabTask.MaxConcurrent == 0 {
-				crontabTask.MaxConcurrent = 1
+			t.Name = args.Name
+			t.Command = args.Command
+			t.Args = args.Args
+			t.MailTo = args.MailTo
+			t.Depends = args.Depends
+			t.UnexpectedExitMail = args.UnexpectedExitMail
+			t.PipeCommands = args.PipeCommands
+			t.Sync = args.Sync
+			t.Timeout = args.Timeout
+			t.MaxConcurrent = args.MaxConcurrent
+			if t.MaxConcurrent == 0 {
+				t.MaxConcurrent = 1
 			}
 
-			crontabTask.MailTo = args.MailTo
-			crontabTask.OpTimeout = args.OpTimeout
-			crontabTask.C = args.C
+			t.MailTo = args.MailTo
+			t.OpTimeout = args.OpTimeout
+			t.C = args.C
+			crontabTask = *t
+			return nil
+
+		})
+
+		if err == nil {
 			model.DB().Model(&model.CrontabTask{}).Where("id=? and number_process=0", crontabTask.ID).Update(map[string]interface{}{
-				"name":                 args.Name,
-				"command":              args.Command,
-				"args":                 args.Args,
-				"mail_to":              args.MailTo,
-				"depends":              args.Depends,
-				"upexpected_exit_mail": args.UnexpectedExitMail,
-				"pipe_commands":        args.PipeCommands,
-				"sync":                 args.Sync,
-				"timeout":              args.Timeout,
-				"max_concurrent":       args.MaxConcurrent,
-				"op_timeout":           args.OpTimeout,
-				"c":                    args.C,
+				"name":                 crontabTask.Name,
+				"command":              crontabTask.Command,
+				"args":                 crontabTask.Args,
+				"mail_to":              crontabTask.MailTo,
+				"depends":              crontabTask.Depends,
+				"upexpected_exit_mail": crontabTask.UnexpectedExitMail,
+				"pipe_commands":        crontabTask.PipeCommands,
+				"sync":                 crontabTask.Sync,
+				"timeout":              crontabTask.Timeout,
+				"max_concurrent":       crontabTask.MaxConcurrent,
+				"op_timeout":           crontabTask.OpTimeout,
+				"c":                    crontabTask.C,
 			})
 
 		} else {

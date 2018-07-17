@@ -6,6 +6,9 @@
     left: auto;
     right: 0;
 }
+.select-bottom .layui-form-select dl {
+    bottom: -100px;
+}
 .layui-only-select .layui-form-select dl dd {
     line-height: 32px;
     position: relative;
