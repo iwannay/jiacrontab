@@ -23,7 +23,7 @@ build:
 	cp server/server.ini $(SERVERDIR)
 	cp -r server/template $(SERVERDIR)
 	cp -r server/static $(SERVERDIR)
-	cp server/server.ini $(CLIENTDIR)
+	cp client/client.ini $(CLIENTDIR)
 	$(GOBUILD) -o $(BINARY_MANAGER) -v ./server
 	$(GOBUILD) -o $(BINARY_CLIENT) -v ./client
 	mv $(BINARY_MANAGER) $(SERVERDIR)
@@ -52,7 +52,7 @@ build-linux:
 	cp server/server.ini $(SERVERDIR)
 	cp -r server/template $(SERVERDIR)
 	cp -r server/static $(SERVERDIR)
-	cp server/server.ini $(CLIENTDIR)
+	cp client/client.ini $(CLIENTDIR)
 	GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_MANAGER) -v ./server
 	GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_CLIENT) -v ./client
 	mv $(BINARY_MANAGER) $(SERVERDIR)
@@ -62,10 +62,10 @@ build-windows:
 	mkdir $(WORKDIR)/jiacrontab
 	mkdir $(SERVERDIR)
 	mkdir $(CLIENTDIR)
-	cp WORKDIR/server/server.ini $(SERVERDIR)
-	cp -r WORKDIR/server/template $(SERVERDIR)
-	cp -r WORKDIR/server/static $(SERVERDIR)
-	cp WORKDIR/server/client.ini $(CLIENTDIR)
+	cp server/server.ini $(SERVERDIR)
+	cp -r server/template $(SERVERDIR)
+	cp -r server/static $(SERVERDIR)
+	cp client/client.ini $(CLIENTDIR)
 	GOOS=windows GOARCH=amd64 $(GOBUILD) -o $(BINARY_MANAGER).exe -v ./server
 	GOOS=windows GOARCH=amd64 $(GOBUILD) -o $(BINARY_CLIENT).exe -v ./client
 
