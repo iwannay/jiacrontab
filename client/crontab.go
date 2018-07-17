@@ -229,9 +229,10 @@ func (t *taskEntity) exec(logContent *[]byte) {
 }
 
 type handle struct {
-	cancel    context.CancelFunc // 取消定时器
-	clockChan chan time.Time
-	taskPool  []*taskEntity
+	cancel      context.CancelFunc // 取消定时器
+	clockChan   chan time.Time
+	crontabTask *model.CrontabTask
+	taskPool    []*taskEntity
 }
 
 type crontab struct {
@@ -277,6 +278,17 @@ func (c *crontab) quickStart(t *model.CrontabTask, content *[]byte) {
 func (c *crontab) stop(t *model.CrontabTask) {
 	c.kill(t)
 	c.stopTaskChan <- t
+}
+
+func (c *crontab) update(id uint, fn func(t *model.CrontabTask) error) error {
+	var err error
+	c.lock.Lock()
+	h := c.handleMap[id]
+	if h != nil {
+		err = fn(h.crontabTask)
+	}
+	c.lock.Unlock()
+	return err
 }
 
 // 杀死正在执行的脚本进程
@@ -340,7 +352,8 @@ func (c *crontab) run() {
 				// TODO 风险
 				select {
 				case v.clockChan <- now:
-				case <-time.After(1 * time.Second):
+				default:
+					// case <-time.After(1 * time.Second):
 				}
 
 			}
@@ -356,11 +369,10 @@ func (c *crontab) run() {
 				c.lock.Lock()
 				if h, ok := c.handleMap[t.ID]; !ok {
 					ctx, cancel := context.WithCancel(context.Background())
-					taskPool := make([]*taskEntity, 0)
 					c.handleMap[t.ID] = &handle{
-						cancel:    cancel,
-						clockChan: make(chan time.Time),
-						taskPool:  taskPool,
+						cancel:      cancel,
+						crontabTask: t,
+						clockChan:   make(chan time.Time),
 					}
 					c.lock.Unlock()
 					go c.deal(t, ctx)

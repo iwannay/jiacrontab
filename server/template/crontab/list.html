@@ -101,14 +101,14 @@
                 {field:'NumberProcess', width:120, title: '进程/计时器', templet: function(d) {
                     return d.NumberProcess + '/' + d.TimerCounter;
                 }},
-                {field:'LastExitStatus', width:90, title: '上次执行', templet: function(d){
+                {field:'LastExitStatus', width:120, title: '上次执行', templet: function(d){
                     var lastExitHtml = '';
                     if (d.LastExitStatus == 'success') {
-                        lastExitHtml = '<a href="#" class="layui-btn layui-btn-xs jia-btn-normal" style="width: 54px;">'+ d.LastExitStatus +'</a>';
+                        lastExitHtml = '<a href="#" class="layui-btn layui-btn-xs jia-btn-normal" >'+ d.LastExitStatus +'</a>';
                     } else if (d.LastExitStatus == '') {
                         lastExitHtml = '- -';
                     } else {
-                        lastExitHtml = '<a href="#" class="layui-btn layui-btn-xs layui-btn-danger" style="width: 54px;">'+ d.LastExitStatus +'</a>';
+                        lastExitHtml = '<a href="#" class="layui-btn layui-btn-xs layui-btn-danger" >'+ d.LastExitStatus +'</a>';
                     }
                     return lastExitHtml;
                 }},
