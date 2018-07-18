@@ -409,13 +409,13 @@ func wrapExecScript(ctx context.Context, logname string, cmdList [][]string, log
 			f.Close()
 		}
 	}()
-	if err != nil && f != nil {
+	if err != nil {
 		var errMsg string
-		if globalConfig.debugScript {
+		if globalConfig.debugScript && f != nil {
 			prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, cmdStr)
 			errMsg = prefix + err.Error() + "\n"
 			f.WriteString(errMsg)
-		} else {
+		} else if f != nil {
 			errMsg = err.Error() + "\n"
 			f.WriteString(errMsg)
 		}
@@ -435,7 +435,7 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 
 	binpath, err := exec.LookPath(bin)
 	if err != nil {
-		return nil, err
+		return f, err
 	}
 
 	cmd := exec.CommandContext(ctx, binpath, args...)
