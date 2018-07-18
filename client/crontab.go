@@ -101,11 +101,10 @@ func (t *taskEntity) exec(logContent *[]byte) {
 		}
 		model.DB().Model(&model.CrontabTask{}).Where("id=?", t.taskArgs.ID).Update(map[string]interface{}{
 			"state":            t.taskArgs.State,
-			"lat_cost_time":    t.taskArgs.LastCostTime,
+			"last_cost_time":   t.taskArgs.LastCostTime,
 			"last_exec_time":   t.taskArgs.LastExecTime,
 			"last_exit_status": t.taskArgs.LastExitStatus,
 			"number_process":   t.taskArgs.NumberProcess,
-			"timer_counter":    t.taskArgs.TimerCounter,
 		})
 	}()
 	var err error
@@ -121,17 +120,14 @@ func (t *taskEntity) exec(logContent *[]byte) {
 	isExceptError := false
 
 	model.DB().Model(&model.CrontabTask{}).Where("id=?", t.taskArgs.ID).Update(map[string]interface{}{
-		"state":            t.taskArgs.State,
-		"lat_cost_time":    t.taskArgs.LastCostTime,
-		"last_exec_time":   t.taskArgs.LastExecTime,
-		"last_exit_status": t.taskArgs.LastExitStatus,
-		"number_process":   t.taskArgs.NumberProcess,
-		"timer_counter":    t.taskArgs.TimerCounter,
+		"state":          t.taskArgs.State,
+		"last_exec_time": t.taskArgs.LastExecTime,
+		"number_process": t.taskArgs.NumberProcess,
 	})
 
 	if ok := t.waitDependsDone(ctx); !ok {
 		cancel()
-		errMsg := fmt.Sprintf("[%s %s %s]>>  Execution of dependency script failed\n", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, t.name)
+		errMsg := fmt.Sprintf("[%s %s %s] Execution of dependency script failed\n", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, t.name)
 		t.logContent = append(t.logContent, []byte(errMsg)...)
 		writeLog(t.logPath, fmt.Sprintf("%d.log", t.taskArgs.ID), &t.logContent)
 		t.taskArgs.LastExitStatus = exitDependError
@@ -209,7 +205,6 @@ func (t *taskEntity) exec(logContent *[]byte) {
 	}
 
 	atomic.AddInt32(&t.taskArgs.NumberProcess, -1)
-
 	t.taskArgs.LastCostTime = time.Now().UnixNano() - start
 
 	if t.taskArgs.TimerCounter > 0 {
@@ -263,7 +258,8 @@ func (c *crontab) quickStart(t *model.CrontabTask, content *[]byte) {
 
 		taskPool := make([]*taskEntity, 0)
 		c.handleMap[t.ID] = &handle{
-			taskPool: append(taskPool, taskEty),
+			taskPool:    append(taskPool, taskEty),
+			crontabTask: t,
 		}
 		c.lock.Unlock()
 	} else {
@@ -549,7 +545,7 @@ func (t *taskEntity) waitDependsDone(ctx context.Context) bool {
 		syncFlag = pushDepends(t.depends)
 	}
 	if !syncFlag {
-		prefix := fmt.Sprintf("[%s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr)
+		prefix := fmt.Sprintf("[%s %s] ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr)
 		t.logContent = append(t.logContent, []byte(prefix+"failed to exec depends push depends error!\n")...)
 		return syncFlag
 	}

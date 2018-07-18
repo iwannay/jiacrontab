@@ -412,7 +412,7 @@ func wrapExecScript(ctx context.Context, logname string, cmdList [][]string, log
 	if err != nil {
 		var errMsg string
 		if globalConfig.debugScript {
-			prefix := fmt.Sprintf("[%s %s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, cmdStr)
+			prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, cmdStr)
 			errMsg = prefix + err.Error() + "\n"
 			f.WriteString(errMsg)
 		} else {
@@ -464,7 +464,7 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 			break
 		}
 		if globalConfig.debugScript {
-			prefix := fmt.Sprintf("[%s %s %s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, bin, strings.Join(args, " "))
+			prefix := fmt.Sprintf("[%s %s %s %s] ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, bin, strings.Join(args, " "))
 			line = prefix + line
 			*content = append(*content, []byte(line)...)
 		} else {
@@ -482,7 +482,7 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 		}
 		// 默认给err信息加上日期标志
 		if globalConfig.debugScript {
-			prefix := fmt.Sprintf("[%s %s %s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, bin, strings.Join(args, " "))
+			prefix := fmt.Sprintf("[%s %s %s %s] ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, bin, strings.Join(args, " "))
 			line = prefix + line
 			*content = append(*content, []byte(line)...)
 		} else {
@@ -546,7 +546,7 @@ func pipeExecScript(ctx context.Context, cmdList [][]string, logname string, log
 			break
 		}
 		if globalConfig.debugScript {
-			prefix := fmt.Sprintf("[%s %s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, logCmdName)
+			prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, logCmdName)
 			line = prefix + line
 			*content = append(*content, []byte(line)...)
 		} else {
@@ -564,7 +564,7 @@ func pipeExecScript(ctx context.Context, cmdList [][]string, logname string, log
 		}
 		// 默认给err信息加上日期标志
 		if globalConfig.debugScript {
-			prefix := fmt.Sprintf("[%s %s %s]>>  ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, logCmdName)
+			prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, logCmdName)
 			line = prefix + line
 			*content = append(*content, []byte(line)...)
 		} else {
