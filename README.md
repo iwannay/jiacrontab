@@ -35,7 +35,8 @@ $ nohup ./jiaclient &> client.log &
 ```sh
 $ cd $GOPATH/src
 $ git clone git@github.com:iwannay/jiacrontab.git 
-$ make build-linux
+$ cd jiacrontab
+$ make build
 
 $ cd $GOPATH/src/app/jiacrontab/server
 $ nohup ./jiaserver &> jiaserver.log &
