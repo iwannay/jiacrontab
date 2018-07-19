@@ -1,5 +1,5 @@
 # jiacrontab
-提供可视化界面的定时任务管理工具。
+提供可视化界面的定时任务&常驻任务管理工具。
 
 1.允许设置每个脚本的超时时间，超时操作可选择邮件通知管理者，或强杀脚本进程。  
 2.允许设置脚本的最大并发数。  
@@ -8,6 +8,7 @@
 5.允许添加脚本依赖（支持跨服务器），依赖脚本提供同步和异步的执行模式。  
 6.友好的web界面，方便用户操作。  
 7.脚本出错时可选择邮箱通知多人。  
+8.支持常驻任务，任务失败后可配置自动重启。  
 
 
 ## 说明
@@ -33,7 +34,7 @@ $ nohup ./jiaclient &> client.log &
 2.安装运行
 ```sh
 $ cd $GOPATH/src
-$ git clone http://git.wzjg520.com:/wzjg520/jiacrontab.git 
+$ git clone git@github.com:iwannay/jiacrontab.git 
 $ make build-linux
 
 $ cd $GOPATH/src/app/jiacrontab/server
@@ -47,7 +48,7 @@ $ nohup ./jiaclient &> jiaclient.log &
 
 1、下载新版本压缩包，并解压。  
 
-2、拷贝旧版server/.data和client/.data 文件夹分别至新版本相同位置
+2、拷贝旧版server/.data和client/.data 至新版相同位置
 
 3、运行新版
 
