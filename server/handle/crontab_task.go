@@ -253,10 +253,9 @@ func EditTask(ctx iris.Context) {
 			ctx.View("public/error.html")
 			return
 		}
-		if reply {
-			ctx.Redirect("/crontab/task/list?addr="+addr, http.StatusFound)
-			return
-		}
+
+		ctx.Redirect("/crontab/task/list?addr="+addr, http.StatusFound)
+		return
 
 	} else {
 		var t model.CrontabTask

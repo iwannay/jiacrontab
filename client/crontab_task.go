@@ -26,6 +26,7 @@ func (t *CrontabTask) All(args string, reply *[]model.CrontabTask) error {
 
 func (t *CrontabTask) Update(args model.CrontabTask, ok *bool) error {
 	*ok = true
+	var err error
 	if args.MailTo == "" {
 		args.MailTo = globalConfig.mailTo
 	}
@@ -41,7 +42,7 @@ func (t *CrontabTask) Update(args model.CrontabTask, ok *bool) error {
 		var crontabTask model.CrontabTask
 		// ret := model.DB().Find(&crontabTask, "id=?", args.ID)
 
-		err := globalCrontab.update(args.ID, func(t *model.CrontabTask) error {
+		err = globalCrontab.update(args.ID, func(t *model.CrontabTask) error {
 
 			if t.NumberProcess > 0 {
 				return errors.New("can not update when task is running")
@@ -90,7 +91,7 @@ func (t *CrontabTask) Update(args model.CrontabTask, ok *bool) error {
 
 	}
 
-	return nil
+	return err
 }
 func (t *CrontabTask) Get(args uint, reply *model.CrontabTask) error {
 	return model.DB().Find(reply, "id=?", args).Error
