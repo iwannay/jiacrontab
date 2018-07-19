@@ -39,6 +39,7 @@
             <div class="layui-card-header">运行列表</div>
             <div class="layui-card-body">
                 <table class="layui-hide" id="taskTableId" lay-filter="taskTable"></table>
+                <div class="layui-hide txt-center" id="no-data">暂无数据</div>
             </div>
         </div>
     </div>
@@ -61,7 +62,7 @@
         var tableCols = [[ //表头
             {type:'checkbox', fixed: 'left'},
             {field: 'ID', width:60, sort: true, fixed: 'left', title: 'ID'},
-            {field:'Name', width:150, fixed: 'left', title: '名称'},
+            {field:'Name', width:170, fixed: 'left', title: '名称'},
             {field:'Command', width:170, title: '脚本', templet: function(d) {
                 var oldStr = d.Command + ' ' + d.Args;
                 newStr = oldStr.replace(/(.{0,20}).*/g,"$1")
@@ -87,7 +88,7 @@
             {field:'CreatedAt', width:170, title: '创建日期', sort: true, templet: function(d) {
                 return common.UTCToTime(d.CreatedAt);
             }},
-            {field:'StartAt', width:170, title: '执行日期', sort: true, templet: function(d) {
+            {field:'StartAt', minWidth:170, title: '执行日期', sort: true, templet: function(d) {
                 return common.UTCToTime(d.StartAt);
             }},
             {field:'handle', width:140, fixed: 'right', title: '编辑', templet: function(d){
@@ -116,13 +117,16 @@
                 addr: common.getRequest().addr
             },
             success: function(res) {
-                console.log(res)
                 var taskDatas = res.data;
-                table.render({
-                    elem: '#taskTableId',
-                    data: taskDatas,
-                    cols: tableCols
-                });
+                if (taskDatas) {
+                    table.render({
+                        elem: '#taskTableId',
+                        data: taskDatas,
+                        cols: tableCols
+                    });
+                } else {
+                    $('#no-data').addClass('layui-show').removeClass('layui-hide');
+                }
             },
             error: function(error) {
                 console.log(error)
