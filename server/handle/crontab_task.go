@@ -251,6 +251,7 @@ func EditTask(ctx iris.Context) {
 		if err := rpc.Call(addr, "CrontabTask.Update", rpcArgs, &reply); err != nil {
 			ctx.ViewData("error", err.Error())
 			ctx.View("public/error.html")
+			return
 		}
 		if reply {
 			ctx.Redirect("/crontab/task/list?addr="+addr, http.StatusFound)

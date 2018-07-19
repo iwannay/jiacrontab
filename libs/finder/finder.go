@@ -147,6 +147,10 @@ func SearchAndDeleteFileOnDisk(dir string, d time.Duration, size int64) {
 		select {
 		case <-t.C:
 			filepath.Walk(dir, func(fpath string, info os.FileInfo, err error) error {
+				if info == nil {
+					log.Println("[error] SearchAndDeleteFileOnDisk ", fpath)
+					return errors.New(fpath + "not exists")
+				}
 				if !info.IsDir() {
 					if time.Now().Sub(info.ModTime()) > d {
 						os.Remove(fpath)
