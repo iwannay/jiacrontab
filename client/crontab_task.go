@@ -115,7 +115,6 @@ func (t *CrontabTask) Stop(args string, ok *bool) error {
 	ids := strings.Split(args, ",")
 	for _, v := range ids {
 		var crontabTask model.CrontabTask
-		fmt.Printf("id", libs.ParseInt(v))
 		ret := model.DB().Find(&crontabTask, "id=?", libs.ParseInt(v))
 		if ret.Error != nil {
 			*ok = false

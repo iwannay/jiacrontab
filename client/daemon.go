@@ -27,7 +27,7 @@ type daemonTask struct {
 }
 
 func (d *daemonTask) do(ctx context.Context) {
-
+	var reply bool
 	d.processNum = 1
 	t := time.NewTicker(1 * time.Second)
 	d.daemon.wait.Add(1)
@@ -54,20 +54,22 @@ func (d *daemonTask) do(ctx context.Context) {
 		err := wrapExecScript(ctx, fmt.Sprintf("%d.log", d.task.ID), cmdList, logPath, &logContent)
 		if err != nil {
 			if d.task.MailNotify && d.task.MailTo != "" {
-				var reply bool
-				rpcCall("Logic.SendMail", proto.SendMail{
+
+				err := rpcCall("Logic.SendMail", proto.SendMail{
 					MailTo:  strings.Split(d.task.MailTo, ","),
 					Subject: globalConfig.addr + "提醒常驻脚本异常退出",
 					Content: fmt.Sprintf(
 						"任务名：%s\n详情：%s %v\n开始时间：%s\n异常：%s", d.task.Name, d.task.Command, d.task.Args, time.Now().Format("2006-01-02 15:04:05"), err.Error()),
 				}, &reply)
+				if err != nil {
+					log.Println("failed send mail ", err)
+				}
 			}
 		}
 
 		select {
 		case <-ctx.Done():
 			stop = true
-			fmt.Println("stop")
 		case <-t.C:
 		}
 
@@ -98,7 +100,7 @@ func (d *daemonTask) do(ctx context.Context) {
 		"status":      stopDaemonTask,
 		"process_num": d.processNum})
 
-	log.Println("end", d.task.Name)
+	log.Println("daemon task end", d.task.Name)
 
 }
 
