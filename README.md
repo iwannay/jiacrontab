@@ -18,41 +18,41 @@ client：实现定时逻辑，隔离用户脚本，将client布置于多台服�
 
 ## 安装
 #### 二进制安装  
-1.[下载](http://git.wzjg520.com/wzjg520/jiacrontab/releases) 二进制文件。  
+1.[下载](https://github.com/iwannay/jiacrontab/releases) 二进制文件。  
 
-2.解压缩进入目录。  
+2.解压缩进入目录(server,client)。  
 
 3.运行  
 ```sh
-$ nohup ./server &> server.log &
-$ nohup ./client &> client.log &     
+$ nohup ./jiaserver &> server.log &
+$ nohup ./jiaclient &> client.log &     
 ```
-### 源码安装
+
+### 1.4+源码安装
 1.安装git，golang；可参考官网。  
 2.安装运行
 ```sh
 $ cd $GOPATH/src
 $ git clone http://git.wzjg520.com:/wzjg520/jiacrontab.git 
-$ go get -u github.com/dgrijalva/jwt-go
-$ go get -u gopkg.in/ini.v1
+$ make build-linux
 
-$ cd $GOPATH/src/jiacrontab/server
-$ go build .
-$ nohup ./server &> server.log &
+$ cd $GOPATH/src/app/jiacrontab/server
+$ nohup ./jiaserver &> jiaserver.log &
 
-$ cd $GOPATH/src/jiacrontab/client
-$ go build .
-$ nohup ./client &> client.log & 
+$ cd $GOPATH/src/app/jiacrontab/client
+$ nohup ./jiaclient &> jiaclient.log & 
 ``` 
 
-### 版本升级
+### 升级至1.4+
 
 1、下载新版本压缩包，并解压。  
 
-2、替换旧版本中的server(或server.exe)、client(或client.exe)执行文件，以及static、template目录为新版
+2、拷贝旧版server/.data和client/.data 文件下分别至新版本相同位置
+
+3、运行新版
 
 
-## 截图
+## 1.4+截图
 ![alt 截图](https://raw.githubusercontent.com/iwannay/static_dir/master/jiacrontab_preview_1.jpg)  
 
 ![alt 截图2](https://raw.githubusercontent.com/iwannay/static_dir/master/jiacrontab_preview_2.jpg)
