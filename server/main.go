@@ -29,7 +29,6 @@ func main() {
 	db.DB().AutoMigrate(&db.Client{})
 
 	// mail
-
 	mailer.InitMailer(&mailer.Mailer{
 		QueueLength:    conf.MailService.QueueLength,
 		SubjectPrefix:  conf.MailService.SubjectPrefix,
