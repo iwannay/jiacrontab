@@ -9,13 +9,13 @@ import (
 	"jiacrontab/server/model"
 	_ "net/http/pprof"
 
+	"github.com/kataras/iris/middleware/logger"
 	"github.com/kataras/iris/middleware/recover"
 
 	"jiacrontab/libs"
 
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/kataras/iris"
-	"github.com/kataras/iris/middleware/logger"
 )
 
 const (

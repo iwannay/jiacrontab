@@ -6,21 +6,16 @@ import "log"
 const configFile = "client.ini"
 
 type config struct {
-	debug               bool
-	debugScript         bool
-	rpcListenAddr       string
-	addr                string
-	dataFile            string
-	rpcSrvAddr          string
-	logPath             string
-	defaultRPCPath      string
-	defaultRPCDebugPath string
-	pprofAddr           string
-	mailUser            string
-	mailPass            string
-	mailHost            string
-	mailTo              string
-	autoClean           bool
+	debug         bool
+	debugScript   bool
+	rpcListenAddr string
+	addr          string
+	dataFile      string
+	rpcSrvAddr    string
+	logPath       string
+	pprofAddr     string
+	mailTo        string
+	cleanTaskLog  bool
 }
 
 func newConfig() *config {
@@ -42,9 +37,9 @@ func newConfig() *config {
 		dataFile:      base.Key("data_file").MustString("data.json"),
 		logPath:       logc.Key("dir").MustString("./logs"),
 		mailTo:        mail.Key("to").MustString(""),
-		autoClean:     logc.Key("auto_clean").MustBool(true),
+		cleanTaskLog:  logc.Key("clean_task_log").MustBool(true),
 	}
-	log.Printf("config:%v", *c)
+	log.Printf("config:%+v", c)
 	return c
 }
 
