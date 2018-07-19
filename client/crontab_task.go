@@ -34,16 +34,15 @@ func (t *CrontabTask) Update(args model.CrontabTask, ok *bool) error {
 	if args.ID == 0 {
 		ret := model.DB().Create(&args)
 		if ret.Error == nil {
-
 			globalCrontab.add(&args)
 		}
 
 	} else {
-		var crontabTask model.CrontabTask
-		// ret := model.DB().Find(&crontabTask, "id=?", args.ID)
 
+		if args.MaxConcurrent == 0 {
+			args.MaxConcurrent = 1
+		}
 		err = globalCrontab.update(args.ID, func(t *model.CrontabTask) error {
-
 			if t.NumberProcess > 0 {
 				return errors.New("can not update when task is running")
 			}
@@ -57,32 +56,27 @@ func (t *CrontabTask) Update(args model.CrontabTask, ok *bool) error {
 			t.Sync = args.Sync
 			t.Timeout = args.Timeout
 			t.MaxConcurrent = args.MaxConcurrent
-			if t.MaxConcurrent == 0 {
-				t.MaxConcurrent = 1
-			}
-
 			t.MailTo = args.MailTo
 			t.OpTimeout = args.OpTimeout
 			t.C = args.C
-			crontabTask = *t
 			return nil
 
 		})
 
 		if err == nil {
-			model.DB().Model(&model.CrontabTask{}).Where("id=? and number_process=0", crontabTask.ID).Update(map[string]interface{}{
-				"name":                 crontabTask.Name,
-				"command":              crontabTask.Command,
-				"args":                 crontabTask.Args,
-				"mail_to":              crontabTask.MailTo,
-				"depends":              crontabTask.Depends,
-				"upexpected_exit_mail": crontabTask.UnexpectedExitMail,
-				"pipe_commands":        crontabTask.PipeCommands,
-				"sync":                 crontabTask.Sync,
-				"timeout":              crontabTask.Timeout,
-				"max_concurrent":       crontabTask.MaxConcurrent,
-				"op_timeout":           crontabTask.OpTimeout,
-				"c":                    crontabTask.C,
+			model.DB().Model(&model.CrontabTask{}).Where("id=? and number_process=0", args.ID).Update(map[string]interface{}{
+				"name":                 args.Name,
+				"command":              args.Command,
+				"args":                 args.Args,
+				"mail_to":              args.MailTo,
+				"depends":              args.Depends,
+				"upexpected_exit_mail": args.UnexpectedExitMail,
+				"pipe_commands":        args.PipeCommands,
+				"sync":                 args.Sync,
+				"timeout":              args.Timeout,
+				"max_concurrent":       args.MaxConcurrent,
+				"op_timeout":           args.OpTimeout,
+				"c":                    args.C,
 			})
 
 		} else {

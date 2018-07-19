@@ -147,7 +147,8 @@
                     table.render({
                         elem: '#taskTableId',
                         data: taskDatas,
-                        cols: tableCols
+                        cols: tableCols,
+                        limit: taskDatas.length
                     });
                 },
                 error: function(error) {
