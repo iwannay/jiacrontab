@@ -28,7 +28,7 @@ $ nohup ./jiaserver &> server.log &
 $ nohup ./jiaclient &> client.log &     
 ```
 
-### 1.4+源码安装
+### 1.4.*源码安装
 1.安装git，golang；可参考官网。  
 2.安装运行
 ```sh
@@ -43,11 +43,11 @@ $ cd $GOPATH/src/app/jiacrontab/client
 $ nohup ./jiaclient &> jiaclient.log & 
 ``` 
 
-### 升级至1.4+
+### 升级至1.4.*
 
 1、下载新版本压缩包，并解压。  
 
-2、拷贝旧版server/.data和client/.data 文件下分别至新版本相同位置
+2、拷贝旧版server/.data和client/.data 文件夹分别至新版本相同位置
 
 3、运行新版
 
