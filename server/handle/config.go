@@ -17,7 +17,7 @@ func ViewConfig(ctx iris.Context) {
 	if r.Method == http.MethodPost {
 		mailTo := strings.TrimSpace(r.FormValue("mailTo"))
 
-		mailer.SendMail([]string{mailTo}, "测试邮件", "测试邮件请勿回复")
+		mailer.SendMail([]string{mailTo}, "我明天去找你", "我明天去找你")
 
 	}
 
