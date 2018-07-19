@@ -76,15 +76,17 @@ func (c CrontabArgs) Value() (driver.Value, error) {
 }
 
 type DependsTask struct {
-	Name       string
-	Dest       string
-	From       string
-	TaskId     string
-	Command    string
-	Args       string
-	Timeout    int64
-	Err        string `json:"-"`
-	LogContent []byte `json:"-"`
+	Name         string
+	Dest         string
+	From         string
+	TaskId       uint
+	Id           string `json:"-"`
+	TaskEntityId string `json:"-"`
+	Command      string
+	Args         string
+	Timeout      int64
+	Err          string `json:"-"`
+	LogContent   []byte `json:"-"`
 }
 
 type PipeComamnds [][]string

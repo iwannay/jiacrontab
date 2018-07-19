@@ -127,7 +127,7 @@
                                             '<option value="">操作</option>' +
                                             '<option value="修改计划任务">修改计划任务</option>' +
                                             '<option value="删除计划任务">删除计划任务</option>' +
-                                            '<option value="测试用户脚本">测试用户脚本</option>' +
+                                            '<option value="手动执行任务">手动执行任务</option>' +
                                             '<option value="强杀脚本进程">强杀脚本进程</option>' +
                                             '<option value="查看最近日志">查看最近日志</option>' +
                                         '</select>' +
@@ -171,7 +171,7 @@
                 if (selectValue == '删除计划任务') {
                     window.location.href = '/crontab/task/stop?taskId='+ selectId +'&addr=' + common.getRequest().addr + '&action=delete';
                 }
-                if (selectValue == '测试用户脚本') {
+                if (selectValue == '手动执行任务') {
                     window.location.href = '/crontab/task/quickStart?taskId='+ selectId +'&addr=' + common.getRequest().addr;
                 }
                 if (selectValue == '强杀脚本进程') {

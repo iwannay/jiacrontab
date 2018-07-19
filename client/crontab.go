@@ -41,18 +41,18 @@ type taskEntity struct {
 }
 
 type dependScript struct {
-	taskId     uint   // 定时任务id
-	pid        string // 当前依赖的父级任务（可能存在多个并发的task）id
-	id         string // 当前依赖id
-	from       string
-	command    string
-	args       string
-	dest       string
-	done       bool
-	timeout    int64
-	err        error
-	name       string
-	logContent []byte
+	taskId       uint   // 定时任务id
+	taskEntityId string // 当前依赖的父级任务（可能存在多个并发的task）id
+	id           string // 当前依赖id
+	from         string
+	command      string
+	args         string
+	dest         string
+	done         bool
+	timeout      int64
+	err          error
+	name         string
+	logContent   []byte
 }
 
 func newTaskEntity(t *model.CrontabTask) *taskEntity {
@@ -69,16 +69,16 @@ func newTaskEntity(t *model.CrontabTask) *taskEntity {
 			dependSubName = v.Name
 		}
 		depends = append(depends, &dependScript{
-			pid:     id,
-			taskId:  t.ID,
-			id:      fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%d-%s", k, dependSubName)))),
-			from:    v.From,
-			dest:    v.Dest,
-			command: v.Command,
-			timeout: v.Timeout,
-			args:    v.Args,
-			name:    fmt.Sprintf("%d-%s", k, dependSubName),
-			done:    false,
+			taskEntityId: id,
+			taskId:       t.ID,
+			id:           fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%d-%s", k, dependSubName)))),
+			from:         v.From,
+			dest:         v.Dest,
+			command:      v.Command,
+			timeout:      v.Timeout,
+			args:         v.Args,
+			name:         fmt.Sprintf("%d-%s", k, dependSubName),
+			done:         false,
 		})
 	}
 	return &taskEntity{

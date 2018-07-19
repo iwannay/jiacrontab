@@ -25,16 +25,14 @@ func (l *Logic) Register(args model.Client, reply *proto.MailArgs) error {
 		args.Name = time.Now().Format("20060102150405")
 		ret = model.DB().Create(&args)
 	}
-
-	log.Println("register client", args)
 	return ret.Error
 }
 
 func (l *Logic) Depends(args model.DependsTasks, reply *bool) error {
-	log.Printf("Callee Logic.Depend taskId %s", args[0].TaskId)
+	log.Printf("Callee Logic.Depend taskId %d id:", args[0].TaskId)
 	*reply = true
 	for _, v := range args {
-		if err := rpcCall(v.Dest, "Task.ExecDepend", v, &reply); err != nil {
+		if err := rpcCall(v.Dest, "CrontabTask.ExecDepend", v, &reply); err != nil {
 			*reply = false
 			return err
 		}
@@ -46,7 +44,7 @@ func (l *Logic) Depends(args model.DependsTasks, reply *bool) error {
 func (l *Logic) DependDone(args model.DependsTask, reply *bool) error {
 	log.Printf("Callee Logic.DependDone task %s", args.Name)
 	*reply = true
-	if err := rpcCall(args.Dest, "Task.ResolvedDepends", args, &reply); err != nil {
+	if err := rpcCall(args.Dest, "CrontabTask.ResolvedDepends", args, &reply); err != nil {
 		*reply = false
 		return err
 	}

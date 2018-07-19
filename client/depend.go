@@ -66,19 +66,21 @@ func (d *depend) run() {
 
 					if !filterDepend(t) {
 						err = rpcCall("Logic.DependDone", model.DependsTask{
-							Name:       t.name,
-							Dest:       t.dest,
-							From:       t.from,
-							TaskId:     t.id,
-							Command:    t.command,
-							LogContent: t.logContent,
-							Err:        errMsg,
-							Args:       t.args,
-							Timeout:    t.timeout,
+							Id:           t.id,
+							Name:         t.name,
+							Dest:         t.dest,
+							From:         t.from,
+							TaskEntityId: t.taskEntityId,
+							TaskId:       t.taskId,
+							Command:      t.command,
+							LogContent:   t.logContent,
+							Err:          errMsg,
+							Args:         t.args,
+							Timeout:      t.timeout,
 						}, &reply)
 
 						if !reply || err != nil {
-							log.Printf("task %s %s %s call Logic.DependDone failed!", t.name, t.command, t.args)
+							log.Printf("task %s %s %s call Logic.DependDone failed! err:%v", t.name, t.command, t.args, err)
 						}
 					}
 
