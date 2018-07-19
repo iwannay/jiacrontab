@@ -75,7 +75,7 @@ func router(app *iris.Application) {
 		path := ctx.Request().URL.Path
 		ctx.ViewData("action", filepath.Base(path))
 		ctx.ViewData("controller", strings.Replace(filepath.Dir(path), `\`, `/`, -1))
-		ctx.ViewData("title", "jiacrontab")
+		ctx.ViewData("title", conf.AppName)
 		ctx.ViewData("goVersion", runtime.Version())
 		ctx.ViewData("appVersion", conf.Version)
 		ctx.ViewData("requestPath", ctx.Request().URL.Path)
