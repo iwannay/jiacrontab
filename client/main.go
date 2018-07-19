@@ -98,7 +98,9 @@ func main() {
 
 	go RpcHeartBeat()
 
-	go finder.SearchAndDeleteFileOnDisk(globalConfig.logPath, 24*time.Hour, 1<<30)
+	if globalConfig.cleanTaskLog {
+		go finder.SearchAndDeleteFileOnDisk(globalConfig.logPath, 24*time.Hour*30, 1<<30)
+	}
 
 	rpc.ListenAndServe(globalConfig.rpcListenAddr, &DaemonTask{}, &Admin{}, &CrontabTask{})
 }
