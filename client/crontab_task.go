@@ -36,6 +36,7 @@ func (t *CrontabTask) Update(args model.CrontabTask, ok *bool) error {
 		if ret.Error == nil {
 			globalCrontab.add(&args)
 		}
+		err = ret.Error
 
 	} else {
 
