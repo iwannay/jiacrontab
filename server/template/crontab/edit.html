@@ -211,7 +211,7 @@
                         <div class="layui-form-item">
                             <div class="layui-input-block">
                                 <button class="layui-btn" lay-submit lay-filter="add-script">立即提交</button>
-                                <button type="reset" class="layui-btn layui-btn-primary">取消</button>
+                                <button type="reset" id="cancel" class="layui-btn layui-btn-primary">取消</button>
                             </div>
                         </div>
                     </form>
@@ -407,6 +407,9 @@
             });
 
 
+            $('#cancel').on('click', function () {
+                location.reload()
+            })
 
             $('#flexible-icon').on('click', function () {
                 if ($(this).hasClass('layui-icon-spread-left')) {
