@@ -108,6 +108,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 		})
 	}()
 	var err error
+	var reply bool
 	now := time.Now()
 	atomic.AddInt32(&t.taskArgs.NumberProcess, 1)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -134,9 +135,18 @@ func (t *taskEntity) exec(logContent *[]byte) {
 		isExceptError = true
 		if t.taskArgs.UnexpectedExitMail && t.taskArgs.MailTo != "" {
 			costTime := time.Now().UnixNano() - start
-			sendMail(t.taskArgs.MailTo, globalConfig.addr+"提醒脚本依赖异常退出", fmt.Sprintf(
-				"任务名：%s\n详情：%s %v\n开始时间：%s\n耗时：%.4f\n异常：%s",
-				t.name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), float64(costTime)/1000000000, errors.New(errMsg)))
+
+			err := rpcCall("Logic.SendMail", proto.SendMail{
+				MailTo:  strings.Split(t.taskArgs.MailTo, ","),
+				Subject: globalConfig.addr + "提醒脚本依赖异常退出",
+				Content: fmt.Sprintf(
+					"任务名：%s\n详情：%s %v\n开始时间：%s\n耗时：%.4f\n异常：%s",
+					t.name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), float64(costTime)/1000000000, errors.New(errMsg)),
+			}, &reply)
+			if err != nil {
+				log.Println("failed send mail ", err)
+			}
+
 		}
 
 	} else {
@@ -149,7 +159,6 @@ func (t *taskEntity) exec(logContent *[]byte) {
 					switch t.taskArgs.OpTimeout {
 					case "email":
 						t.taskArgs.LastExitStatus = exitTimeout
-
 						rpcCall("Logic.SendMail", proto.SendMail{
 							MailTo:  strings.Split(t.taskArgs.MailTo, ","),
 							Subject: globalConfig.addr + "提醒脚本执行超时",
@@ -157,6 +166,9 @@ func (t *taskEntity) exec(logContent *[]byte) {
 								"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
 								t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), t.taskArgs.Timeout),
 						}, &reply)
+						if err != nil {
+							log.Println("failed send mail ", err)
+						}
 
 					case "kill":
 						t.taskArgs.LastExitStatus = exitTimeout
@@ -172,6 +184,9 @@ func (t *taskEntity) exec(logContent *[]byte) {
 								"任务名：%s\n详情：%s %v\n开始时间：%s\n超时：%ds",
 								t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), t.taskArgs.Timeout),
 						}, &reply)
+						if err != nil {
+							log.Println("failed send mail ", err)
+						}
 
 					case "ignore":
 					default:
@@ -197,9 +212,17 @@ func (t *taskEntity) exec(logContent *[]byte) {
 			}
 
 			if t.taskArgs.UnexpectedExitMail {
-				sendMail(t.taskArgs.MailTo, globalConfig.addr+"提醒脚本异常退出", fmt.Sprintf(
-					"任务名：%s\n详情：%s %v\n开始时间：%s\n异常：%s",
-					t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), err.Error()))
+
+				err := rpcCall("Logic.SendMail", proto.SendMail{
+					MailTo:  strings.Split(t.taskArgs.MailTo, ","),
+					Subject: globalConfig.addr + "提醒脚本异常退出",
+					Content: fmt.Sprintf(
+						"任务名：%s\n详情：%s %v\n开始时间：%s\n异常：%s",
+						t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), err.Error()),
+				}, &reply)
+				if err != nil {
+					log.Println("failed send mail ", err)
+				}
 			}
 		}
 	}
@@ -445,13 +468,13 @@ func (c *crontab) run() {
 
 func (c *crontab) deal(task *model.CrontabTask, ctx context.Context) {
 	var wgroup sync.WaitGroup
-	// 定时计数器用于统计有多少个定时期，当定时器为0时说明没有正在执行的计划
+	// 定时计数器用于统计有多少个定时器，当定时器为0时说明没有正在执行的计划
 	atomic.AddInt32(&task.TimerCounter, 1)
 	task.State = 1
 	defer func() {
 		atomic.AddInt32(&task.TimerCounter, -1)
 		model.DB().Model(&model.CrontabTask{}).Where("id=?", task.ID).Update(map[string]interface{}{
-			"state":            task.State,
+			"state":            0,
 			"lat_cost_time":    task.LastCostTime,
 			"last_exec_time":   task.LastExecTime,
 			"last_exit_status": task.LastExitStatus,
@@ -514,13 +537,6 @@ func (c *crontab) deal(task *model.CrontabTask, ctx context.Context) {
 			c.lock.Lock()
 			task.State = 0
 			delete(c.handleMap, task.ID)
-			// if task.NumberProcess == 0 {
-			// 	close(c.handleMap[task.ID].clockChan)
-			// 	delete(c.handleMap, task.ID)
-			// } else {
-			// 	close(c.handleMap[task.ID].clockChan)
-			// 	c.handleMap[task.ID].cancel = nil
-			// }
 			c.lock.Unlock()
 			log.Printf("stop %s (ID:%d) ok", task.Name, task.ID)
 			return
