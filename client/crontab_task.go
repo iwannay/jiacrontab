@@ -209,21 +209,19 @@ func (t *CrontabTask) Log(args proto.SearchLog, reply *proto.SearchLogResult) er
 }
 
 func (t *CrontabTask) ResolvedDepends(args model.DependsTask, reply *bool) error {
-
 	var err error
 	if args.Err != "" {
 		err = errors.New(args.Err)
 	}
 
-	idArr := strings.Split(args.TaskId, "-")
 	globalCrontab.lock.Lock()
-	i := uint(libs.ParseInt(idArr[0]))
-	if h, ok := globalCrontab.handleMap[i]; ok {
+	if h, ok := globalCrontab.handleMap[args.TaskId]; ok {
 		globalCrontab.lock.Unlock()
+
 		for _, v := range h.taskPool {
-			if v.id == idArr[1] {
+			if v.id == args.TaskEntityId {
 				for _, v2 := range v.depends {
-					if v2.id == args.TaskId {
+					if v2.id == args.Id {
 						v2.dest = args.Dest
 						v2.from = args.From
 						v2.logContent = args.LogContent
@@ -239,21 +237,22 @@ func (t *CrontabTask) ResolvedDepends(args model.DependsTask, reply *bool) error
 		globalCrontab.lock.Unlock()
 	}
 
-	log.Printf("resolvedDepends: %s is not exists", args.Name)
+	log.Printf("resolvedDepends: %+v is not exists", args)
 
 	*reply = false
 	return nil
 }
 
 func (t *CrontabTask) ExecDepend(args model.DependsTask, reply *bool) error {
-
 	globalDepend.Add(&dependScript{
-		id:      args.TaskId,
-		dest:    args.Dest,
-		from:    args.From,
-		name:    args.Name,
-		command: args.Command,
-		args:    args.Args,
+		id:           args.Id,
+		taskEntityId: args.TaskEntityId,
+		taskId:       args.TaskId,
+		dest:         args.Dest,
+		from:         args.From,
+		name:         args.Name,
+		command:      args.Command,
+		args:         args.Args,
 	})
 	*reply = true
 	log.Printf("task %s %s %s add to execution queue ", args.Name, args.Command, args.Args)

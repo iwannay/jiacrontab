@@ -173,7 +173,7 @@
                                     <div class="layui-input-inline">
                                         <select name="depends[dest]">
                                             {{range $k,$v := $clientList}}
-                                                <option value="{{$v.Addr}}" class="list-group-item"  {{if eq $v.Addr $addr}}selected{{end}}>{{$v.Addr}} {{if eq $v.State 0}}断开{{end}}</option>
+                                                <option value="{{$v.Addr}}" class="list-group-item"  {{if eq $v.Addr $value.Dest}}selected{{end}}>{{$v.Addr}} {{if eq $v.State 0}}断开{{end}}</option>
                                             {{end}}
                                         </select>
                                     </div>

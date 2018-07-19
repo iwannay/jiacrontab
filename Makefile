@@ -27,7 +27,7 @@ build:
 	$(GOBUILD) -o $(BINARY_MANAGER) -v ./server
 	$(GOBUILD) -o $(BINARY_CLIENT) -v ./client
 	mv $(BINARY_MANAGER) $(SERVERDIR)
-	mv $(BINARY_CLIENT) $(SERVERDIR)
+	mv $(BINARY_CLIENT) $(CLIENTDIR)
 test:
 	$(GOTEST) -v ./server
 	$(GOTEST) -v ./client

@@ -672,24 +672,26 @@ func pushDepends(dpds []*dependScript) bool {
 			// 检测目标服务器为本机时直接执行脚本
 			if v.dest == globalConfig.addr {
 				globalDepend.Add(v)
-				fmt.Println("本机哈")
 			} else {
 				ndpds = append(ndpds, model.DependsTask{
-					Name:    v.name,
-					Dest:    v.dest,
-					From:    v.from,
-					TaskId:  v.id,
-					Command: v.command,
-					Args:    v.args,
-					Timeout: v.timeout,
+					Id:           v.id,
+					Name:         v.name,
+					Dest:         v.dest,
+					From:         v.from,
+					TaskEntityId: v.taskEntityId,
+					TaskId:       v.taskId,
+					Command:      v.command,
+					Args:         v.args,
+					Timeout:      v.timeout,
 				})
 			}
 		}
 		if len(ndpds) > 0 {
 			var reply bool
+			fmt.Println(ndpds[0].Id, "hahahah")
 			err := rpcCall("Logic.Depends", ndpds, &reply)
 			if !reply || err != nil {
-				log.Printf("push Depends failed,%s", err)
+				log.Printf("push Depends failed %s", err)
 				return false
 			}
 		}
@@ -714,13 +716,15 @@ func pushPipeDepend(dpds []*dependScript, dependScriptId string) bool {
 				} else {
 					var reply bool
 					err := rpcCall("Logic.Depends", []model.DependsTask{{
-						Name:    v.name,
-						Dest:    v.dest,
-						From:    v.from,
-						TaskId:  v.id,
-						Command: v.command,
-						Args:    v.args,
-						Timeout: v.timeout,
+						Id:           v.id,
+						Name:         v.name,
+						Dest:         v.dest,
+						From:         v.from,
+						TaskId:       v.taskId,
+						TaskEntityId: v.taskEntityId,
+						Command:      v.command,
+						Args:         v.args,
+						Timeout:      v.timeout,
 					}}, &reply)
 					if !reply || err != nil {
 						log.Printf("sync push Depends failed!")
@@ -757,7 +761,7 @@ func filterDepend(args *dependScript) bool {
 		var logContent []byte
 		var currTaskEntity *taskEntity
 		for _, v := range h.taskPool {
-			if v.id == args.pid {
+			if v.id == args.taskEntityId {
 				currTaskEntity = v
 				for _, v2 := range v.depends {
 
@@ -799,14 +803,4 @@ func filterDepend(args *dependScript) bool {
 
 	return true
 
-}
-
-func cleanLog() {
-	t := time.NewTicker(1 * time.Minute)
-	for {
-		select {
-		case <-t.C:
-
-		}
-	}
 }

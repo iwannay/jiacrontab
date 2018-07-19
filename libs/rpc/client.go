@@ -3,6 +3,7 @@ package rpc
 import (
 	"bufio"
 	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -42,7 +43,8 @@ func (c *gobClientCodec) Close() error {
 
 // Call 调用
 func Call(addr string, serviceMethod string, args interface{}, reply interface{}) error {
-	log.Printf("RPC call %s %s %+v ", addr, serviceMethod, args)
+	bts, _ := json.Marshal(args)
+	log.Printf("RPC call %s %s %s ", addr, serviceMethod, string(bts))
 	conn, err := net.DialTimeout("tcp", addr, time.Second*10)
 	if err != nil {
 		return err
