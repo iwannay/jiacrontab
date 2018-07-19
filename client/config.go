@@ -20,6 +20,7 @@ type config struct {
 	mailPass            string
 	mailHost            string
 	mailTo              string
+	autoClean           bool
 }
 
 func newConfig() *config {
@@ -41,6 +42,7 @@ func newConfig() *config {
 		dataFile:      base.Key("data_file").MustString("data.json"),
 		logPath:       logc.Key("dir").MustString("./logs"),
 		mailTo:        mail.Key("to").MustString(""),
+		autoClean:     logc.Key("auto_clean").MustBool(true),
 	}
 	log.Printf("config:%v", *c)
 	return c
