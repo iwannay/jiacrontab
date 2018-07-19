@@ -43,6 +43,7 @@
                 <div class="layui-card-header">运行列表</div>
                 <div class="layui-card-body">
                     <table class="layui-hide" id="taskTableId" lay-filter="taskTable"></table>
+                    <div class="layui-hide txt-center" id="no-data">暂无数据</div>
                 </div>
             </div>
         </div>
@@ -67,7 +68,7 @@
             var tableCols = [[ //表头
                 {type:'checkbox', fixed: 'left'},
                 {field: 'ID', width:60, sort: true, fixed: 'left', title: 'ID'},
-                {field:'Name', width:150, fixed: 'left', title: '名称'},
+                {field:'Name', width:170, fixed: 'left', title: '名称'},
                 {field:'Command', width:170, title: '脚本', templet: function(d) {
                     var oldStr = d.Command + ' ' + d.Args;
                     newStr = oldStr.replace(/(.{0,20}).*/g,"$1")
@@ -112,7 +113,7 @@
                     }
                     return lastExitHtml;
                 }},
-                {field:'C', width:200, title: '时间', templet: function(d) {
+                {field:'C', minWidth:200, title: '时间', templet: function(d) {
                     return '分:' + d.C.Minute + '时:' + d.C.Hour + '日:' + d.C.Day + '月:' + d.C.Month + '日/周:' + d.C.Weekday
                 }},
                 {field:'handle', width:140, fixed: 'right', title: '编辑', templet: function(d){
@@ -144,12 +145,16 @@
                 },
                 success: function(res) {
                     var taskDatas = res.data.taskList;
-                    table.render({
-                        elem: '#taskTableId',
-                        data: taskDatas,
-                        cols: tableCols,
-                        limit: taskDatas.length
-                    });
+                    if (taskDatas) {
+                        table.render({
+                            elem: '#taskTableId',
+                            data: taskDatas,
+                            cols: tableCols,
+                            limit: taskDatas.length
+                        });
+                    } else {
+                        $('#no-data').addClass('layui-show').removeClass('layui-hide');
+                    }
                 },
                 error: function(error) {
                     console.log(error)
