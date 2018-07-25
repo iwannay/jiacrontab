@@ -30,11 +30,11 @@ func (c *gobClientCodec) WriteRequest(r *rpc.Request, body interface{}) (err err
 }
 
 func (c *gobClientCodec) ReadResponseHeader(r *rpc.Response) error {
-	return c.dec.Decode(r)
+	return TimeoutCoder(c.dec.Decode, r, "client read response header")
 }
 
 func (c *gobClientCodec) ReadResponseBody(body interface{}) error {
-	return c.dec.Decode(body)
+	return TimeoutCoder(c.dec.Decode, body, "client read response body")
 }
 
 func (c *gobClientCodec) Close() error {
