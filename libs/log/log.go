@@ -9,58 +9,67 @@ import (
 
 var DefaultLogger *log.Logger
 var logChan chan *logContent
+var logLevel int
 
 const (
-	levelDebug = "[DEBUG] "
-	levelInfo  = "[INFO] "
-	levelWarn  = "[WARN] "
-	levelError = "[ERROR] "
-	levelFatal = "[FATAL] "
+	LevelDebug = iota
+	LevelInfo
+	LevelWarn
+	LevelError
+	LevelFatal
 )
 
+var levelMap = map[int]string{
+	LevelDebug: "[DEBUG] ",
+	LevelInfo:  "[INFO] ",
+	LevelWarn:  "[WARN] ",
+	LevelError: "[ERROR] ",
+	LevelFatal: "[FATAL] ",
+}
+
 type logContent struct {
-	level   string
+	level   int
 	content string
 }
 
 func Debug(v ...interface{}) {
 	logChan <- &logContent{
-		level:   levelDebug,
+		level:   LevelDebug,
 		content: fmt.Sprintln(v...),
 	}
 }
 
 func Info(v ...interface{}) {
 	logChan <- &logContent{
-		level:   levelInfo,
+		level:   LevelInfo,
 		content: fmt.Sprintln(v...),
 	}
 }
 
 func Warn(v ...interface{}) {
 	logChan <- &logContent{
-		level:   levelWarn,
+		level:   LevelWarn,
 		content: fmt.Sprintln(v...),
 	}
 }
 
 func Error(v ...interface{}) {
 	logChan <- &logContent{
-		level:   levelError,
+		level:   LevelError,
 		content: fmt.Sprintln(v...),
 	}
 }
 
 func Fatal(v ...interface{}) {
 	logChan <- &logContent{
-		level:   levelFatal,
+		level:   LevelFatal,
 		content: fmt.Sprintln(v...),
 	}
 }
 
 func Debugf(format string, v ...interface{}) {
 	logChan <- &logContent{
-		level:   levelDebug,
+		level:   LevelDebug,
 		content: fmt.Sprintf(format, v...),
 	}
 }
@@ -68,28 +77,28 @@ func Debugf(format string, v ...interface{}) {
 func Infof(format string, v ...interface{}) {
 
 	logChan <- &logContent{
-		level:   levelInfo,
+		level:   LevelInfo,
 		content: fmt.Sprintf(format, v...),
 	}
 }
 
 func Warnf(format string, v ...interface{}) {
 	logChan <- &logContent{
-		level:   levelWarn,
+		level:   LevelWarn,
 		content: fmt.Sprintf(format, v...),
 	}
 }
 
 func Errorf(format string, v ...interface{}) {
 	logChan <- &logContent{
-		level:   levelError,
+		level:   LevelError,
 		content: fmt.Sprintf(format, v...),
 	}
 }
 
 func Fatalf(format string, v ...interface{}) {
 	logChan <- &logContent{
-		level:   levelFatal,
+		level:   LevelFatal,
 		content: fmt.Sprintf(format, v...),
 	}
 }
@@ -102,6 +111,10 @@ func SetFlags(flag int) {
 	DefaultLogger.SetFlags(flag)
 }
 
+func SetLevel(level int) {
+	logLevel = level
+}
+
 func init() {
 	logChan = make(chan *logContent)
 	DefaultLogger = log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile)
@@ -110,11 +123,14 @@ func init() {
 		for {
 			select {
 			case log := <-logChan:
-				DefaultLogger.SetPrefix(log.level)
+				DefaultLogger.SetPrefix(levelMap[log.level])
+
 				switch log.level {
-				case levelDebug, levelInfo, levelError:
-					DefaultLogger.Output(2, log.content)
-				case levelFatal:
+				case LevelDebug, LevelInfo, LevelError:
+					if log.level >= logLevel {
+						DefaultLogger.Output(2, log.content)
+					}
+				case LevelFatal:
 					DefaultLogger.Output(2, log.content)
 					os.Exit(1)
 				}

@@ -18,6 +18,7 @@ func TestInfo(t *testing.T) {
 }
 
 func TestInfo2(t *testing.T) {
+	SetLevel(LevelInfo)
 	for i := 0; i < 100; i++ {
 		Info("hello boy")
 		Error("hello boy")
