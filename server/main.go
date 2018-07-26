@@ -7,6 +7,7 @@ import (
 	"jiacrontab/server/conf"
 	"jiacrontab/server/handle"
 	"jiacrontab/server/model"
+	"log"
 	_ "net/http/pprof"
 
 	"github.com/kataras/iris/middleware/logger"
@@ -24,6 +25,7 @@ const (
 
 func main() {
 
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	db.CreateDB("sqlite3", "data/jiacrontab_server.db")
 	db.DB().CreateTable(&db.Client{})
 	db.DB().AutoMigrate(&db.Client{})
