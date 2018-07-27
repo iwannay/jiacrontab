@@ -317,7 +317,7 @@ func (c *crontab) kill(t *model.CrontabTask) {
 
 // 删除计划任务
 func (c *crontab) delete(t *model.CrontabTask) {
-	if model.DB().Delete(t).Error != nil {
+	if model.DB().Unscoped().Delete(t).Error != nil {
 		log.Println("failed delete", t.Name, fmt.Sprint("(", t.ID, ")"))
 		return
 	}

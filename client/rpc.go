@@ -22,7 +22,7 @@ func RpcHeartBeat() {
 	}, &mail)
 
 	if err != nil {
-		log.Println(" heart beat error:", err, "server addr:", globalConfig.rpcSrvAddr)
+		log.Println(" heartbeat error:", err, "server addr:", globalConfig.rpcSrvAddr)
 	}
 
 	time.AfterFunc(heartbeatPeriod, RpcHeartBeat)
