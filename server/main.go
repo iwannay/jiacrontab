@@ -26,7 +26,6 @@ const (
 func main() {
 
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-
 	db.CreateDB("sqlite3", "data/jiacrontab_server.db")
 	db.DB().CreateTable(&db.Client{})
 	db.DB().AutoMigrate(&db.Client{})

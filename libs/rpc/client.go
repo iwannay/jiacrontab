@@ -45,7 +45,7 @@ func (c *gobClientCodec) Close() error {
 func Call(addr string, serviceMethod string, args interface{}, reply interface{}) error {
 	bts, _ := json.Marshal(args)
 	log.Printf("RPC call %s %s %s ", addr, serviceMethod, string(bts))
-	conn, err := net.DialTimeout("tcp", addr, time.Second*10)
+	conn, err := net.DialTimeout("tcp4", addr, time.Second*10)
 	if err != nil {
 		return err
 	}

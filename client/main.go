@@ -51,6 +51,7 @@ func listenSignal(fn func()) {
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	model.CreateDB("sqlite3", "data/jiacrontab_client.db")
 	model.DB().CreateTable(&model.DaemonTask{}, &model.CrontabTask{})
 	model.DB().AutoMigrate(&model.DaemonTask{}, &model.CrontabTask{})
