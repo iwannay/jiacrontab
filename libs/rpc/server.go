@@ -80,7 +80,7 @@ func listen(addr string, srcvr ...interface{}) error {
 		}
 	}
 
-	l, err := net.Listen("tcp", addr)
+	l, err := net.Listen("tcp4", addr)
 	if err != nil {
 		return err
 	}
