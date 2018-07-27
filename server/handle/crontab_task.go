@@ -517,6 +517,6 @@ func DeleteClient(ctx iris.Context) {
 
 	r := ctx.Request()
 	addr := r.FormValue("addr")
-	model.DB().Delete(&model.Client{}, "addr=?", addr)
+	model.DB().Unscoped().Delete(&model.Client{}, "addr=?", addr)
 	ctx.Redirect("/", http.StatusFound)
 }

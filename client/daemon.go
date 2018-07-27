@@ -87,7 +87,7 @@ func (d *daemonTask) do(ctx context.Context) {
 		delete(d.daemon.taskMap, d.task.ID)
 		d.daemon.lock.Unlock()
 
-		model.DB().Delete(d.task, "id=?", d.task.ID)
+		model.DB().Unscoped().Delete(d.task, "id=?", d.task.ID)
 	case stopDaemonTask:
 
 		d.daemon.lock.Lock()
@@ -172,7 +172,7 @@ func (d *daemon) run() {
 					t.action = v.action
 					t.cancel()
 				} else {
-					model.DB().Delete(v.task, "id=?", v.task.ID)
+					model.DB().Unscoped().Delete(v.task, "id=?", v.task.ID)
 					d.lock.Unlock()
 				}
 			case stopDaemonTask:
