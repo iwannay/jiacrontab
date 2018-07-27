@@ -625,6 +625,8 @@ func call(stack []*exec.Cmd, pipes []*io.PipeWriter) (err error) {
 			if err == nil {
 				err = call(stack[1:], pipes[1:])
 			}
+			// fixed zombie process
+			stack[1].Wait()
 		}()
 	}
 	return stack[0].Wait()

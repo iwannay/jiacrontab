@@ -88,7 +88,7 @@ func listen(addr string, srcvr ...interface{}) error {
 	for {
 		conn, err := l.Accept()
 		if err != nil {
-			log.Println("Error: accept rpc connection", err.Error(), l.Addr().String())
+			// log.Println("Error: accept rpc connection", err.Error(), l.Addr().String())
 			continue
 		}
 		go func(conn net.Conn) {
@@ -97,8 +97,6 @@ func listen(addr string, srcvr ...interface{}) error {
 					log.Println("Error: Rpc Call Recover", err, string(debug.Stack()))
 				}
 			}()
-
-			log.Println(conn.RemoteAddr().String(), "->", conn.LocalAddr().String())
 
 			buf := bufio.NewWriter(conn)
 			srv := &gobServerCodec{
