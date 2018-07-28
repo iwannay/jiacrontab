@@ -189,6 +189,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 						}
 
 					case "ignore":
+						isExceptError = false
 					default:
 					}
 				}
