@@ -237,7 +237,7 @@ func (t *CrontabTask) ResolvedDepends(args model.DependsTask, reply *bool) error
 		globalCrontab.lock.Unlock()
 	}
 
-	log.Printf("resolvedDepends: %+v is not exists", args)
+	log.Printf("resolvedDepends not exists taskId:%d", args.TaskId)
 
 	*reply = false
 	return nil
