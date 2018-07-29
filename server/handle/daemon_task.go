@@ -5,7 +5,6 @@ import (
 
 	"github.com/kataras/iris"
 
-	"jiacrontab/libs/rpc"
 	"jiacrontab/server/conf"
 
 	"jiacrontab/libs/proto"
@@ -45,7 +44,7 @@ func ListDaemonTask(ctx iris.Context) {
 
 		var daemonTaskList []model.DaemonTask
 
-		err := rpc.Call(addr, "DaemonTask.ListDaemonTask", struct{ Page, Pagesize int }{
+		err := rpcCall(addr, "DaemonTask.ListDaemonTask", struct{ Page, Pagesize int }{
 			Page:     pageInt,
 			Pagesize: pagesizeInt,
 		}, &daemonTaskList)
@@ -112,7 +111,7 @@ func EditDaemonTask(ctx iris.Context) {
 			daemonTask.ID = uint(v)
 		}
 		var reply int
-		err = rpc.Call(addr, "DaemonTask.UpdateDaemonTask", daemonTask, &reply)
+		err = rpcCall(addr, "DaemonTask.UpdateDaemonTask", daemonTask, &reply)
 
 		if err != nil {
 			ctx.ViewData("daemonTask", daemonTask)
@@ -134,7 +133,7 @@ func EditDaemonTask(ctx iris.Context) {
 			return
 		}
 
-		err = rpc.Call(addr, "DaemonTask.GetDaemonTask", taskIdInt, &daemonTask)
+		err = rpcCall(addr, "DaemonTask.GetDaemonTask", taskIdInt, &daemonTask)
 		if err != nil {
 			ctx.ViewData("errorMsg", "查询不到任务")
 			ctx.ViewData("daemonTask", daemonTask)
@@ -168,7 +167,7 @@ func ActionDaemonTask(ctx iris.Context) {
 		return
 	}
 
-	err := rpc.Call(addr, "DaemonTask.ActionDaemonTask", proto.ActionDaemonTaskArgs{
+	err := rpcCall(addr, "DaemonTask.ActionDaemonTask", proto.ActionDaemonTaskArgs{
 		Action:  op,
 		TaskIds: taskIds,
 	}, &replay)
@@ -203,7 +202,7 @@ func RecentDaemonLog(ctx iris.Context) {
 	pattern := r.FormValue("pattern")
 	addr := r.FormValue("addr")
 
-	if err := rpc.Call(addr, "DaemonTask.Log", proto.SearchLog{
+	if err := rpcCall(addr, "DaemonTask.Log", proto.SearchLog{
 		TaskId:   id,
 		Page:     page,
 		Pagesize: pagesize,

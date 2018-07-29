@@ -103,5 +103,5 @@ func main() {
 		go finder.SearchAndDeleteFileOnDisk(globalConfig.logPath, 24*time.Hour*30, 1<<30)
 	}
 
-	rpc.ListenAndServe(globalConfig.rpcListenAddr, &DaemonTask{}, &Admin{}, &CrontabTask{})
+	rpc.ListenAndServe(globalConfig.rpcListenAddr, &Logic{}, &DaemonTask{}, &Admin{}, &CrontabTask{})
 }

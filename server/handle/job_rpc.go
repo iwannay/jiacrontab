@@ -57,3 +57,7 @@ func (l *Logic) SendMail(args proto.SendMail, reply *bool) error {
 	*reply = true
 	return nil
 }
+
+func (l *Logic) Ping(args *proto.EmptyArgs, reply *proto.EmptyReply) error {
+	return nil
+}
