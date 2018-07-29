@@ -258,3 +258,7 @@ func (t *CrontabTask) ExecDepend(args model.DependsTask, reply *bool) error {
 	log.Printf("task %s %s %s add to execution queue ", args.Name, args.Command, args.Args)
 	return nil
 }
+
+func (t *CrontabTask) Ping(args *proto.EmptyArgs, reply *proto.EmptyReply) error {
+	return nil
+}

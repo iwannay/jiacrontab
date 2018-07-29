@@ -1,7 +1,6 @@
 package handle
 
 import (
-	"jiacrontab/libs/rpc"
 	"jiacrontab/model"
 
 	"github.com/kataras/iris"
@@ -11,7 +10,7 @@ func RuntimeInfo(ctx iris.Context) {
 	var systemInfo map[string]interface{}
 	var clientList []model.Client
 	addr := ctx.FormValue("addr")
-	if err := rpc.Call(addr, "Admin.SystemInfo", "", &systemInfo); err != nil {
+	if err := rpcCall(addr, "Admin.SystemInfo", "", &systemInfo); err != nil {
 		ctx.View("public/error.html", map[string]interface{}{
 			"error": err,
 		})
