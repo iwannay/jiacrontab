@@ -79,7 +79,11 @@ func (d *depend) run() {
 							Timeout:      t.timeout,
 						}, &reply)
 
-						if !reply || err != nil {
+						if err != nil {
+							log.Println("Logic.DependDone error:", err, "server addr:", globalConfig.rpcSrvAddr)
+						}
+
+						if !reply {
 							log.Printf("task %s %s %s call Logic.DependDone failed! err:%v", t.name, t.command, t.args, err)
 						}
 					}

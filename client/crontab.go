@@ -144,7 +144,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 					t.name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), float64(costTime)/1000000000, errors.New(errMsg)),
 			}, &reply)
 			if err != nil {
-				log.Println("failed send mail ", err)
+				log.Println("Logic.SendMail error:", err, "server addr:", globalConfig.rpcSrvAddr)
 			}
 
 		}
@@ -167,7 +167,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 								t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), t.taskArgs.Timeout),
 						}, &reply)
 						if err != nil {
-							log.Println("failed send mail ", err)
+							log.Println("Logic.SendMail error:", err, "server addr:", globalConfig.rpcSrvAddr)
 						}
 
 					case "kill":
@@ -185,7 +185,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 								t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), t.taskArgs.Timeout),
 						}, &reply)
 						if err != nil {
-							log.Println("failed send mail ", err)
+							log.Println("Logic.SendMail error:", err, "server addr:", globalConfig.rpcSrvAddr)
 						}
 
 					case "ignore":
@@ -222,7 +222,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 						t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), err.Error()),
 				}, &reply)
 				if err != nil {
-					log.Println("failed send mail ", err)
+					log.Println("Logic.SendMail error:", err, "server addr:", globalConfig.rpcSrvAddr)
 				}
 			}
 		}

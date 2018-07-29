@@ -62,7 +62,7 @@ func (d *daemonTask) do(ctx context.Context) {
 						"任务名：%s\n详情：%s %v\n开始时间：%s\n异常：%s", d.task.Name, d.task.Command, d.task.Args, time.Now().Format("2006-01-02 15:04:05"), err.Error()),
 				}, &reply)
 				if err != nil {
-					log.Println("failed send mail ", err)
+					log.Println("Logic.SendMail error:", err, "server addr:", globalConfig.rpcSrvAddr)
 				}
 			}
 		}

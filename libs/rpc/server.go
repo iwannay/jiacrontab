@@ -103,6 +103,7 @@ func listen(addr string, srcvr ...interface{}) error {
 				encBuf: buf,
 			}
 			rpc.ServeCodec(srv)
+			log.Println("close")
 		}(conn)
 	}
 }

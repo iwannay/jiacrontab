@@ -13,7 +13,7 @@ const heartbeatPeriod = 1 * time.Minute
 func RpcHeartBeat() {
 	var mail proto.MailArgs
 
-	err := rpc.Call(globalConfig.rpcSrvAddr, "Logic.Register", model.Client{
+	err := rpcCall("Logic.Register", model.Client{
 		Addr:           globalConfig.addr,
 		DaemonTaskNum:  globalDaemon.count(),
 		CrontabTaskNum: globalCrontab.count(),
@@ -22,7 +22,7 @@ func RpcHeartBeat() {
 	}, &mail)
 
 	if err != nil {
-		log.Println(" heartbeat error:", err, "server addr:", globalConfig.rpcSrvAddr)
+		log.Println("Logic.Register error:", err, "server addr:", globalConfig.rpcSrvAddr)
 	}
 
 	time.AfterFunc(heartbeatPeriod, RpcHeartBeat)
