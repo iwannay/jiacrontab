@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-var DefaultTimeout = 20
+var DefaultTimeout = 5
 
 // TimeoutCoder 超时检测
 func TimeoutCoder(f func(interface{}) error, e interface{}, msg string) error {
@@ -91,6 +91,10 @@ func listen(addr string, srcvr ...interface{}) error {
 			return err
 		}
 		go func(conn net.Conn) {
+			err := conn.SetDeadline(time.Now().Add(10 * time.Second))
+			if err != nil {
+				log.Println("setDeadline:", err)
+			}
 			buf := bufio.NewWriter(conn)
 			srv := &gobServerCodec{
 				rwc:    conn,

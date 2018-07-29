@@ -1,20 +1,21 @@
 package rpc
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"sync"
 	"testing"
+	"time"
 )
 
 type Person struct {
 }
 
 func (p *Person) Say(args string, reply *string) error {
-	fmt.Println("hello people")
+
 	*reply = "hello boy"
+	time.Sleep(100 * time.Second)
 	return nil
 }
 func TestCall(t *testing.T) {
@@ -32,7 +33,7 @@ func TestCall(t *testing.T) {
 
 	// 等待server启动
 	var wg sync.WaitGroup
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 100; i++ {
 		go func(i int) {
 			wg.Add(1)
 			defer wg.Done()
@@ -40,10 +41,9 @@ func TestCall(t *testing.T) {
 			// var args string
 			err := Call(":6478", "Person.Say", "", &ret)
 			if err != nil {
-				t.Log(i, "error:", err)
+				log.Println(i, "error:", err)
 			}
 			t.Log(i, ret)
-
 		}(i)
 
 	}
@@ -54,4 +54,6 @@ func TestCall(t *testing.T) {
 	}()
 
 	wg.Wait()
+	log.Println("end")
+	time.Sleep(2 * time.Minute)
 }
