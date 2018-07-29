@@ -692,7 +692,7 @@ func pushDepends(dpds []*dependScript) bool {
 			var reply bool
 			err := rpcCall("Logic.Depends", ndpds, &reply)
 			if !reply || err != nil {
-				log.Printf("push Depends failed %s", err)
+				log.Println("Logic.Depends error:", err, "server addr:", globalConfig.rpcSrvAddr)
 				return false
 			}
 		}
@@ -728,7 +728,7 @@ func pushPipeDepend(dpds []*dependScript, dependScriptId string) bool {
 						Timeout:      v.timeout,
 					}}, &reply)
 					if !reply || err != nil {
-						log.Printf("sync push Depends failed!")
+						log.Println("Logic.Depends error:", err, "server addr:", globalConfig.rpcSrvAddr)
 						return false
 					}
 				}
