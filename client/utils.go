@@ -690,7 +690,6 @@ func pushDepends(dpds []*dependScript) bool {
 		}
 		if len(ndpds) > 0 {
 			var reply bool
-			fmt.Println(ndpds[0].Id, "hahahah")
 			err := rpcCall("Logic.Depends", ndpds, &reply)
 			if !reply || err != nil {
 				log.Printf("push Depends failed %s", err)
