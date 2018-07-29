@@ -1,65 +1,102 @@
 package rpc
 
 import (
-	"bufio"
-	"encoding/gob"
-	"encoding/json"
-	"fmt"
-	"io"
+	"errors"
+	"jiacrontab/libs/proto"
 	"log"
 	"net"
 	"net/rpc"
 	"time"
 )
 
-type gobClientCodec struct {
-	rwc    io.ReadWriteCloser
-	dec    *gob.Decoder
-	enc    *gob.Encoder
-	encBuf *bufio.Writer
+const (
+	diaTimeout   = 5 * time.Second
+	callTimeout  = 1 * time.Minute
+	pingDuration = 3 * time.Second
+)
+
+var (
+	ErrRpc        = errors.New("rpc is not available")
+	ErrRpcTimeout = errors.New("rpc call timeout")
+)
+
+type ClientOptions struct {
+	Network string
+	Addr    string
 }
 
-func (c *gobClientCodec) WriteRequest(r *rpc.Request, body interface{}) (err error) {
-	if err = TimeoutCoder(c.enc.Encode, r, "client write request"); err != nil {
-		return
-	}
-	if err = TimeoutCoder(c.enc.Encode, body, "client write request body"); err != nil {
-		return
-	}
-	return c.encBuf.Flush()
+type Client struct {
+	*rpc.Client
+	options ClientOptions
+	quit    chan struct{}
+	err     error
 }
 
-func (c *gobClientCodec) ReadResponseHeader(r *rpc.Response) error {
-	return TimeoutCoder(c.dec.Decode, r, "client read response header")
+func Dial(options ClientOptions) (c *Client) {
+	c = &Client{}
+	c.options = options
+	c.dial()
+	return c
 }
 
-func (c *gobClientCodec) ReadResponseBody(body interface{}) error {
-	return TimeoutCoder(c.dec.Decode, body, "client read response body")
-}
-
-func (c *gobClientCodec) Close() error {
-	return c.rwc.Close()
-}
-
-// Call 调用
-func Call(addr string, serviceMethod string, args interface{}, reply interface{}) error {
-	bts, _ := json.Marshal(args)
-	log.Printf("RPC call %s %s %s ", addr, serviceMethod, string(bts))
-	conn, err := net.DialTimeout("tcp4", addr, time.Second*10)
+func (c *Client) dial() (err error) {
+	conn, err := net.DialTimeout(c.options.Network, c.options.Addr, diaTimeout)
 	if err != nil {
 		return err
 	}
-	encBuf := bufio.NewWriter(conn)
-	codec := &gobClientCodec{conn, gob.NewDecoder(conn), gob.NewEncoder(encBuf), encBuf}
-	c := rpc.NewClientWithCodec(codec)
-	err = c.Call(serviceMethod, args, reply)
-	errC := c.Close()
-	if err != nil && errC != nil {
-		return fmt.Errorf("%s %s", err, errC)
-	}
-	if err != nil {
-		return err
-	}
-	return errC
+	c.Client = rpc.NewClient(conn)
+	return nil
+}
 
+func (c *Client) Call(serviceMethod string, args interface{}, reply interface{}) error {
+	log.Println("rpc call", c.options.Addr, serviceMethod)
+	if c.Client == nil {
+		return ErrRpc
+	}
+	select {
+	case call := <-c.Client.Go(serviceMethod, args, reply, make(chan *rpc.Call, 1)).Done:
+		return call.Error
+	case <-time.After(callTimeout):
+		return ErrRpcTimeout
+	}
+}
+
+func (c *Client) Error() error {
+	return c.err
+}
+
+func (c *Client) Close() {
+	c.quit <- struct{}{}
+}
+
+func (c *Client) Ping(serviceMethod string) {
+	var (
+		err error
+	)
+	for {
+		select {
+		case <-c.quit:
+			goto closed
+		default:
+		}
+		if c.Client != nil && c.err == nil {
+			if err = c.Call(serviceMethod, &proto.EmptyArgs{}, &proto.EmptyReply{}); err != nil {
+				c.err = err
+				if err != rpc.ErrShutdown {
+					c.Client.Close()
+				}
+				log.Printf("client.Call(%s, args, reply) error (%v) \n", serviceMethod, err)
+			}
+		} else {
+			if err = c.dial(); err == nil {
+				c.err = nil
+				log.Println("client reconnet ", c.options.Addr)
+			}
+		}
+		time.Sleep(pingDuration)
+	}
+closed:
+	if c.Client != nil {
+		c.Client.Close()
+	}
 }
