@@ -59,6 +59,7 @@ build-linux:
 	mv $(BINARY_CLIENT) $(CLIENTDIR)
 
 build-windows:
+	mkdir $(WORKDIR)
 	mkdir $(WORKDIR)/jiacrontab
 	mkdir $(SERVERDIR)
 	mkdir $(CLIENTDIR)
