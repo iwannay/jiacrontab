@@ -7,7 +7,7 @@ import (
 
 const (
 	AppName = "jiacrontab"
-	Version = "v1.4-beta.1"
+	Version = "v1.4.0"
 )
 
 var AppService *App
