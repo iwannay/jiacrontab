@@ -16,6 +16,7 @@ import (
 
 var (
 	MailConfig *Mailer
+	mailQueue  chan *Message
 )
 
 type Mailer struct {
@@ -45,7 +46,7 @@ func NewMessage(to []string, subject, htmlBody string) *Message {
 }
 
 func NewMessageFrom(to []string, from, subject, htmlBody string) *Message {
-	log.Printf("NewMessage (htmlBody) \n%s\n", htmlBody)
+	log.Printf("QueueLength (%d) NewMessage (htmlBody) \n%s\n", len(mailQueue), htmlBody)
 	msg := gomail.NewMessage()
 	msg.SetHeader("From", from)
 	msg.SetHeader("To", to...)
@@ -81,7 +82,7 @@ func (s *Sender) Send(from string, to []string, msg io.WriterTo) error {
 		tlsConfig.Certificates = []tls.Certificate{cert}
 	}
 
-	conn, err := net.Dial("tcp", net.JoinHostPort(host, port))
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), 3*time.Second)
 	if err != nil {
 		return err
 	}
@@ -154,8 +155,6 @@ func (s *Sender) Send(from string, to []string, msg io.WriterTo) error {
 	}
 	return client.Quit()
 }
-
-var mailQueue chan *Message
 
 func processMailQueue() {
 	sender := &Sender{}
