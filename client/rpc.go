@@ -12,7 +12,6 @@ const heartbeatPeriod = 1 * time.Minute
 
 func RpcHeartBeat() {
 	var mail proto.MailArgs
-
 	err := rpcCall("Logic.Register", model.Client{
 		Addr:           globalConfig.addr,
 		DaemonTaskNum:  globalDaemon.count(),
