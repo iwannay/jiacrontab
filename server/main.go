@@ -46,6 +46,7 @@ func main() {
 		CertFile:       conf.MailService.CertFile,
 		KeyFile:        conf.MailService.KeyFile,
 		UsePlainText:   conf.MailService.UsePlainText,
+		HookMode:       false,
 	})
 
 	model.InitStore(conf.AppService.DataFile)
