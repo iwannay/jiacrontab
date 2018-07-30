@@ -99,8 +99,10 @@ func (t *taskEntity) exec(logContent *[]byte) {
 		if err := recover(); err != nil {
 			log.Printf("%s exec panic %s \n", t.taskArgs.Name, err)
 		}
+
+		atomic.AddInt32(&t.taskArgs.NumberProcess, -1)
+
 		model.DB().Model(&model.CrontabTask{}).Where("id=?", t.taskArgs.ID).Update(map[string]interface{}{
-			"state":            t.taskArgs.State,
 			"last_cost_time":   t.taskArgs.LastCostTime,
 			"last_exec_time":   t.taskArgs.LastExecTime,
 			"last_exit_status": t.taskArgs.LastExitStatus,
@@ -115,13 +117,11 @@ func (t *taskEntity) exec(logContent *[]byte) {
 	t.cancel = cancel
 	start := now.UnixNano()
 	t.taskArgs.LastExecTime = now.Unix()
-	t.taskArgs.State = 2
 	t.taskArgs.LastExitStatus = exitSuccess
 	flag := true
 	isExceptError := false
 
 	model.DB().Model(&model.CrontabTask{}).Where("id=?", t.taskArgs.ID).Update(map[string]interface{}{
-		"state":          t.taskArgs.State,
 		"last_exec_time": t.taskArgs.LastExecTime,
 		"number_process": t.taskArgs.NumberProcess,
 	})
@@ -228,16 +228,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 		}
 	}
 
-	atomic.AddInt32(&t.taskArgs.NumberProcess, -1)
 	t.taskArgs.LastCostTime = time.Now().UnixNano() - start
-
-	if t.taskArgs.TimerCounter > 0 {
-		if t.taskArgs.NumberProcess == 0 {
-			t.taskArgs.State = 1
-		}
-	} else {
-		t.taskArgs.State = 0
-	}
 
 	if logContent != nil {
 		*logContent = t.logContent
@@ -474,8 +465,9 @@ func (c *crontab) deal(task *model.CrontabTask, ctx context.Context) {
 	task.State = 1
 	defer func() {
 		atomic.AddInt32(&task.TimerCounter, -1)
+		task.State = 0
 		model.DB().Model(&model.CrontabTask{}).Where("id=?", task.ID).Update(map[string]interface{}{
-			"state":            0,
+			"state":            task.State,
 			"lat_cost_time":    task.LastCostTime,
 			"last_exec_time":   task.LastExecTime,
 			"last_exit_status": task.LastExitStatus,
@@ -500,7 +492,7 @@ func (c *crontab) deal(task *model.CrontabTask, ctx context.Context) {
 
 		select {
 		case now := <-h.clockChan:
-
+			wgroup.Add(1)
 			go func(now time.Time) {
 				defer func() {
 					if err := recover(); err != nil {
@@ -509,7 +501,6 @@ func (c *crontab) deal(task *model.CrontabTask, ctx context.Context) {
 					wgroup.Done()
 				}()
 
-				wgroup.Add(1)
 				check := task.C
 				if checkMonth(check, now.Month()) &&
 					checkWeekday(check, now.Weekday()) &&

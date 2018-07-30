@@ -81,10 +81,10 @@
                     var staticHtml = '';
                     if (d.State === 0) {
                         staticHtml = '<a href="#" class="layui-btn layui-btn-xs layui-btn-danger">已停止</a>';
-                    } else if (d.State == 1) {
-                        staticHtml = '<a href="#" class="layui-btn layui-btn-xs layui-btn-normal">计时中</a>'
-                    } else {
+                    } else if (d.NumberProcess > 0) {
                         staticHtml = '<a href="#" class="layui-btn layui-btn-xs jia-btn-normal">运行中</a>'
+                    } else {
+                        staticHtml = '<a href="#" class="layui-btn layui-btn-xs layui-btn-normal">计时中</a>'
                     }
                     return staticHtml;
                 }},

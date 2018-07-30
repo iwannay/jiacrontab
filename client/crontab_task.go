@@ -164,6 +164,7 @@ func (t *CrontabTask) Kill(args string, ok *bool) error {
 		*ok = false
 	} else {
 		globalCrontab.kill(&crontabTask)
+		*ok = true
 	}
 
 	return nil
