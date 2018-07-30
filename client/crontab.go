@@ -104,7 +104,6 @@ func (t *taskEntity) exec(logContent *[]byte) {
 
 		model.DB().Model(&model.CrontabTask{}).Where("id=?", t.taskArgs.ID).Update(map[string]interface{}{
 			"last_cost_time":   t.taskArgs.LastCostTime,
-			"last_exec_time":   t.taskArgs.LastExecTime,
 			"last_exit_status": t.taskArgs.LastExitStatus,
 			"number_process":   t.taskArgs.NumberProcess,
 		})
