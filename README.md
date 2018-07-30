@@ -64,6 +64,6 @@ $ nohup ./jiaclient &> jiaclient.log &
 ![alt 截图2](https://raw.githubusercontent.com/iwannay/static_dir/master/jiacrontab_preview_1.4.0_edit.png)
 
 ## 演示地址
-[1.4.0开发版本演示地址](http://jiacrontab.iwannay.cn/) 账号：admin 密码：123456
+[1.4.0版本演示地址](http://jiacrontab.iwannay.cn/) 账号：admin 密码：123456
 ## qq群成立啦
 813377930 欢迎反馈问题
