@@ -121,6 +121,7 @@ func newDaemon(taskChannelLength int) *daemon {
 
 func (d *daemon) add(t *daemonTask) {
 	if t != nil {
+		log.Printf("daemon.add(%s)\n", t.task.Name)
 		t.daemon = d
 		d.taskChannel <- t
 	}
