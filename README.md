@@ -42,10 +42,10 @@ $ git clone git@github.com:iwannay/jiacrontab.git
 $ cd jiacrontab
 $ make build
 
-$ cd $GOPATH/src/jiacrontab/server
+$ cd app/jiacrontab/server
 $ nohup ./jiaserver &> jiaserver.log &
 
-$ cd $GOPATH/src/jiacrontab/client
+$ cd app/jiacrontab/client
 $ nohup ./jiaclient &> jiaclient.log & 
 ``` 
 
