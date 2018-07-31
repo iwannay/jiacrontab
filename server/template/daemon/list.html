@@ -65,11 +65,7 @@
             {field:'Name', width:170, fixed: 'left', title: '名称'},
             {field:'Command', width:170, title: '脚本', templet: function(d) {
                 var oldStr = d.Command + ' ' + d.Args;
-                newStr = oldStr.replace(/(.{0,20}).*/g,"$1")
-                if (oldStr.length > newStr.length) {
-                    newStr += "..."
-                }
-                return newStr
+                return oldStr
             }},
             {field:'Status', width:90, title: '状态', templet: function(d){
                 var staticHtml = '';
