@@ -36,6 +36,7 @@ func Dial(options ClientOptions) (c *Client) {
 	c = &Client{}
 	c.options = options
 	c.dial()
+	c.quit = make(chan struct{}, 100)
 	return c
 }
 
@@ -97,6 +98,7 @@ func (c *Client) Ping(serviceMethod string) {
 		time.Sleep(pingDuration)
 	}
 closed:
+	log.Println("rpc quited", c.options.Addr)
 	if c.Client != nil {
 		c.Client.Close()
 	}
