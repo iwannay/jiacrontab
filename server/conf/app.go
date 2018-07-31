@@ -7,10 +7,13 @@ import (
 
 const (
 	AppName = "jiacrontab"
-	Version = "v1.4.0"
+	Version = "v1.4.1"
 )
 
-var AppService *App
+var (
+	AppService *App
+	starTime   = time.Now()
+)
 
 type App struct {
 	Debug           bool      `json:"debug"`
@@ -39,7 +42,7 @@ func LoadAppService() {
 		RpcListenAddr:   app.Key("listen").MustString(":20003"),
 		User:            app.Key("app_user").MustString("admin"),
 		Passwd:          app.Key("app_passwd").MustString("123456"),
-		ServerStartTime: time.Now(),
+		ServerStartTime: starTime,
 		AllowCommands:   strings.Split(app.Key("allow_commands").MustString("php,python,node,curl,wget,lua"), ","),
 	}
 }

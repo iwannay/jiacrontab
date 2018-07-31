@@ -2,6 +2,7 @@ package mailer
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -193,7 +194,11 @@ func Send(msg *Message) {
 	}()
 }
 
-func SendMail(to []string, subject, content string) {
+func SendMail(to []string, subject, content string) error {
+	if MailConfig == nil {
+		return errors.New("update mail config must restart service")
+	}
 	msg := NewMessage(to, subject, content)
 	Send(msg)
+	return nil
 }
