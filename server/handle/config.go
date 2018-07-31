@@ -17,7 +17,12 @@ func ViewConfig(ctx iris.Context) {
 	if r.Method == http.MethodPost {
 		if conf.MailService.Enabled {
 			mailTo := strings.TrimSpace(r.FormValue("mailTo"))
-			mailer.SendMail([]string{mailTo}, "测试邮件", "测试邮件请勿回复！")
+			err := mailer.SendMail([]string{mailTo}, "测试邮件", "测试邮件请勿回复！")
+			if err != nil {
+				ctx.ViewData("error", err)
+				ctx.View("public/error.html")
+				return
+			}
 		}
 	}
 

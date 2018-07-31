@@ -257,6 +257,7 @@ func (t *CrontabTask) ExecDepend(args model.DependsTask, reply *bool) error {
 	})
 	*reply = true
 	log.Printf("task %s %s %s add to execution queue ", args.Name, args.Command, args.Args)
+
 	return nil
 }
 

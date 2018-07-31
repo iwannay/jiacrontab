@@ -35,7 +35,7 @@ func LoadMailService() {
 	}
 
 	MailService = &Mailer{
-		Enabled:        false,
+		Enabled:        sec.Key("enabled").MustBool(),
 		QueueLength:    sec.Key("send_buffer_len").MustInt(100),
 		SubjectPrefix:  sec.Key("subject_prefix").MustString("[" + "jiacrontab" + "] "),
 		Host:           sec.Key("host").String(),

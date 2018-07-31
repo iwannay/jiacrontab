@@ -36,9 +36,10 @@ type handle func(s *Store)
 
 func NewStore(path string) *Store {
 	s := &Store{
-		dataFile: path,
-		swapFile: filepath.Join(filepath.Dir(path), ".swap"),
-		requests: make(chan request),
+		dataFile:  path,
+		swapFile:  filepath.Join(filepath.Dir(path), ".swap"),
+		checkFile: filepath.Join(filepath.Dir(path), ".import"),
+		requests:  make(chan request),
 	}
 	go s.Server()
 	return s
@@ -48,9 +49,10 @@ type Store struct {
 	Mail     proto.MailArgs
 	TaskList map[string]model.CrontabTask
 
-	swapFile string
-	dataFile string
-	requests chan request
+	swapFile  string
+	checkFile string
+	dataFile  string
+	requests  chan request
 }
 
 func (s *Store) Server() {
@@ -165,6 +167,11 @@ func (s *Store) GetDataFile() (string, bool) {
 // }
 
 func (s *Store) Export2DB() {
+	if s.get(s.checkFile) == "true" {
+		log.Println("clients is imported")
+		return
+	}
+
 	for _, v := range s.TaskList {
 		ret := model.DB().Create(&v)
 		if ret.Error == nil {
@@ -172,8 +179,8 @@ func (s *Store) Export2DB() {
 		} else {
 			log.Printf("failed import crontab %+v \n", v, ret.Error)
 		}
-
 	}
+	s.save(s.checkFile, "true")
 }
 func (s *Store) sync(fpath string) error {
 	f, err := libs.TryOpen(fpath, os.O_CREATE|os.O_RDWR|os.O_TRUNC)
@@ -194,26 +201,45 @@ func (s *Store) sync(fpath string) error {
 
 }
 
+func (s *Store) save(fpath string, data string) error {
+	f, err := libs.TryOpen(fpath, os.O_CREATE|os.O_RDWR)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.WriteString(data)
+	return err
+}
+func (s *Store) get(fpath string) string {
+	f, err := libs.TryOpen(fpath, os.O_RDONLY)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		return ""
+	}
+
+	return string(b)
+}
+
 func (s *Store) load(fpath string) error {
 
 	f, err := libs.TryOpen(fpath, os.O_CREATE|os.O_RDWR)
-	defer func() {
-		f.Close()
-	}()
-
 	if err != nil {
-
 		return err
 	}
+	defer f.Close()
+
 	b, err := ioutil.ReadAll(f)
 	if err != nil {
-
 		return err
 	}
 
 	if len(b) == 0 {
 		err = errors.New("nothing to read from " + fpath)
-
 		return err
 	}
 

@@ -53,11 +53,12 @@ func (l *Logic) DependDone(args model.DependsTask, reply *bool) error {
 }
 
 func (l *Logic) SendMail(args proto.SendMail, reply *bool) error {
+	var err error
 	if conf.MailService.Enabled {
-		mailer.SendMail(args.MailTo, args.Subject, args.Content)
+		err = mailer.SendMail(args.MailTo, args.Subject, args.Content)
 	}
 	*reply = true
-	return nil
+	return err
 }
 
 func (l *Logic) Ping(args *proto.EmptyArgs, reply *proto.EmptyReply) error {
