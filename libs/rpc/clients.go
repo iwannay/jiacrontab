@@ -45,16 +45,17 @@ func (c *clients) del(addr string) {
 }
 
 func Call(addr string, serviceMethod string, args interface{}, reply interface{}) error {
-	if defaultClients == nil {
-		defaultClients = &clients{
-			clients: make(map[string]*Client),
-		}
-	}
 	return defaultClients.get(addr).Call(serviceMethod, args, reply)
 }
 
 func Del(addr string) {
 	if defaultClients != nil {
 		defaultClients.del(addr)
+	}
+}
+
+func init() {
+	defaultClients = &clients{
+		clients: make(map[string]*Client),
 	}
 }
