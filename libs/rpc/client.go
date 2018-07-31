@@ -85,7 +85,10 @@ func (c *Client) Ping(serviceMethod string) {
 		if c.Client != nil && c.err == nil {
 			if err = c.Call(serviceMethod, &proto.EmptyArgs{}, &proto.EmptyReply{}); err != nil {
 				c.err = err
-				c.Client.Close()
+				if err != rpc.ErrShutdown {
+					c.Client.Close()
+				}
+
 				log.Printf("client.Call(%s, args, reply) error (%v) \n", serviceMethod, err)
 			}
 		} else {

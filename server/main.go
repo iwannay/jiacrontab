@@ -31,23 +31,25 @@ func main() {
 	db.DB().AutoMigrate(&db.Client{})
 
 	// mail
-	mailer.InitMailer(&mailer.Mailer{
-		QueueLength:    conf.MailService.QueueLength,
-		SubjectPrefix:  conf.MailService.SubjectPrefix,
-		From:           conf.MailService.From,
-		Host:           conf.MailService.Host,
-		User:           conf.MailService.User,
-		Passwd:         conf.MailService.Passwd,
-		FromEmail:      conf.MailService.FromEmail,
-		DisableHelo:    conf.MailService.DisableHelo,
-		HeloHostname:   conf.MailService.HeloHostname,
-		SkipVerify:     conf.MailService.SkipVerify,
-		UseCertificate: conf.MailService.UseCertificate,
-		CertFile:       conf.MailService.CertFile,
-		KeyFile:        conf.MailService.KeyFile,
-		UsePlainText:   conf.MailService.UsePlainText,
-		HookMode:       false,
-	})
+	if conf.MailService.Enabled {
+		mailer.InitMailer(&mailer.Mailer{
+			QueueLength:    conf.MailService.QueueLength,
+			SubjectPrefix:  conf.MailService.SubjectPrefix,
+			From:           conf.MailService.From,
+			Host:           conf.MailService.Host,
+			User:           conf.MailService.User,
+			Passwd:         conf.MailService.Passwd,
+			FromEmail:      conf.MailService.FromEmail,
+			DisableHelo:    conf.MailService.DisableHelo,
+			HeloHostname:   conf.MailService.HeloHostname,
+			SkipVerify:     conf.MailService.SkipVerify,
+			UseCertificate: conf.MailService.UseCertificate,
+			CertFile:       conf.MailService.CertFile,
+			KeyFile:        conf.MailService.KeyFile,
+			UsePlainText:   conf.MailService.UsePlainText,
+			HookMode:       false,
+		})
+	}
 
 	model.InitStore(conf.AppService.DataFile)
 

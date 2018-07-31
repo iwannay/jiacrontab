@@ -53,7 +53,9 @@ func (l *Logic) DependDone(args model.DependsTask, reply *bool) error {
 }
 
 func (l *Logic) SendMail(args proto.SendMail, reply *bool) error {
-	mailer.SendMail(args.MailTo, args.Subject, args.Content)
+	if conf.MailService.Enabled {
+		mailer.SendMail(args.MailTo, args.Subject, args.Content)
+	}
 	*reply = true
 	return nil
 }
