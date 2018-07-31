@@ -24,10 +24,12 @@ type CrontabTask struct {
 	NumberProcess      int32
 	TimerCounter       int32
 	UnexpectedExitMail bool
+	UnexpectedExitApi  bool
 	Sync               bool // 脚本是否同步执行
 	MailTo             string
+	ApiTo              string
 	MaxConcurrent      int         // 脚本最大并发量
-	OpTimeout          string      // email/kill/email_and_kill/ignore
+	OpTimeout          string      // email/kill/email_and_kill/ignore/api
 	C                  CrontabArgs `gorm:"type:TEXT"`
 }
 

@@ -145,7 +145,7 @@ func EditTask(ctx iris.Context) {
 	}
 
 	if r.Method == http.MethodPost {
-		var unExitM, sync bool
+		var unExitM, unExitA, sync bool
 		var pipeCommandList [][]string
 		var command string
 		var args string
@@ -154,8 +154,10 @@ func EditTask(ctx iris.Context) {
 		timeoutStr := ctx.PostValueTrim("timeout")
 		mConcurrentStr := ctx.PostValueTrim("maxConcurrent")
 		unpdExitM := r.FormValue("unexpectedExitMail")
+		unpdExitA := r.FormValue("unexpectedExitApi")
 		mSync := r.FormValue("sync")
 		mailTo := ctx.PostValueTrim("mailTo")
+		apiTo := ctx.PostValueTrim("apiTo")
 		optimeout := ctx.PostValueTrim("optimeout")
 		pipeCommands := r.PostForm["command"]
 		pipeArgs := r.PostForm["args"]
@@ -194,13 +196,18 @@ func EditTask(ctx iris.Context) {
 		} else {
 			unExitM = false
 		}
+		if unpdExitA == "1" {
+			unExitA = true
+		} else {
+			unExitA = false
+		}
 		if mSync == "1" {
 			sync = true
 		} else {
 			sync = false
 		}
 
-		if _, ok := map[string]bool{"email": true, "kill": true, "email_and_kill": true, "ignore": true}[optimeout]; !ok {
+		if _, ok := map[string]bool{"email": true, "api": true, "kill": true, "email_and_kill": true, "ignore": true}[optimeout]; !ok {
 			optimeout = "ignore"
 		}
 		timeout, err := strconv.Atoi(timeoutStr)
@@ -228,9 +235,11 @@ func EditTask(ctx iris.Context) {
 			OpTimeout:          optimeout,
 			Create:             time.Now().Unix(),
 			MailTo:             mailTo,
+			ApiTo:              apiTo,
 			MaxConcurrent:      maxConcurrent,
 			Depends:            depends,
 			UnexpectedExitMail: unExitM,
+			UnexpectedExitApi:  unExitA,
 			Sync:               sync,
 			C: struct {
 				Weekday string

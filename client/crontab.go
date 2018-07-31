@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/md5"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"jiacrontab/libs/proto"
@@ -95,6 +96,15 @@ func newTaskEntity(t *model.CrontabTask) *taskEntity {
 }
 
 func (t *taskEntity) exec(logContent *[]byte) {
+	type apiPost struct {
+		TaskName    string
+		TaskID      string
+		TaskCommand string
+		TaskArgs    string
+		CreatedAt   time.Time
+		TimeOut     int64
+		Type        string
+	}
 	defer func() {
 		if err := recover(); err != nil {
 			log.Printf("%s exec panic %s \n", t.taskArgs.Name, err)
@@ -156,6 +166,28 @@ func (t *taskEntity) exec(logContent *[]byte) {
 					var reply bool
 					isExceptError = true
 					switch t.taskArgs.OpTimeout {
+					case "api":
+						t.taskArgs.LastExitStatus = exitTimeout
+						postData, err := json.Marshal(apiPost{
+							TaskName:    t.taskArgs.Name,
+							TaskID:      t.id,
+							TaskCommand: t.taskArgs.Command,
+							TaskArgs:    t.taskArgs.Args,
+							CreatedAt:   t.taskArgs.CreatedAt,
+							TimeOut:     t.taskArgs.Timeout,
+							Type:        "timeout",
+						})
+						if err != nil {
+							log.Println("json.Marshal error:", err)
+						}
+						err = rpcCall("Logic.ApiPost", proto.ApiPost{
+							Url:  t.taskArgs.ApiTo,
+							Data: string(postData),
+						}, &reply)
+						if err != nil {
+							log.Println("Logic.ApiPost error:", err, "server addr:", globalConfig.rpcSrvAddr)
+						}
+
 					case "email":
 						t.taskArgs.LastExitStatus = exitTimeout
 						rpcCall("Logic.SendMail", proto.SendMail{
@@ -222,6 +254,28 @@ func (t *taskEntity) exec(logContent *[]byte) {
 				}, &reply)
 				if err != nil {
 					log.Println("Logic.SendMail error:", err, "server addr:", globalConfig.rpcSrvAddr)
+				}
+			}
+
+			if t.taskArgs.UnexpectedExitApi {
+				postData, err := json.Marshal(apiPost{
+					TaskName:    t.taskArgs.Name,
+					TaskID:      t.id,
+					TaskCommand: t.taskArgs.Command,
+					TaskArgs:    t.taskArgs.Args,
+					CreatedAt:   t.taskArgs.CreatedAt,
+					TimeOut:     t.taskArgs.Timeout,
+					Type:        "error",
+				})
+				if err != nil {
+					log.Println("json.Marshal error:", err)
+				}
+				err = rpcCall("Logic.ApiPost", proto.ApiPost{
+					Url:  t.taskArgs.ApiTo,
+					Data: string(postData),
+				}, &reply)
+				if err != nil {
+					log.Println("Logic.ApiPost error:", err, "server addr:", globalConfig.rpcSrvAddr)
 				}
 			}
 		}
