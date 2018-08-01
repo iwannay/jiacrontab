@@ -46,6 +46,7 @@ func output(log *logContent) {
 	case LevelFatal:
 		DefaultLogger.Output(3, log.content)
 		os.Exit(1)
+	default:
 	}
 }
 
