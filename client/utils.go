@@ -625,6 +625,8 @@ func call(stack []*exec.Cmd, pipes []*io.PipeWriter) (err error) {
 			if err == nil {
 				err = call(stack[1:], pipes[1:])
 			}
+			// fixed zombie process
+			stack[1].Wait()
 		}()
 	}
 	return stack[0].Wait()
@@ -688,10 +690,9 @@ func pushDepends(dpds []*dependScript) bool {
 		}
 		if len(ndpds) > 0 {
 			var reply bool
-			fmt.Println(ndpds[0].Id, "hahahah")
 			err := rpcCall("Logic.Depends", ndpds, &reply)
 			if !reply || err != nil {
-				log.Printf("push Depends failed %s", err)
+				log.Println("Logic.Depends error:", err, "server addr:", globalConfig.rpcSrvAddr)
 				return false
 			}
 		}
@@ -727,7 +728,7 @@ func pushPipeDepend(dpds []*dependScript, dependScriptId string) bool {
 						Timeout:      v.timeout,
 					}}, &reply)
 					if !reply || err != nil {
-						log.Printf("sync push Depends failed!")
+						log.Println("Logic.Depends error:", err, "server addr:", globalConfig.rpcSrvAddr)
 						return false
 					}
 				}

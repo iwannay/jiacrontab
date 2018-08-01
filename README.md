@@ -9,7 +9,11 @@
 6.友好的web界面，方便用户操作。  
 7.脚本出错时可选择邮箱通知多人。  
 8.支持常驻任务,任务失败后可配置自动重启。  
+9.支持管道操作。
 
+## 结构
+
+![alt 架构](https://raw.githubusercontent.com/iwannay/static_dir/master/jiacrontab_arch.PNG)
 
 ## 说明
 jiacrontab由server，client两部分构成，两者完全独立通过rpc通信。  
@@ -38,10 +42,10 @@ $ git clone git@github.com:iwannay/jiacrontab.git
 $ cd jiacrontab
 $ make build
 
-$ cd $GOPATH/src/app/jiacrontab/server
+$ cd app/jiacrontab/server
 $ nohup ./jiaserver &> jiaserver.log &
 
-$ cd $GOPATH/src/app/jiacrontab/client
+$ cd app/jiacrontab/client
 $ nohup ./jiaclient &> jiaclient.log & 
 ``` 
 
@@ -55,11 +59,11 @@ $ nohup ./jiaclient &> jiaclient.log &
 
 
 ## 1.4.*截图
-![alt 截图](https://raw.githubusercontent.com/iwannay/static_dir/master/jiacrontab_preview_1.4.0_list.png)  
+![alt 截图1](https://raw.githubusercontent.com/iwannay/static_dir/master/jiacrontab_preview_1.4.0_list.png)  
 
 ![alt 截图2](https://raw.githubusercontent.com/iwannay/static_dir/master/jiacrontab_preview_1.4.0_edit.png)
 
 ## 演示地址
-[1.4.0开发版本演示地址](http://jiacrontab.iwannay.cn/) 账号：admin 密码：123456
+[1.4.0版本演示地址](http://jiacrontab.iwannay.cn/) 账号：admin 密码：123456
 ## qq群成立啦
 813377930 欢迎反馈问题

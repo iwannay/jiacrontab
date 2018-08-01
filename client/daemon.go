@@ -62,7 +62,7 @@ func (d *daemonTask) do(ctx context.Context) {
 						"任务名：%s\n详情：%s %v\n开始时间：%s\n异常：%s", d.task.Name, d.task.Command, d.task.Args, time.Now().Format("2006-01-02 15:04:05"), err.Error()),
 				}, &reply)
 				if err != nil {
-					log.Println("failed send mail ", err)
+					log.Println("Logic.SendMail error:", err, "server addr:", globalConfig.rpcSrvAddr)
 				}
 			}
 		}
@@ -87,7 +87,7 @@ func (d *daemonTask) do(ctx context.Context) {
 		delete(d.daemon.taskMap, d.task.ID)
 		d.daemon.lock.Unlock()
 
-		model.DB().Delete(d.task, "id=?", d.task.ID)
+		model.DB().Unscoped().Delete(d.task, "id=?", d.task.ID)
 	case stopDaemonTask:
 
 		d.daemon.lock.Lock()
@@ -121,6 +121,7 @@ func newDaemon(taskChannelLength int) *daemon {
 
 func (d *daemon) add(t *daemonTask) {
 	if t != nil {
+		log.Printf("daemon.add(%s)\n", t.task.Name)
 		t.daemon = d
 		d.taskChannel <- t
 	}
@@ -172,7 +173,7 @@ func (d *daemon) run() {
 					t.action = v.action
 					t.cancel()
 				} else {
-					model.DB().Delete(v.task, "id=?", v.task.ID)
+					model.DB().Unscoped().Delete(v.task, "id=?", v.task.ID)
 					d.lock.Unlock()
 				}
 			case stopDaemonTask:

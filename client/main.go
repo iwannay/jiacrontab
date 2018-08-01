@@ -51,6 +51,7 @@ func listenSignal(fn func()) {
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	model.CreateDB("sqlite3", "data/jiacrontab_client.db")
 	model.DB().CreateTable(&model.DaemonTask{}, &model.CrontabTask{})
 	model.DB().AutoMigrate(&model.DaemonTask{}, &model.CrontabTask{})
@@ -102,5 +103,5 @@ func main() {
 		go finder.SearchAndDeleteFileOnDisk(globalConfig.logPath, 24*time.Hour*30, 1<<30)
 	}
 
-	rpc.ListenAndServe(globalConfig.rpcListenAddr, &DaemonTask{}, &Admin{}, &CrontabTask{})
+	rpc.ListenAndServe(globalConfig.rpcListenAddr, &Logic{}, &DaemonTask{}, &Admin{}, &CrontabTask{})
 }

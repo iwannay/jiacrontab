@@ -59,6 +59,7 @@ build-linux:
 	mv $(BINARY_CLIENT) $(CLIENTDIR)
 
 build-windows:
+	mkdir $(WORKDIR)
 	mkdir $(WORKDIR)/jiacrontab
 	mkdir $(SERVERDIR)
 	mkdir $(CLIENTDIR)
@@ -66,8 +67,8 @@ build-windows:
 	cp -r server/template $(SERVERDIR)
 	cp -r server/static $(SERVERDIR)
 	cp client/client.ini $(CLIENTDIR)
-	GOOS=windows GOARCH=amd64 $(GOBUILD) -o $(BINARY_MANAGER).exe -v ./server
-	GOOS=windows GOARCH=amd64 $(GOBUILD) -o $(BINARY_CLIENT).exe -v ./client
+	GOOS=windows CGO_ENABLED=1  GOARCH=amd64 $(GOBUILD) -o $(BINARY_MANAGER).exe -v ./server
+	GOOS=windows CGO_ENABLED=1  GOARCH=amd64 $(GOBUILD) -o $(BINARY_CLIENT).exe -v ./client
 
 	mv $(BINARY_MANAGER).exe $(SERVERDIR)
 	mv $(BINARY_CLIENT).exe $(CLIENTDIR)

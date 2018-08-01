@@ -2,6 +2,7 @@ package handle
 
 import (
 	"crypto/md5"
+	"log"
 
 	"fmt"
 	"jiacrontab/libs"
@@ -64,7 +65,7 @@ func ListTask(ctx iris.Context) {
 		}
 	}
 
-	if err := rpc.Call(addr, "CrontabTask.All", "", &locals); err != nil {
+	if err := rpcCall(addr, "CrontabTask.All", "", &locals); err != nil {
 
 		if ctx.IsAjax() {
 			ctx.JSON(map[string]interface{}{
@@ -72,12 +73,12 @@ func ListTask(ctx iris.Context) {
 			})
 			return
 		}
-		fmt.Println(err)
+		log.Println(err)
 		ctx.Redirect("/", http.StatusFound)
 		return
 	}
 
-	if err := rpc.Call(addr, "Admin.SystemInfo", "", &systemInfo); err != nil {
+	if err := rpcCall(addr, "Admin.SystemInfo", "", &systemInfo); err != nil {
 		if ctx.IsAjax() {
 			ctx.JSON(map[string]interface{}{
 				"code": -1,
@@ -248,7 +249,7 @@ func EditTask(ctx iris.Context) {
 		}
 		rpcArgs.ID = id
 
-		if err := rpc.Call(addr, "CrontabTask.Update", rpcArgs, &reply); err != nil {
+		if err := rpcCall(addr, "CrontabTask.Update", rpcArgs, &reply); err != nil {
 			ctx.ViewData("error", err.Error())
 			ctx.View("public/error.html")
 			return
@@ -317,7 +318,7 @@ func StopTask(ctx iris.Context) {
 	} else {
 		method = "CrontabTask.Kill"
 	}
-	if err := rpc.Call(addr, method, taskId, &reply); err != nil {
+	if err := rpcCall(addr, method, taskId, &reply); err != nil {
 		ctx.ViewData("error", err)
 		ctx.View("public/error.html")
 		return
@@ -345,7 +346,7 @@ func StopAllTask(ctx iris.Context) {
 		return
 	}
 
-	if err := rpc.Call(addr, method, taskIdSli, &reply); err != nil {
+	if err := rpcCall(addr, method, taskIdSli, &reply); err != nil {
 		ctx.ViewData("error", err)
 		ctx.View("public/error.html")
 		return
@@ -371,7 +372,7 @@ func StartTask(ctx iris.Context) {
 		return
 	}
 
-	if err := rpc.Call(addr, "CrontabTask.Start", taskId, &reply); err != nil {
+	if err := rpcCall(addr, "CrontabTask.Start", taskId, &reply); err != nil {
 		ctx.ViewData("error", "参数错误")
 		ctx.View("public/error.html")
 		return
@@ -447,7 +448,7 @@ func QuickStart(ctx iris.Context) {
 		return
 	}
 
-	if err := rpc.Call(addr, "CrontabTask.QuickStart", taskId, &reply); err != nil {
+	if err := rpcCall(addr, "CrontabTask.QuickStart", taskId, &reply); err != nil {
 		ctx.ViewData("error", err.Error())
 		ctx.View("public/error.html")
 		return
@@ -486,7 +487,7 @@ func RecentLog(ctx iris.Context) {
 	date := r.FormValue("date")
 	pattern := r.FormValue("pattern")
 
-	if err := rpc.Call(addr, "CrontabTask.Log", proto.SearchLog{
+	if err := rpcCall(addr, "CrontabTask.Log", proto.SearchLog{
 		TaskId:   id,
 		Page:     page,
 		Pagesize: pagesize,
@@ -517,6 +518,7 @@ func DeleteClient(ctx iris.Context) {
 
 	r := ctx.Request()
 	addr := r.FormValue("addr")
-	model.DB().Delete(&model.Client{}, "addr=?", addr)
+	model.DB().Unscoped().Delete(&model.Client{}, "addr=?", addr)
+	rpc.Del(addr)
 	ctx.Redirect("/", http.StatusFound)
 }
