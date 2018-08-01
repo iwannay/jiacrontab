@@ -14,7 +14,7 @@
     position: relative;
     top: -32px;
 }
-.layui-only-select .layui-table-cell{
+.layui-only-select td[data-field="handle"] .layui-table-cell{
     overflow:visible !important;
 }
 .layui-only-select .layui-input{

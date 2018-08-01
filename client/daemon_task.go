@@ -51,7 +51,7 @@ func (t *DaemonTask) ActionDaemonTask(args proto.ActionDaemonTaskArgs, reply *bo
 
 	var tasks []model.DaemonTask
 
-	*reply = false
+	*reply = true
 
 	ret := model.DB().Model(&model.DaemonTask{}).Find(&tasks, "id in(?)", strings.Split(args.TaskIds, ","))
 

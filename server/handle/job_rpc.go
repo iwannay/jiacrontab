@@ -29,7 +29,7 @@ func (l *Logic) Register(args model.Client, reply *proto.MailArgs) error {
 }
 
 func (l *Logic) Depends(args model.DependsTasks, reply *bool) error {
-	log.Printf("Callee Logic.Depend taskId %d id:", args[0].TaskId)
+	log.Printf("Callee Logic.Depend taskId %d", args[0].TaskId)
 	*reply = true
 	for _, v := range args {
 		if err := rpcCall(v.Dest, "CrontabTask.ExecDepend", v, &reply); err != nil {
@@ -53,7 +53,14 @@ func (l *Logic) DependDone(args model.DependsTask, reply *bool) error {
 }
 
 func (l *Logic) SendMail(args proto.SendMail, reply *bool) error {
-	mailer.SendMail(args.MailTo, args.Subject, args.Content)
+	var err error
+	if conf.MailService.Enabled {
+		err = mailer.SendMail(args.MailTo, args.Subject, args.Content)
+	}
 	*reply = true
+	return err
+}
+
+func (l *Logic) Ping(args *proto.EmptyArgs, reply *proto.EmptyReply) error {
 	return nil
 }

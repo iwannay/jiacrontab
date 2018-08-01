@@ -48,6 +48,6 @@ server/server
 server/binTmp*
 server/logsfile
 server/data
-
+.directory
 .vscode
 app

@@ -9,7 +9,22 @@
                 <cite>运行信息</cite>
             </a>
         </div>
+        
         <div class="layui-fluid">
+            <div class="layui-form">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <select lay-filter="select-menu">
+                        {{$addr := .addr}}
+                        {{range $k,$v := .clientList}}
+                            {{if eq $v.State 1}}
+                                <option value="{{$v.Addr}}" {{if eq $v.Addr $addr}}selected{{end}}>{{$v.Addr}}</option>
+                            {{end}}
+                        {{end}}
+                        </select>
+                    </div>
+                </div>
+            </div>
             <div class="layui-row layui-col-space15">
                 {{range $k,$v := .systemInfo}}
                 <div class="layui-col-sm6 layui-col-md3">
@@ -30,8 +45,9 @@
 </div>
 <script src="/static/lib/layui/layui.js"></script>
 <script>
-    layui.use(['element', 'jquery'], function () {
+    layui.use(['element', 'jquery', 'form'], function () {
         var $ = layui.jquery;
+        var form = layui.form;
         $('#flexible-icon').on('click', function () {
             if ($(this).hasClass('layui-icon-spread-left')) {
                 $(this).addClass('layui-icon-shrink-right').removeClass('layui-icon-spread-left');
@@ -41,6 +57,11 @@
                 $('.layui-layout-body').addClass('min-layout');
             }
         })
+
+        // 监听top下拉框执行表格重载
+        form.on('select(select-menu)', function (data) {
+            window.location.href = '/runtime/info?addr=' + data.value;
+        });
 
         if (window.innerWidth < 990) {
             $('.layui-layout-body').addClass('min-layout');

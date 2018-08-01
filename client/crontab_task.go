@@ -164,6 +164,7 @@ func (t *CrontabTask) Kill(args string, ok *bool) error {
 		*ok = false
 	} else {
 		globalCrontab.kill(&crontabTask)
+		*ok = true
 	}
 
 	return nil
@@ -237,7 +238,7 @@ func (t *CrontabTask) ResolvedDepends(args model.DependsTask, reply *bool) error
 		globalCrontab.lock.Unlock()
 	}
 
-	log.Printf("resolvedDepends: %+v is not exists", args)
+	log.Printf("resolvedDepends not exists taskId:%d", args.TaskId)
 
 	*reply = false
 	return nil
@@ -256,5 +257,10 @@ func (t *CrontabTask) ExecDepend(args model.DependsTask, reply *bool) error {
 	})
 	*reply = true
 	log.Printf("task %s %s %s add to execution queue ", args.Name, args.Command, args.Args)
+
+	return nil
+}
+
+func (t *CrontabTask) Ping(args *proto.EmptyArgs, reply *proto.EmptyReply) error {
 	return nil
 }

@@ -71,20 +71,16 @@
                 {field:'Name', width:170, fixed: 'left', title: '名称'},
                 {field:'Command', width:170, title: '脚本', templet: function(d) {
                     var oldStr = d.Command + ' ' + d.Args;
-                    newStr = oldStr.replace(/(.{0,20}).*/g,"$1")
-                    if (oldStr.length > newStr.length) {
-                        newStr += "..."
-                    }
-                    return newStr
+                    return oldStr
                 }},
                 {field:'State', width:90, title: '状态', templet: function(d){
                     var staticHtml = '';
                     if (d.State === 0) {
                         staticHtml = '<a href="#" class="layui-btn layui-btn-xs layui-btn-danger">已停止</a>';
-                    } else if (d.State == 1) {
-                        staticHtml = '<a href="#" class="layui-btn layui-btn-xs layui-btn-normal">计时中</a>'
-                    } else {
+                    } else if (d.NumberProcess > 0) {
                         staticHtml = '<a href="#" class="layui-btn layui-btn-xs jia-btn-normal">运行中</a>'
+                    } else {
+                        staticHtml = '<a href="#" class="layui-btn layui-btn-xs layui-btn-normal">计时中</a>'
                     }
                     return staticHtml;
                 }},

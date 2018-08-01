@@ -101,3 +101,7 @@ type SendMail struct {
 	Subject string
 	Content string
 }
+
+type EmptyArgs struct{}
+
+type EmptyReply struct{}

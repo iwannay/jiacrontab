@@ -99,10 +99,11 @@ func (t *taskEntity) exec(logContent *[]byte) {
 		if err := recover(); err != nil {
 			log.Printf("%s exec panic %s \n", t.taskArgs.Name, err)
 		}
+
+		atomic.AddInt32(&t.taskArgs.NumberProcess, -1)
+
 		model.DB().Model(&model.CrontabTask{}).Where("id=?", t.taskArgs.ID).Update(map[string]interface{}{
-			"state":            t.taskArgs.State,
 			"last_cost_time":   t.taskArgs.LastCostTime,
-			"last_exec_time":   t.taskArgs.LastExecTime,
 			"last_exit_status": t.taskArgs.LastExitStatus,
 			"number_process":   t.taskArgs.NumberProcess,
 		})
@@ -115,13 +116,11 @@ func (t *taskEntity) exec(logContent *[]byte) {
 	t.cancel = cancel
 	start := now.UnixNano()
 	t.taskArgs.LastExecTime = now.Unix()
-	t.taskArgs.State = 2
 	t.taskArgs.LastExitStatus = exitSuccess
 	flag := true
 	isExceptError := false
 
 	model.DB().Model(&model.CrontabTask{}).Where("id=?", t.taskArgs.ID).Update(map[string]interface{}{
-		"state":          t.taskArgs.State,
 		"last_exec_time": t.taskArgs.LastExecTime,
 		"number_process": t.taskArgs.NumberProcess,
 	})
@@ -144,7 +143,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 					t.name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), float64(costTime)/1000000000, errors.New(errMsg)),
 			}, &reply)
 			if err != nil {
-				log.Println("failed send mail ", err)
+				log.Println("Logic.SendMail error:", err, "server addr:", globalConfig.rpcSrvAddr)
 			}
 
 		}
@@ -167,7 +166,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 								t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), t.taskArgs.Timeout),
 						}, &reply)
 						if err != nil {
-							log.Println("failed send mail ", err)
+							log.Println("Logic.SendMail error:", err, "server addr:", globalConfig.rpcSrvAddr)
 						}
 
 					case "kill":
@@ -185,10 +184,11 @@ func (t *taskEntity) exec(logContent *[]byte) {
 								t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), t.taskArgs.Timeout),
 						}, &reply)
 						if err != nil {
-							log.Println("failed send mail ", err)
+							log.Println("Logic.SendMail error:", err, "server addr:", globalConfig.rpcSrvAddr)
 						}
 
 					case "ignore":
+						isExceptError = false
 					default:
 					}
 				}
@@ -221,22 +221,13 @@ func (t *taskEntity) exec(logContent *[]byte) {
 						t.taskArgs.Name, t.taskArgs.Command, t.taskArgs.Args, now.Format("2006-01-02 15:04:05"), err.Error()),
 				}, &reply)
 				if err != nil {
-					log.Println("failed send mail ", err)
+					log.Println("Logic.SendMail error:", err, "server addr:", globalConfig.rpcSrvAddr)
 				}
 			}
 		}
 	}
 
-	atomic.AddInt32(&t.taskArgs.NumberProcess, -1)
 	t.taskArgs.LastCostTime = time.Now().UnixNano() - start
-
-	if t.taskArgs.TimerCounter > 0 {
-		if t.taskArgs.NumberProcess == 0 {
-			t.taskArgs.State = 1
-		}
-	} else {
-		t.taskArgs.State = 0
-	}
 
 	if logContent != nil {
 		*logContent = t.logContent
@@ -317,7 +308,7 @@ func (c *crontab) kill(t *model.CrontabTask) {
 
 // 删除计划任务
 func (c *crontab) delete(t *model.CrontabTask) {
-	if model.DB().Delete(t).Error != nil {
+	if model.DB().Unscoped().Delete(t).Error != nil {
 		log.Println("failed delete", t.Name, fmt.Sprint("(", t.ID, ")"))
 		return
 	}
@@ -473,8 +464,9 @@ func (c *crontab) deal(task *model.CrontabTask, ctx context.Context) {
 	task.State = 1
 	defer func() {
 		atomic.AddInt32(&task.TimerCounter, -1)
+		task.State = 0
 		model.DB().Model(&model.CrontabTask{}).Where("id=?", task.ID).Update(map[string]interface{}{
-			"state":            0,
+			"state":            task.State,
 			"lat_cost_time":    task.LastCostTime,
 			"last_exec_time":   task.LastExecTime,
 			"last_exit_status": task.LastExitStatus,
@@ -499,7 +491,7 @@ func (c *crontab) deal(task *model.CrontabTask, ctx context.Context) {
 
 		select {
 		case now := <-h.clockChan:
-
+			wgroup.Add(1)
 			go func(now time.Time) {
 				defer func() {
 					if err := recover(); err != nil {
@@ -508,7 +500,6 @@ func (c *crontab) deal(task *model.CrontabTask, ctx context.Context) {
 					wgroup.Done()
 				}()
 
-				wgroup.Add(1)
 				check := task.C
 				if checkMonth(check, now.Month()) &&
 					checkWeekday(check, now.Weekday()) &&
