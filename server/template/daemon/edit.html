@@ -78,11 +78,6 @@
                         <label class="layui-form-label"></label>
                         <div class="layui-input-block">
                             <input type="checkbox" value="true" {{if eq $daemonTask.MailNotify true}}checked{{end}} name="mailNotify" title="脚本异常退出时邮件通知" lay-skin="primary">
-                        </div>
-                    </div>
-                    <div class="layui-form-item">
-                        <label class="layui-form-label"></label>
-                        <div class="layui-input-block">
                             <input type="checkbox" value="true" {{if eq $daemonTask.ApiNotify true}}checked{{end}} name="apiNotify" title="脚本异常退出时api通知" lay-skin="primary">
                         </div>
                     </div>
