@@ -1,11 +1,15 @@
 package handle
 
 import (
+	"io"
+	"io/ioutil"
 	"jiacrontab/libs/mailer"
 	"jiacrontab/libs/proto"
 	"jiacrontab/model"
 	"jiacrontab/server/conf"
 	"log"
+	"net/http"
+	"strings"
 	"time"
 )
 
@@ -59,6 +63,27 @@ func (l *Logic) SendMail(args proto.SendMail, reply *bool) error {
 	}
 	*reply = true
 	return err
+}
+
+func (l *Logic) ApiPost(args proto.ApiPost, reply *bool) error {
+	req, err := http.NewRequest("POST", args.Url, strings.NewReader(args.Data))
+	if err != nil {
+		log.Printf("create req fail: %s", err)
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	response, err := http.DefaultClient.Do(req)
+
+	if err != nil {
+		log.Printf("post url %s fail: %s", args.Url, err)
+		return err
+	}
+	defer response.Body.Close()
+
+	io.Copy(ioutil.Discard, response.Body)
+	*reply = true
+	return nil
 }
 
 func (l *Logic) Ping(args *proto.EmptyArgs, reply *proto.EmptyReply) error {

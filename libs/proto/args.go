@@ -102,6 +102,11 @@ type SendMail struct {
 	Content string
 }
 
+type ApiPost struct {
+	Url  string
+	Data string
+}
+
 type EmptyArgs struct{}
 
 type EmptyReply struct{}
