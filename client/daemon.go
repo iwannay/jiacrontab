@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"jiacrontab/libs/proto"
 	"jiacrontab/model"
@@ -27,6 +28,14 @@ type daemonTask struct {
 }
 
 func (d *daemonTask) do(ctx context.Context) {
+	type apiPost struct {
+		TaskName    string
+		TaskID      uint
+		TaskCommand string
+		TaskArgs    string
+		CreatedAt   time.Time
+		Type        string
+	}
 	var reply bool
 	d.processNum = 1
 	t := time.NewTicker(1 * time.Second)
@@ -63,6 +72,27 @@ func (d *daemonTask) do(ctx context.Context) {
 				}, &reply)
 				if err != nil {
 					log.Println("Logic.SendMail error:", err, "server addr:", globalConfig.rpcSrvAddr)
+				}
+			}
+
+			if d.task.ApiNotify && d.task.ApiTo != "" {
+				postData, err := json.Marshal(apiPost{
+					TaskName:    d.task.Name,
+					TaskID:      d.task.ID,
+					TaskCommand: d.task.Command,
+					TaskArgs:    d.task.Args,
+					CreatedAt:   d.task.CreatedAt,
+					Type:        "error",
+				})
+				if err != nil {
+					log.Println("json.Marshal error:", err)
+				}
+				err = rpcCall("Logic.ApiPost", proto.ApiPost{
+					Url:  d.task.ApiTo,
+					Data: string(postData),
+				}, &reply)
+				if err != nil {
+					log.Println("Logic.ApiPost error:", err, "server addr:", globalConfig.rpcSrvAddr)
 				}
 			}
 		}

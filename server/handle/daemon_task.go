@@ -79,10 +79,11 @@ func EditDaemonTask(ctx iris.Context) {
 	ctx.ViewData("allowCommands", conf.AppService.AllowCommands)
 
 	if ctx.Request().Method == http.MethodPost {
-		var mailNotify bool
+		var mailNotify, apiNotify bool
 		name := ctx.PostValueTrim("name")
 
 		mailTo := ctx.PostValueTrim("mailTo")
+		apiTo := ctx.PostValueTrim("apiTo")
 		command := ctx.PostValue("command")
 		args := ctx.PostValue("args")
 
@@ -96,11 +97,16 @@ func EditDaemonTask(ctx iris.Context) {
 		if ctx.PostValue("mailNotify") == "true" {
 			mailNotify = true
 		}
+		if ctx.PostValue("apiNotify") == "true" {
+			apiNotify = true
+		}
 
 		daemonTask = model.DaemonTask{
 			Name:          name,
 			MailNotify:    mailNotify,
+			ApiNotify:     apiNotify,
 			MailTo:        mailTo,
+			ApiTo:         apiTo,
 			Command:       command,
 			FailedRestart: failedRestart,
 			Args:          args,
