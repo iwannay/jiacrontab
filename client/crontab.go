@@ -322,7 +322,7 @@ func (c *crontab) add(t *model.CrontabTask) {
 func (c *crontab) quickStart(t *model.CrontabTask, content *[]byte) {
 	taskEty := newTaskEntity(t)
 	c.lock.Lock()
-	if _, ok := c.handleMap[t.ID]; !ok {
+	if h, ok := c.handleMap[t.ID]; !ok {
 
 		taskPool := make([]*taskEntity, 0)
 		c.handleMap[t.ID] = &handle{
@@ -331,6 +331,7 @@ func (c *crontab) quickStart(t *model.CrontabTask, content *[]byte) {
 		}
 		c.lock.Unlock()
 	} else {
+		taskEty.taskArgs = h.crontabTask
 		c.handleMap[t.ID].taskPool = append(c.handleMap[t.ID].taskPool, taskEty)
 		c.lock.Unlock()
 	}
