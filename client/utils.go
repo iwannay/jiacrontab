@@ -460,13 +460,14 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 		return f, err
 	}
 
-	defer func() {
-		if cmd.Process != nil {
-			// linux kill child process if exists
-			syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
-		}
-	}()
-
+	if runtime.GOOS == "linux" {
+		defer func() {
+			if cmd.Process != nil {
+				// linux kill child process if exists
+				syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+			}
+		}()
+	}
 	reader := bufio.NewReader(stdout)
 	readerErr := bufio.NewReader(stderr)
 	// 如果已经存在日志则直接写入
@@ -651,15 +652,17 @@ func call(stack []*pipeCmd, pipes []*io.PipeWriter) (err error) {
 				err = call(stack[1:], pipes[1:])
 			}
 			if err != nil {
-				go func() {
-					select {
-					case <-stack[1].ctx.Done():
-						if stack[1].Process != nil {
-							// kill child process
-							syscall.Kill(-stack[1].Process.Pid, syscall.SIGKILL)
+				if runtime.GOOS == "linux" {
+					go func() {
+						select {
+						case <-stack[1].ctx.Done():
+							if stack[1].Process != nil {
+								// kill child process
+								syscall.Kill(-stack[1].Process.Pid, syscall.SIGKILL)
+							}
 						}
-					}
-				}()
+					}()
+				}
 
 				// fixed zombie process
 				stack[1].Wait()
@@ -670,7 +673,7 @@ func call(stack []*pipeCmd, pipes []*io.PipeWriter) (err error) {
 		select {
 		case <-stack[0].ctx.Done():
 			pipes[0].Close()
-			if stack[0].Process != nil {
+			if runtime.GOOS == "linux" && stack[0].Process != nil {
 				// kill child process
 				syscall.Kill(-stack[0].Process.Pid, syscall.SIGKILL)
 			}
