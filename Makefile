@@ -67,8 +67,8 @@ build-windows:
 	cp -r server/template $(SERVERDIR)
 	cp -r server/static $(SERVERDIR)
 	cp client/client.ini $(CLIENTDIR)
-	GOOS=windows CGO_ENABLED=1  GOARCH=amd64 $(GOBUILD) -o $(BINARY_MANAGER).exe -v ./server
-	GOOS=windows CGO_ENABLED=1  GOARCH=amd64 $(GOBUILD) -o $(BINARY_CLIENT).exe -v ./client
+	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC="x86_64-w64-mingw32-gcc -fno-stack-protector -D_FORTIFY_SOURCE=0 -lssp" $(GOBUILD) -o $(BINARY_MANAGER).exe -v ./server
+	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC="x86_64-w64-mingw32-gcc -fno-stack-protector -D_FORTIFY_SOURCE=0 -lssp" $(GOBUILD) -o $(BINARY_CLIENT).exe -v ./client
 
 	mv $(BINARY_MANAGER).exe $(SERVERDIR)
 	mv $(BINARY_CLIENT).exe $(CLIENTDIR)

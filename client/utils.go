@@ -17,6 +17,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -440,7 +441,9 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 	}
 
 	cmd := exec.CommandContext(ctx, binpath, args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if runtime.GOOS == "linux" {
+		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	}
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return f, err
@@ -459,7 +462,7 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 
 	defer func() {
 		if cmd.Process != nil {
-			// kill child process
+			// linux kill child process if exists
 			syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
 		}
 	}()
@@ -536,7 +539,10 @@ func pipeExecScript(ctx context.Context, cmdList [][]string, logname string, log
 		}
 		logCmdName += v[0] + " " + v[1]
 		cmd := exec.CommandContext(ctx, name, args...)
-		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+		// only linux can kill child process
+		if runtime.GOOS == "linux" {
+			cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+		}
 		cmdEntryList = append(cmdEntryList, &pipeCmd{cmd, ctx})
 	}
 
@@ -663,6 +669,7 @@ func call(stack []*pipeCmd, pipes []*io.PipeWriter) (err error) {
 	go func() {
 		select {
 		case <-stack[0].ctx.Done():
+			pipes[0].Close()
 			if stack[0].Process != nil {
 				// kill child process
 				syscall.Kill(-stack[0].Process.Pid, syscall.SIGKILL)
