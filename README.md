@@ -1,5 +1,6 @@
 # jiacrontab
 提供可视化界面的定时任务&常驻任务管理工具。
+## [🔴jiacrontab最新版下载点这里🔴](https://jiacrontab.iwannay.cn/download/)
 
 1.允许设置每个脚本的超时时间，超时操作可选择邮件通知管理者，或强杀脚本进程。  
 2.允许设置脚本的最大并发数。  
