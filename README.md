@@ -23,7 +23,7 @@ client：实现定时逻辑，隔离用户脚本，将client布置于多台服�
 
 ## 安装
 #### 二进制安装  
-1.[下载](https://github.com/iwannay/jiacrontab/releases) 二进制文件。  
+1.[下载](https://jiacrontab.iwannay.cn/download/) 二进制文件。  
 
 2.解压缩进入目录(server,client)。  
 
@@ -64,6 +64,6 @@ $ nohup ./jiaclient &> jiaclient.log &
 ![alt 截图2](https://raw.githubusercontent.com/iwannay/static_dir/master/jiacrontab_preview_1.4.0_edit.png)
 
 ## 演示地址
-[1.4.0版本演示地址](http://jiacrontab.iwannay.cn/) 账号：admin 密码：123456
+[1.4.*版本演示地址](http://jiacrontab.iwannay.cn/) 账号：admin 密码：123456
 ## qq群成立啦
 813377930 欢迎反馈问题
