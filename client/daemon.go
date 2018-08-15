@@ -110,20 +110,13 @@ func (d *daemonTask) do(ctx context.Context) {
 	}
 	t.Stop()
 
-	switch d.action {
-	case deleteDaemonTask:
-
-		d.daemon.lock.Lock()
-		delete(d.daemon.taskMap, d.task.ID)
-		d.daemon.lock.Unlock()
-
+	if d.action == proto.DeleteDaemonTask {
 		model.DB().Unscoped().Delete(d.task, "id=?", d.task.ID)
-	case stopDaemonTask:
-
-		d.daemon.lock.Lock()
-		delete(d.daemon.taskMap, d.task.ID)
-		d.daemon.lock.Unlock()
 	}
+
+	d.daemon.lock.Lock()
+	delete(d.daemon.taskMap, d.task.ID)
+	d.daemon.lock.Unlock()
 
 	d.processNum = 0
 	model.DB().Model(&model.DaemonTask{}).Where("id = ?", d.task.ID).Update(map[string]interface{}{
