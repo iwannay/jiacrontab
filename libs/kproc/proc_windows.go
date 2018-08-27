@@ -7,6 +7,7 @@ import (
 )
 
 func CommandContext(ctx context.Context, name string, arg ...string) *KCmd {
+	cmd := exec.CommandContext(ctx, name, arg...)
 	return &KCmd{
 		Cmd: cmd,
 		ctx: ctx,
