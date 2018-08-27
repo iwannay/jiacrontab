@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"jiacrontab/libs"
+	"jiacrontab/libs/kproc"
 	"jiacrontab/libs/mailer"
 	"jiacrontab/libs/proto"
 	"jiacrontab/model"
@@ -438,7 +439,7 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 		return f, err
 	}
 
-	cmd := exec.CommandContext(ctx, binpath, args...)
+	cmd := kproc.CommandContext(ctx, binpath, args...)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return f, err
@@ -525,8 +526,8 @@ func pipeExecScript(ctx context.Context, cmdList [][]string, logname string, log
 			logCmdName += " | "
 		}
 		logCmdName += v[0] + " " + v[1]
-		cmd := exec.CommandContext(ctx, name, args...)
-		cmdEntryList = append(cmdEntryList, &pipeCmd{cmd, ctx})
+		cmd := kproc.CommandContext(ctx, name, args...)
+		cmdEntryList = append(cmdEntryList, &pipeCmd{cmd})
 	}
 
 	exitError = execute(&outBufer, &errBufer,
@@ -592,8 +593,7 @@ func writeLog(logpath string, logname string, content *[]byte) {
 }
 
 type pipeCmd struct {
-	*exec.Cmd
-	ctx context.Context
+	*kproc.KCmd
 }
 
 func execute(outputBuffer *bytes.Buffer, errorBuffer *bytes.Buffer, stack ...*pipeCmd) (err error) {
@@ -656,7 +656,6 @@ func initPprof(addr string) {
 			panic(err)
 		}
 	}()
-
 }
 
 func sendMail(mailTo, title, content string) {
