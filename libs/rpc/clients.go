@@ -5,8 +5,9 @@ import (
 )
 
 var (
-	defaultClients *clients
-	PingService    = "Logic.Ping"
+	defaultClients  *clients
+	PingService     = "Logic.Ping"
+	RegisterService = "Logic.Register"
 )
 
 type clients struct {
