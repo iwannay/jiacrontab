@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"jiacrontab/libs/proto"
 	"jiacrontab/model"
@@ -27,6 +28,14 @@ type daemonTask struct {
 }
 
 func (d *daemonTask) do(ctx context.Context) {
+	type apiPost struct {
+		TaskName    string
+		TaskID      uint
+		TaskCommand string
+		TaskArgs    string
+		CreatedAt   time.Time
+		Type        string
+	}
 	var reply bool
 	d.processNum = 1
 	t := time.NewTicker(1 * time.Second)
@@ -65,6 +74,27 @@ func (d *daemonTask) do(ctx context.Context) {
 					log.Println("Logic.SendMail error:", err, "server addr:", globalConfig.rpcSrvAddr)
 				}
 			}
+
+			if d.task.ApiNotify && d.task.ApiTo != "" {
+				postData, err := json.Marshal(apiPost{
+					TaskName:    d.task.Name,
+					TaskID:      d.task.ID,
+					TaskCommand: d.task.Command,
+					TaskArgs:    d.task.Args,
+					CreatedAt:   d.task.CreatedAt,
+					Type:        "error",
+				})
+				if err != nil {
+					log.Println("json.Marshal error:", err)
+				}
+				err = rpcCall("Logic.ApiPost", proto.ApiPost{
+					Url:  d.task.ApiTo,
+					Data: string(postData),
+				}, &reply)
+				if err != nil {
+					log.Println("Logic.ApiPost error:", err, "server addr:", globalConfig.rpcSrvAddr)
+				}
+			}
 		}
 
 		select {
@@ -80,20 +110,13 @@ func (d *daemonTask) do(ctx context.Context) {
 	}
 	t.Stop()
 
-	switch d.action {
-	case deleteDaemonTask:
-
-		d.daemon.lock.Lock()
-		delete(d.daemon.taskMap, d.task.ID)
-		d.daemon.lock.Unlock()
-
+	if d.action == proto.DeleteDaemonTask {
 		model.DB().Unscoped().Delete(d.task, "id=?", d.task.ID)
-	case stopDaemonTask:
-
-		d.daemon.lock.Lock()
-		delete(d.daemon.taskMap, d.task.ID)
-		d.daemon.lock.Unlock()
 	}
+
+	d.daemon.lock.Lock()
+	delete(d.daemon.taskMap, d.task.ID)
+	d.daemon.lock.Unlock()
 
 	d.processNum = 0
 	model.DB().Model(&model.DaemonTask{}).Where("id = ?", d.task.ID).Update(map[string]interface{}{

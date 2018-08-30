@@ -106,6 +106,7 @@
                             <label class="layui-form-label">超时操作</label>
                             <div class="layui-input-block">
                                 <input type="radio" name="optimeout"  {{if eq .task.OpTimeout "email"}}checked{{end}} value="email" title="邮件通知">
+                                <input type="radio" name="optimeout"  {{if eq .task.OpTimeout "api"}}checked{{end}} value="api" title="api通知">
                                 <input type="radio" name="optimeout" {{if eq .task.OpTimeout "kill"}}checked{{end}} value="kill" title="强杀">
                                 <input type="radio" name="optimeout" {{if eq .task.OpTimeout "email_and_kill"}}checked{{end}} value="email_and_kill" title="邮件通知并强杀">
                                 <input type="radio" name="optimeout" {{if eq .task.OpTimeout "ignore"}}checked{{end}} value="ignore" title="忽略">
@@ -115,6 +116,12 @@
                             <label class="layui-form-label">邮箱地址</label>
                             <div class="layui-input-block">
                                 <input type="text" name="mailTo" value="{{.task.MailTo}}" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">api地址</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="apiTo" value="{{.task.ApiTo}}" class="layui-input">
                             </div>
                         </div>
                         <div class="layui-form-item">
@@ -206,6 +213,7 @@
                             <label class="layui-form-label"></label>
                             <div class="layui-input-block">
                                 <input type="checkbox" value="1" {{if .task.UnexpectedExitMail}}checked{{end}} name="unexpectedExitMail" title="脚本异常退出时邮件通知" lay-skin="primary">
+                                <input type="checkbox" value="1" {{if .task.UnexpectedExitApi}}checked{{end}} name="unexpectedExitApi" title="脚本异常退出时api通知" lay-skin="primary">
                             </div>
                         </div>
                         <div class="layui-form-item">

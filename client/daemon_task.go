@@ -26,7 +26,9 @@ func (t *DaemonTask) UpdateDaemonTask(args model.DaemonTask, reply *int64) error
 		ret = model.DB().Model(&model.DaemonTask{}).Where("id=?", args.ID).Update(map[string]interface{}{
 			"name":           args.Name,
 			"mail_to":        args.MailTo,
+			"api_to":         args.ApiTo,
 			"mail_notify":    args.MailNotify,
+			"api_notify":     args.ApiNotify,
 			"failed_restart": args.FailedRestart,
 			"command":        args.Command,
 			"args":           args.Args,
