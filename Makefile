@@ -32,7 +32,6 @@ test:
 	$(GOTEST) -v ./server
 	$(GOTEST) -v ./client
 clean:
-	$(GOCLEAN)
 	rm -f $(BINARY_CLIENT_UNIX)
 	rm -f $(BINARY_MANAGER_UNIX)
 	rm -f $(BINARY_MANAGER)
