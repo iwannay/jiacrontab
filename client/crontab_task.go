@@ -51,8 +51,10 @@ func (t *CrontabTask) Update(args model.CrontabTask, ok *bool) error {
 			t.Command = args.Command
 			t.Args = args.Args
 			t.MailTo = args.MailTo
+			t.ApiTo = args.ApiTo
 			t.Depends = args.Depends
 			t.UnexpectedExitMail = args.UnexpectedExitMail
+			t.UnexpectedExitApi = args.UnexpectedExitApi
 			t.PipeCommands = args.PipeCommands
 			t.Sync = args.Sync
 			t.Timeout = args.Timeout

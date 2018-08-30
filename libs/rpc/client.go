@@ -50,7 +50,7 @@ func (c *Client) dial() (err error) {
 }
 
 func (c *Client) Call(serviceMethod string, args interface{}, reply interface{}) error {
-	if serviceMethod != PingService {
+	if serviceMethod != PingService && serviceMethod != RegisterService {
 		log.Println("rpc call", c.options.Addr, serviceMethod)
 	}
 

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"jiacrontab/libs"
+	"jiacrontab/libs/kproc"
 	"jiacrontab/libs/mailer"
 	"jiacrontab/libs/proto"
 	"jiacrontab/model"
@@ -438,7 +439,7 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 		return f, err
 	}
 
-	cmd := exec.CommandContext(ctx, binpath, args...)
+	cmd := kproc.CommandContext(ctx, binpath, args...)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return f, err
@@ -454,45 +455,46 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 	if err := cmd.Start(); err != nil {
 		return f, err
 	}
+
 	reader := bufio.NewReader(stdout)
 	readerErr := bufio.NewReader(stderr)
 	// 如果已经存在日志则直接写入
 	f.Write(*content)
 
-	for {
-		line, err2 := reader.ReadString('\n')
-		if err2 != nil || io.EOF == err2 {
-			break
-		}
-		if globalConfig.debugScript {
-			prefix := fmt.Sprintf("[%s %s %s %s] ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, bin, strings.Join(args, " "))
-			line = prefix + line
-			*content = append(*content, []byte(line)...)
-		} else {
-			*content = append(*content, []byte(line)...)
-		}
+	go func() {
+		for {
+			line, err2 := reader.ReadString('\n')
+			if err2 != nil || io.EOF == err2 {
+				break
+			}
+			if globalConfig.debugScript {
+				prefix := fmt.Sprintf("[%s %s %s %s] ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, bin, strings.Join(args, " "))
+				line = prefix + line
+				*content = append(*content, []byte(line)...)
+			} else {
+				*content = append(*content, []byte(line)...)
+			}
 
-		f.WriteString(line)
-
-	}
-
-	for {
-		line, err2 := readerErr.ReadString('\n')
-		if err2 != nil || io.EOF == err2 {
-			break
-		}
-		// 默认给err信息加上日期标志
-		if globalConfig.debugScript {
-			prefix := fmt.Sprintf("[%s %s %s %s] ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, bin, strings.Join(args, " "))
-			line = prefix + line
-			*content = append(*content, []byte(line)...)
-		} else {
-			*content = append(*content, []byte(line)...)
+			f.WriteString(line)
 		}
 
-		f.WriteString(line)
+		for {
+			line, err2 := readerErr.ReadString('\n')
+			if err2 != nil || io.EOF == err2 {
+				break
+			}
+			// 默认给err信息加上日期标志
+			if globalConfig.debugScript {
+				prefix := fmt.Sprintf("[%s %s %s %s] ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, bin, strings.Join(args, " "))
+				line = prefix + line
+				*content = append(*content, []byte(line)...)
+			} else {
+				*content = append(*content, []byte(line)...)
+			}
 
-	}
+			f.WriteString(line)
+		}
+	}()
 
 	if err := cmd.Wait(); err != nil {
 		return f, err
@@ -504,7 +506,7 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 func pipeExecScript(ctx context.Context, cmdList [][]string, logname string, logpath string, content *[]byte) (*os.File, error) {
 	var outBufer bytes.Buffer
 	var errBufer bytes.Buffer
-	var cmdEntryList []*exec.Cmd
+	var cmdEntryList []*pipeCmd
 	var f *os.File
 	var logPath string
 	var err, exitError error
@@ -518,14 +520,14 @@ func pipeExecScript(ctx context.Context, cmdList [][]string, logname string, log
 			if strings.TrimSpace(v) != "" {
 				args = append(args, v)
 			}
-
 		}
 
 		if k > 0 {
 			logCmdName += " | "
 		}
 		logCmdName += v[0] + " " + v[1]
-		cmdEntryList = append(cmdEntryList, exec.CommandContext(ctx, name, args...))
+		cmd := kproc.CommandContext(ctx, name, args...)
+		cmdEntryList = append(cmdEntryList, &pipeCmd{cmd})
 	}
 
 	exitError = execute(&outBufer, &errBufer,
@@ -590,7 +592,11 @@ func writeLog(logpath string, logname string, content *[]byte) {
 	f.Write(*content)
 }
 
-func execute(outputBuffer *bytes.Buffer, errorBuffer *bytes.Buffer, stack ...*exec.Cmd) (err error) {
+type pipeCmd struct {
+	*kproc.KCmd
+}
+
+func execute(outputBuffer *bytes.Buffer, errorBuffer *bytes.Buffer, stack ...*pipeCmd) (err error) {
 	pipeStack := make([]*io.PipeWriter, len(stack)-1)
 	i := 0
 	for ; i < len(stack)-1; i++ {
@@ -610,23 +616,27 @@ func execute(outputBuffer *bytes.Buffer, errorBuffer *bytes.Buffer, stack ...*ex
 	return err
 }
 
-func call(stack []*exec.Cmd, pipes []*io.PipeWriter) (err error) {
+func call(stack []*pipeCmd, pipes []*io.PipeWriter) (err error) {
 	if stack[0].Process == nil {
 		if err = stack[0].Start(); err != nil {
 			return err
 		}
 	}
+
 	if len(stack) > 1 {
 		if err = stack[1].Start(); err != nil {
 			return err
 		}
+
 		defer func() {
 			pipes[0].Close()
 			if err == nil {
 				err = call(stack[1:], pipes[1:])
 			}
-			// fixed zombie process
-			stack[1].Wait()
+			if err != nil {
+				// fixed zombie process
+				stack[1].Wait()
+			}
 		}()
 	}
 	return stack[0].Wait()
@@ -646,7 +656,6 @@ func initPprof(addr string) {
 			panic(err)
 		}
 	}()
-
 }
 
 func sendMail(mailTo, title, content string) {
