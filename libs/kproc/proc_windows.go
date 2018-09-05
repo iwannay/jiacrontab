@@ -9,12 +9,14 @@ import (
 func CommandContext(ctx context.Context, name string, arg ...string) *KCmd {
 	cmd := exec.CommandContext(ctx, name, arg...)
 	return &KCmd{
-		Cmd: cmd,
-		ctx: ctx,
+		Cmd:  cmd,
+		ctx:  ctx,
+		done: make(chan struct{}),
 	}
 }
 
 func (k *KCmd) KillAll() {
+	k.done <- struct{}{}
 	if k.Process == nil {
 		return
 	}
@@ -29,6 +31,7 @@ func (k *KCmd) Wait() error {
 		select {
 		case <-k.ctx.Done():
 			k.KillAll()
+		case <-k.done:
 		}
 	}()
 	return k.Cmd.Wait()
