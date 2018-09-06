@@ -16,7 +16,10 @@ func CommandContext(ctx context.Context, name string, arg ...string) *KCmd {
 }
 
 func (k *KCmd) KillAll() {
-	k.done <- struct{}{}
+	select {
+	case k.done <- struct{}{}:
+	default:
+	}
 	if k.Process == nil {
 		return
 	}
