@@ -39,7 +39,7 @@ func LoadAppService() {
 		TplExt:          ".html",
 		TplDir:          "template",
 		DataFile:        app.Key("data_file").MustString("data.json"),
-		RpcListenAddr:   app.Key("listen").MustString(":20003"),
+		RpcListenAddr:   app.Key("rpc_listen_addr").MustString(":20003"),
 		User:            app.Key("app_user").MustString("admin"),
 		Passwd:          app.Key("app_passwd").MustString("123456"),
 		ServerStartTime: starTime,
