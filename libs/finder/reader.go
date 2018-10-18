@@ -28,19 +28,22 @@ func (t *TailReader) Read(b []byte) (n int, err error) {
 		return 0, io.EOF
 	}
 
-	t.curr = t.curr - int64(len(b))
-	if t.curr < 0 {
-		t.curr = 0
+	off := t.curr - int64(len(b))
+	if off < 0 {
+		off = 0
+		n, err = t.f.ReadAt(b[0:t.curr], off)
+	} else {
+		t.curr = off
+		n, err = t.f.ReadAt(b, off)
 	}
 
-	n, err = t.f.ReadAt(b, t.curr)
 	if err != nil && err != io.EOF {
 		return n, err
 	}
 
 	invertSplit(b, n)
 
-	if t.curr == 0 {
+	if off == 0 {
 		t.isEOF = true
 	}
 
