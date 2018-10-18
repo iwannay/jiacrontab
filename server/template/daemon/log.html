@@ -10,14 +10,19 @@
                 <cite>日志</cite>
             </a>
         </div>
-        <div class="layui-form-item">
-            <div class="layui-input-inline">
-                <input type="text" name="search" placeholder="搜索日志" class="layui-input search-txt">
+        <div class="layui-form" lay-filter="searchForm" >
+            <div class="layui-form-item">
+                <div class="layui-input-inline">
+                    <input type="text" name="search" placeholder="搜索日志" class="layui-input search-txt">
+                </div>
+                <div class="layui-input-inline" style="width: 120px;">
+                    <input type="text" id="search-date" class="layui-input" placeholder="选择日期" >
+                </div>
+                <div class="layui-input-inline" style="width: 90px;">
+                    <input type="checkbox" id="is-tail" title="顺序" name="isTail" >
+                </div>
+                <div class="layui-btn" id="search">搜索</div>
             </div>
-            <div class="layui-input-inline" style="width: 120px;">
-                <input type="text" id="search-date" class="layui-input" placeholder="选择日期" >
-            </div>
-            <div class="layui-btn" id="search">搜索</div>
         </div>
         <table class="layui-table" lay-size="sm">
             <colgroup>
@@ -45,6 +50,7 @@
         var $ = layui.jquery;
         var laydate = layui.laydate;
         var laypage = layui.laypage;
+        var form = layui.form;
 
         //总页数大于页码总数
         laypage.render({
@@ -68,26 +74,29 @@
             $('#search-date').val(common.getRequest().date);
         }
 
-        if (common.getRequest().isTail) {
-            $('#is-tail').val(common.getRequest().isTail);
+        if (common.getRequest().isTail === 'false') {
+            form.val("searchForm", {
+                'isTail': true
+            })
         }
 
         // 监听搜索事件
         $('#search').on('click', function() {
             var searchText = $('.search-txt').val();
             var time = $('#search-date').val();
-            var isTail = $('#is-tail').val();
+            var isTail = $("#is-tail").prop("checked");
 
             var urlObj = common.getRequest().add("pattern", searchText);
             urlObj.add("date",time);
             urlObj.add("page", 1);
-            urlObj.add('isTail', isTail)
+            urlObj.add('isTail', isTail ? 'false' : 'true')
             window.location.href = urlObj.search();
         })
 
         laydate.render({ 
             format: "yyyy/MM/dd",
-            elem: '#search-date'
+            elem: '#search-date',
+            value: new Date()
         });
         
         $('#flexible-icon').on('click', function () {
