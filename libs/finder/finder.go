@@ -40,6 +40,7 @@ type Finder struct {
 	errors            []error
 	patternAll        bool
 	filter            func(os.FileInfo) bool
+	isTail            bool
 	group             sync.WaitGroup
 }
 
@@ -50,6 +51,10 @@ func NewFinder(maxRows uint64, filter func(os.FileInfo) bool) *Finder {
 	}
 }
 
+func (fd *Finder) SetTail(flag bool) {
+	fd.isTail = flag
+}
+
 func (fd *Finder) Count() uint64 {
 	return fd.curr
 }
@@ -57,6 +62,7 @@ func (fd *Finder) Count() uint64 {
 func (fd *Finder) find(fpath string, modifyTime time.Time) error {
 
 	var matchData []byte
+	var reader *bufio.Reader
 
 	f, err := os.Open(fpath)
 	if err != nil {
@@ -64,7 +70,12 @@ func (fd *Finder) find(fpath string, modifyTime time.Time) error {
 	}
 	defer f.Close()
 
-	reader := bufio.NewReader(f)
+	if fd.isTail {
+		reader = bufio.NewReader(NewTailReader(f))
+	} else {
+		reader = bufio.NewReader(f)
+	}
+
 	for {
 		if atomic.LoadUint64(&fd.curr) >= fd.maxRows {
 			break
@@ -109,7 +120,6 @@ func (fd *Finder) walkFunc(fpath string, info os.FileInfo, err error) error {
 	}
 
 	return nil
-
 }
 
 func (fd *Finder) Search(root string, expr string, data *[]byte, page, pagesize int) error {

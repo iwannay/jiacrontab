@@ -39,7 +39,7 @@
     layui.config({
         base: '/static/js/' //假设这是你存放拓展模块的根目录
     })
-    layui.use(['common', 'element', 'jquery', 'layer', 'laydate', 'laypage'], function () {
+    layui.use(['common', 'element', 'jquery', 'layer', 'laydate', 'laypage','form'], function () {
         var common = layui.common;
         var layer = layui.layer;
         var $ = layui.jquery;
@@ -63,18 +63,25 @@
         if (common.getRequest().pattern) {
             $('.search-txt').val(common.getRequest().pattern);
         }
+        
         if (common.getRequest().date) {
             $('#search-date').val(common.getRequest().date);
+        }
+
+        if (common.getRequest().isTail) {
+            $('#is-tail').val(common.getRequest().isTail);
         }
 
         // 监听搜索事件
         $('#search').on('click', function() {
             var searchText = $('.search-txt').val();
             var time = $('#search-date').val();
+            var isTail = $('#is-tail').val();
 
             var urlObj = common.getRequest().add("pattern", searchText);
             urlObj.add("date",time);
             urlObj.add("page", 1);
+            urlObj.add('isTail', isTail)
             window.location.href = urlObj.search();
         })
 
@@ -97,6 +104,7 @@
             $('.layui-layout-body').addClass('min-layout');
             $('#flexible-icon').addClass('layui-icon-spread-left').removeClass('layui-icon-shrink-right');
         }
+
         $(window).on('resize', function () {
             if (window.innerWidth < 990) {
                 $('.layui-layout-body').addClass('min-layout');

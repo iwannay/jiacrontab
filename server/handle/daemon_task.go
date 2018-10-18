@@ -207,6 +207,10 @@ func RecentDaemonLog(ctx iris.Context) {
 	date := r.FormValue("date")
 	pattern := r.FormValue("pattern")
 	addr := r.FormValue("addr")
+	isTail := true
+	if r.FormValue("isTail") == "false" {
+		isTail = false
+	}
 
 	if err := rpcCall(addr, "DaemonTask.Log", proto.SearchLog{
 		TaskId:   id,
@@ -214,6 +218,7 @@ func RecentDaemonLog(ctx iris.Context) {
 		Pagesize: pagesize,
 		Date:     date,
 		Pattern:  pattern,
+		IsTail:   isTail,
 	}, &searchRet); err != nil {
 
 		ctx.ViewData("error", err)
