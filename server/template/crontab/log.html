@@ -67,14 +67,19 @@
             $('#search-date').val(common.getRequest().date);
         }
 
+        if (common.getRequest().isTail) {
+            $('#is-tail').val(common.getRequest().isTail);
+        }
+
         // 监听搜索事件
         $('#search').on('click', function() {
             var searchText = $('.search-txt').val();
             var time = $('#search-date').val();
-
+            var isTail = $('#is-tail').val();
             var urlObj = common.getRequest().add("pattern", searchText);
             urlObj.add("date",time);
             urlObj.add("page", 1);
+            urlObj.add('isTail', isTail)
             window.location.href = urlObj.search();
         })
 

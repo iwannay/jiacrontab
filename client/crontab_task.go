@@ -203,6 +203,9 @@ func (t *CrontabTask) Log(args proto.SearchLog, reply *proto.SearchLogResult) er
 	if args.Date == "" {
 		args.Date = time.Now().Format("2006/01/02")
 	}
+	if args.IsTail {
+		fd.SetTail(true)
+	}
 
 	rootpath := filepath.Join(globalConfig.logPath, "crontab_task", args.Date)
 	err := fd.Search(rootpath, args.Pattern, &reply.Content, args.Page, args.Pagesize)

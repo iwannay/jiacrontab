@@ -98,6 +98,10 @@ func (t *DaemonTask) Log(args proto.SearchLog, reply *proto.SearchLogResult) err
 		args.Date = time.Now().Format("2006/01/02")
 	}
 
+	if args.IsTail {
+		fd.SetTail(true)
+	}
+
 	rootpath := filepath.Join(globalConfig.logPath, "daemon_task", args.Date)
 	err := fd.Search(rootpath, args.Pattern, &reply.Content, args.Page, args.Pagesize)
 	reply.Total = int(fd.Count())
