@@ -55,9 +55,11 @@ $ nohup ./jiaclient &> jiaclient.log &
 
 1、下载新版本压缩包，并解压。  
 
-2、拷贝旧版server/.data和client/.data 至新版相同位置
+2、如果旧版存在server/.data和client/.data 则拷贝至新版相同位置
 
-3、运行新版
+3、拷贝server/data,client/data,server/server.ini、client/client.ini至新版相同位置
+
+4、运行新版
 
 ## 配置文件
 ### 服务端配置文件 server.ini
