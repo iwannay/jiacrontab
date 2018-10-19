@@ -57,7 +57,7 @@ $ nohup ./jiaclient &> jiaclient.log &
 
 2、如果旧版存在server/.data和client/.data 则拷贝至新版相同位置
 
-3、拷贝server/data,client/data,server/server.ini、client/client.ini至新版相同位置
+3、拷贝server/data、client/data、server/server.ini、client/client.ini至新版相同位置
 
 4、运行新版
 
