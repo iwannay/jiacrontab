@@ -35,7 +35,7 @@ $ nohup ./jiaclient &> client.log &
 ```
 
 ### 1.4.*源码安装
-1.安装git，golang；可参考官网。  
+1.安装git，golang(version 1.11.x)；可参考官网。  
 2.安装运行
 ```sh
 $ cd $GOPATH/src
@@ -51,7 +51,7 @@ $ nohup ./jiaclient &> jiaclient.log &
 ```
 <font color="red" size="3">浏览器访问 host:port (eg: localhost:20000) 即可访问可视化界面</font>
 
-### 升级至1.4.*
+### 升级至1.4.x
 
 1、下载新版本压缩包，并解压。  
 
