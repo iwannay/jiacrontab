@@ -21,15 +21,16 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/kataras/iris/core/errors"
+	"github.com/kataras/iris/core/memstore"
+
+	"github.com/Shopify/goreferrer"
 	"github.com/fatih/structs"
 	formbinder "github.com/iris-contrib/formBinder"
 	"github.com/json-iterator/go"
 	"github.com/microcosm-cc/bluemonday"
 	"gopkg.in/russross/blackfriday.v2"
 	"gopkg.in/yaml.v2"
-
-	"github.com/kataras/iris/core/errors"
-	"github.com/kataras/iris/core/memstore"
 )
 
 type (
@@ -141,18 +142,31 @@ func (r RequestParams) GetDecoded(key string) string {
 }
 
 // GetInt returns the path parameter's value as int, based on its key.
+// It checks for all available types of int, including int64, strings etc.
+// It will return -1 and a non-nil error if parameter wasn't found.
 func (r RequestParams) GetInt(key string) (int, error) {
 	return r.store.GetInt(key)
 }
 
 // GetInt64 returns the path paramete's value as int64, based on its key.
+// It checks for all available types of int, including int, strings etc.
+// It will return -1 and a non-nil error if parameter wasn't found.
 func (r RequestParams) GetInt64(key string) (int64, error) {
 	return r.store.GetInt64(key)
 }
 
 // GetFloat64 returns a path parameter's value based as float64 on its route's dynamic path key.
+// It checks for all available types of int, including float64, int, strings etc.
+// It will return -1 and a non-nil error if parameter wasn't found.
 func (r RequestParams) GetFloat64(key string) (float64, error) {
 	return r.store.GetFloat64(key)
+}
+
+// GetUint64 returns the path paramete's value as uint64, based on its key.
+// It checks for all available types of int, including int, uint64, int64, strings etc.
+// It will return 0 and a non-nil error if parameter wasn't found.
+func (r RequestParams) GetUint64(key string) (uint64, error) {
+	return r.store.GetUint64(key)
 }
 
 // GetBool returns the path parameter's value as bool, based on its key.
@@ -340,6 +354,32 @@ type Context interface {
 	// IsStopped checks and returns true if the current position of the Context is 255,
 	// means that the StopExecution() was called.
 	IsStopped() bool
+	// OnConnectionClose registers the "cb" function which will fire (on its own goroutine, no need to be registered goroutine by the end-dev)
+	// when the underlying connection has gone away.
+	//
+	// This mechanism can be used to cancel long operations on the server
+	// if the client has disconnected before the response is ready.
+	//
+	// It depends on the `http#CloseNotify`.
+	// CloseNotify may wait to notify until Request.Body has been
+	// fully read.
+	//
+	// After the main Handler has returned, there is no guarantee
+	// that the channel receives a value.
+	//
+	// Finally, it reports whether the protocol supports pipelines (HTTP/1.1 with pipelines disabled is not supported).
+	// The "cb" will not fire for sure if the output value is false.
+	//
+	// Note that you can register only one callback for the entire request handler chain/per route.
+	//
+	// Look the `ResponseWriter#CloseNotifier` for more.
+	OnConnectionClose(fnGoroutine func()) bool
+	// OnClose registers the callback function "cb" to the underline connection closing event using the `Context#OnConnectionClose`
+	// and also in the end of the request handler using the `ResponseWriter#SetBeforeFlush`.
+	// Note that you can register only one callback for the entire request handler chain/per route.
+	//
+	// Look the `Context#OnConnectionClose` and `ResponseWriter#SetBeforeFlush` for more.
+	OnClose(cb func())
 
 	//  +------------------------------------------------------------+
 	//  | Current "user/request" storage                             |
@@ -419,8 +459,12 @@ type Context interface {
 	//
 	// Keep note that this checks the "User-Agent" request header.
 	IsMobile() bool
+	// GetReferrer extracts and returns the information from the "Referer" header as specified
+	// in https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy
+	// or by the URL query parameter "referer".
+	GetReferrer() Referrer
 	//  +------------------------------------------------------------+
-	//  | Response Headers helpers                                   |
+	//  | Headers helpers                                            |
 	//  +------------------------------------------------------------+
 
 	// Header adds a header to the response writer.
@@ -431,16 +475,18 @@ type Context interface {
 	// GetContentType returns the response writer's header value of "Content-Type"
 	// which may, setted before with the 'ContentType'.
 	GetContentType() string
+	// GetContentType returns the request's header value of "Content-Type".
+	GetContentTypeRequested() string
 
 	// GetContentLength returns the request's header value of "Content-Length".
 	// Returns 0 if header was unable to be found or its value was not a valid number.
 	GetContentLength() int64
 
 	// StatusCode sets the status code header to the response.
-	// Look .GetStatusCode too.
+	// Look .`GetStatusCode` too.
 	StatusCode(statusCode int)
 	// GetStatusCode returns the current status code of the response.
-	// Look StatusCode too.
+	// Look `StatusCode` too.
 	GetStatusCode() int
 
 	// Redirect sends a redirect response to the client
@@ -475,6 +521,9 @@ type Context interface {
 	// URLParamIntDefault returns the url query parameter as int value from a request,
 	// if not found or parse failed then "def" is returned.
 	URLParamIntDefault(name string, def int) int
+	// URLParamInt32Default returns the url query parameter as int32 value from a request,
+	// if not found or parse failed then "def" is returned.
+	URLParamInt32Default(name string, def int32) int32
 	// URLParamInt64 returns the url query parameter as int64 value from a request,
 	// returns -1 and an error if parse failed.
 	URLParamInt64(name string) (int64, error)
@@ -622,6 +671,10 @@ type Context interface {
 	// Examples of usage: context.ReadJSON, context.ReadXML.
 	//
 	// Example: https://github.com/kataras/iris/blob/master/_examples/http_request/read-custom-via-unmarshaler/main.go
+	//
+	// UnmarshalBody does not check about gzipped data.
+	// Do not rely on compressed data incoming to your server. The main reason is: https://en.wikipedia.org/wiki/Zip_bomb
+	// However you are still free to read the `ctx.Request().Body io.Reader` manually.
 	UnmarshalBody(outPtr interface{}, unmarshaler Unmarshaler) error
 	// ReadJSON reads JSON from request's body and binds it to a pointer of a value of any json-valid type.
 	//
@@ -1355,6 +1408,76 @@ func (ctx *context) IsStopped() bool {
 	return ctx.currentHandlerIndex == stopExecutionIndex
 }
 
+// OnConnectionClose registers the "cb" function which will fire (on its own goroutine, no need to be registered goroutine by the end-dev)
+// when the underlying connection has gone away.
+//
+// This mechanism can be used to cancel long operations on the server
+// if the client has disconnected before the response is ready.
+//
+// It depends on the `http#CloseNotify`.
+// CloseNotify may wait to notify until Request.Body has been
+// fully read.
+//
+// After the main Handler has returned, there is no guarantee
+// that the channel receives a value.
+//
+// Finally, it reports whether the protocol supports pipelines (HTTP/1.1 with pipelines disabled is not supported).
+// The "cb" will not fire for sure if the output value is false.
+//
+// Note that you can register only one callback for the entire request handler chain/per route.
+//
+// Look the `ResponseWriter#CloseNotifier` for more.
+func (ctx *context) OnConnectionClose(cb func()) bool {
+	// Note that `ctx.ResponseWriter().CloseNotify()` can already do the same
+	// but it returns a channel which will never fire if it the protocol version is not compatible,
+	// here we don't want to allocate an empty channel, just skip it.
+	notifier, ok := ctx.writer.CloseNotifier()
+	if !ok {
+		return false
+	}
+
+	notify := notifier.CloseNotify()
+	go func() {
+		<-notify
+		if cb != nil {
+			cb()
+		}
+	}()
+
+	return true
+}
+
+// OnClose registers the callback function "cb" to the underline connection closing event using the `Context#OnConnectionClose`
+// and also in the end of the request handler using the `ResponseWriter#SetBeforeFlush`.
+// Note that you can register only one callback for the entire request handler chain/per route.
+//
+// Look the `Context#OnConnectionClose` and `ResponseWriter#SetBeforeFlush` for more.
+func (ctx *context) OnClose(cb func()) {
+	if cb == nil {
+		return
+	}
+
+	// Register the on underline connection close handler first.
+	ctx.OnConnectionClose(cb)
+
+	// Author's notes:
+	// This is fired on `ctx.ResponseWriter().FlushResponse()` which is fired by the framework automatically, internally, on the end of request handler(s),
+	// it is not fired on the underline streaming function of the writer: `ctx.ResponseWriter().Flush()` (which can be fired more than one if streaming is supported by the client).
+	// The `FlushResponse` is called only once, so add the "cb" here, no need to add done request handlers each time `OnClose` is called by the end-dev.
+	//
+	// Don't allow more than one because we don't allow that on `OnConnectionClose` too:
+	// old := ctx.writer.GetBeforeFlush()
+	// if old != nil {
+	// 	ctx.writer.SetBeforeFlush(func() {
+	// 		old()
+	// 		cb()
+	// 	})
+	// 	return
+	// }
+
+	ctx.writer.SetBeforeFlush(cb)
+}
+
 //  +------------------------------------------------------------+
 //  | Current "user/request" storage                             |
 //  | and share information between the handlers - Values().     |
@@ -1582,6 +1705,84 @@ func (ctx *context) IsMobile() bool {
 	return isMobileRegex.MatchString(s)
 }
 
+type (
+	// Referrer contains the extracted information from the `GetReferrer`
+	//
+	// The structure contains struct tags for JSON, form, XML, YAML and TOML.
+	// Look the `GetReferrer() Referrer` and `goreferrer` external package.
+	Referrer struct {
+		Type       ReferrerType             `json:"type" form:"referrer_type" xml:"Type" yaml:"Type" toml:"Type"`
+		Label      string                   `json:"label" form:"referrer_form" xml:"Label" yaml:"Label" toml:"Label"`
+		URL        string                   `json:"url" form:"referrer_url" xml:"URL" yaml:"URL" toml:"URL"`
+		Subdomain  string                   `json:"subdomain" form:"referrer_subdomain" xml:"Subdomain" yaml:"Subdomain" toml:"Subdomain"`
+		Domain     string                   `json:"domain" form:"referrer_domain" xml:"Domain" yaml:"Domain" toml:"Domain"`
+		Tld        string                   `json:"tld" form:"referrer_tld" xml:"Tld" yaml:"Tld" toml:"Tld"`
+		Path       string                   `jsonn:"path" form:"referrer_path" xml:"Path" yaml:"Path" toml:"Path"`
+		Query      string                   `json:"query" form:"referrer_query" xml:"Query" yaml:"Query" toml:"GoogleType"`
+		GoogleType ReferrerGoogleSearchType `json:"googleType" form:"referrer_google_type" xml:"GoogleType" yaml:"GoogleType" toml:"GoogleType"`
+	}
+
+	// ReferrerType is the goreferrer enum for a referrer type (indirect, direct, email, search, social).
+	ReferrerType int
+
+	// ReferrerGoogleSearchType is the goreferrer enum for a google search type (organic, adwords).
+	ReferrerGoogleSearchType int
+)
+
+// Contains the available values of the goreferrer enums.
+const (
+	ReferrerInvalid ReferrerType = iota
+	ReferrerIndirect
+	ReferrerDirect
+	ReferrerEmail
+	ReferrerSearch
+	ReferrerSocial
+
+	ReferrerNotGoogleSearch ReferrerGoogleSearchType = iota
+	ReferrerGoogleOrganicSearch
+	ReferrerGoogleAdwords
+)
+
+func (gs ReferrerGoogleSearchType) String() string {
+	return goreferrer.GoogleSearchType(gs).String()
+}
+
+func (r ReferrerType) String() string {
+	return goreferrer.ReferrerType(r).String()
+}
+
+// unnecessary but good to know the default values upfront.
+var emptyReferrer = Referrer{Type: ReferrerInvalid, GoogleType: ReferrerNotGoogleSearch}
+
+// GetReferrer extracts and returns the information from the "Referer" header as specified
+// in https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy
+// or by the URL query parameter "referer".
+func (ctx *context) GetReferrer() Referrer {
+	// the underline net/http follows the https://tools.ietf.org/html/rfc7231#section-5.5.2,
+	// so there is nothing special left to do.
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy
+	refURL := ctx.GetHeader("Referer")
+	if refURL == "" {
+		refURL = ctx.URLParam("referer")
+	}
+
+	if ref := goreferrer.DefaultRules.Parse(refURL); ref.Type > goreferrer.Invalid {
+		return Referrer{
+			Type:       ReferrerType(ref.Type),
+			Label:      ref.Label,
+			URL:        ref.URL,
+			Subdomain:  ref.Subdomain,
+			Domain:     ref.Domain,
+			Tld:        ref.Tld,
+			Path:       ref.Path,
+			Query:      ref.Query,
+			GoogleType: ReferrerGoogleSearchType(ref.GoogleType),
+		}
+	}
+
+	return emptyReferrer
+}
+
 //  +------------------------------------------------------------+
 //  | Response Headers helpers                                   |
 //  +------------------------------------------------------------+
@@ -1622,6 +1823,11 @@ func (ctx *context) ContentType(cType string) {
 // which may, setted before with the 'ContentType'.
 func (ctx *context) GetContentType() string {
 	return ctx.writer.Header().Get(ContentTypeHeaderKey)
+}
+
+// GetContentType returns the request's header value of "Content-Type".
+func (ctx *context) GetContentTypeRequested() string {
+	return ctx.GetHeader(ContentTypeHeaderKey)
 }
 
 // GetContentLength returns the request's header value of "Content-Length".
@@ -1721,6 +1927,21 @@ func (ctx *context) URLParamIntDefault(name string, def int) int {
 	}
 
 	return v
+}
+
+// URLParamInt32Default returns the url query parameter as int32 value from a request,
+// if not found or parse failed then "def" is returned.
+func (ctx *context) URLParamInt32Default(name string, def int32) int32 {
+	if v := ctx.URLParam(name); v != "" {
+		n, err := strconv.ParseInt(v, 10, 32)
+		if err != nil {
+			return def
+		}
+
+		return int32(n)
+	}
+
+	return def
 }
 
 // URLParamInt64 returns the url query parameter as int64 value from a request,
@@ -2128,6 +2349,10 @@ func (ctx *context) SetMaxRequestBodySize(limitOverBytes int64) {
 // Examples of usage: context.ReadJSON, context.ReadXML.
 //
 // Example: https://github.com/kataras/iris/blob/master/_examples/http_request/read-custom-via-unmarshaler/main.go
+//
+// UnmarshalBody does not check about gzipped data.
+// Do not rely on compressed data incoming to your server. The main reason is: https://en.wikipedia.org/wiki/Zip_bomb
+// However you are still free to read the `ctx.Request().Body io.Reader` manually.
 func (ctx *context) UnmarshalBody(outPtr interface{}, unmarshaler Unmarshaler) error {
 	if ctx.request.Body == nil {
 		return errors.New("unmarshal: empty body")

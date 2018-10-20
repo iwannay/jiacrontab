@@ -51,3 +51,5 @@ server/data
 .directory
 .vscode
 app
+
+binTmp

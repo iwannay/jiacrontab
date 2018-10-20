@@ -2,6 +2,8 @@
 github.com/BurntSushi/toml
 # github.com/Joker/jade v0.0.0-20180419144541-8828253bfc54
 github.com/Joker/jade
+# github.com/Shopify/goreferrer v0.0.0-20180807163728-b9777dc9f9cc
+github.com/Shopify/goreferrer
 # github.com/aymerick/raymond v0.0.0-20180322193309-b565731e1464
 github.com/aymerick/raymond
 github.com/aymerick/raymond/ast
@@ -20,6 +22,8 @@ github.com/flosch/pongo2
 github.com/hashicorp/go-version
 # github.com/iris-contrib/formBinder v0.0.0-20171010160137-ad9fb86c356f
 github.com/iris-contrib/formBinder
+# github.com/iris-contrib/go.uuid v2.0.0+incompatible
+github.com/iris-contrib/go.uuid
 # github.com/iris-contrib/middleware v0.0.0-20171114084220-1060fbb0ce08
 github.com/iris-contrib/middleware/jwt
 # github.com/iwannay/jiaweb v0.0.0-20180315033644-c88768ac3854
@@ -35,7 +39,7 @@ github.com/json-iterator/go
 github.com/juju/errors
 # github.com/kataras/golog v0.0.0-20180321173939-03be10146386
 github.com/kataras/golog
-# github.com/kataras/iris v10.6.6+incompatible
+# github.com/kataras/iris v10.7.0+incompatible
 github.com/kataras/iris
 github.com/kataras/iris/middleware/logger
 github.com/kataras/iris/middleware/recover
@@ -49,18 +53,18 @@ github.com/kataras/iris/core/netutil
 github.com/kataras/iris/core/router
 github.com/kataras/iris/view
 github.com/kataras/iris/core/memstore
+github.com/kataras/iris/core/router/macro
 github.com/kataras/iris/cache/client
 github.com/kataras/iris/core/maintenance/version
-github.com/kataras/iris/core/router/macro
 github.com/kataras/iris/core/router/macro/interpreter/ast
 github.com/kataras/iris/core/router/macro/interpreter/lexer
 github.com/kataras/iris/core/router/node
+github.com/kataras/iris/core/router/macro/interpreter/parser
 github.com/kataras/iris/cache/cfg
 github.com/kataras/iris/cache/client/rule
 github.com/kataras/iris/cache/entry
 github.com/kataras/iris/cache/ruleset
 github.com/kataras/iris/cache/uri
-github.com/kataras/iris/core/router/macro/interpreter/parser
 github.com/kataras/iris/core/router/macro/interpreter/token
 # github.com/kataras/pio v0.0.0-20180511174041-a9733b5b6b83
 github.com/kataras/pio
@@ -90,14 +94,13 @@ github.com/modern-go/concurrent
 github.com/modern-go/reflect2
 # github.com/ryanuber/columnize v0.0.0-20170703205827-abc90934186a
 github.com/ryanuber/columnize
-# github.com/satori/go.uuid v0.0.0-20180103174451-36e9d2ebbde5
-github.com/satori/go.uuid
 # github.com/shurcooL/sanitized_anchor_name v0.0.0-20170918181015-86672fcb3f95
 github.com/shurcooL/sanitized_anchor_name
 # golang.org/x/crypto v0.0.0-20180608092829-8ac0e0d97ce4
 golang.org/x/crypto/acme/autocert
 golang.org/x/crypto/acme
 # golang.org/x/net v0.0.0-20180530234432-1e491301e022
+golang.org/x/net/publicsuffix
 golang.org/x/net/html
 golang.org/x/net/html/atom
 # golang.org/x/sys v0.0.0-20180606202747-9527bec2660b
