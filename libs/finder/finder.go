@@ -86,6 +86,10 @@ func (fd *Finder) find(fpath string, modifyTime time.Time) error {
 			break
 		}
 
+		if fd.isTail {
+			invert(bts)
+		}
+
 		if fd.patternAll || fd.regexp.Match(bts) {
 			if fd.curr >= uint64(fd.seekCurr) && fd.curr <= uint64(fd.seekEnd) {
 				matchData = append(matchData, bts...)
