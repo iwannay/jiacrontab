@@ -39,7 +39,7 @@ $ nohup ./jiaclient &> client.log &
 2.安装运行
 ```sh
 $ cd $GOPATH/src
-$ git clone git@github.com:iwannay/jiacrontab.git 
+$ git clone git@github.com:iwannay/jiacrontab.git
 $ cd jiacrontab
 $ make build
 
@@ -47,17 +47,84 @@ $ cd app/jiacrontab/server
 $ nohup ./jiaserver &> jiaserver.log &
 
 $ cd app/jiacrontab/client
-$ nohup ./jiaclient &> jiaclient.log & 
-``` 
+$ nohup ./jiaclient &> jiaclient.log &
+```
+<font color="red" size="3">浏览器访问 host:port (eg: localhost:20000) 即可访问可视化界面</font>
 
 ### 升级至1.4.*
 
 1、下载新版本压缩包，并解压。  
 
-2、拷贝旧版server/.data和client/.data 至新版相同位置
+2、如果旧版存在server/.data和client/.data 则拷贝至新版相同位置
 
-3、运行新版
+3、拷贝server/data、client/data、server/server.ini、client/client.ini至新版相同位置
 
+4、运行新版
+
+## 配置文件
+### 服务端配置文件 server.ini
+```
+;允许使用的command  可以在后面添加自己的command,用逗号隔开
+allow_commands = php,/usr/local/bin/php,python,node,curl,wget,sh,uname,grep,cat,sleep
+```
+
+### 客户端配置文件 client.ini
+```
+; pprof 监听地址
+pprof_addr = :20002
+
+; 本机rpc监听地址
+listen= :20001
+
+; 推送给server的地址 host:port 在可视化界面展示
+; 写本机IP推送给server之后 server记录下这个ip, server发送请求通过此地址
+local_addr = localhost:20001
+
+; server 地址 服务器 host:port 除非在同一台机器部署双端 否则需要更改
+server_addr =localhost:20003
+
+; 日志目录
+dir = logs
+; 自动清理大于一个月或者单文件体积大于1G的日志文件
+clean_task_log = true
+```
+
+## 基本使用
+### 定时任务
+1. 超时设置和超时操作  
+超时后会进行设置的超时操作 默认值为0 不判断超时  
+
+2. 最大并发数  
+最大并发数 控制 同时有几个脚本进程  
+默认最大并发数为1，若不设置超时时间，当定时任务第二次执行时，若上一次执行还未完成  
+则会kill上一个脚本，进行本次执行。  
+防止脚本无法正常退出而导致系统资源耗尽  
+
+3. 添加依赖  
+依赖就是用户脚本执行前，需要先执行依赖脚本，只有依赖脚本执行完毕才会执行当前脚本。  
+3.1 并发执行  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;并发执行依赖脚本，任意一个脚本出错或超时不会影响其他依赖脚本，但是会中断用户脚本  
+3.2 同步执行  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;同步执行依赖脚本，执行顺序为添加顺序，如果有一个依赖脚本出错或超时，则会中断后继依赖，以及用户脚本  
+
+4. 脚本异常退出通知
+如果脚本退出码不为0，则认为是异常退出
+
+### 常驻任务
+常驻任务检查脚本进程是否退出，如果退出再次重启，保证脚本不停运行  
+其他同 定时任务
+
+## 附录
+### 错误日志
+错误日志存放在配置文件设置的目录下  
+定时任务为logs/crontab_task  
+计划任务为daemon_task
+日志文件准确为日期目录下的ID.log  （eg: logs/crontab_task/2018/01/01/1.log）  
+#### 错误日志信息
+1. 正常错误日志  
+程序原因产生的错误日志
+2. 自定义错误日志  
+程序中自定义输出 需要在输出信息后面加入换行 （eg: ```echo ‘自定义错误信息’.“\n” ```）
 
 ## 1.4.*截图
 ![alt 截图1](https://raw.githubusercontent.com/iwannay/static_dir/master/jiacrontab_preview_1.4.0_list.png)  
