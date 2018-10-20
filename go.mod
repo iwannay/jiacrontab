@@ -5,6 +5,7 @@ require (
 	github.com/BurntSushi/toml v0.3.0 // indirect
 	github.com/Joker/hpp v0.0.0-20180418125244-6893e659854a // indirect
 	github.com/Joker/jade v0.0.0-20180419144541-8828253bfc54 // indirect
+	github.com/Shopify/goreferrer v0.0.0-20180807163728-b9777dc9f9cc // indirect
 	github.com/ajg/form v0.0.0-20160822230020-523a5da1a92f // indirect
 	github.com/aymerick/raymond v0.0.0-20180322193309-b565731e1464 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -25,6 +26,7 @@ require (
 	github.com/hpcloud/tail v1.0.0 // indirect
 	github.com/imkira/go-interpol v1.1.0 // indirect
 	github.com/iris-contrib/formBinder v0.0.0-20171010160137-ad9fb86c356f // indirect
+	github.com/iris-contrib/go.uuid v2.0.0+incompatible // indirect
 	github.com/iris-contrib/httpexpect v0.0.0-20180314041918-ebe99fcebbce // indirect
 	github.com/iris-contrib/middleware v0.0.0-20171114084220-1060fbb0ce08
 	github.com/iwannay/jiaweb v0.0.0-20180315033644-c88768ac3854
@@ -38,7 +40,7 @@ require (
 	github.com/juju/testing v0.0.0-20180820040200-b0b89ba330f2 // indirect
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/kataras/golog v0.0.0-20180321173939-03be10146386 // indirect
-	github.com/kataras/iris v10.6.6+incompatible
+	github.com/kataras/iris v10.7.0+incompatible
 	github.com/kataras/pio v0.0.0-20180511174041-a9733b5b6b83 // indirect
 	github.com/kataras/survey v1.3.4 // indirect
 	github.com/klauspost/compress v1.2.1 // indirect

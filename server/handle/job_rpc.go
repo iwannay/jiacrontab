@@ -23,12 +23,18 @@ func (l *Logic) Register(args model.Client, reply *proto.MailArgs) error {
 		Pass: conf.MailService.Passwd,
 	}
 
-	ret := model.DB().Model(&model.Client{}).Where("addr=?", args.Addr).Update(&args)
+	ret := model.DB().Model(&model.Client{}).Where("addr=?", args.Addr).Update(map[string]interface{}{
+		"DaemonTaskNum":  args.DaemonTaskNum,
+		"CrontabTaskNum": args.CrontabTaskNum,
+		"State":          args.State,
+		"Mail":           args.Mail,
+	})
 
 	if ret.RowsAffected == 0 {
 		args.Name = time.Now().Format("20060102150405")
 		ret = model.DB().Create(&args)
 	}
+
 	return ret.Error
 }
 
