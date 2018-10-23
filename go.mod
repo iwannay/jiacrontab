@@ -59,7 +59,6 @@ require (
 	github.com/onsi/gomega v1.4.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/ryanuber/columnize v0.0.0-20170703205827-abc90934186a // indirect
-	github.com/satori/go.uuid v0.0.0-20180103174451-36e9d2ebbde5 // indirect
 	github.com/sergi/go-diff v1.0.0 // indirect
 	github.com/shurcooL/sanitized_anchor_name v0.0.0-20170918181015-86672fcb3f95 // indirect
 	github.com/smartystreets/assertions v0.0.0-20180820201707-7c9eb446e3cf // indirect
