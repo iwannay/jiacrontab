@@ -508,11 +508,7 @@ func RecentLog(ctx iris.Context) {
 		Pattern:  pattern,
 		IsTail:   isTail,
 	}, &searchRet); err != nil {
-
 		ctx.ViewData("error", err)
-		ctx.View("public/error.html")
-		return
-
 	}
 	logList := strings.Split(string(searchRet.Content), "\n")
 
