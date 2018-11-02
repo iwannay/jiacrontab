@@ -53,3 +53,4 @@ server/data
 app
 
 binTmp
+dump.rdb
