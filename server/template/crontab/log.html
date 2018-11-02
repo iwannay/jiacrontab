@@ -10,27 +10,35 @@
                 <cite>日志</cite>
             </a>
         </div>
-        <div class="layui-form" lay-filter="searchForm" >
+        <div class="layui-form" lay-filter="searchForm">
             <div class="layui-form-item">
                 <div class="layui-input-inline">
                     <input type="text" name="search" placeholder="搜索日志" class="layui-input search-txt">
                 </div>
                 <div class="layui-input-inline" style="width: 120px;">
-                    <input type="text" id="search-date" class="layui-input" placeholder="开始日期" >
+                    <input type="text" id="search-date" class="layui-input" placeholder="开始日期">
                 </div>
                 <div class="layui-input-inline" style="width: 90px;">
-                    <input type="checkbox" id="is-tail" title="顺序" name="isTail" >
+                    <input type="checkbox" id="is-tail" title="顺序" name="isTail">
                 </div>
                 <div class="layui-btn" id="search">搜索</div>
             </div>
         </div>
+        {{if .error}}
+        <blockquote class="layui-elem-quote layui-text" style="color:#FF5722">
+            错误:{{.error}}
+        </blockquote>
+        {{end}}
+
         <table class="layui-table" lay-size="sm">
             <colgroup>
                 <col>
             </colgroup>
-            <tbody id="log-list"  total="{{.total}}" pagesize="{{.pagesize}}">
+            <tbody id="log-list" total="{{.total}}" pagesize="{{.pagesize}}">
                 {{range $k,$v := .logList}}
-                <tr><td>{{$v}}</td></tr>
+                <tr>
+                    <td>{{$v}}</td>
+                </tr>
                 {{end}}
             </tbody>
         </table>
@@ -58,9 +66,9 @@
             count: $("#log-list").attr("total"), //数据总数,
             limit: $("#log-list").attr("pagesize"), //每页显示的条数
             curr: common.getRequest().page ? common.getRequest().page : 1,
-            jump: function(obj, first){
+            jump: function (obj, first) {
                 //首次不执行
-                if(!first){
+                if (!first) {
                     window.location.href = common.getRequest().add("page", obj.curr).search();
                 }
             }
@@ -80,23 +88,30 @@
         }
 
         // 监听搜索事件
-        $('#search').on('click', function() {
+        $('#search').on('click', function () {
             var searchText = $('.search-txt').val();
             var time = $('#search-date').val();
             var isTail = $('#is-tail').val();
             var urlObj = common.getRequest().add("pattern", searchText);
             var isTail = $("#is-tail").prop("checked");
-            urlObj.add("date",time);
+            urlObj.add("date", time);
             urlObj.add("page", 1);
             urlObj.add('isTail', isTail ? 'false' : 'true')
             window.location.href = urlObj.search();
         })
 
-        laydate.render({ 
-            format: "yyyy/MM/dd",
-            elem: '#search-date',
-            value: new Date()
-        });
+        if ($('#search-date').val() == "") {
+            laydate.render({
+                format: "yyyy/MM/dd",
+                elem: '#search-date',
+                value: new Date()
+            });
+        } else {
+            laydate.render({
+                format: "yyyy/MM/dd",
+                elem: '#search-date'
+            });
+        }
 
         $('#flexible-icon').on('click', function () {
             if ($(this).hasClass('layui-icon-spread-left')) {
@@ -123,6 +138,6 @@
                     'layui-icon-spread-left');
             }
         })
-        
+
     })
 </script>
