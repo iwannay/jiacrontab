@@ -161,8 +161,8 @@
                             <label class="layui-form-label">添加依赖</label>
                             <div class="layui-input-inline">
                                 <select name="sync">
-                                    <option value="1"  {{if .task.Sync}}selected{{end}} >同步执行</option>
-                                    <option value="0"  {{if eq .task.Sync false}}selected{{end}} >并发执行</option>
+                                    <option value="true"  {{if .task.Sync}}selected{{end}} >同步执行</option>
+                                    <option value="false"  {{if eq .task.Sync false}}selected{{end}} >并发执行</option>
                                 </select>
                             </div>
                             <div class="layui-input-inline">
@@ -212,8 +212,8 @@
                         <div class="layui-form-item">
                             <label class="layui-form-label"></label>
                             <div class="layui-input-block">
-                                <input type="checkbox" value="1" {{if .task.UnexpectedExitMail}}checked{{end}} name="unexpectedExitMail" title="脚本异常退出时邮件通知" lay-skin="primary">
-                                <input type="checkbox" value="1" {{if .task.UnexpectedExitApi}}checked{{end}} name="unexpectedExitApi" title="脚本异常退出时api通知" lay-skin="primary">
+                                <input type="checkbox" value="true" {{if .task.UnexpectedExitMail}}checked{{end}} name="unexpectedExitMail" title="脚本异常退出时邮件通知" lay-skin="primary">
+                                <input type="checkbox" value="true" {{if .task.UnexpectedExitApi}}checked{{end}} name="unexpectedExitApi" title="脚本异常退出时api通知" lay-skin="primary">
                             </div>
                         </div>
                         <div class="layui-form-item">

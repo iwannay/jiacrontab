@@ -2,20 +2,18 @@ package handle
 
 import (
 	"crypto/md5"
-	"log"
-
 	"fmt"
 	"jiacrontab/libs"
 	"jiacrontab/libs/proto"
 	"jiacrontab/libs/rpc"
 	"jiacrontab/model"
 	"jiacrontab/server/conf"
+	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
-
-	"net/url"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
@@ -191,20 +189,16 @@ func EditTask(ctx iris.Context) {
 			depends[k].Command = cmdSli[k]
 		}
 
-		if unpdExitM == "1" {
+		if unpdExitM == "true" {
 			unExitM = true
-		} else {
-			unExitM = false
 		}
-		if unpdExitA == "1" {
+
+		if unpdExitA == "true" {
 			unExitA = true
-		} else {
-			unExitA = false
 		}
-		if mSync == "1" {
+
+		if mSync == "true" {
 			sync = true
-		} else {
-			sync = false
 		}
 
 		if _, ok := map[string]bool{"email": true, "api": true, "kill": true, "email_and_kill": true, "ignore": true}[optimeout]; !ok {
