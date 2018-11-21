@@ -67,13 +67,11 @@ github.com/kataras/pio
 github.com/kataras/pio/terminal
 # github.com/kataras/survey v1.3.4
 github.com/kataras/survey
-# github.com/klauspost/compress v1.2.1
+# github.com/klauspost/compress v1.4.1
 github.com/klauspost/compress/gzip
 github.com/klauspost/compress/flate
 # github.com/klauspost/cpuid v0.0.0-20170728055534-ae7887de9fa5
 github.com/klauspost/cpuid
-# github.com/klauspost/crc32 v0.0.0-20161016154125-cb6bfca970f6
-github.com/klauspost/crc32
 # github.com/mattn/go-colorable v0.0.9
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.3

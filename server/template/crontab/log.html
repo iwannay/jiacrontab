@@ -5,7 +5,7 @@
         <!-- 内容主体区域 -->
         <div class="layui-breadcrumb">
             <a href="/">主页</a>
-            <a href="/crontab/task/list?addr={{.addr}}">{{.addr}}</a>
+            <a href="/crontab/task/list?addr={{js .addr}}">{{.addr}}</a>
             <a>
                 <cite>日志</cite>
             </a>
@@ -15,7 +15,7 @@
                 <input type="text" name="search" placeholder="搜索日志" class="layui-input search-txt">
             </div>
             <div class="layui-input-inline" style="width: 120px;">
-                <input type="text" id="search-date" class="layui-input" placeholder="开始日期" >
+                <input type="text" id="search-date" class="layui-input" placeholder="开始日期">
             </div>
             <div class="layui-btn" id="search">搜索</div>
         </div>
@@ -23,9 +23,11 @@
             <colgroup>
                 <col>
             </colgroup>
-            <tbody id="log-list"  total="{{.total}}" pagesize="{{.pagesize}}">
+            <tbody id="log-list" total="{{.total}}" pagesize="{{.pagesize}}">
                 {{range $k,$v := .logList}}
-                <tr><td>{{$v}}</td></tr>
+                <tr>
+                    <td>{{$v}}</td>
+                </tr>
                 {{end}}
             </tbody>
         </table>
@@ -52,9 +54,9 @@
             count: $("#log-list").attr("total"), //数据总数,
             limit: $("#log-list").attr("pagesize"), //每页显示的条数
             curr: common.getRequest().page ? common.getRequest().page : 1,
-            jump: function(obj, first){
+            jump: function (obj, first) {
                 //首次不执行
-                if(!first){
+                if (!first) {
                     window.location.href = common.getRequest().add("page", obj.curr).search();
                 }
             }
@@ -68,22 +70,22 @@
         }
 
         // 监听搜索事件
-        $('#search').on('click', function() {
+        $('#search').on('click', function () {
             var searchText = $('.search-txt').val();
             var time = $('#search-date').val();
 
             var urlObj = common.getRequest().add("pattern", searchText);
-            urlObj.add("date",time);
+            urlObj.add("date", time);
             urlObj.add("page", 1);
             window.location.href = urlObj.search();
         })
 
-        laydate.render({ 
+        laydate.render({
             format: "yyyy/MM/dd",
             elem: '#search-date'
         });
 
-        
+
         $('#flexible-icon').on('click', function () {
             if ($(this).hasClass('layui-icon-spread-left')) {
                 $(this).addClass('layui-icon-shrink-right').removeClass('layui-icon-spread-left');
@@ -109,6 +111,6 @@
                     'layui-icon-spread-left');
             }
         })
-        
+
     })
 </script>

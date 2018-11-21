@@ -6,7 +6,7 @@
         <!-- 内容主体区域 -->
         <div class="layui-breadcrumb">
             <a href="/">首页</a>
-            <a href="/daemon/task/list?addr={{.addr}}">常驻任务列表</a>
+            <a href="/daemon/task/list?addr={{js .addr}}">常驻任务列表</a>
             <a>
                 <cite>编辑</cite>
             </a>
@@ -15,12 +15,12 @@
         <div class="layui-card">
             <div class="layui-card-header">添加脚本</div>
             {{if .errorMsg}}
-                <div class="layui-bg-red jia-form-error">
-                    {{.errorMsg}} 
-                    <div class="layui-layout-right jia-tip-close">
-                        <span class="layui-icon layui-icon-close"></span>
-                    </div>
+            <div class="layui-bg-red jia-form-error">
+                {{.errorMsg}}
+                <div class="layui-layout-right jia-tip-close">
+                    <span class="layui-icon layui-icon-close"></span>
                 </div>
+            </div>
             {{end}}
             <div class="layui-card-body">
                 <form class="layui-form" method="POST">
@@ -34,7 +34,8 @@
                     <div class="layui-form-item">
                         <label class="layui-form-label">脚本名称</label>
                         <div class="layui-input-block">
-                            <input type="text" name="name" value="{{$daemonTask.Name}}" lay-verify="taskname" placeholder="请输入脚本名称" class="layui-input">
+                            <input type="text" name="name" value="{{$daemonTask.Name}}" lay-verify="taskname"
+                                placeholder="请输入脚本名称" class="layui-input">
                         </div>
                     </div>
                     <div class="layui-form-item">
@@ -42,43 +43,50 @@
                         <div class="order-list">
                             <div class="layui-input-inline">
                                 <select name="command">
-                                    
+
                                     {{range $k, $v := .allowCommands}}
-                                        <option {{if eq $daemonTask.Command $v }}selected {{end}} value="{{$v}}">{{$v}}</option>
+                                    <option {{if eq $daemonTask.Command $v }} selected {{end}} value="{{js $v}}">{{$v}}</option>
                                     {{end}}
                                 </select>
                             </div>
                             <div class="layui-input-inline">
-                                <input type="text" name="args"  value="{{$daemonTask.Args}}" placeholder="args" class="layui-input" style="width:400px;">
+                                <input type="text" name="args" value="{{js $daemonTask.Args}}" placeholder="args" class="layui-input"
+                                    style="width:400px;">
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="layui-form-item">
                         <label class="layui-form-label">失败重启</label>
                         <div class="layui-input-block">
-                            <input type="radio" name="failedRestart" {{if eq $daemonTask.FailedRestart true}}checked {{end}} value="true" title="是">
-                            <input type="radio" name="failedRestart" {{if eq $daemonTask.FailedRestart false}}checked {{end}} value="false" title="否">
+                            <input type="radio" name="failedRestart" {{if eq $daemonTask.FailedRestart true}} checked
+                                {{end}} value="true" title="是">
+                            <input type="radio" name="failedRestart" {{if eq $daemonTask.FailedRestart false}} checked
+                                {{end}} value="false" title="否">
                         </div>
                     </div>
                     <div class="layui-form-item">
                         <label class="layui-form-label">邮箱地址</label>
                         <div class="layui-input-block">
-                            <input type="email" name="mailTo" value="{{$daemonTask.MailTo}}" placeholder="请输入邮箱地址" class="layui-input">
+                            <input type="email" name="mailTo" value="{{js $daemonTask.MailTo}}" placeholder="请输入邮箱地址"
+                                class="layui-input">
                         </div>
                     </div>
                     <div class="layui-form-item">
                         <label class="layui-form-label">api地址</label>
                         <div class="layui-input-block">
-                            <input type="api" name="apiTo" value="{{$daemonTask.ApiTo}}" placeholder="请输入api地址" class="layui-input">
+                            <input type="api" name="apiTo" value="{{js $daemonTask.ApiTo}}" placeholder="请输入api地址"
+                                class="layui-input">
                         </div>
                     </div>
-                    
+
                     <div class="layui-form-item">
                         <label class="layui-form-label"></label>
                         <div class="layui-input-block">
-                            <input type="checkbox" value="true" {{if eq $daemonTask.MailNotify true}}checked{{end}} name="mailNotify" title="脚本异常退出时邮件通知" lay-skin="primary">
-                            <input type="checkbox" value="true" {{if eq $daemonTask.ApiNotify true}}checked{{end}} name="apiNotify" title="脚本异常退出时api通知" lay-skin="primary">
+                            <input type="checkbox" value="true" {{if eq $daemonTask.MailNotify true}} checked{{end}}
+                                name="mailNotify" title="脚本异常退出时邮件通知" lay-skin="primary">
+                            <input type="checkbox" value="true" {{if eq $daemonTask.ApiNotify true}} checked{{end}}
+                                name="apiNotify" title="脚本异常退出时api通知" lay-skin="primary">
                         </div>
                     </div>
                     <div class="layui-form-item">
@@ -106,19 +114,19 @@
         var laytpl = layui.laytpl;
 
         form.verify({
-            taskname: function(value, item){ //value：表单的值、item：表单的DOM对象
-                if($.trim(value) == ''){
+            taskname: function (value, item) { //value：表单的值、item：表单的DOM对象
+                if ($.trim(value) == '') {
                     return '请输入脚本名称';
                 }
             }
-        }); 
-
-        //监听提交
-        form.on('submit(add-script)', function(data){
-            
         });
 
-        $('.jia-tip-close').on('click', function (){
+        //监听提交
+        form.on('submit(add-script)', function (data) {
+
+        });
+
+        $('.jia-tip-close').on('click', function () {
             $(this).parent('.jia-form-error').remove();
         })
 
@@ -132,7 +140,7 @@
             }
         })
         $('#cancel').on('click', function () {
-                location.reload()
+            location.reload()
         })
 
         if (window.innerWidth < 990) {

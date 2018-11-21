@@ -286,3 +286,18 @@ func Struct2Map(i interface{}, o *map[string]interface{}) error {
 	return json.Unmarshal(bts, &o)
 
 }
+
+func InArray(val interface{}, arr interface{}) bool {
+	t := reflect.TypeOf(arr)
+	v := reflect.ValueOf(arr)
+
+	if t.Kind() == reflect.Slice {
+		for i := 0; i < v.Len(); i++ {
+			if v.Index(i).Interface() == val {
+				return true
+			}
+		}
+	}
+
+	return false
+}
