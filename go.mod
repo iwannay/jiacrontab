@@ -41,9 +41,8 @@ require (
 	github.com/kataras/iris v10.6.6+incompatible
 	github.com/kataras/pio v0.0.0-20180511174041-a9733b5b6b83 // indirect
 	github.com/kataras/survey v1.3.4 // indirect
-	github.com/klauspost/compress v1.2.1 // indirect
+	github.com/klauspost/compress v1.4.1 // indirect
 	github.com/klauspost/cpuid v0.0.0-20170728055534-ae7887de9fa5 // indirect
-	github.com/klauspost/crc32 v0.0.0-20161016154125-cb6bfca970f6 // indirect
 	github.com/lib/pq v1.0.0 // indirect
 	github.com/mattn/go-colorable v0.0.9 // indirect
 	github.com/mattn/go-isatty v0.0.3 // indirect

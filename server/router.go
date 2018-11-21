@@ -14,6 +14,7 @@ import (
 	"jiacrontab/server/conf"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
@@ -78,6 +79,7 @@ func router(app *iris.Application) {
 		ctx.ViewData("title", conf.AppName)
 		ctx.ViewData("goVersion", runtime.Version())
 		ctx.ViewData("appVersion", conf.Version)
+		ctx.ViewData("appVersion", time.Now().Format("2006"))
 		ctx.ViewData("requestPath", ctx.Request().URL.Path)
 		ctx.ViewData("staticDir", conf.AppService.StaticDir)
 

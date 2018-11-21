@@ -168,13 +168,18 @@ func EditTask(ctx iris.Context) {
 		depends := make(model.DependsTasks, len(destSli))
 
 		for k, v := range pipeCommands {
+			if !libs.InArray(v, conf.AppService.AllowCommands) {
+				ctx.ViewData("error", "非法指令")
+				ctx.View("public/error.html")
+				return
+			}
+
 			if k == 0 {
 				command = v
 				args = pipeArgs[0]
 			} else {
 				pipeCommandList = append(pipeCommandList, []string{v, pipeArgs[k]})
 			}
-
 		}
 
 		for k, v := range destSli {

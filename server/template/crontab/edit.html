@@ -1,243 +1,262 @@
-    <div class="layui-layout layui-layout-admin">
-        {{render "public/header.html"}}
-        {{render "public/menu.html"}}
+<div class="layui-layout layui-layout-admin">
+    {{render "public/header.html"}}
+    {{render "public/menu.html"}}
 
-        {{$addr := .addr}}
-        {{$clientList := .clientList}}
-        {{$addrs := .addrs}}
-        {{$allowCommands := .allowCommands}}
+    {{$addr := .addr}}
+    {{$clientList := .clientList}}
+    {{$addrs := .addrs}}
+    {{$allowCommands := .allowCommands}}
 
-        <div class="layui-body layui-content">
-            <!-- 内容主体区域 -->
-            <div class="layui-breadcrumb">
-                <a href="/">首页</a>
-                <a href="/crontab/task/list?addr={{.addr}}">计划任务列表</a>
-                <a>
-                    <cite>编辑</cite>
-                </a>
-            </div>
+    <div class="layui-body layui-content">
+        <!-- 内容主体区域 -->
+        <div class="layui-breadcrumb">
+            <a href="/">首页</a>
+            <a href="/crontab/task/list?addr={{js .addr}}">计划任务列表</a>
+            <a>
+                <cite>编辑</cite>
+            </a>
+        </div>
 
-            <div class="layui-card">
-                <div class="layui-card-header">添加脚本</div>
-                <div class="layui-card-body">
-                    <form class="layui-form" method="POST">
-                        <input type="hidden" name="taskId" value="{{.task.ID}}">
-                        <div class="layui-form-item">
-                            <label class="layui-form-label">地址</label>
-                            <div class="layui-input-block">
-                                <input type="text" id="inputAddr" class="layui-input" name="addr" disabled value="{{.addr}}">
-                            </div>
+        <div class="layui-card">
+            <div class="layui-card-header">添加脚本</div>
+            <div class="layui-card-body">
+                <form class="layui-form" method="POST">
+                    <input type="hidden" name="taskId" value="{{.task.ID}}">
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">地址</label>
+                        <div class="layui-input-block">
+                            <input type="text" id="inputAddr" class="layui-input" name="addr" disabled value="{{js .addr}}">
                         </div>
-                        <div class="layui-form-item">
-                            <label class="layui-form-label">脚本名称</label>
-                            <div class="layui-input-block">
-                                <input type="text" name="taskName" value="{{.task.Name}}" lay-verify="taskname" placeholder="请输入脚本名称" class="layui-input">
-                            </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">脚本名称</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="taskName" value="{{js .task.Name}}" lay-verify="taskname"
+                                placeholder="请输入脚本名称" class="layui-input">
                         </div>
-                        <div class="layui-form-item">
-                            <label class="layui-form-label">命令</label>
-                            <div class="order-list">
-                                    {{$command := .task.Command}}
-                                    <div class="layui-input-inline">
-                                        <select name="command">
-                                            {{range $k, $v := .allowCommands}}
-                                                <option {{if eq $v $command}}selected{{end}} value="{{$v}}">{{$v}}</option>
-                                            {{end}}
-                                        </select>
-                                    </div>
-
-                                    <div class="layui-input-inline" style="width:450px;">
-                                        <input type="text" name="args"  value="{{.task.Args}}" placeholder="args" class="layui-input">
-                                    </div>
-
-                                    <div class="layui-input-inline">
-                                        <select name="execType">
-                                            <option value="0">pipe</option>
-                                        </select>
-                                    </div>
-                                    <div class="layui-input-inline">
-                                        <div class="layui-btn" id="addOrderBtn">
-                                            <i class="layui-icon layui-icon-add-1"></i>
-                                        </div>
-                                    </div>
-                            </div>
-                        </div>
-                           
-                        <div id="add-list">
-
-                            {{range $k, $v := .task.PipeCommands}}
-                            {{$command := index $v 0}}
-                            <div class="layui-form-item">
-                                <label class="layui-form-label"></label>
-                                <div class="template-list">
-                                    <div class="layui-input-inline">
-                                        <select name="command">
-                                            {{range $k, $v := $allowCommands}}
-                                                <option {{if eq $v $command}}selected{{end}} value="{{$v}}">{{$v}}</option>
-                                            {{end}}
-                                        </select>
-                                    </div>
-                                    <div class="layui-input-inline" style="width: 450px;">
-                                        <input type="text" name="args" value="{{range $key,$val := $v}}{{if ne $key 0}} {{$val}}{{end}}{{end}}" placeholder="args" class="layui-input">
-                                    </div>
-                                    <div class="layui-input-inline">
-                                        <select name="execType">
-                                            <option value="0">pipe</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="layui-input-inline">
-                                        <div class="layui-btn layui-btn-danger delete-order-btn">
-                                            <i class="layui-icon layui-icon-delete"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div> 
-                            {{end}}
-                        </div>
-                        
-                        <div class="layui-form-item">
-                            <label class="layui-form-label">脚本超时</label>
-                            <div class="layui-input-block">
-                                <input type="number" name="timeout" value="{{.task.Timeout}}" class="layui-input" onkeyup="this.value=this.value.replace(/\D/g,'')"  onafterpaste="this.value=this.value.replace(/\D/g,'')" >
-                            </div>
-                        </div>
-                        <div class="layui-form-item">
-                            <label class="layui-form-label">超时操作</label>
-                            <div class="layui-input-block">
-                                <input type="radio" name="optimeout"  {{if eq .task.OpTimeout "email"}}checked{{end}} value="email" title="邮件通知">
-                                <input type="radio" name="optimeout"  {{if eq .task.OpTimeout "api"}}checked{{end}} value="api" title="api通知">
-                                <input type="radio" name="optimeout" {{if eq .task.OpTimeout "kill"}}checked{{end}} value="kill" title="强杀">
-                                <input type="radio" name="optimeout" {{if eq .task.OpTimeout "email_and_kill"}}checked{{end}} value="email_and_kill" title="邮件通知并强杀">
-                                <input type="radio" name="optimeout" {{if eq .task.OpTimeout "ignore"}}checked{{end}} value="ignore" title="忽略">
-                            </div>
-                        </div>
-                        <div class="layui-form-item">
-                            <label class="layui-form-label">邮箱地址</label>
-                            <div class="layui-input-block">
-                                <input type="text" name="mailTo" value="{{.task.MailTo}}" class="layui-input">
-                            </div>
-                        </div>
-                        <div class="layui-form-item">
-                            <label class="layui-form-label">api地址</label>
-                            <div class="layui-input-block">
-                                <input type="text" name="apiTo" value="{{.task.ApiTo}}" class="layui-input">
-                            </div>
-                        </div>
-                        <div class="layui-form-item">
-                            <label class="layui-form-label">最大并发数</label>
-                            <div class="layui-input-block">
-                                <input type="text"  name="maxConcurrent" value="{{.task.MaxConcurrent}}" class="layui-input">
-                            </div>
-                        </div>
-
-
-                        <div class="layui-form-item">
-                            <div class="layui-inline">
-                                <label class="layui-form-label">定时</label>
-                                <div class="layui-form-mid">分:</div>
-                                <div class="layui-input-inline" style="width: 80px;">
-                                    <input name="minute" lay-verify="minute" class="layui-input" placeholder="minute" value="{{if .task.C.Minute}}{{.task.C.Minute}}{{else}}*{{end}}" type="text" >
-                                </div>
-                                <div class="layui-form-mid">时:</div>
-                                <div class="layui-input-inline" style="width: 80px;">
-                                    <input name="hour" lay-verify="hour" class="layui-input" placeholder="hour" value="{{if .task.C.Hour}}{{.task.C.Hour}}{{else}}*{{end}}" type="text" >
-                                </div>
-                                <div class="layui-form-mid">日:</div>
-                                <div class="layui-input-inline" style="width: 80px;">
-                                    <input name="day" lay-verify="day" class="layui-input" placeholder="day" value="{{if .task.C.Day}}{{.task.C.Day}}{{else}}*{{end}}" type="text">
-                                </div>
-                                <div class="layui-form-mid">月:</div>
-                                <div class="layui-input-inline" style="width: 80px;">
-                                    <input name="month" lay-verify="month" class="layui-input" placeholder="month" type="text" value="{{if .task.C.Month}}{{.task.C.Month}}{{else}}*{{end}}">
-                                </div>
-                                <div class="layui-form-mid">周:</div>
-                                <div class="layui-input-inline" style="width: 90px;">
-                                    <input name="weekday" lay-verify="weekday" class="layui-input" placeholder="dayofweek" value="{{if .task.C.Weekday}}{{.task.C.Weekday}}{{else}}*{{end}}" type="text">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="layui-form-item">
-                            <label class="layui-form-label">添加依赖</label>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">命令</label>
+                        <div class="order-list">
+                            {{$command := .task.Command}}
                             <div class="layui-input-inline">
-                                <select name="sync">
-                                    <option value="1"  {{if .task.Sync}}selected{{end}} >同步执行</option>
-                                    <option value="0"  {{if eq .task.Sync false}}selected{{end}} >并发执行</option>
+                                <select name="command">
+                                    {{range $k, $v := .allowCommands}}
+                                    <option {{if eq $v $command}} selected{{end}} value="{{js $v}}">{{js $v}}</option>
+                                    {{end}}
+                                </select>
+                            </div>
+
+                            <div class="layui-input-inline" style="width:450px;">
+                                <input type="text" name="args" value="{{js .task.Args}}" placeholder="args" class="layui-input">
+                            </div>
+
+                            <div class="layui-input-inline">
+                                <select name="execType">
+                                    <option value="0">pipe</option>
                                 </select>
                             </div>
                             <div class="layui-input-inline">
-                                <div class="layui-btn" id="depend-btn">
+                                <div class="layui-btn" id="addOrderBtn">
                                     <i class="layui-icon layui-icon-add-1"></i>
                                 </div>
                             </div>
                         </div>
-                        {{$task := .task}}
-                        <div id="depend-list">
-                            {{range $key,$value:= .task.Depends}}
-                            <div class="layui-form-item">
-                                <label class="layui-form-label"></label>
-                                <div class="template-list">
-                                    <div class="layui-input-inline">
-                                        <select name="depends[dest]">
-                                            {{range $k,$v := $clientList}}
-                                                <option value="{{$v.Addr}}" class="list-group-item"  {{if eq $v.Addr $value.Dest}}selected{{end}}>{{$v.Addr}} {{if eq $v.State 0}}断开{{end}}</option>
-                                            {{end}}
-                                        </select>
-                                    </div>
-                                    <div class="layui-input-inline">
-                                        <select name="depends[command]">
-                                            {{range $k, $v := $allowCommands}}
-                                                <option {{if eq $v $value.Command}}selected{{end}} value="{{$v}}">{{$v}}</option>
-                                            {{end}}
-                                        </select>
-                                    </div>
-                                    <div class="layui-input-inline" style="width: 120px;">
-                                        <input type="text" value="{{$value.Args}}" name="depends[args]" placeholder="args" class="layui-input">
-                                    </div>
-                                    
-                                    <div class="layui-input-inline" style="width: 100px;">
-                                        <input type="text" value="{{$value.Timeout}}" name="depends[timeout]" placeholder="超时(s)" class="layui-input">
-                                    </div>
-                    
-                                    <div class="layui-input-inline">
-                                        <div class="layui-btn layui-btn-danger delete-order-btn">
-                                            <i class="layui-icon layui-icon-delete"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div> 
-                            {{end}}
+                    </div>
 
-                       </div>
+                    <div id="add-list">
+
+                        {{range $k, $v := .task.PipeCommands}}
+                        {{$command := index $v 0}}
                         <div class="layui-form-item">
                             <label class="layui-form-label"></label>
-                            <div class="layui-input-block">
-                                <input type="checkbox" value="1" {{if .task.UnexpectedExitMail}}checked{{end}} name="unexpectedExitMail" title="脚本异常退出时邮件通知" lay-skin="primary">
-                                <input type="checkbox" value="1" {{if .task.UnexpectedExitApi}}checked{{end}} name="unexpectedExitApi" title="脚本异常退出时api通知" lay-skin="primary">
+                            <div class="template-list">
+                                <div class="layui-input-inline">
+                                    <select name="command">
+                                        {{range $k, $v := $allowCommands}}
+                                        <option {{if eq $v $command}} selected{{end}} value="{{js $v}}">{{js $v}}</option>
+                                        {{end}}
+                                    </select>
+                                </div>
+                                <div class="layui-input-inline" style="width: 450px;">
+                                    <input type="text" name="args" value="{{range $key,$val := $v}}{{if ne $key 0}} {{js $val}}{{end}}{{end}}"
+                                        placeholder="args" class="layui-input">
+                                </div>
+                                <div class="layui-input-inline">
+                                    <select name="execType">
+                                        <option value="0">pipe</option>
+                                    </select>
+                                </div>
+
+                                <div class="layui-input-inline">
+                                    <div class="layui-btn layui-btn-danger delete-order-btn">
+                                        <i class="layui-icon layui-icon-delete"></i>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                        {{end}}
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">脚本超时</label>
+                        <div class="layui-input-block">
+                            <input type="number" name="timeout" value="{{js .task.Timeout}}" class="layui-input"
+                                onkeyup="this.value=this.value.replace(/\D/g,'')" onafterpaste="this.value=this.value.replace(/\D/g,'')">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">超时操作</label>
+                        <div class="layui-input-block">
+                            <input type="radio" name="optimeout" {{if eq .task.OpTimeout "email"}} checked{{end}} value="email"
+                                title="邮件通知">
+                            <input type="radio" name="optimeout" {{if eq .task.OpTimeout "api"}} checked{{end}} value="api"
+                                title="api通知">
+                            <input type="radio" name="optimeout" {{if eq .task.OpTimeout "kill"}} checked{{end}} value="kill"
+                                title="强杀">
+                            <input type="radio" name="optimeout" {{if eq .task.OpTimeout "email_and_kill"}}
+                                checked{{end}} value="email_and_kill" title="邮件通知并强杀">
+                            <input type="radio" name="optimeout" {{if eq .task.OpTimeout "ignore"}} checked{{end}}
+                                value="ignore" title="忽略">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">邮箱地址</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="mailTo" value="{{js .task.MailTo}}" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">api地址</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="apiTo" value="{{js .task.ApiTo}}" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">最大并发数</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="maxConcurrent" value="{{js .task.MaxConcurrent}}" class="layui-input">
+                        </div>
+                    </div>
+
+
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">定时</label>
+                            <div class="layui-form-mid">分:</div>
+                            <div class="layui-input-inline" style="width: 80px;">
+                                <input name="minute" lay-verify="minute" class="layui-input" placeholder="minute" value="{{if .task.C.Minute}}{{js .task.C.Minute}}{{else}}*{{end}}"
+                                    type="text">
+                            </div>
+                            <div class="layui-form-mid">时:</div>
+                            <div class="layui-input-inline" style="width: 80px;">
+                                <input name="hour" lay-verify="hour" class="layui-input" placeholder="hour" value="{{if .task.C.Hour}}{{js .task.C.Hour}}{{else}}*{{end}}"
+                                    type="text">
+                            </div>
+                            <div class="layui-form-mid">日:</div>
+                            <div class="layui-input-inline" style="width: 80px;">
+                                <input name="day" lay-verify="day" class="layui-input" placeholder="day" value="{{if .task.C.Day}}{{js .task.C.Day}}{{else}}*{{end}}"
+                                    type="text">
+                            </div>
+                            <div class="layui-form-mid">月:</div>
+                            <div class="layui-input-inline" style="width: 80px;">
+                                <input name="month" lay-verify="month" class="layui-input" placeholder="month" type="text"
+                                    value="{{if .task.C.Month}}{{js .task.C.Month}}{{else}}*{{end}}">
+                            </div>
+                            <div class="layui-form-mid">周:</div>
+                            <div class="layui-input-inline" style="width: 90px;">
+                                <input name="weekday" lay-verify="weekday" class="layui-input" placeholder="dayofweek"
+                                    value="{{if .task.C.Weekday}}{{js .task.C.Weekday}}{{else}}*{{end}}" type="text">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">添加依赖</label>
+                        <div class="layui-input-inline">
+                            <select name="sync">
+                                <option value="1" {{if .task.Sync}} selected{{end}}>同步执行</option>
+                                <option value="0" {{if eq .task.Sync false}} selected{{end}}>并发执行</option>
+                            </select>
+                        </div>
+                        <div class="layui-input-inline">
+                            <div class="layui-btn" id="depend-btn">
+                                <i class="layui-icon layui-icon-add-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                    {{$task := .task}}
+                    <div id="depend-list">
+                        {{range $key,$value:= .task.Depends}}
                         <div class="layui-form-item">
-                            <div class="layui-input-block">
-                                <button class="layui-btn" lay-submit lay-filter="add-script">立即提交</button>
-                                <button type="reset" id="cancel" class="layui-btn layui-btn-primary">取消</button>
+                            <label class="layui-form-label"></label>
+                            <div class="template-list">
+                                <div class="layui-input-inline">
+                                    <select name="depends[dest]">
+                                        {{range $k,$v := $clientList}}
+                                        <option value="{{js $v.Addr}}" class="list-group-item"
+                                            {{if eq $v.Addr $value.Dest}} selected{{end}}>{{$v.Addr}} {{if eq $v.State
+                                            0}}断开{{end}}</option>
+                                        {{end}}
+                                    </select>
+                                </div>
+                                <div class="layui-input-inline">
+                                    <select name="depends[command]">
+                                        {{range $k, $v := $allowCommands}}
+                                        <option {{if eq $v $value.Command}} selected{{end}} value="{{$v}}">{{$v}}</option>
+                                        {{end}}
+                                    </select>
+                                </div>
+                                <div class="layui-input-inline" style="width: 120px;">
+                                    <input type="text" value="{{js $value.Args}}" name="depends[args]" placeholder="args"
+                                        class="layui-input">
+                                </div>
+
+                                <div class="layui-input-inline" style="width: 100px;">
+                                    <input type="text" value="{{js $value.Timeout}}" name="depends[timeout]"
+                                        placeholder="超时(s)" class="layui-input">
+                                </div>
+
+                                <div class="layui-input-inline">
+                                    <div class="layui-btn layui-btn-danger delete-order-btn">
+                                        <i class="layui-icon layui-icon-delete"></i>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </form>
-                </div>
+                        {{end}}
+
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label"></label>
+                        <div class="layui-input-block">
+                            <input type="checkbox" value="1" {{if .task.UnexpectedExitMail}} checked{{end}} name="unexpectedExitMail"
+                                title="脚本异常退出时邮件通知" lay-skin="primary">
+                            <input type="checkbox" value="1" {{if .task.UnexpectedExitApi}} checked{{end}} name="unexpectedExitApi"
+                                title="脚本异常退出时api通知" lay-skin="primary">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <div class="layui-input-block">
+                            <button class="layui-btn" lay-submit lay-filter="add-script">立即提交</button>
+                            <button type="reset" id="cancel" class="layui-btn layui-btn-primary">取消</button>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
-
-        {{render "public/footer.html"}}
     </div>
-    <!-- 命令的模板 -->
-    <script id="formTemplate" type="text/html">
+
+    {{render "public/footer.html"}}
+</div>
+<!-- 命令的模板 -->
+<script id="formTemplate" type="text/html">
         <div class="layui-form-item">
             <label class="layui-form-label"></label>
             <div class="template-list">
                 <div class="layui-input-inline">
                     <select name="command">
                         {{range $k, $v := .allowCommands}}
-                            <option value="{{$v}}">{{$v}}</option>
+                            <option value="{{js $v}}">{{$v}}</option>
                         {{end}}
                     </select>
                 </div>
@@ -258,8 +277,8 @@
             </div>
         </div> 
     </script>
-    <!-- 依赖的模板 -->
-    <script id="formTemplate2" type="text/html">
+<!-- 依赖的模板 -->
+<script id="formTemplate2" type="text/html">
         <div class="layui-form-item">
             <label class="layui-form-label"></label>
             <div class="template-list">
@@ -276,7 +295,7 @@
                 <div class="layui-input-inline">
                     <select name="depends[command]">
                         {{range $k, $v := .allowCommands}}
-                            <option value="{{$v}}">{{$v}}</option>
+                            <option value="{{js $v}}">{{$v}}</option>
                         {{end}}
                     </select>
                 </div>
@@ -297,153 +316,153 @@
         </div> 
     </script>
 
-    <script src="/static/lib/layui/layui.js"></script>
-    <script>
-        layui.use(['element', 'form', 'jquery', 'laytpl'], function () {
-            var form = layui.form;
-            var element = layui.element;
-            var $ = layui.jquery;
-            var laytpl = layui.laytpl;
+<script src="/static/lib/layui/layui.js"></script>
+<script>
+    layui.use(['element', 'form', 'jquery', 'laytpl'], function () {
+        var form = layui.form;
+        var element = layui.element;
+        var $ = layui.jquery;
+        var laytpl = layui.laytpl;
 
-            form.verify({
-                taskname: function(value, item){ //value：表单的值、item：表单的DOM对象
-                    if($.trim(value) == ''){
-                        return '请输入脚本名称';
-                    }
-                },
-                minute: function(value, item) {
-                    if ($.isNumeric(value)) {
-                        if (value <= 59 && value >= 0) {
-                            //pass
-                        } else {
-                            return '请输入0-59之间的数字';
-                        }
+        form.verify({
+            taskname: function (value, item) { //value：表单的值、item：表单的DOM对象
+                if ($.trim(value) == '') {
+                    return '请输入脚本名称';
+                }
+            },
+            minute: function (value, item) {
+                if ($.isNumeric(value)) {
+                    if (value <= 59 && value >= 0) {
+                        //pass
                     } else {
-                        if (/^\*\/[1-9][0-9]?$/.test(value) || /^\d+-\d+$/.test(value) || /^(\d+,)+\d+$/.test(value) || value == "*") { // */2 2-23 2,3,4 *
-                            //pass
-                        } else {
-                            return '仅支持"*", "-", "/", ","四种特殊符号';
-                        }
+                        return '请输入0-59之间的数字';
                     }
-                },
-                hour: function(value, item) {
-                    if ($.isNumeric(value)) {
-                        if (value <= 23 && value >= 0) {
-                            //pass
-                        } else {
-                            return '请输入0-23之间的数字';
-                        }
+                } else {
+                    if (/^\*\/[1-9][0-9]?$/.test(value) || /^\d+-\d+$/.test(value) || /^(\d+,)+\d+$/.test(value) || value == "*") { // */2 2-23 2,3,4 *
+                        //pass
                     } else {
-                        if (/^\*\/[1-9][0-9]?$/.test(value) || /^\d+-\d+$/.test(value) || /^(\d+,)+\d+$/.test(value) || value == "*") { // */2 2-23 2,3,4 *
-                            //pass
-                        } else {
-                            return '仅支持"*", "-", "/", ","四种特殊符号';
-                        }
-                    }
-                },
-                day: function(value, item) {
-                    if ($.isNumeric(value)) {
-                        if (value <= 31 && value >= 1) {
-                            //pass
-                        } else {
-                            return '请输入1-31之间的数字';
-                        }
-                    } else {
-                        if (/^\*\/[1-9][0-9]?$/.test(value) || /^\d+-\d+$/.test(value) || /^(\d+,)+\d+$/.test(value) || value == "*") { // */2 2-23 2,3,4 *
-                            //pass
-                        } else {
-                            return '仅支持"*", "-", "/", ","四种特殊符号';
-                        }
-                    }
-                },
-                month: function(value, item) {
-                    if ($.isNumeric(value)) {
-                        if (value <= 12 && value >= 1) {
-                            //pass
-                        } else {
-                            return '请输入1-12之间的数字';
-                        }
-                    } else {
-                        if (/^\*\/[1-9][0-9]?$/.test(value) || /^\d+-\d+$/.test(value) || /^(\d+,)+\d+$/.test(value) || value == "*") { // */2 2-23 2,3,4 *
-                            //pass
-                        } else {
-                            return '仅支持"*", "-", "/", ","四种特殊符号';
-                        }
-                    }
-                },
-                weekday: function(value, item) {
-                    if ($.isNumeric(value)) {
-                        if (value <= 6 && value >= 0) {
-                            //pass
-                        } else {
-                            return '请输入0-6之间的数字';
-                        }
-                    } else {
-                        if (/^\*\/[1-9][0-9]?$/.test(value) || /^\d+-\d+$/.test(value) || /^(\d+,)+\d+$/.test(value) || value == "*") { // */2 2-23 2,3,4 *
-                            //pass
-                        } else {
-                            return '仅支持"*", "-", "/", ","四种特殊符号';
-                        }
+                        return '仅支持"*", "-", "/", ","四种特殊符号';
                     }
                 }
-            }); 
+            },
+            hour: function (value, item) {
+                if ($.isNumeric(value)) {
+                    if (value <= 23 && value >= 0) {
+                        //pass
+                    } else {
+                        return '请输入0-23之间的数字';
+                    }
+                } else {
+                    if (/^\*\/[1-9][0-9]?$/.test(value) || /^\d+-\d+$/.test(value) || /^(\d+,)+\d+$/.test(value) || value == "*") { // */2 2-23 2,3,4 *
+                        //pass
+                    } else {
+                        return '仅支持"*", "-", "/", ","四种特殊符号';
+                    }
+                }
+            },
+            day: function (value, item) {
+                if ($.isNumeric(value)) {
+                    if (value <= 31 && value >= 1) {
+                        //pass
+                    } else {
+                        return '请输入1-31之间的数字';
+                    }
+                } else {
+                    if (/^\*\/[1-9][0-9]?$/.test(value) || /^\d+-\d+$/.test(value) || /^(\d+,)+\d+$/.test(value) || value == "*") { // */2 2-23 2,3,4 *
+                        //pass
+                    } else {
+                        return '仅支持"*", "-", "/", ","四种特殊符号';
+                    }
+                }
+            },
+            month: function (value, item) {
+                if ($.isNumeric(value)) {
+                    if (value <= 12 && value >= 1) {
+                        //pass
+                    } else {
+                        return '请输入1-12之间的数字';
+                    }
+                } else {
+                    if (/^\*\/[1-9][0-9]?$/.test(value) || /^\d+-\d+$/.test(value) || /^(\d+,)+\d+$/.test(value) || value == "*") { // */2 2-23 2,3,4 *
+                        //pass
+                    } else {
+                        return '仅支持"*", "-", "/", ","四种特殊符号';
+                    }
+                }
+            },
+            weekday: function (value, item) {
+                if ($.isNumeric(value)) {
+                    if (value <= 6 && value >= 0) {
+                        //pass
+                    } else {
+                        return '请输入0-6之间的数字';
+                    }
+                } else {
+                    if (/^\*\/[1-9][0-9]?$/.test(value) || /^\d+-\d+$/.test(value) || /^(\d+,)+\d+$/.test(value) || value == "*") { // */2 2-23 2,3,4 *
+                        //pass
+                    } else {
+                        return '仅支持"*", "-", "/", ","四种特殊符号';
+                    }
+                }
+            }
+        });
 
-            $('#addOrderBtn').click(function() {
-                laytpl(formTemplate.innerHTML).render({'type': 'add'}, function(html){
-                    $('#add-list').append(html);
-                    form.render();
-                });
-                
-            })
-            $('#add-list').delegate('.delete-order-btn', 'click', function() {
-                $(this).parents('.layui-form-item').remove();
-            })
-
-            $('#depend-btn').click(function() {
-                laytpl(formTemplate2.innerHTML).render({'type': 'depend'}, function(html){
-                    $('#depend-list').append(html);
-                    form.render();
-                });
-            })
-            $('#depend-list').delegate('.delete-order-btn', 'click', function() {
-                $(this).parents('.layui-form-item').remove();
-            })
-
-            //监听提交
-            form.on('submit(add-script)', function(data){
-                
+        $('#addOrderBtn').click(function () {
+            laytpl(formTemplate.innerHTML).render({ 'type': 'add' }, function (html) {
+                $('#add-list').append(html);
+                form.render();
             });
 
+        })
+        $('#add-list').delegate('.delete-order-btn', 'click', function () {
+            $(this).parents('.layui-form-item').remove();
+        })
 
-            $('#cancel').on('click', function () {
-                location.reload()
-            })
+        $('#depend-btn').click(function () {
+            laytpl(formTemplate2.innerHTML).render({ 'type': 'depend' }, function (html) {
+                $('#depend-list').append(html);
+                form.render();
+            });
+        })
+        $('#depend-list').delegate('.delete-order-btn', 'click', function () {
+            $(this).parents('.layui-form-item').remove();
+        })
 
-            $('#flexible-icon').on('click', function () {
-                if ($(this).hasClass('layui-icon-spread-left')) {
-                    $(this).addClass('layui-icon-shrink-right').removeClass('layui-icon-spread-left');
-                    $('.layui-layout-body').removeClass('min-layout');
-                } else {
-                    $(this).addClass('layui-icon-spread-left').removeClass('layui-icon-shrink-right');
-                    $('.layui-layout-body').addClass('min-layout');
-                }
-            })
-
-            if (window.innerWidth < 990) {
-                $('.layui-layout-body').addClass('min-layout');
-                $('#flexible-icon').addClass('layui-icon-spread-left').removeClass('layui-icon-shrink-right');
-            }
-            $(window).on('resize', function () {
-                if (window.innerWidth < 990) {
-                    $('.layui-layout-body').addClass('min-layout');
-                    $('#flexible-icon').addClass('layui-icon-spread-left').removeClass(
-                        'layui-icon-shrink-right');
-                } else {
-                    $('.layui-layout-body').removeClass('min-layout');
-                    $('#flexible-icon').addClass('layui-icon-shrink-right').removeClass(
-                        'layui-icon-spread-left');
-                }
-            })
+        //监听提交
+        form.on('submit(add-script)', function (data) {
 
         });
-    </script>
+
+
+        $('#cancel').on('click', function () {
+            location.reload()
+        })
+
+        $('#flexible-icon').on('click', function () {
+            if ($(this).hasClass('layui-icon-spread-left')) {
+                $(this).addClass('layui-icon-shrink-right').removeClass('layui-icon-spread-left');
+                $('.layui-layout-body').removeClass('min-layout');
+            } else {
+                $(this).addClass('layui-icon-spread-left').removeClass('layui-icon-shrink-right');
+                $('.layui-layout-body').addClass('min-layout');
+            }
+        })
+
+        if (window.innerWidth < 990) {
+            $('.layui-layout-body').addClass('min-layout');
+            $('#flexible-icon').addClass('layui-icon-spread-left').removeClass('layui-icon-shrink-right');
+        }
+        $(window).on('resize', function () {
+            if (window.innerWidth < 990) {
+                $('.layui-layout-body').addClass('min-layout');
+                $('#flexible-icon').addClass('layui-icon-spread-left').removeClass(
+                    'layui-icon-shrink-right');
+            } else {
+                $('.layui-layout-body').removeClass('min-layout');
+                $('#flexible-icon').addClass('layui-icon-shrink-right').removeClass(
+                    'layui-icon-spread-left');
+            }
+        })
+
+    });
+</script>
