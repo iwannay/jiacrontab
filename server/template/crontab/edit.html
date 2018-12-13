@@ -135,6 +135,10 @@
                         <div class="layui-form-item">
                             <div class="layui-inline">
                                 <label class="layui-form-label">定时</label>
+                                <div class="layui-form-mid">秒:</div>
+                                <div class="layui-input-inline" style="width: 80px;">
+                                    <input name="second" lay-verify="second" class="layui-input" placeholder="second" value="{{if .task.C.Second}}{{.task.C.Second}}{{else}}*{{end}}" type="text" >
+                                </div>
                                 <div class="layui-form-mid">分:</div>
                                 <div class="layui-input-inline" style="width: 80px;">
                                     <input name="minute" lay-verify="minute" class="layui-input" placeholder="minute" value="{{if .task.C.Minute}}{{.task.C.Minute}}{{else}}*{{end}}" type="text" >
@@ -312,6 +316,21 @@
                     }
                 },
                 minute: function(value, item) {
+                    if ($.isNumeric(value)) {
+                        if (value <= 59 && value >= 0) {
+                            //pass
+                        } else {
+                            return '请输入0-59之间的数字';
+                        }
+                    } else {
+                        if (/^\*\/[1-9][0-9]?$/.test(value) || /^\d+-\d+$/.test(value) || /^(\d+,)+\d+$/.test(value) || value == "*") { // */2 2-23 2,3,4 *
+                            //pass
+                        } else {
+                            return '仅支持"*", "-", "/", ","四种特殊符号';
+                        }
+                    }
+                },
+                second: function(value, item) {
                     if ($.isNumeric(value)) {
                         if (value <= 59 && value >= 0) {
                             //pass

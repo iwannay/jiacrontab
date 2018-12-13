@@ -219,6 +219,7 @@ func EditTask(ctx iris.Context) {
 		day := libs.ReplaceEmpty(strings.TrimSpace(r.FormValue("day")), "*")
 		hour := libs.ReplaceEmpty(strings.TrimSpace(r.FormValue("hour")), "*")
 		minute := libs.ReplaceEmpty(strings.TrimSpace(r.FormValue("minute")), "*")
+		second := libs.ReplaceEmpty(strings.TrimSpace(r.FormValue("second")), "*")
 
 		rpcArgs := model.CrontabTask{
 			Name:               n,
@@ -241,12 +242,14 @@ func EditTask(ctx iris.Context) {
 				Day     string
 				Hour    string
 				Minute  string
+				Second  string
 			}{
 
 				Month:   month,
 				Day:     day,
 				Hour:    hour,
 				Minute:  minute,
+				Second:  second,
 				Weekday: weekday,
 			},
 		}

@@ -308,6 +308,70 @@ end:
 	return flag
 }
 
+func checkSecond(check model.CrontabArgs, second int) bool {
+	var flag = false
+	if check.Second != "*" {
+		if strings.Contains(check.Second, "/") {
+			sli := strings.Split(check.Second, "/")
+			tmp, err := strconv.Atoi(sli[1])
+			if err != nil {
+				log.Println(err)
+				goto end
+			}
+			if tmp == 0 {
+				goto end
+			}
+			remainder := second % tmp
+			if remainder == 0 {
+				flag = true
+			}
+
+		} else if strings.Contains(check.Second, ",") {
+			sli := strings.Split(check.Second, ",")
+			for _, v := range sli {
+				i, err := strconv.Atoi(v)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				if second == i {
+					flag = true
+					break
+				}
+			}
+		} else if strings.Contains(check.Second, "-") {
+			sli := strings.Split(check.Second, "-")
+			lower, err := strconv.Atoi(sli[0])
+			if err != nil {
+				log.Println(err)
+				goto end
+			}
+			upper, err := strconv.Atoi(sli[1])
+			if err != nil {
+				log.Println(err)
+				goto end
+			}
+			if second >= lower && second <= upper {
+				flag = true
+			}
+		} else {
+			i, err := strconv.Atoi(check.Second)
+			if err != nil {
+				log.Println(err)
+				goto end
+			}
+			if i == second {
+				flag = true
+			}
+		}
+
+	} else {
+		flag = true
+	}
+end:
+	return flag
+}
+
 func checkMinute(check model.CrontabArgs, minute int) bool {
 	var flag = false
 	if check.Minute != "*" {

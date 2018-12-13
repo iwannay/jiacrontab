@@ -58,6 +58,7 @@ type CrontabArgs struct {
 	Day     string
 	Hour    string
 	Minute  string
+	Second  string
 }
 
 func (c *CrontabArgs) Scan(v interface{}) error {

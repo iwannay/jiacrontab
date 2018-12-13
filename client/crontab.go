@@ -403,7 +403,7 @@ func (c *crontab) run() {
 	}()
 	// global clock
 	go func() {
-		t := time.Tick(1 * time.Minute)
+		t := time.Tick(1 * time.Second)
 		for {
 			now := <-t
 			// broadcast
@@ -560,7 +560,8 @@ func (c *crontab) deal(task *model.CrontabTask, ctx context.Context) {
 					checkWeekday(check, now.Weekday()) &&
 					checkDay(check, now.Day()) &&
 					checkHour(check, now.Hour()) &&
-					checkMinute(check, now.Minute()) {
+					checkMinute(check, now.Minute()) &&
+					checkSecond(check, now.Second()) {
 
 					taskEty := newTaskEntity(task)
 					h.taskPool = append(h.taskPool, taskEty)
