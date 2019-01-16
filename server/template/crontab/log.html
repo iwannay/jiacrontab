@@ -93,24 +93,13 @@
             var time = $('#search-date').val();
             var isTail = $('#is-tail').val();
             var urlObj = common.getRequest().add("pattern", searchText);
-<<<<<<< HEAD
-=======
             var isTail = $("#is-tail").prop("checked");
->>>>>>> master
             urlObj.add("date", time);
             urlObj.add("page", 1);
             urlObj.add('isTail', isTail ? 'false' : 'true')
             window.location.href = urlObj.search();
         })
 
-<<<<<<< HEAD
-        laydate.render({
-            format: "yyyy/MM/dd",
-            elem: '#search-date'
-        });
-
-
-=======
         if ($('#search-date').val() == "") {
             laydate.render({
                 format: "yyyy/MM/dd",
@@ -124,7 +113,6 @@
             });
         }
 
->>>>>>> master
         $('#flexible-icon').on('click', function () {
             if ($(this).hasClass('layui-icon-spread-left')) {
                 $(this).addClass('layui-icon-shrink-right').removeClass('layui-icon-spread-left');
