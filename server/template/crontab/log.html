@@ -10,15 +10,26 @@
                 <cite>日志</cite>
             </a>
         </div>
-        <div class="layui-form-item">
-            <div class="layui-input-inline">
-                <input type="text" name="search" placeholder="搜索日志" class="layui-input search-txt">
+        <div class="layui-form" lay-filter="searchForm">
+            <div class="layui-form-item">
+                <div class="layui-input-inline">
+                    <input type="text" name="search" placeholder="搜索日志" class="layui-input search-txt">
+                </div>
+                <div class="layui-input-inline" style="width: 120px;">
+                    <input type="text" id="search-date" class="layui-input" placeholder="开始日期">
+                </div>
+                <div class="layui-input-inline" style="width: 90px;">
+                    <input type="checkbox" id="is-tail" title="顺序" name="isTail">
+                </div>
+                <div class="layui-btn" id="search">搜索</div>
             </div>
-            <div class="layui-input-inline" style="width: 120px;">
-                <input type="text" id="search-date" class="layui-input" placeholder="开始日期">
-            </div>
-            <div class="layui-btn" id="search">搜索</div>
         </div>
+        {{if .error}}
+        <blockquote class="layui-elem-quote layui-text" style="color:#FF5722">
+            错误:{{.error}}
+        </blockquote>
+        {{end}}
+
         <table class="layui-table" lay-size="sm">
             <colgroup>
                 <col>
@@ -41,12 +52,13 @@
     layui.config({
         base: '/static/js/' //假设这是你存放拓展模块的根目录
     })
-    layui.use(['common', 'element', 'jquery', 'layer', 'laydate', 'laypage'], function () {
+    layui.use(['common', 'element', 'jquery', 'layer', 'laydate', 'laypage', 'form'], function () {
         var common = layui.common;
         var layer = layui.layer;
         var $ = layui.jquery;
         var laydate = layui.laydate;
         var laypage = layui.laypage;
+        var form = layui.form;
 
         //总页数大于页码总数
         laypage.render({
@@ -69,23 +81,50 @@
             $('#search-date').val(common.getRequest().date);
         }
 
+        if (common.getRequest().isTail === 'false') {
+            form.val("searchForm", {
+                'isTail': true
+            })
+        }
+
         // 监听搜索事件
         $('#search').on('click', function () {
             var searchText = $('.search-txt').val();
             var time = $('#search-date').val();
-
+            var isTail = $('#is-tail').val();
             var urlObj = common.getRequest().add("pattern", searchText);
+<<<<<<< HEAD
+=======
+            var isTail = $("#is-tail").prop("checked");
+>>>>>>> master
             urlObj.add("date", time);
             urlObj.add("page", 1);
+            urlObj.add('isTail', isTail ? 'false' : 'true')
             window.location.href = urlObj.search();
         })
 
+<<<<<<< HEAD
         laydate.render({
             format: "yyyy/MM/dd",
             elem: '#search-date'
         });
 
 
+=======
+        if ($('#search-date').val() == "") {
+            laydate.render({
+                format: "yyyy/MM/dd",
+                elem: '#search-date',
+                value: new Date()
+            });
+        } else {
+            laydate.render({
+                format: "yyyy/MM/dd",
+                elem: '#search-date'
+            });
+        }
+
+>>>>>>> master
         $('#flexible-icon').on('click', function () {
             if ($(this).hasClass('layui-icon-spread-left')) {
                 $(this).addClass('layui-icon-shrink-right').removeClass('layui-icon-spread-left');

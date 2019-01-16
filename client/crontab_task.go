@@ -72,8 +72,10 @@ func (t *CrontabTask) Update(args model.CrontabTask, ok *bool) error {
 				"command":              args.Command,
 				"args":                 args.Args,
 				"mail_to":              args.MailTo,
+				"api_to":               args.ApiTo,
 				"depends":              args.Depends,
-				"upexpected_exit_mail": args.UnexpectedExitMail,
+				"unexpected_exit_mail": args.UnexpectedExitMail,
+				"unexpected_exit_api":  args.UnexpectedExitApi,
 				"pipe_commands":        args.PipeCommands,
 				"sync":                 args.Sync,
 				"timeout":              args.Timeout,
@@ -202,6 +204,9 @@ func (t *CrontabTask) Log(args proto.SearchLog, reply *proto.SearchLogResult) er
 
 	if args.Date == "" {
 		args.Date = time.Now().Format("2006/01/02")
+	}
+	if args.IsTail {
+		fd.SetTail(true)
 	}
 
 	rootpath := filepath.Join(globalConfig.logPath, "crontab_task", args.Date)
