@@ -3,9 +3,9 @@ package main
 import (
 	"errors"
 	"fmt"
-	"jiacrontab/libs/finder"
-	"jiacrontab/libs/proto"
 	"jiacrontab/model"
+	"jiacrontab/pkg/finder"
+	"jiacrontab/pkg/proto"
 	"os"
 	"path/filepath"
 	"strings"

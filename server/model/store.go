@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"jiacrontab/libs"
+	"jiacrontab/pkg/util"
 	"log"
 	"os"
 	"path/filepath"
@@ -91,20 +91,6 @@ func (s *Store) requestHandle(req request) {
 	}
 
 	switch req.key {
-	// case "RpcClientList":
-	// 	if req.state == stateSearch && req.body != "" {
-	// 		if v, ok := s.RpcClientList[req.body]; ok {
-	// 			req.response <- result{value: v}
-	// 		} else {
-	// 			req.response <- result{value: nil}
-	// 		}
-	// 	} else {
-	// 		var rpcClientList map[string]proto.ClientConf
-	// 		if b, err := json.Marshal(s.RpcClientList); err == nil {
-	// 			json.Unmarshal(b, &rpcClientList)
-	// 		}
-	// 		req.response <- result{value: rpcClientList}
-	// 	}
 
 	case "dataFile":
 		req.response <- result{value: s.dataFile}
@@ -114,20 +100,11 @@ func (s *Store) requestHandle(req request) {
 
 }
 
-// func (s *Store) getRPCClientList() (map[string]proto.ClientConf, bool) {
-// 	ret, ok := (s.Get("RpcClientList")).value.(map[string]proto.ClientConf)
-// 	return ret, ok
-// }
-
-// func (s *Store) searchRPCClientList(args string) (proto.ClientConf, bool) {
-// 	ret, ok := s.Search("RpcClientList", args).value.(proto.ClientConf)
-// 	return ret, ok
-// }
-
 func (s *Store) Get(key string) result {
 	return s.Query(key, stateSelect, nil, "")
 
 }
+
 func (s *Store) Search(key, args string) result {
 	return s.Query(key, stateSearch, nil, args)
 }
@@ -153,7 +130,7 @@ func (s *Store) Query(key string, state string, fn handle, body string) result {
 
 func (s *Store) sync(fpath string) error {
 
-	f, err := libs.TryOpen(fpath, os.O_CREATE|os.O_RDWR|os.O_TRUNC)
+	f, err := util.TryOpen(fpath, os.O_CREATE|os.O_RDWR|os.O_TRUNC)
 	defer func() {
 		f.Close()
 	}()
@@ -173,7 +150,7 @@ func (s *Store) sync(fpath string) error {
 
 func (s *Store) load(fpath string) error {
 
-	f, err := libs.TryOpen(fpath, os.O_CREATE|os.O_RDWR)
+	f, err := util.TryOpen(fpath, os.O_CREATE|os.O_RDWR)
 	defer func() {
 		f.Close()
 	}()

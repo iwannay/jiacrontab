@@ -3,10 +3,10 @@ package handle
 import (
 	"crypto/md5"
 	"fmt"
-	"jiacrontab/libs"
-	"jiacrontab/libs/proto"
-	"jiacrontab/libs/rpc"
 	"jiacrontab/model"
+	"jiacrontab/pkg/proto"
+	"jiacrontab/pkg/rpc"
+	"jiacrontab/pkg/util"
 	"jiacrontab/server/conf"
 	"log"
 	"net/http"
@@ -110,32 +110,13 @@ func ListTask(ctx iris.Context) {
 
 }
 
-// Index 服务器列表页面
-func Index(ctx iris.Context) {
-	sInfo := libs.SystemInfo(conf.AppService.ServerStartTime)
-
-	var clientList []model.Client
-	model.DB().Model(&model.Client{}).Find(&clientList)
-
-	for k, v := range clientList {
-		if time.Now().Sub(v.UpdatedAt) > 10*time.Minute {
-			clientList[k].State = 0
-		}
-	}
-
-	ctx.ViewData("clientList", clientList)
-	ctx.ViewData("systemInfoList", sInfo)
-	ctx.View("index.html")
-
-}
-
 func EditTask(ctx iris.Context) {
 	var reply bool
 	var r = ctx.Request()
 
 	sortedKeys := make([]string, 0)
 	addr := ctx.FormValue("addr")
-	id := uint(libs.ParseInt(ctx.FormValue("taskId")))
+	id := uint(util.ParseInt(ctx.FormValue("taskId")))
 	if addr == "" {
 		ctx.ViewData("error", "params error")
 		ctx.View("public/error.html")
@@ -166,7 +147,7 @@ func EditTask(ctx iris.Context) {
 		depends := make(model.DependsTasks, len(destSli))
 
 		for k, v := range pipeCommands {
-			if !libs.InArray(v, conf.AppService.AllowCommands) {
+			if !util.InArray(v, conf.AppService.AllowCommands) {
 				ctx.ViewData("error", "非法指令")
 				ctx.View("public/error.html")
 				return
@@ -219,11 +200,11 @@ func EditTask(ctx iris.Context) {
 			maxConcurrent = 10
 		}
 
-		month := libs.ReplaceEmpty(strings.TrimSpace(r.FormValue("month")), "*")
-		weekday := libs.ReplaceEmpty(strings.TrimSpace(r.FormValue("weekday")), "*")
-		day := libs.ReplaceEmpty(strings.TrimSpace(r.FormValue("day")), "*")
-		hour := libs.ReplaceEmpty(strings.TrimSpace(r.FormValue("hour")), "*")
-		minute := libs.ReplaceEmpty(strings.TrimSpace(r.FormValue("minute")), "*")
+		month := util.ReplaceEmpty(strings.TrimSpace(r.FormValue("month")), "*")
+		weekday := util.ReplaceEmpty(strings.TrimSpace(r.FormValue("weekday")), "*")
+		day := util.ReplaceEmpty(strings.TrimSpace(r.FormValue("day")), "*")
+		hour := util.ReplaceEmpty(strings.TrimSpace(r.FormValue("hour")), "*")
+		minute := util.ReplaceEmpty(strings.TrimSpace(r.FormValue("minute")), "*")
 
 		rpcArgs := model.CrontabTask{
 			Name:               n,
@@ -310,7 +291,7 @@ func StopTask(ctx iris.Context) {
 
 	taskId := ctx.FormValue("taskId")
 	addr := ctx.FormValue("addr")
-	action := libs.ReplaceEmpty(r.FormValue("action"), "stop")
+	action := util.ReplaceEmpty(r.FormValue("action"), "stop")
 	var reply bool
 	if taskId == "" || addr == "" {
 		ctx.ViewData("error", "参数错误")
