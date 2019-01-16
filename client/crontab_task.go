@@ -3,10 +3,10 @@ package main
 import (
 	"errors"
 	"fmt"
-	"jiacrontab/libs"
-	"jiacrontab/libs/finder"
-	"jiacrontab/libs/proto"
 	"jiacrontab/model"
+	"jiacrontab/pkg/finder"
+	"jiacrontab/pkg/proto"
+	"jiacrontab/pkg/util"
 	"log"
 	"os"
 	"path/filepath"
@@ -101,7 +101,7 @@ func (t *CrontabTask) Start(args string, ok *bool) error {
 	ids := strings.Split(args, ",")
 	for _, v := range ids {
 		var crontabTask model.CrontabTask
-		ret := model.DB().Find(&crontabTask, "id=?", libs.ParseInt(v))
+		ret := model.DB().Find(&crontabTask, "id=?", util.ParseInt(v))
 		if ret.Error != nil {
 			*ok = false
 		} else {
@@ -119,7 +119,7 @@ func (t *CrontabTask) Stop(args string, ok *bool) error {
 	ids := strings.Split(args, ",")
 	for _, v := range ids {
 		var crontabTask model.CrontabTask
-		ret := model.DB().Find(&crontabTask, "id=?", libs.ParseInt(v))
+		ret := model.DB().Find(&crontabTask, "id=?", util.ParseInt(v))
 		if ret.Error != nil {
 			*ok = false
 		} else {
@@ -134,7 +134,7 @@ func (t *CrontabTask) StopAll(args []string, ok *bool) error {
 	*ok = true
 	for _, v := range args {
 		var crontabTask model.CrontabTask
-		ret := model.DB().Find(&crontabTask, "id", libs.ParseInt(v))
+		ret := model.DB().Find(&crontabTask, "id", util.ParseInt(v))
 		if ret.Error != nil {
 			*ok = false
 		} else {
@@ -149,7 +149,7 @@ func (t *CrontabTask) Delete(args string, ok *bool) error {
 	ids := strings.Split(args, ",")
 	for _, v := range ids {
 		var crontabTask model.CrontabTask
-		ret := model.DB().Find(&crontabTask, "id=?", libs.ParseInt(v))
+		ret := model.DB().Find(&crontabTask, "id=?", util.ParseInt(v))
 		if ret.Error != nil {
 			*ok = false
 		} else {
@@ -163,7 +163,7 @@ func (t *CrontabTask) Delete(args string, ok *bool) error {
 func (t *CrontabTask) Kill(args string, ok *bool) error {
 
 	var crontabTask model.CrontabTask
-	ret := model.DB().Find(&crontabTask, "id=?", libs.ParseInt(args))
+	ret := model.DB().Find(&crontabTask, "id=?", util.ParseInt(args))
 	if ret.Error != nil {
 		*ok = false
 	} else {
@@ -177,7 +177,7 @@ func (t *CrontabTask) Kill(args string, ok *bool) error {
 func (t *CrontabTask) QuickStart(args string, reply *[]byte) error {
 
 	var crontabTask model.CrontabTask
-	ret := model.DB().Find(&crontabTask, "id=?", libs.ParseInt(args))
+	ret := model.DB().Find(&crontabTask, "id=?", util.ParseInt(args))
 
 	if ret.Error == nil {
 		globalCrontab.quickStart(&crontabTask, reply)

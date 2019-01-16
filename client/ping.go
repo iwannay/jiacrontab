@@ -1,6 +1,6 @@
 package main
 
-import "jiacrontab/libs/proto"
+import "jiacrontab/pkg/proto"
 
 type Logic struct{}
 

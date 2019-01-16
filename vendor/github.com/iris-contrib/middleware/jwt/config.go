@@ -38,4 +38,8 @@ type Config struct {
 	// Important to avoid security issues described here: https://auth0.com/blog/2015/03/31/critical-vulnerabilities-in-json-web-token-libraries/
 	// Default: nil
 	SigningMethod jwt.SigningMethod
+	// When set, the expiration time of token will be check every time
+	// if the token was expired, expiration error will be returned
+	// Default: false
+	Expiration bool
 }

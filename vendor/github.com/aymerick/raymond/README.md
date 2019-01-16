@@ -422,19 +422,9 @@ ctx := Post{
     },
 }
 
-raymond.RegisterHelper("fullName", func(person Person) string {
+RegisterHelper("fullName", func(person Person) string {
     return person.FirstName + " " + person.LastName
 })
-```
-
-You can unregister global helpers with `RemoveHelper` and `RemoveAllHelpers` functions:
-
-```go
-raymond.RemoveHelper("fullname")
-```
-
-```go
-raymond.RemoveAllHelpers()
 ```
 
 
