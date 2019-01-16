@@ -7,11 +7,11 @@ import (
 
 	"jiacrontab/server/conf"
 
-	"jiacrontab/libs/proto"
 	"jiacrontab/model"
+	"jiacrontab/pkg/proto"
+	"jiacrontab/pkg/util"
 	"net/http"
 	"strconv"
-	"jiacrontab/libs"
 )
 
 func ListDaemonTask(ctx iris.Context) {
@@ -89,7 +89,7 @@ func EditDaemonTask(ctx iris.Context) {
 		args := ctx.PostValue("args")
 
 		failedRestart, err := ctx.PostValueBool("failedRestart")
-		if addr == "" || name == "" || command == "" || err != nil || !libs.InArray(command, conf.AppService.AllowCommands){
+		if addr == "" || name == "" || command == "" || err != nil || !util.InArray(command, conf.AppService.AllowCommands) {
 			ctx.ViewData("errorMsg", "参数不正确")
 			ctx.ViewData("daemonTask", daemonTask)
 			ctx.View("daemon/edit.html")

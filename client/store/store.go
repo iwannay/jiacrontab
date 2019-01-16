@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"jiacrontab/libs"
-	"jiacrontab/libs/proto"
 	"jiacrontab/model"
+	"jiacrontab/pkg/proto"
+	"jiacrontab/pkg/util"
 	"log"
 	"os"
 	"path/filepath"
@@ -183,7 +183,7 @@ func (s *Store) Export2DB() {
 	s.save(s.checkFile, "true")
 }
 func (s *Store) sync(fpath string) error {
-	f, err := libs.TryOpen(fpath, os.O_CREATE|os.O_RDWR|os.O_TRUNC)
+	f, err := util.TryOpen(fpath, os.O_CREATE|os.O_RDWR|os.O_TRUNC)
 	defer func() {
 		f.Close()
 	}()
@@ -202,7 +202,7 @@ func (s *Store) sync(fpath string) error {
 }
 
 func (s *Store) save(fpath string, data string) error {
-	f, err := libs.TryOpen(fpath, os.O_CREATE|os.O_RDWR)
+	f, err := util.TryOpen(fpath, os.O_CREATE|os.O_RDWR)
 	if err != nil {
 		return err
 	}
@@ -211,7 +211,7 @@ func (s *Store) save(fpath string, data string) error {
 	return err
 }
 func (s *Store) get(fpath string) string {
-	f, err := libs.TryOpen(fpath, os.O_RDONLY)
+	f, err := util.TryOpen(fpath, os.O_RDONLY)
 	if err != nil {
 		return ""
 	}
@@ -227,7 +227,7 @@ func (s *Store) get(fpath string) string {
 
 func (s *Store) load(fpath string) error {
 
-	f, err := libs.TryOpen(fpath, os.O_CREATE|os.O_RDWR)
+	f, err := util.TryOpen(fpath, os.O_CREATE|os.O_RDWR)
 	if err != nil {
 		return err
 	}

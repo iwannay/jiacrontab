@@ -1,10 +1,12 @@
 package main
 
-import "jiacrontab/libs"
+import (
+	"jiacrontab/pkg/util"
+)
 
 type Admin struct{}
 
 func (a *Admin) SystemInfo(args string, reply *map[string]interface{}) error {
-	*reply = libs.SystemInfo(startTime)
+	*reply = util.SystemInfo(startTime)
 	return nil
 }

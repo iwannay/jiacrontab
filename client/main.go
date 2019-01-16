@@ -2,8 +2,8 @@ package main
 
 import (
 	"jiacrontab/client/store"
-	"jiacrontab/libs/finder"
-	"jiacrontab/libs/rpc"
+	"jiacrontab/pkg/finder"
+	"jiacrontab/pkg/rpc"
 	"log"
 	"os"
 	"os/signal"

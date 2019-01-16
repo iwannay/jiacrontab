@@ -1,9 +1,10 @@
 package main
 
 import (
-	"jiacrontab/libs/mailer"
-	"jiacrontab/libs/rpc"
 	db "jiacrontab/model"
+	"jiacrontab/pkg/mailer"
+	"jiacrontab/pkg/rpc"
+	"jiacrontab/pkg/util"
 	"jiacrontab/server/conf"
 	"jiacrontab/server/handle"
 	"jiacrontab/server/model"
@@ -12,8 +13,6 @@ import (
 
 	"github.com/kataras/iris/middleware/logger"
 	"github.com/kataras/iris/middleware/recover"
-
-	"jiacrontab/libs"
 
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/kataras/iris"
@@ -26,7 +25,9 @@ const (
 func main() {
 
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	db.CreateDB("sqlite3", "data/jiacrontab_server.db")
+
 	db.DB().CreateTable(&db.Client{})
 	db.DB().AutoMigrate(&db.Client{})
 
@@ -61,12 +62,13 @@ func main() {
 
 	app.Use(recover.New())
 	html := iris.HTML(conf.AppService.TplDir, conf.AppService.TplExt)
-	html.AddFunc("date", libs.Date)
-	html.AddFunc("formatMs", libs.Int2floatstr)
+	html.AddFunc("date", util.Date)
+	html.AddFunc("formatMs", util.Int2floatstr)
 	html.Layout("layouts/layout.html")
 	html.Reload(true)
 	app.RegisterView(html)
 	router(app)
+
 	go rpc.ListenAndServe(conf.AppService.RpcListenAddr, &handle.Logic{})
 	app.Run(iris.Addr(conf.AppService.HttpListenAddr))
 }

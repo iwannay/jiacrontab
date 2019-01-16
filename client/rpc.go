@@ -1,9 +1,9 @@
 package main
 
 import (
-	"jiacrontab/libs/proto"
-	"jiacrontab/libs/rpc"
 	"jiacrontab/model"
+	"jiacrontab/pkg/proto"
+	"jiacrontab/pkg/rpc"
 	"log"
 	"time"
 )
