@@ -1,7 +1,7 @@
 package conf
 
 import (
-	"jiacrontab/libs"
+	"jiacrontab/pkg/util"
 
 	"gopkg.in/ini.v1"
 )
@@ -24,9 +24,9 @@ func Category() map[string]interface{} {
 	app := make(map[string]interface{})
 	cat := make(map[string]interface{})
 	jwt := make(map[string]interface{})
-	libs.Struct2Map(MailService, &mail)
-	libs.Struct2Map(AppService, &app)
-	libs.Struct2Map(JwtService, &jwt)
+	util.Struct2Map(MailService, &mail)
+	util.Struct2Map(AppService, &app)
+	util.Struct2Map(JwtService, &jwt)
 
 	cat["app"] = app
 	cat["jwt"] = jwt

@@ -3,9 +3,9 @@ package handle
 import (
 	"io"
 	"io/ioutil"
-	"jiacrontab/libs/mailer"
-	"jiacrontab/libs/proto"
 	"jiacrontab/model"
+	"jiacrontab/pkg/mailer"
+	"jiacrontab/pkg/proto"
 	"jiacrontab/server/conf"
 	"log"
 	"net/http"

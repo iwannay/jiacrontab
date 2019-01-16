@@ -1,7 +1,7 @@
 package handle
 
 import (
-	"jiacrontab/libs/mailer"
+	"jiacrontab/pkg/mailer"
 	"jiacrontab/server/conf"
 	"net/http"
 	"strings"
@@ -33,5 +33,27 @@ func ViewConfig(ctx iris.Context) {
 func ReloadConfig(ctx iris.Context) {
 	conf.Reload()
 	ctx.Redirect("/", http.StatusFound)
+}
 
+func reloadConfig(ctx iris.Context) {
+	conf.Reload()
+	ctx.JSON(successResp("", nil))
+}
+
+func getConfig(ctx iris.Context) {
+	c := conf.Category()
+	r := ctx.Request()
+
+	if r.Method == http.MethodPost {
+		if conf.MailService.Enabled {
+			mailTo := strings.TrimSpace(r.FormValue("mailTo"))
+			err := mailer.SendMail([]string{mailTo}, "测试邮件", "测试邮件请勿回复！")
+			if err != nil {
+				ctx.JSON(errorResp(err.Error(), nil))
+				return
+			}
+		}
+	}
+
+	ctx.JSON(successResp("", c))
 }

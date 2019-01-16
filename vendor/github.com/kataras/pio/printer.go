@@ -382,6 +382,9 @@ func (p *Printer) Store(v interface{}, appendNewLine bool) error {
 //
 // Returns this WriteTo's result information such as error, written.
 func (p *Printer) WriteTo(v interface{}, w io.Writer, appendNewLine bool) ([]byte, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	var marshaler Marshaler
 
 	// check if implements the Marshaled
