@@ -8,4 +8,5 @@ import (
 type KCmd struct {
 	ctx context.Context
 	*exec.Cmd
+	done chan struct{}
 }

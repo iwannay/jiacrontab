@@ -4,7 +4,6 @@ package kproc
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/exec"
 	"syscall"
@@ -15,21 +14,26 @@ func CommandContext(ctx context.Context, name string, arg ...string) *KCmd {
 	cmd.SysProcAttr = &syscall.SysProcAttr{}
 	cmd.SysProcAttr.Setsid = true
 	return &KCmd{
-		ctx: ctx,
-		Cmd: cmd,
+		ctx:  ctx,
+		Cmd:  cmd,
+		done: make(chan struct{}),
 	}
 }
 
 func (k *KCmd) KillAll() {
+
+	select {
+	case k.done <- struct{}{}:
+	default:
+	}
+
 	if k.Process == nil {
 		return
 	}
+
 	group, err := os.FindProcess(-k.Process.Pid)
 	if err == nil {
-		err = group.Signal(syscall.SIGKILL)
-	}
-	if err != nil {
-		log.Println("process.Wait error:", err)
+		group.Signal(syscall.SIGKILL)
 	}
 }
 
@@ -39,6 +43,7 @@ func (k *KCmd) Wait() error {
 		select {
 		case <-k.ctx.Done():
 			k.KillAll()
+		case <-k.done:
 		}
 	}()
 	return k.Cmd.Wait()

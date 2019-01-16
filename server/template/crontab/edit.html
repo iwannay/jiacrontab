@@ -215,11 +215,19 @@
                                     <input type="text" value="{{js $value.Timeout}}" name="depends[timeout]"
                                         placeholder="超时(s)" class="layui-input">
                                 </div>
-
-                                <div class="layui-input-inline">
-                                    <div class="layui-btn layui-btn-danger delete-order-btn">
-                                        <i class="layui-icon layui-icon-delete"></i>
-                                    </div>
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">添加依赖</label>
+                            <div class="layui-input-inline">
+                                <select name="sync">
+                                    <option value="true" {{if .task.Sync}} selected{{end}}>同步执行</option>
+                                    <option value="false" {{if eq .task.Sync false}} selected{{end}}>并发执行</option>
+                                </select>
+                            </div>
+                            <div class="layui-input-inline">
+                                <div class="layui-btn" id="depend-btn">
+                                    <i class="layui-icon layui-icon-add-1"></i>
                                 </div>
                             </div>
                         </div>
@@ -229,24 +237,25 @@
                     <div class="layui-form-item">
                         <label class="layui-form-label"></label>
                         <div class="layui-input-block">
-                            <input type="checkbox" value="1" {{if .task.UnexpectedExitMail}} checked{{end}} name="unexpectedExitMail"
+                            <input type="checkbox" value="true" {{if .task.UnexpectedExitMail}} checked{{end}} name="unexpectedExitMail"
                                 title="脚本异常退出时邮件通知" lay-skin="primary">
-                            <input type="checkbox" value="1" {{if .task.UnexpectedExitApi}} checked{{end}} name="unexpectedExitApi"
+                            <input type="checkbox" value="true" {{if .task.UnexpectedExitApi}} checked{{end}} name="unexpectedExitApi"
                                 title="脚本异常退出时api通知" lay-skin="primary">
                         </div>
                     </div>
-                    <div class="layui-form-item">
-                        <div class="layui-input-block">
-                            <button class="layui-btn" lay-submit lay-filter="add-script">立即提交</button>
-                            <button type="reset" id="cancel" class="layui-btn layui-btn-primary">取消</button>
-                        </div>
-                    </div>
-                </form>
             </div>
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button class="layui-btn" lay-submit lay-filter="add-script">立即提交</button>
+                    <button type="reset" id="cancel" class="layui-btn layui-btn-primary">取消</button>
+                </div>
+            </div>
+            </form>
         </div>
     </div>
+</div>
 
-    {{render "public/footer.html"}}
+{{render "public/footer.html"}}
 </div>
 <!-- 命令的模板 -->
 <script id="formTemplate" type="text/html">

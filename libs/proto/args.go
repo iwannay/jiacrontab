@@ -86,6 +86,7 @@ type MailArgs struct {
 
 type SearchLog struct {
 	TaskId         int
+	IsTail         bool
 	Page, Pagesize int
 	Date           string
 	Pattern        string

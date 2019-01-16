@@ -51,3 +51,6 @@ server/data
 .directory
 .vscode
 app
+
+binTmp
+dump.rdb

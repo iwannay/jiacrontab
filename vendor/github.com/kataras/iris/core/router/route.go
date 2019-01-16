@@ -12,24 +12,25 @@ import (
 // If any of the following fields are changed then the
 // caller should Refresh the router.
 type Route struct {
-	Name      string          // "userRoute"
-	Method    string          // "GET"
-	Subdomain string          // "admin."
-	tmpl      *macro.Template // Tmpl().Src: "/api/user/{id:int}"
-	Path      string          // "/api/user/:id"
+	Name       string          `json:"name"`   // "userRoute"
+	Method     string          `json:"method"` // "GET"
+	methodBckp string          // if Method changed to something else (which is possible at runtime as well, via RefreshRouter) then this field will be filled with the old one.
+	Subdomain  string          `json:"subdomain"` // "admin."
+	tmpl       *macro.Template // Tmpl().Src: "/api/user/{id:int}"
 	// temp storage, they're appended to the Handlers on build.
 	// Execution happens before Handlers, can be empty.
 	beginHandlers context.Handlers
 	// Handlers are the main route's handlers, executed by order.
 	// Cannot be empty.
-	Handlers        context.Handlers
-	MainHandlerName string
+	Handlers        context.Handlers `json:"-"`
+	MainHandlerName string           `json:"mainHandlerName"`
 	// temp storage, they're appended to the Handlers on build.
 	// Execution happens after Begin and main Handler(s), can be empty.
 	doneHandlers context.Handlers
+	Path         string `json:"path"` // "/api/user/:id"
 	// FormattedPath all dynamic named parameters (if any) replaced with %v,
 	// used by Application to validate param values of a Route based on its name.
-	FormattedPath string
+	FormattedPath string `json:"formattedPath"`
 }
 
 // NewRoute returns a new route based on its method,
@@ -57,6 +58,7 @@ func NewRoute(method, subdomain, unparsedPath, mainHandlerName string,
 	route := &Route{
 		Name:            defaultName,
 		Method:          method,
+		methodBckp:      method,
 		Subdomain:       subdomain,
 		tmpl:            tmpl,
 		Path:            path,
@@ -93,6 +95,33 @@ func (r *Route) done(handlers context.Handlers) {
 	r.doneHandlers = append(r.doneHandlers, handlers...)
 }
 
+// ChangeMethod will try to change the HTTP Method of this route instance.
+// A call of `RefreshRouter` is required after this type of change in order to change to be really applied.
+func (r *Route) ChangeMethod(newMethod string) bool {
+	if newMethod != r.Method {
+		r.methodBckp = r.Method
+		r.Method = newMethod
+		return true
+	}
+
+	return false
+}
+
+// SetStatusOffline will try make this route unavailable.
+// A call of `RefreshRouter` is required after this type of change in order to change to be really applied.
+func (r *Route) SetStatusOffline() bool {
+	return r.ChangeMethod(MethodNone)
+}
+
+// RestoreStatus will try to restore the status of this route instance, i.e if `SetStatusOffline` called on a "GET" route,
+// then this function will make this route available with "GET" HTTP Method.
+// Note if that you want to set status online for an offline registered route then you should call the `ChangeMethod` instead.
+// It will return true if the status restored, otherwise false.
+// A call of `RefreshRouter` is required after this type of change in order to change to be really applied.
+func (r *Route) RestoreStatus() bool {
+	return r.ChangeMethod(r.methodBckp)
+}
+
 // BuildHandlers is executed automatically by the router handler
 // at the `Application#Build` state. Do not call it manually, unless
 // you were defined your own request mux handler.
@@ -114,7 +143,7 @@ func (r Route) String() string {
 		r.Method, r.Subdomain, r.Tmpl().Src)
 }
 
-// Tmpl returns the path template, i
+// Tmpl returns the path template,
 // it contains the parsed template
 // for the route's path.
 // May contain zero named parameters.
@@ -248,4 +277,12 @@ func (rd routeReadOnlyWrapper) Path() string {
 
 func (rd routeReadOnlyWrapper) Trace() string {
 	return rd.Route.Trace()
+}
+
+func (rd routeReadOnlyWrapper) Tmpl() macro.Template {
+	return rd.Route.Tmpl()
+}
+
+func (rd routeReadOnlyWrapper) MainHandlerName() string {
+	return rd.Route.MainHandlerName
 }
