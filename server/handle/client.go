@@ -27,7 +27,8 @@ func Index(ctx iris.Context) {
 	ctx.View("index.html")
 }
 
-func ClientList(ctx iris.Context) {
+// GetClientList 获得任务节点列表
+func GetClientList(ctx iris.Context) {
 	sInfo := util.SystemInfo(conf.AppService.ServerStartTime)
 
 	var clientList []model.Client
