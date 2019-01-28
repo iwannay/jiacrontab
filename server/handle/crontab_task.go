@@ -15,11 +15,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
 )
-
-// var app *jiaweb.JiaWeb
 
 const (
 	minuteTimeLayout = "200601021504"
@@ -511,4 +509,101 @@ func DeleteClient(ctx iris.Context) {
 	model.DB().Unscoped().Delete(&model.Client{}, "addr=?", addr)
 	rpc.Del(addr)
 	ctx.Redirect("/", http.StatusFound)
+}
+
+// ----------------------- api start ---------------------
+// GetTaskList 获得任务列表
+func GetTaskList(ctx iris.Context) {
+
+	var (
+		systemInfo map[string]interface{}
+		locals     []model.CrontabTask
+		clientList []model.Client
+		client     model.Client
+		r          = ctx.Request()
+	)
+
+	addr := ctx.FormValue("addr")
+	if strings.TrimSpace(addr) == "" {
+		ctx.JSON(errorResp("参数错误", nil))
+		return
+	}
+
+	model.DB().Model(&model.Client{}).Find(&clientList)
+
+	if len(clientList) == 0 {
+		ctx.JSON(errorResp("暂无数据", nil))
+		return
+	}
+
+	for _, v := range clientList {
+		if v.Addr == addr {
+			client = v
+			break
+		}
+	}
+
+	if err := rpcCall(addr, "CrontabTask.All", "", &locals); err != nil {
+		ctx.JSON(errorResp(err.Error(), nil))
+		return
+	}
+
+	if err := rpcCall(addr, "Admin.SystemInfo", "", &systemInfo); err != nil {
+		ctx.JSON(errorResp(err.Error(), nil))
+		return
+	}
+
+	ctx.JSON(successResp("", map[string]interface{}{
+		"taskList":   locals,
+		"addr":       addr,
+		"client":     client,
+		"clientList": clientList,
+		"systemInfo": systemInfo,
+		"url":        r.RequestURI,
+	}))
+}
+
+// GetTaskDetail 获得任务详情
+func GetTaskDetail(ctx iris.Context) {
+
+	addr := ctx.FormValue("addr")
+	id := util.ParseInt(ctx.FormValue("taskId"))
+
+	if addr == "" {
+		ctx.JSON(errorResp("参数错误", nil))
+		return
+	}
+
+	var t model.CrontabTask
+	var clientList []model.Client
+
+	if id != 0 {
+		err := rpcCall(addr, "CrontabTask.Get", id, &t)
+		if err != nil {
+			ctx.JSON(errorResp(fmt.Sprint("rpc查询失败:", err), nil))
+			return
+		}
+	} else {
+		var client model.Client
+		model.DB().Find(&client, "addr", addr)
+		t.MailTo = client.Mail
+	}
+
+	if t.MaxConcurrent == 0 {
+		t.MaxConcurrent = 1
+	}
+
+	model.DB().Find(&clientList)
+	if len(clientList) == 0 {
+		ctx.JSON(errorResp("节点查询失败", nil))
+		return
+	}
+
+	ctx.JSON(successResp("", map[string]interface{}{
+		"curNode":       addr,
+		"nodeList":      clientList,
+		"task":          t,
+		"allowCommands": conf.AppService.AllowCommands,
+	}))
+
 }

@@ -40,6 +40,7 @@ func reloadConfig(ctx iris.Context) {
 	ctx.JSON(successResp("", nil))
 }
 
+// getConfig 获得配置信息
 func getConfig(ctx iris.Context) {
 	c := conf.Category()
 	r := ctx.Request()
