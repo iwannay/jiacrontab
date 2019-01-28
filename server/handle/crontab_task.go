@@ -446,11 +446,9 @@ func QuickStart(ctx iris.Context) {
 	ctx.ViewData("logList", logList)
 	ctx.View("crontab/log.html")
 }
-
 func Logout(ctx iris.Context) {
 	ctx.RemoveCookie(conf.JwtService.TokenCookieName)
 	ctx.Redirect("/login", http.StatusFound)
-
 }
 
 func RecentLog(ctx iris.Context) {
@@ -488,6 +486,7 @@ func RecentLog(ctx iris.Context) {
 	}, &searchRet); err != nil {
 		ctx.ViewData("error", err)
 	}
+
 	logList := strings.Split(string(searchRet.Content), "\n")
 
 	ctx.ViewData("logList", logList)
@@ -606,4 +605,36 @@ func GetTaskDetail(ctx iris.Context) {
 		"allowCommands": conf.AppService.AllowCommands,
 	}))
 
+}
+
+// UpdateTaskDetail 更新任务详情
+func UpdateTaskDetail(ctx iris.Context) {
+	var reqParams struct {
+		Addr           string               `json:"addr"`
+		Sync           bool                 `json:"sync"`
+		Command        string               `json:"command"`
+		Args           string               `json:"args"`
+		TaskName       string               `json:"taskName"`
+		Timeout        string               `json:"timeout"`
+		MaxConcurrent  string               `json:"maxConcurrent"`
+		MailNotify     bool                 `json:"mailNotify"`
+		APINotify      bool                 `json:"APINotify"`
+		MailTo         string               `json:"mailTo"`
+		To             string               `json:"APITo"`
+		ExecuteTimeout string               `json:"executeTimeout"`
+		PipeCommands   [][]string           `json:"pipeCommands"`
+		Dependents     []model.DependsTasks `json:"dependents"`
+		Month          string               `json:"month"`
+		Weekday        string               `json:"weekday"`
+		Day            string               `json:"day"`
+		Hour           string               `json:"hour"`
+		Minute         string               `json:"minute"`
+		ID             int                  `json:"ID"`
+	}
+
+	err := ctx.ReadJSON(&reqParams)
+	if err != nil {
+		ctx.JSON(errorResp("参数错误", nil))
+		return
+	}
 }
