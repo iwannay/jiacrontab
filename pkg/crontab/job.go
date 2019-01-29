@@ -3,7 +3,9 @@ package crontab
 import (
 	"errors"
 	"jiacrontab/pkg/util"
+	"log"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -22,44 +24,54 @@ type Job struct {
 }
 
 // NextExecutionTime 下次执行时间
-func (j *Job) NextExecutionTime() (time.Time, bool) {
+func (j *Job) NextExecutionTime() (time.Time, error) {
 	var (
-		t                                = time.Now()
-		ok                               bool
-		second, minute, hour, day, month int
+		t                                      = time.Now()
+		err                                    error
+		next                                   bool
+		second, minute, hour, day, month, year int
 	)
 
-	month, ok = j.parseMonth()
-	if !ok {
-		return t, ok
+	second, next, err = j.parseSecond()
+	if err != nil {
+		return t, err
 	}
 
-	day, ok = j.parseWeekday()
-	if !ok {
-		day, ok = j.parseDay()
-		if !ok {
-			return t, ok
+	minute, next, err = j.parseMinute(next)
+	if err != nil {
+		return t, err
+	}
+
+	hour, next, err = j.parseHour(next)
+	if err != nil {
+		return t, err
+	}
+
+	if j.Weekday != "*" {
+		day, next, err = j.parseWeekday(next)
+		if err != nil {
+			return t, err
+		}
+	} else {
+		day, next, err = j.parseDay(next)
+		if err != nil {
+			return t, err
 		}
 	}
 
-	hour, ok = j.parseHour()
-	if !ok {
-		return t, ok
+	month, next, err = j.parseMonth(next)
+	if err != nil {
+		return t, err
+	}
+	year = time.Now().Year()
+	if next {
+		year++
 	}
 
-	minute, ok = j.parseMinute()
-	if !ok {
-		return t, ok
-	}
+	log.Println("usage:", year, time.Month(month), day, hour, minute, second, 0)
+	j.nextExecutionTime = time.Date(year, time.Month(month), day, hour, minute, second, 0, time.Local)
 
-	second, ok = j.parseSecond()
-	if !ok {
-		return t, ok
-	}
-
-	j.nextExecutionTime = time.Date(time.Now().Year(), time.Month(month), day, hour, minute, second, 0, time.Local)
-
-	return j.nextExecutionTime, true
+	return j.nextExecutionTime, nil
 }
 
 func (j *Job) parseSecond() (int, bool, error) {
@@ -101,8 +113,13 @@ func (j *Job) parseSecond() (int, bool, error) {
 			}
 			return 0, true, nil
 		}
+	} else if sec, err := strconv.Atoi(j.Second); err == nil {
+		if sec > cur {
+			return sec, false, nil
+		}
+		return cur, true, nil
 	}
-	return 0, false, errors.New("Invalid parameter")
+	return 0, false, errors.New("Invalid second parameter")
 }
 
 func (j *Job) parseMinute(next bool) (int, bool, error) {
@@ -166,9 +183,15 @@ func (j *Job) parseMinute(next bool) (int, bool, error) {
 			}
 			return util.ParseInt(arr[0]), true, nil
 		}
+	} else if minute, err := strconv.Atoi(j.Minute); err == nil {
+		if minute > cur {
+			return minute, false, nil
+		}
+
+		return minute, true, nil
 	}
 
-	return 0, false, errors.New("Invalid parameter")
+	return 0, false, errors.New("Invalid minute parameter")
 }
 
 func (j *Job) parseHour(next bool) (int, bool, error) {
@@ -231,8 +254,13 @@ func (j *Job) parseHour(next bool) (int, bool, error) {
 			}
 			return util.ParseInt(arr[0]), true, nil
 		}
+	} else if hour, err := strconv.Atoi(j.Hour); err == nil {
+		if hour > cur {
+			return hour, false, nil
+		}
+		return hour, true, nil
 	}
-	return 0, false, errors.New("Invalid parameter")
+	return 0, false, errors.New("Invalid hour parameter")
 }
 
 func (j *Job) parseDay(next bool) (int, bool, error) {
@@ -296,8 +324,14 @@ func (j *Job) parseDay(next bool) (int, bool, error) {
 			}
 			return util.ParseInt(arr[0]), true, nil
 		}
+	} else if day, err := strconv.Atoi(j.Day); err == nil {
+		if day > cur {
+			return day, false, nil
+		}
+
+		return day, true, nil
 	}
-	return 0, false, errors.New("Invalid parameter")
+	return 0, false, errors.New("Invalid day parameter")
 }
 
 func (j *Job) parseWeekday(next bool) (int, bool, error) {
@@ -326,9 +360,8 @@ func (j *Job) parseWeekday(next bool) (int, bool, error) {
 			if v > curWeekday {
 				curDay += (v - curWeekday)
 				if curDay > daysNumOfMonth {
-					return 1, true, nil
+					return weekdays[0], true, nil
 				}
-
 				return curDay, false, nil
 			} else if v == curWeekday {
 				if next {
@@ -343,7 +376,7 @@ func (j *Job) parseWeekday(next bool) (int, bool, error) {
 		if arr := strings.Split(j.Weekday, "/"); len(arr) == 2 {
 			for i, j := 0, util.ParseInt(arr[1]); i <= 7; i += j {
 				if i > curWeekday {
-					curDay += (v - curWeekday)
+					curDay += (i - curWeekday)
 					if curDay > daysNumOfMonth {
 						return 1, true, nil
 					}
@@ -366,12 +399,12 @@ func (j *Job) parseWeekday(next bool) (int, bool, error) {
 			var i, j int
 			for i, j = util.ParseInt(arr[0]), util.ParseInt(arr[1]); i <= j; i++ {
 				if i > curWeekday {
-					curDay += (v - curWeekday)
-					if curDay > daysNumOfMonth {
-						return 1, true, nil
+					curDay += (i - curWeekday)
+					if sub := curDay - daysNumOfMonth; sub > 0 {
+						return sub, true, nil
 					}
 					return curDay, false, nil
-				} else if i == cur {
+				} else if i == curWeekday {
 					if next {
 						continue
 					}
@@ -379,20 +412,35 @@ func (j *Job) parseWeekday(next bool) (int, bool, error) {
 				}
 			}
 			curDay += (7 - curWeekday + weekdays[0])
-			if curDay > daysNumOfMonth {
-				return 1, true, nil
+			if sub := curDay - daysNumOfMonth; sub > 0 {
+				return sub, true, nil
 			}
 			return curDay, true, nil
 		}
+	} else if weekday, err := strconv.Atoi(j.Weekday); err == nil {
+		if weekday > curWeekday {
+			curDay += (weekday - curWeekday)
+			if sub := curDay - daysNumOfMonth; sub > 0 {
+				return sub, true, nil
+			}
+			return curDay, false, nil
+		}
+
+		// 跳一周
+		curDay += 7
+		if sub := curDay - daysNumOfMonth; sub > 0 {
+			return sub, true, nil
+		}
+		return curDay, false, nil
 	}
-	return 0, false, errors.New("Invalid parameter")
+	return 0, false, errors.New("Invalid weekday parameter")
 }
 
 func (j *Job) parseMonth(next bool) (int, bool, error) {
 
 	var months []int
 	cur := int(time.Now().Month())
-	daysNumOfMonth := util.CountDaysOfMonth(now.Year(), curDay)
+	daysNumOfMonth := util.CountDaysOfMonth(time.Now().Year(), int(time.Now().Month()))
 
 	if j.Month == "*" {
 		if next {
@@ -451,6 +499,11 @@ func (j *Job) parseMonth(next bool) (int, bool, error) {
 			}
 			return util.ParseInt(arr[0]), true, nil
 		}
+	} else if month, err := strconv.Atoi(j.Month); err == nil {
+		if month > cur {
+			return month, false, nil
+		}
+		return cur, true, nil
 	}
-	return 0, false, errors.New("Invalid parameter")
+	return 0, false, errors.New("Invalid month parameter")
 }
