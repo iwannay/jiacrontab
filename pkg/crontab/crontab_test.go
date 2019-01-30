@@ -19,32 +19,32 @@ func Test_crontab_Ready(t *testing.T) {
 	var timeLayout = "2006-01-02 15:04:05"
 	c := New()
 	now := time.Now().Add(6 * time.Second)
-	c.Add(&Task{
+	c.AddTask(&Task{
 		Value:    "海贼王" + now.Format(timeLayout),
 		Priority: now.UnixNano(),
 	})
 
 	now = time.Now().Add(1 * time.Second)
 
-	c.Add(&Task{
+	c.AddTask(&Task{
 		Value:    "火影忍者" + now.Format(timeLayout),
 		Priority: now.UnixNano(),
 	})
 	now = time.Now().Add(3 * time.Second)
 
-	c.Add(&Task{
+	c.AddTask(&Task{
 		Value:    "清风徐来" + now.Format(timeLayout),
 		Priority: now.UnixNano(),
 	})
 
 	now = time.Now().Add(4 * time.Second)
-	c.Add(&Task{
+	c.AddTask(&Task{
 		Value:    "月上窗前" + now.Format(timeLayout),
 		Priority: now.UnixNano(),
 	})
 
 	now = time.Now().Add(3 * time.Second)
-	c.Add(&Task{
+	c.AddTask(&Task{
 		Value:    "夕阳西下" + now.Format(timeLayout),
 		Priority: now.UnixNano(),
 	})

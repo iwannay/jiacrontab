@@ -3,7 +3,6 @@ package crontab
 import (
 	"errors"
 	"jiacrontab/pkg/util"
-	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -18,57 +17,59 @@ type Job struct {
 	Weekday           string
 	Month             string
 	ID                int
+	now               time.Time
 	lastExecutionTime time.Time
 	nextExecutionTime time.Time
 	Value             interface{}
 }
 
 // NextExecutionTime 下次执行时间
-func (j *Job) NextExecutionTime() (time.Time, error) {
+func (j *Job) NextExecutionTime(now time.Time) (time.Time, error) {
 	var (
-		t                                      = time.Now()
 		err                                    error
 		next                                   bool
 		second, minute, hour, day, month, year int
 	)
 
+	j.now = now
+
 	second, next, err = j.parseSecond()
 	if err != nil {
-		return t, err
+		return j.nextExecutionTime, err
 	}
 
 	minute, next, err = j.parseMinute(next)
 	if err != nil {
-		return t, err
+		return j.nextExecutionTime, err
 	}
 
 	hour, next, err = j.parseHour(next)
 	if err != nil {
-		return t, err
+		return j.nextExecutionTime, err
 	}
 
 	if j.Weekday != "*" {
 		day, next, err = j.parseWeekday(next)
 		if err != nil {
-			return t, err
+			return j.nextExecutionTime, err
 		}
 	} else {
 		day, next, err = j.parseDay(next)
 		if err != nil {
-			return t, err
+			return j.nextExecutionTime, err
 		}
 	}
 
 	month, next, err = j.parseMonth(next)
 	if err != nil {
-		return t, err
+		return j.nextExecutionTime, err
 	}
-	year = time.Now().Year()
+	year = j.now.Year()
 	if next {
 		year++
 	}
 
-	log.Println("usage:", year, time.Month(month), day, hour, minute, second, 0)
+	j.lastExecutionTime = j.nextExecutionTime
 	j.nextExecutionTime = time.Date(year, time.Month(month), day, hour, minute, second, 0, time.Local)
 
 	return j.nextExecutionTime, nil
@@ -76,10 +77,10 @@ func (j *Job) NextExecutionTime() (time.Time, error) {
 
 func (j *Job) parseSecond() (int, bool, error) {
 	var seconds []int
-	cur := int(time.Now().Second())
+	cur := int(j.now.Second())
 	if j.Second == "*" {
 		cur++
-		if cur >= 60 {
+		if cur > 59 {
 			return 0, true, nil
 		}
 		return cur, false, nil
@@ -124,13 +125,12 @@ func (j *Job) parseSecond() (int, bool, error) {
 
 func (j *Job) parseMinute(next bool) (int, bool, error) {
 	var minutes []int
-	cur := int(time.Now().Minute())
+	cur := int(j.now.Minute())
 	if j.Minute == "*" {
 
 		if next {
 			cur++
 		}
-
 		if cur > 59 {
 			return 0, true, nil
 		}
@@ -184,10 +184,9 @@ func (j *Job) parseMinute(next bool) (int, bool, error) {
 			return util.ParseInt(arr[0]), true, nil
 		}
 	} else if minute, err := strconv.Atoi(j.Minute); err == nil {
-		if minute > cur {
+		if minute > cur || (minute == cur && !next) {
 			return minute, false, nil
 		}
-
 		return minute, true, nil
 	}
 
@@ -197,7 +196,7 @@ func (j *Job) parseMinute(next bool) (int, bool, error) {
 func (j *Job) parseHour(next bool) (int, bool, error) {
 
 	var hours []int
-	cur := int(time.Now().Hour())
+	cur := int(j.now.Hour())
 
 	if j.Hour == "*" {
 		if next {
@@ -255,7 +254,7 @@ func (j *Job) parseHour(next bool) (int, bool, error) {
 			return util.ParseInt(arr[0]), true, nil
 		}
 	} else if hour, err := strconv.Atoi(j.Hour); err == nil {
-		if hour > cur {
+		if hour > cur || (hour == cur && !next) {
 			return hour, false, nil
 		}
 		return hour, true, nil
@@ -266,7 +265,7 @@ func (j *Job) parseHour(next bool) (int, bool, error) {
 func (j *Job) parseDay(next bool) (int, bool, error) {
 
 	var days []int
-	cur := int(time.Now().Day())
+	cur := int(j.now.Day())
 	daysNumOfMonth := util.CountDaysOfMonth(time.Now().Year(), cur)
 
 	if j.Day == "*" {
@@ -325,7 +324,7 @@ func (j *Job) parseDay(next bool) (int, bool, error) {
 			return util.ParseInt(arr[0]), true, nil
 		}
 	} else if day, err := strconv.Atoi(j.Day); err == nil {
-		if day > cur {
+		if day > cur || (day == cur && !next) {
 			return day, false, nil
 		}
 
@@ -336,10 +335,9 @@ func (j *Job) parseDay(next bool) (int, bool, error) {
 
 func (j *Job) parseWeekday(next bool) (int, bool, error) {
 	var weekdays []int
-	now := time.Now()
-	curWeekday := int(now.Weekday())
-	curDay := now.Day()
-	daysNumOfMonth := util.CountDaysOfMonth(now.Year(), curDay)
+	curWeekday := int(j.now.Weekday())
+	curDay := j.now.Day()
+	daysNumOfMonth := util.CountDaysOfMonth(j.now.Year(), curDay)
 
 	if j.Weekday == "*" {
 		if next {
@@ -424,6 +422,8 @@ func (j *Job) parseWeekday(next bool) (int, bool, error) {
 				return sub, true, nil
 			}
 			return curDay, false, nil
+		} else if weekday == curWeekday && !next {
+			return curDay, false, nil
 		}
 
 		// 跳一周
@@ -439,8 +439,8 @@ func (j *Job) parseWeekday(next bool) (int, bool, error) {
 func (j *Job) parseMonth(next bool) (int, bool, error) {
 
 	var months []int
-	cur := int(time.Now().Month())
-	daysNumOfMonth := util.CountDaysOfMonth(time.Now().Year(), int(time.Now().Month()))
+	cur := int(j.now.Month())
+	daysNumOfMonth := util.CountDaysOfMonth(j.now.Year(), int(j.now.Month()))
 
 	if j.Month == "*" {
 		if next {
@@ -500,7 +500,7 @@ func (j *Job) parseMonth(next bool) (int, bool, error) {
 			return util.ParseInt(arr[0]), true, nil
 		}
 	} else if month, err := strconv.Atoi(j.Month); err == nil {
-		if month > cur {
+		if month > cur || (month == cur && !next) {
 			return month, false, nil
 		}
 		return cur, true, nil
