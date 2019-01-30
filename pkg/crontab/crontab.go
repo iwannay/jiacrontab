@@ -10,42 +10,57 @@ import (
 // Task 任务
 type Task = pqueue.Item
 
-type crontab struct {
+type Crontab struct {
 	pq    pqueue.PriorityQueue
 	mux   sync.RWMutex
 	ready chan *Task
 }
 
-func New() *crontab {
-	return &crontab{
+func New() *Crontab {
+	return &Crontab{
 		pq:    pqueue.New(100),
 		ready: make(chan *Task, 10000),
 	}
 }
 
-func (c *crontab) Add(t *Task) {
+// AddJob 添加未经处理的job
+func (c *Crontab) AddJob(j *Job) error {
+	nt, err := j.NextExecutionTime(time.Now())
+	if err != nil {
+		return err
+	}
+
+	heap.Push(&c.pq, &Task{
+		Priority: nt.UnixNano(),
+		Value:    j,
+	})
+	return nil
+}
+
+// AddJob 添加延时任务
+func (c *Crontab) AddTask(t *Task) {
 	heap.Push(&c.pq, t)
 }
 
-func (c *crontab) Len() int {
+func (c *Crontab) Len() int {
 	c.mux.RLock()
 	len := len(c.pq)
 	c.mux.RUnlock()
 	return len
 }
 
-func (c *crontab) GetAllTask() []*Task {
+func (c *Crontab) GetAllTask() []*Task {
 	c.mux.Lock()
 	list := c.pq
 	c.mux.Unlock()
 	return list
 }
 
-func (c *crontab) Ready() <-chan *Task {
+func (c *Crontab) Ready() <-chan *Task {
 	return c.ready
 }
 
-func (c *crontab) QueueScanWorker() {
+func (c *Crontab) QueueScanWorker() {
 	refreshTicker := time.NewTicker(100 * time.Millisecond)
 	for {
 		select {
