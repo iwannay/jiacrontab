@@ -8,6 +8,7 @@ import (
 	"io"
 	"jiacrontab/pkg/kproc"
 	"jiacrontab/pkg/log"
+	"jiacrontab/pkg/rpc"
 	"jiacrontab/pkg/util"
 	"os"
 	"os/exec"
@@ -194,8 +195,8 @@ func pipeExecScript(ctx context.Context, cmdList [][]string, logname string, log
 		if err2 != nil || io.EOF == err2 {
 			break
 		}
-		if globalConfig.debugScript {
-			prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, logCmdName)
+		if cfg.VerboseJobLog {
+			prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format("2006-01-02 15:04:05"), cfg.LocalAddr, logCmdName)
 			line = prefix + line
 			*content = append(*content, []byte(line)...)
 		} else {
@@ -212,8 +213,8 @@ func pipeExecScript(ctx context.Context, cmdList [][]string, logname string, log
 			break
 		}
 		// 默认给err信息加上日期标志
-		if globalConfig.debugScript {
-			prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, logCmdName)
+		if cfg.VerboseJobLog {
+			prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format("2006-01-02 15:04:05"), cfg.LocalAddr, logCmdName)
 			line = prefix + line
 			*content = append(*content, []byte(line)...)
 		} else {
@@ -226,4 +227,58 @@ func pipeExecScript(ctx context.Context, cmdList [][]string, logname string, log
 
 	return f, exitError
 
+}
+
+type pipeCmd struct {
+	*kproc.KCmd
+}
+
+func execute(outputBuffer *bytes.Buffer, errorBuffer *bytes.Buffer, stack ...*pipeCmd) (err error) {
+	pipeStack := make([]*io.PipeWriter, len(stack)-1)
+	i := 0
+	for ; i < len(stack)-1; i++ {
+		stdinPipe, stdoutPipe := io.Pipe()
+		stack[i].Stdout = stdoutPipe
+		stack[i].Stderr = errorBuffer
+		stack[i+1].Stdin = stdinPipe
+		pipeStack[i] = stdoutPipe
+	}
+
+	stack[i].Stdout = outputBuffer
+	stack[i].Stderr = errorBuffer
+
+	if err = call(stack, pipeStack); err != nil {
+		errorBuffer.WriteString(err.Error())
+	}
+	return err
+}
+
+func call(stack []*pipeCmd, pipes []*io.PipeWriter) (err error) {
+	if stack[0].Process == nil {
+		if err = stack[0].Start(); err != nil {
+			return err
+		}
+	}
+
+	if len(stack) > 1 {
+		if err = stack[1].Start(); err != nil {
+			return err
+		}
+
+		defer func() {
+			pipes[0].Close()
+			if err == nil {
+				err = call(stack[1:], pipes[1:])
+			}
+			if err != nil {
+				// fixed zombie process
+				stack[1].Wait()
+			}
+		}()
+	}
+	return stack[0].Wait()
+}
+
+func rpcCall(serviceMethod string, args, reply interface{}) error {
+	return rpc.Call(cfg.AdminAddr, serviceMethod, args, reply)
 }

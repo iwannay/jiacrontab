@@ -1,9 +1,11 @@
 package jiacrontabd
 
 import (
+	"jiacrontab/models"
 	"jiacrontab/pkg/crontab"
 	"jiacrontab/pkg/finder"
 	"jiacrontab/pkg/log"
+	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/rpc"
 	"jiacrontab/pkg/util"
 	"sync"
@@ -14,17 +16,24 @@ import (
 type Jiacrontabd struct {
 	crontab *crontab.Crontab
 	// All jobs added
-	jobs map[int]*JobEntry
-	dep  *dependencies
-	mux  sync.RWMutex
-	wg   util.WaitGroupWrapper
+	jobs            map[int]*JobEntry
+	dep             *dependencies
+	daemon          *daemon
+	heartbeatPeriod time.Duration
+	mux             sync.RWMutex
+	wg              util.WaitGroupWrapper
 }
 
 // New return a Jiacrontabd instance
 func New() *Jiacrontabd {
-	return &Jiacrontabd{
-		jobs: make(map[int]*JobEntry),
+	j := &Jiacrontabd{
+		jobs:            make(map[int]*JobEntry),
+		daemon:          newDaemon(100),
+		heartbeatPeriod: 5 * time.Second,
 	}
+	j.dep = newDependencies(j)
+
+	return j
 }
 
 // AddJob add job
@@ -131,21 +140,20 @@ func (j *Jiacrontabd) pushPipeDepend(deps []*depEntry, depEntryID string) bool {
 					j.dep.add(v)
 				} else {
 					var reply bool
-					// err := rpcCall("Logic.Depends", []model.DependsTask{{
-					// 	Id:           v.id,
-					// 	Name:         v.name,
-					// 	Dest:         v.dest,
-					// 	From:         v.from,
-					// 	TaskId:       v.taskId,
-					// 	TaskEntityId: v.taskEntityId,
-					// 	Command:      v.command,
-					// 	Args:         v.args,
-					// 	Timeout:      v.timeout,
-					// }}, &reply)
-					// if !reply || err != nil {
-					// 	log.Println("Logic.Depends error:", err, "server addr:", globalConfig.rpcSrvAddr)
-					// 	return false
-					// }
+					err := rpcCall("Logic.Depends", []proto.DependsTask{{
+						ID:         v.id,
+						Name:       v.name,
+						Dest:       v.dest,
+						From:       v.from,
+						JobEntryID: v.jobID,
+						ProcessID:  v.processID,
+						Commands:   v.commands,
+						Timeout:    v.timeout,
+					}}, &reply)
+					if !reply || err != nil {
+						log.Error("Logic.Depends error:", err, "server addr:", cfg.AdminAddr)
+						return false
+					}
 				}
 				flag = true
 				break
@@ -161,11 +169,37 @@ func (j *Jiacrontabd) pushPipeDepend(deps []*depEntry, depEntryID string) bool {
 	return flag
 }
 
+func (j *Jiacrontabd) count() int {
+	j.mux.RLock()
+	num := len(j.jobs)
+	j.mux.RUnlock()
+	return num
+}
+
+func (j *Jiacrontabd) heartBeat() {
+	var mail proto.MailArgs
+	err := rpcCall(rpc.RegisterService, models.Client{
+		Addr:           cfg.LocalAddr,
+		DaemonTaskNum:  j.daemon.count(),
+		CrontabTaskNum: j.count(),
+		State:          1,
+		Mail:           cfg.MailTo,
+	}, &mail)
+
+	if err != nil {
+		log.Error("Logic.Register error:", err, "server addr:", cfg.AdminAddr)
+	}
+
+	time.AfterFunc(heartbeatPeriod, j.heartBeat)
+}
+
+// Main main function
 func (j *Jiacrontabd) Main() {
 
 	if cfg.AutoCleanTaskLog {
 		go finder.SearchAndDeleteFileOnDisk(cfg.LogPath, 24*time.Hour*30, 1<<30)
 	}
 
+	j.heartBeat()
 	rpc.ListenAndServe(cfg.ListenAddr)
 }

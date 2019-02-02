@@ -37,15 +37,17 @@ func ReplaceEmpty(str, replaceStr string) string {
 }
 
 func RandNum() int64 {
-	rand.Seed(23423334422)
 	return rand.Int63()
+}
+
+func RandIntn(end int) int {
+	return rand.Intn(end)
 }
 
 func Date(t int64) string {
 	if t == 0 {
 		return "0"
 	}
-
 	return time.Unix(t, 0).Format("2006-01-02 15:04:05")
 }
 
@@ -300,4 +302,8 @@ func InArray(val interface{}, arr interface{}) bool {
 	}
 
 	return false
+}
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
 }

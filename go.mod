@@ -18,7 +18,9 @@ require (
 	github.com/gofrs/uuid v3.2.0+incompatible // indirect
 	github.com/google/go-cmp v0.2.0 // indirect
 	github.com/google/go-querystring v1.0.0 // indirect
+	github.com/google/pprof v0.0.0-20190109223431-e84dfd68c163 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
+	github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6 // indirect
 	github.com/imkira/go-interpol v1.1.0 // indirect
 	github.com/iris-contrib/blackfriday v2.0.0+incompatible // indirect
 	github.com/iris-contrib/formBinder v0.0.0-20190104093907-fbd5963f41e1 // indirect
