@@ -33,7 +33,7 @@ type MailArgs struct {
 }
 
 type SearchLog struct {
-	TaskId         int
+	JobID          int
 	IsTail         bool
 	Page, Pagesize int
 	Date           string

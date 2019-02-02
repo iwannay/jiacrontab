@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"jiacrontab/pkg/log"
+	"jiacrontab/pkg/proto"
 	"path/filepath"
 	"time"
 )
@@ -51,9 +52,12 @@ func (d *dependencies) run() {
 }
 
 func (d *dependencies) exec(task *depEntry) {
-	var reply bool
-	var logContent []byte
-	var errMsg string
+
+	var (
+		reply      bool
+		logContent []byte
+		errMsg     string
+	)
 
 	if task.timeout == 0 {
 		// 默认超时10分钟
@@ -86,23 +90,22 @@ func (d *dependencies) exec(task *depEntry) {
 	task.dest, task.from = task.from, task.dest
 
 	if !d.crond.filterDepend(task) {
-		// err = rpcCall("Logic.DependDone", model.DependsTask{
-		// Id:           t.id,
-		// Name:         t.name,
-		// Dest:         t.dest,
-		// From:         t.from,
-		// TaskEntityId: t.taskEntityId,
-		// TaskId:       t.taskId,
-		// Command:      t.command,
-		// LogContent:   t.logContent,
-		// 	Err:     errMsg,
-		// 	Args:    t.args,
-		// 	Timeout: t.timeout,
-		// }, &reply)
+		err = rpcCall("Logic.DependDone", proto.DependsTask{
+			ID:         task.id,
+			Name:       task.name,
+			Dest:       task.dest,
+			From:       task.from,
+			ProcessID:  task.processID,
+			JobEntryID: task.jobID,
+			Commands:   task.commands,
+			LogContent: task.logContent,
+			Err:        errMsg,
+			Timeout:    task.timeout,
+		}, &reply)
 
-		// if err != nil {
-		// 	log.Println("Logic.DependDone error:", err, "server addr:", globalConfig.rpcSrvAddr)
-		// }
+		if err != nil {
+			log.Error("Logic.DependDone error:", err, "server addr:", cfg.AdminAddr)
+		}
 
 		if !reply {
 			log.Errorf("task %s %s %s call Logic.DependDone failed! err:%v", task.name, task.commands, err)

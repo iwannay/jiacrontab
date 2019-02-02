@@ -41,7 +41,7 @@ func (c *Config) init() error {
 		field := typ.Field(i)
 		opt := field.Tag.Get("opt")
 
-		defaultVal := cf.Section("rpc").Key(opt).String()
+		defaultVal := cf.Section("jiacrontabd").Key(opt).String()
 
 		if defaultVal == "" {
 			defaultVal = field.Tag.Get("default")
