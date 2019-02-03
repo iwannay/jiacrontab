@@ -1,14 +1,19 @@
 package admin
 
 import (
+	"errors"
+	"jiacrontab/pkg/mailer"
+	"jiacrontab/pkg/proto"
 	"reflect"
 	"time"
+
+	"github.com/kataras/iris"
 
 	ini "gopkg.in/ini.v1"
 )
 
 const (
-	configFile = "client.ini"
+	configFile = "node.ini"
 	appname    = "jiacrontabd"
 )
 
@@ -52,7 +57,7 @@ type Config struct {
 	Mailer          *mailerOpt `section:"mail"`
 	Jwt             *jwtOpt    `section:"jwt`
 	App             *appOpt    `section:"app"`
-	ServerStartTime time.Time
+	ServerStartTime time.Time  `json:"-"`
 }
 
 func (c *Config) init() {
@@ -105,6 +110,40 @@ func loadConfig() *ini.File {
 		panic(err)
 	}
 	return f
+}
+
+func getConfig(c iris.Context) {
+	var (
+		err error
+		ctx = wrapCtx(c)
+	)
+
+	return ctx.respSucc("", cfg)
+}
+
+func sendTestMail(c iris.Context) {
+	var (
+		ctx     = wrapCtx(c)
+		err     error
+		reqBody sendTestMailReqParams
+	)
+
+	if err = reqBody.verify(ctx); err != nil {
+		goto failed
+	}
+
+	if cfg.Mailer.Enabled {
+		err = mailer.SendMail([]string{mailTo}, "测试邮件", "测试邮件请勿回复！")
+		if err != nil {
+			goto failed
+		}
+		return ctx.respSucc("", nil)
+	}
+
+	err = errors.New("邮箱服务未开启")
+
+failed:
+	return ctx.respError(proto.Code_Error, err.Error(), nil)
 }
 
 func init() {

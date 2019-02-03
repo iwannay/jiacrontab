@@ -55,6 +55,12 @@ func Del(addr string) {
 	}
 }
 
+func DelNode(addr string) {
+	if defaultClients != nil {
+		defaultClients.del(addr)
+	}
+}
+
 func init() {
 	defaultClients = &clients{
 		clients: make(map[string]*Client),

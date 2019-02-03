@@ -1,6 +1,8 @@
 package admin
 
 import (
+	"fmt"
+	"jiacrontab/pkg/base"
 	"path/filepath"
 
 	"github.com/kataras/iris"
@@ -43,42 +45,48 @@ func route(app *iris.Application) {
 		SigningMethod: jwt.SigningMethodHS256,
 	})
 
+	app.UseGlobal(func(ctx iris.Context) {
+		base.Stat.AddConcurrentCount()
+		defer func() {
+			if err := recover(); err != nil {
+				base.Stat.AddErrorCount(ctx.RequestPath(true), fmt.Errorf("%v", err), 1)
+			}
+			base.Stat.AddRequestCount(ctx.RequestPath(true), ctx.GetStatusCode(), 1)
+		}()
+		ctx.Next()
+	})
+
 	app.Use(jwtHandler.Serve, func(ctx iris.Context) {
 		token := ctx.Values().Get("jwt").(*jwt.Token)
 		ctx.Values().Set("sess", token.Claims)
 		ctx.Next()
 	})
 
-	app.Post("/client/list", getClientList)
+	app.Post("/node/list", getNodeList)
+	app.Post("/node/delete", deleteNode)
 	app.Post("/crontab/job/list", getJobList)
+	app.Post("/crontab/job/get", getJob)
 	app.Post("/crontab/job/log", getRecentLog)
 	app.Post("/crontab/job/edit", editJob)
 	app.Post("/crontab/job/stop", stopTask)
 	app.Post("/crontab/job/start", startTask)
-	app.post("/crontab/job/exec", execTask)
+	app.Post("/crontab/job/exec", execTask)
 
 	app.Post("/user/login", login)
-	app.Get("/crontab/job/exec", exec)
+	app.Post("/config/get", getConfig)
+	app.Post("/runtime/info", runtimeInfo)
 
-	// app.Get("/reloadConfig", handle.ReloadConfig)
-	// app.Get("/deleteClient", handle.DeleteClient)
-	// app.Any("/viewConfig", handle.ViewConfig)
-	// app.Get("/crontab/task/stopAll", handle.StopAllTask)
+	app.Post("/daemon/job/list", getDaemonJobList)
+	app.Post("/daemon/job/action", actionDaemonTask)
+	app.Post("/daemon/job/edit", editDaemonJob)
+	app.Post("/daemon/job/get", getDaemonJob)
+	app.Post("/daemon/job/log", getRecentDaemonLog)
 
-	// app.Any("/daemon/task/list", handle.ListDaemonTask)
-	// app.Get("/daemon/task/action", handle.ActionDaemonTask)
-	// app.Any("/daemon/task/edit", handle.EditDaemonTask)
-	// app.Get("/daemon/task/log", handle.RecentDaemonLog)
-
-	// app.Get("/runtime/info", handle.RuntimeInfo)
-
-	// debug := app.Party("/debug")
-	// {
-	// 	debug.Get("/stat", handle.Stat)
-	// 	debug.Get("/pprof/", handle.IndexDebug)
-	// 	debug.Get("/pprof/{key:string}", handle.PprofHandler)
-	// 	debug.Get("/freemem", handle.FreeMem)
-
-	// }
+	debug := app.Party("/debug")
+	{
+		debug.Get("/stat", stat)
+		debug.Get("/pprof/", indexDebug)
+		debug.Get("/pprof/{key:string}", pprofHandler)
+	}
 
 }

@@ -18,8 +18,8 @@ func getJobList(c iris.Context) {
 	var (
 		systemInfo map[string]interface{}
 		jobList    []models.CrontabJob
-		clientList []models.Client
-		client     models.Client
+		nodeList []models.Node
+		node     models.Node
 		ctx        = wrapCtx(c)
 		addr       = ctx.FormValue("addr")
 	)
@@ -29,16 +29,16 @@ func getJobList(c iris.Context) {
 		return
 	}
 
-	model.DB().Model(&models.Client{}).Find(&clientList)
+	model.DB().Model(&models.Node{}).Find(&nodeList)
 
-	if len(clientList) == 0 {
+	if len(nodeList) == 0 {
 		ctx.respError(proto.Code_Error, "暂无数据", nil)
 		return
 	}
 
-	for _, v := range clientList {
+	for _, v := range nodeList {
 		if v.Addr == addr {
-			client = v
+			node = v
 			break
 		}
 	}
@@ -56,8 +56,8 @@ func getJobList(c iris.Context) {
 	ctx.respSucc("", map[string]interface{}{
 		"taskList":   jobList,
 		"addr":       addr,
-		"client":     client,
-		"clientList": clientList,
+		"node":     node,
+		"nodeList": nodeList,
 		"systemInfo": systemInfo,
 	})
 }
@@ -75,7 +75,7 @@ func getRecentLog(c iris.Context) {
 		goto failed
 	}
 
-	if err := rpc.Call(reqBody.Addr, "CrontabTask.Log", proto.SearchLog{
+	if err := rpc.Call(reqBody.Addr, "CrontabJob.Log", proto.SearchLog{
 		JobID:    reqBody.JobID,
 		Page:     reqBody.Page,
 		Pagesize: reqBody.Pagesize,
@@ -156,9 +156,9 @@ func stopTask(c iris.Context) {
 		method string
 		reqBody stopTaskReqParams
 		methods = map[string]string{
-			"stop":"crontabTask.Stop",
-			"delete":"CrontabTask.Delete",
-			"kill":"CrontabTask.Kill"
+			"stop":"CrontabJob.Stop",
+			"delete":"CrontabJob.Delete",
+			"kill":"CrontabJob.Kill"
 		}
 	)
 
@@ -172,7 +172,7 @@ func stopTask(c iris.Context) {
 	}
 
 
-	if err := rpcCall(addr, method, reqBody.JobID, &reply); err != nil {
+	if err := rpcCall(addr, method, reqBody.JobIDs, &reply); err != nil {
 		goto failed
 	}
 
@@ -194,7 +194,7 @@ func startTask(c iris.Context) {
 		goto failed
 	}
 
-	if err := rpcCall(addr, "CrontabTask.Start", taskId, &reply); err != nil {
+	if err := rpcCall(addr, "CrontabJob.Start", taskId, &reply); err != nil {
 		
 		goto failed
 	}
@@ -217,7 +217,7 @@ func execTask(c iris.Context) {
 		goto failed
 	}
 
-	if err = rpcCall(reqBody.Addr, "CrontabTask.QuickStart",reqBody.JobID, &reply); err != nil {
+	if err = rpcCall(reqBody.Addr, "CrontabJob.QuickStart",reqBody.JobID, &reply); err != nil {
 		goto failed
 	}
 
@@ -226,4 +226,22 @@ func execTask(c iris.Context) {
 
 failed:
 	return ctx.respError(proto.Code_Error,err.Error(), nil)
+}
+
+func getJob(c iris.Context) {
+	var (
+		ctx = wrapCtx(c)
+		reqBody getJobReqParams
+		daemonJob models.DaemonJob
+		err error
+	)
+	if err = reqBody.verify(ctx); err != nil {
+		return ctx.respError(proto.Code_Error, err.Error(), nil)
+	}
+
+	if err = rpcCall(addr, "CrontabJob.GetJob", reqBody.JobID, &daemonJob); err != nil {
+		return ctx.respError(proto.Code_Error, err.Error(), nil)
+	}
+
+	return ctx.respSucc("", daemonJob)
 }
