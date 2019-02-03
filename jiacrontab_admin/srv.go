@@ -16,7 +16,7 @@ import (
 
 type Srv struct{}
 
-func (s *Srv) Register(args models.Client, reply *proto.MailArgs) error {
+func (s *Srv) Register(args models.Node, reply *proto.MailArgs) error {
 
 	*reply = proto.MailArgs{
 		Host: conf.MailService.Host,
@@ -24,7 +24,7 @@ func (s *Srv) Register(args models.Client, reply *proto.MailArgs) error {
 		Pass: conf.MailService.Passwd,
 	}
 
-	ret := models.DB().Model(&models.Client{}).Where("addr=?", args.Addr).Update(map[string]interface{}{})
+	ret := models.DB().Model(&models.Node{}).Where("addr=?", args.Addr).Update(map[string]interface{}{})
 
 	if ret.RowsAffected == 0 {
 		args.Name = time.Now().Format("20060102150405")

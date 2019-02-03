@@ -45,8 +45,8 @@ func (a *Admin) Main() {
 
 	models.CreateDB("sqlite3", "data/jiacrontab_admin.db")
 
-	models.DB().CreateTable(&models.Client{})
-	models.DB().AutoMigrate(&models.Client{})
+	models.DB().CreateTable(&models.Node{})
+	models.DB().AutoMigrate(&models.Node{})
 
 	app := iris.New()
 	html := iris.HTML(cfg.App.TplDir, cfg.App.TplExt)

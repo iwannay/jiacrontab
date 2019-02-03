@@ -1,6 +1,6 @@
 package proto
 
-type Client struct {
+type Node struct {
 	Name           string
 	State          int
 	DaemonTaskNum  int
