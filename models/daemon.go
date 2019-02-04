@@ -14,6 +14,7 @@ type DaemonJob struct {
 	Disabled        bool
 	MailTo          string
 	APITo           string
+	Status          int
 	FailRestart     bool
 	StartAt         time.Time
 	Commands        []string

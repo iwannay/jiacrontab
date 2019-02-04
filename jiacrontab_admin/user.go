@@ -12,7 +12,7 @@ import (
 type CustomerClaims struct {
 	jwt.StandardClaims
 	Username string
-	Role     int
+	Group    int
 	Root     bool
 }
 
@@ -29,12 +29,13 @@ func login(c iris.Context) {
 	)
 
 	if !user.Verify(reqBody.Username, reqBody.Passwd) {
-		return ctx.respError(proto.Code_FailedAuth, "帐号或密码不正确", nil)
+		ctx.respError(proto.Code_FailedAuth, "帐号或密码不正确", nil)
+		return
 	}
 
 	customerClaims.ExpiresAt = cfg.Jwt.Expires + time.Now().Unix()
 	customerClaims.Username = reqBody.Username
-	customerClaims.Role = user.Role
+	customerClaims.Group = user.Group
 	customerClaims.Root = user.Root
 
 	if reqBody.Remember {
@@ -44,11 +45,35 @@ func login(c iris.Context) {
 	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, &customerClaims).SignedString([]byte(cfg.Jwt.SigningKey))
 
 	if err != nil {
-		return ctx.respError(proto.Code_FailedAuth, "无法生成访问凭证", nil)
+		ctx.respError(proto.Code_FailedAuth, "无法生成访问凭证", nil)
+		return
 	}
 
-	return ctx.respSucc("", map[string]string{
-		"token": token,
-	})
+	ctx.respSucc("", token)
+}
 
+func signUp(c iris.Context) {
+	var (
+		err     error
+		ctx     = wrapCtx(c)
+		user    models.User
+		reqBody userReqParams
+	)
+
+	if err = reqBody.verify(ctx); err != nil {
+		ctx.respError(proto.Code_Error, err.Error(), nil)
+		return
+	}
+
+	user.Name = reqBody.Name
+	user.Passwd = reqBody.Passwd
+	user.Group = reqBody.Group
+	user.Root = reqBody.Root
+
+	if err = user.SignUp(); err != nil {
+		ctx.respError(proto.Code_Error, err.Error(), nil)
+		return
+	}
+
+	ctx.respSucc("", true)
 }

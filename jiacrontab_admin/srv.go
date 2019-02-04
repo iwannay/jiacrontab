@@ -8,7 +8,6 @@ import (
 	"jiacrontab/pkg/mailer"
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/rpc"
-	"jiacrontab/server/conf"
 	"net/http"
 	"strings"
 	"time"
@@ -16,16 +15,9 @@ import (
 
 type Srv struct{}
 
-func (s *Srv) Register(args models.Node, reply *proto.MailArgs) error {
-
-	*reply = proto.MailArgs{
-		Host: conf.MailService.Host,
-		User: conf.MailService.User,
-		Pass: conf.MailService.Passwd,
-	}
-
-	ret := models.DB().Model(&models.Node{}).Where("addr=?", args.Addr).Update(map[string]interface{}{})
-
+func (s *Srv) Register(args models.Node, reply *bool) error {
+	*reply = true
+	ret := models.DB().Where("addr=? and group=?", args.Addr, args.Group).Save(&args)
 	if ret.RowsAffected == 0 {
 		args.Name = time.Now().Format("20060102150405")
 		ret = models.DB().Create(&args)
@@ -34,11 +26,11 @@ func (s *Srv) Register(args models.Node, reply *proto.MailArgs) error {
 	return ret.Error
 }
 
-func (s *Srv) Depends(args proto.DependsTasks, reply *bool) error {
-	log.Infof("Callee Logic.Depend taskId %d", args[0].JobEntryID)
+func (s *Srv) Depends(args proto.DepJobs, reply *bool) error {
+	log.Infof("Callee Srv.Depend jobID:%d", args[0].JobID)
 	*reply = true
 	for _, v := range args {
-		if err := rpc.Call(v.Dest, "CrontabTask.ExecDepend", v, &reply); err != nil {
+		if err := rpc.Call(v.Dest, "CrontabJob.ExecDepend", v, &reply); err != nil {
 			*reply = false
 			return err
 		}
@@ -47,10 +39,10 @@ func (s *Srv) Depends(args proto.DependsTasks, reply *bool) error {
 	return nil
 }
 
-func (s *Srv) DependDone(args proto.DependsTask, reply *bool) error {
-	log.Infof("Callee Logic.DependDone task %s", args.Name)
+func (s *Srv) DependDone(args proto.DepJob, reply *bool) error {
+	log.Infof("Callee Srv.DependDone jobID:%s", args.JobID)
 	*reply = true
-	if err := rpc.Call(args.Dest, "CrontabTask.ResolvedDepends", args, &reply); err != nil {
+	if err := rpc.Call(args.Dest, "CrontabJob.ResolvedDepends", args, &reply); err != nil {
 		*reply = false
 		return err
 	}
@@ -60,7 +52,7 @@ func (s *Srv) DependDone(args proto.DependsTask, reply *bool) error {
 
 func (s *Srv) SendMail(args proto.SendMail, reply *bool) error {
 	var err error
-	if conf.MailService.Enabled {
+	if cfg.Mailer.Enabled {
 		err = mailer.SendMail(args.MailTo, args.Subject, args.Content)
 	}
 	*reply = true

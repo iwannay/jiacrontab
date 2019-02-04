@@ -4,8 +4,6 @@ import (
 	"jiacrontab/models"
 	"jiacrontab/pkg/mailer"
 	"jiacrontab/pkg/rpc"
-	"jiacrontab/server/conf"
-	"jiacrontab/server/handle"
 
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/kataras/iris"
@@ -41,20 +39,27 @@ func (a *Admin) init() {
 	}
 
 }
-func (a *Admin) Main() {
 
+func (a *Admin) Main() {
 	models.CreateDB("sqlite3", "data/jiacrontab_admin.db")
 
 	models.DB().CreateTable(&models.Node{})
 	models.DB().AutoMigrate(&models.Node{})
 
+	models.DB().CreateTable(&models.Group{})
+	models.DB().AutoMigrate(&models.Group{})
+
+	models.DB().CreateTable(&models.User{})
+	models.DB().AutoMigrate(&models.User{})
+
+	a.init()
+
 	app := iris.New()
-	html := iris.HTML(cfg.App.TplDir, cfg.App.TplExt)
-	html.Reload(true)
-	app.RegisterView(html)
+	// html := iris.HTML(cfg.App.TplDir, cfg.App.TplExt)
+	// html.Reload(true)
+	// app.RegisterView(html)
 
 	route(app)
-
-	go rpc.ListenAndServe(cfg.App.HttpListenAddr, &handle.Logic{})
-	app.Run(iris.Addr(conf.AppService.HttpListenAddr))
+	go rpc.ListenAndServe(cfg.App.RpcListenAddr, &Srv{})
+	app.Run(iris.Addr(cfg.App.HttpListenAddr))
 }

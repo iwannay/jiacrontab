@@ -2,6 +2,7 @@ package jiacrontabd
 
 import (
 	"context"
+	"jiacrontab/models"
 	"jiacrontab/pkg/crontab"
 	"jiacrontab/pkg/log"
 	"jiacrontab/pkg/util"
@@ -50,7 +51,7 @@ func newJobEntry(job *crontab.Job) *JobEntry {
 	}
 }
 
-func (j *JobEntry) exec() {
+func (j *JobEntry) exec() []byte {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	j.cancels = append(j.cancels, cancel)
@@ -61,8 +62,16 @@ func (j *JobEntry) exec() {
 	j.mux.Unlock()
 	j.wg.Wrap(func() {
 		defer atomic.AddInt32(&j.processNum, -1)
+		job := j.job.Value.(models.CrontabJob)
+		log.Info(job)
 		// 执行脚本
 	})
+	return nil
+}
+
+func (j *JobEntry) kill() {
+	j.cancel()
+	j.done()
 }
 
 func (j *JobEntry) done() {

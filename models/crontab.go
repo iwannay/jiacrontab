@@ -19,13 +19,13 @@ type CrontabJob struct {
 	LastExecTime    time.Time
 	NextExecTime    time.Time
 	LastExitStatus  string
-	Timeout         int64
+	Timeout         int
 	ErrorMailNotify bool
 	ErrorAPINotify  bool
 	IsSync          bool // 脚本是否同步执行
 	MailTo          string
-	ApiTo           string
-	MaxConcurrent   int      // 脚本最大并发量
+	APITo           string
+	MaxConcurrent   uint     // 脚本最大并发量
 	TimeoutTrigger  string   // email/kill/email_and_kill/ignore/api
 	TimeArgs        TimeArgs `gorm:"type:TEXT"`
 }
@@ -55,6 +55,7 @@ type TimeArgs struct {
 	Day     string
 	Hour    string
 	Minute  string
+	Second  string
 }
 
 func (c *TimeArgs) Scan(v interface{}) error {
@@ -79,10 +80,9 @@ type DependJob struct {
 	Dest     string
 	From     string
 	JobID    int
-	ID       int
+	ID       string
 	Commands []string
 	Timeout  int64
-	Err      string
 }
 
 type PipeComamnds [][]string

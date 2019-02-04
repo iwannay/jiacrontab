@@ -6,7 +6,7 @@ const (
 	DeleteDaemonTask
 )
 
-type ActionDaemonTaskArgs struct {
-	Action  int
-	TaskIds string
+type ActionDaemonJobArgs struct {
+	Action int
+	JobIDs []uint
 }

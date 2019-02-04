@@ -21,7 +21,7 @@ const (
 )
 
 type daemonTask struct {
-	task       *models.DaemonJob
+	job        *models.DaemonJob
 	daemon     *daemon
 	action     int
 	cancel     context.CancelFunc
@@ -44,54 +44,48 @@ func (d *daemonTask) do(ctx context.Context) {
 
 	defer func() {
 		if err := recover(); err != nil {
-			log.Errorf("%s exec panic %s \n", d.task.Name, err)
+			log.Errorf("%s exec panic %s \n", d.job.Name, err)
 		}
 
 		d.daemon.wait.Done()
 	}()
-
-	// model.DB().Table("daemon_tasks").Table("daemon_tasks").Where("id = ?", d.task.ID).Update(map[string]interface{}{
-	// 	"status":      startDaemonTask,
-	// 	"start_at":    time.Now(),
-	// 	"process_num": d.processNum})
 
 	for {
 		var cmdList [][]string
 		var logContent []byte
 
 		stop := false
-		cmdList = append(cmdList, d.task.Commands)
+		cmdList = append(cmdList, d.job.Commands)
 
-		logPath := filepath.Join(cfg.LogPath, "daemon_task")
-		log.Info("daemon exec task_name:", d.task.Name, "task_id", d.task.ID)
-		err := wrapExecScript(ctx, fmt.Sprintf("%d.log", d.task.ID), cmdList, logPath, &logContent)
+		logPath := filepath.Join(cfg.LogPath, "daemon_job")
+		log.Info("daemon exec jobName:", d.job.Name, " jobID", d.job.ID)
+		err := wrapExecScript(ctx, fmt.Sprintf("%d.log", d.job.ID), cmdList, logPath, &logContent)
 		if err != nil {
-			if d.task.MailNotify && d.task.MailTo != "" {
-
-				err := rpcCall("Logic.SendMail", proto.SendMail{
-					MailTo:  strings.Split(d.task.MailTo, ","),
+			if d.job.ErrorMailNotify && d.job.MailTo != "" {
+				err := rpcCall("Srv.SendMail", proto.SendMail{
+					MailTo:  strings.Split(d.job.MailTo, ","),
 					Subject: cfg.LocalAddr + "提醒常驻脚本异常退出",
 					Content: fmt.Sprintf(
-						"任务名：%s\n详情：%v\n开始时间：%s\n异常：%s", d.task.Name, d.task.Commands, time.Now().Format("2006-01-02 15:04:05"), err.Error()),
+						"任务名：%s\n详情：%v\n开始时间：%s\n异常：%s", d.job.Name, d.job.Commands, time.Now().Format("2006-01-02 15:04:05"), err.Error()),
 				}, &reply)
 				if err != nil {
 					log.Error("Logic.SendMail error:", err, "server addr:", cfg.AdminAddr)
 				}
 			}
 
-			if d.task.ApiNotify && d.task.ApiTo != "" {
+			if d.job.ErrorAPINotify && d.job.APITo != "" {
 				postData, err := json.Marshal(apiPost{
-					JobName:   d.task.Name,
-					JobID:     d.task.ID,
-					Commmands: d.task.Commands,
-					CreatedAt: d.task.CreatedAt,
+					JobName:   d.job.Name,
+					JobID:     d.job.ID,
+					Commmands: d.job.Commands,
+					CreatedAt: d.job.CreatedAt,
 					Type:      "error",
 				})
 				if err != nil {
 					log.Error("json.Marshal error:", err)
 				}
-				err = rpcCall("Logic.ApiPost", proto.ApiPost{
-					Url:  d.task.ApiTo,
+				err = rpcCall("Srv.ApiPost", proto.ApiPost{
+					Url:  d.job.APITo,
 					Data: string(postData),
 				}, &reply)
 				if err != nil {
@@ -106,7 +100,7 @@ func (d *daemonTask) do(ctx context.Context) {
 		case <-t.C:
 		}
 
-		if stop || d.task.FailedRestart == false {
+		if stop || d.job.FailRestart == false {
 			break
 		}
 
@@ -118,15 +112,12 @@ func (d *daemonTask) do(ctx context.Context) {
 	}
 
 	d.daemon.lock.Lock()
-	delete(d.daemon.taskMap, d.task.ID)
+	delete(d.daemon.taskMap, d.job.ID)
 	d.daemon.lock.Unlock()
 
 	d.processNum = 0
-	// model.DB().Model(&model.DaemonTask{}).Where("id = ?", d.task.ID).Update(map[string]interface{}{
-	// 	"status":      stopDaemonTask,
-	// 	"process_num": d.processNum})
 
-	log.Info("daemon task end", d.task.Name)
+	log.Info("daemon task end", d.job.Name)
 
 }
 
@@ -138,7 +129,6 @@ type daemon struct {
 }
 
 func newDaemon(taskChannelLength int) *daemon {
-
 	return &daemon{
 		taskMap:     make(map[uint]*daemonTask),
 		taskChannel: make(chan *daemonTask, taskChannelLength),
@@ -147,7 +137,7 @@ func newDaemon(taskChannelLength int) *daemon {
 
 func (d *daemon) add(t *daemonTask) {
 	if t != nil {
-		log.Info("daemon.add(%s)\n", t.task.Name)
+		log.Info("daemon.add(%s)\n", t.job.Name)
 		t.daemon = d
 		d.taskChannel <- t
 	}
@@ -155,61 +145,58 @@ func (d *daemon) add(t *daemonTask) {
 
 func (d *daemon) run() {
 
-	// init daemon task
-	var taskList []models.DaemonJob
-	err := model.DB().Find(&taskList).Error
+	var jobList []models.DaemonJob
+	err := model.DB().Find(&jobList).Error
 	if err != nil {
 		log.Error("init daemon task error:", err)
 	}
-	for _, v := range taskList {
+
+	for _, v := range jobList {
 		log.Info("init daemon task_name:", v.Name, "task_id:", v.ID, "status:", v.Status)
-		task := v
+		job := v
 		d.add(&daemonTask{
-			task:   &task,
+			job:    &job,
 			action: v.Status,
 		})
 	}
 
 	go func() {
 		var ctx context.Context
-
 		for v := range d.taskChannel {
 			switch v.action {
 			case startDaemonTask:
 				d.lock.Lock()
-				if t := d.taskMap[v.task.ID]; t == nil {
-					d.taskMap[v.task.ID] = v
+				if t := d.taskMap[v.job.ID]; t == nil {
+					d.taskMap[v.job.ID] = v
 					d.lock.Unlock()
 					ctx, v.cancel = context.WithCancel(context.Background())
 					go v.do(ctx)
-					log.Info("start", v.task.Name)
+					log.Info("start", v.job.Name)
 				} else {
 					d.lock.Unlock()
 
 				}
 			case deleteDaemonTask:
 				d.lock.Lock()
-				if t := d.taskMap[v.task.ID]; t != nil {
+				if t := d.taskMap[v.job.ID]; t != nil {
 					d.lock.Unlock()
 					t.action = v.action
 					t.cancel()
 				} else {
-					model.DB().Unscoped().Delete(v.task, "id=?", v.task.ID)
+					model.DB().Unscoped().Delete(v.job, "id=?", v.job.ID)
 					d.lock.Unlock()
 				}
 			case stopDaemonTask:
 				d.lock.Lock()
-				if t := d.taskMap[v.task.ID]; t != nil {
+				if t := d.taskMap[v.job.ID]; t != nil {
 					d.lock.Unlock()
 					t.action = v.action
 					t.cancel()
 				} else {
 					d.lock.Unlock()
-					model.DB().Model(&model.DaemonTask{}).Where("id = ?", v.task.ID).Update("status", stopDaemonTask)
-
+					model.DB().Model(&model.DaemonTask{}).Where("id = ?", v.job.ID).Update("status", stopDaemonTask)
 				}
 			}
-
 		}
 	}()
 }

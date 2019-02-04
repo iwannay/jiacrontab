@@ -25,13 +25,6 @@ var Days = [...]string{
 	"Saturday",
 }
 
-type MailArgs struct {
-	Host string
-	User string
-	Pass string
-	Port string
-}
-
 type SearchLog struct {
 	JobID          int
 	IsTail         bool

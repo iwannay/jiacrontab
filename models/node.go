@@ -4,12 +4,16 @@ import "github.com/jinzhu/gorm"
 
 type Node struct {
 	gorm.Model
-	Name string `gorm:"not null"`
-	Info string
-	Addr string `gorm:"unique;not null"`
+	Name           string `gorm:"not null"`
+	Disabled       bool
+	DaemonTaskNum  int
+	CrontabTaskNum int
+	Mail           string
+	Group          int    `gorm:"not null;unique_index:uni_group_addr" `
+	Addr           string `gorm:"not null;unique_index:uni_group_addr"`
 }
 
-func (c *Node) Delete(addr string) error {
-	ret := DB().Unscoped().Delete(c, "addr=?", addr)
+func (c *Node) Delete(id int) error {
+	ret := DB().Unscoped().Delete(c, "id=?", id)
 	return ret.Error
 }
