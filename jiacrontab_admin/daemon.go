@@ -3,6 +3,8 @@ package admin
 import (
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
+	"jiacrontab/pkg/rpc"
+	"strings"
 
 	"github.com/kataras/iris"
 )
@@ -16,94 +18,101 @@ func getDaemonJobList(c iris.Context) {
 	)
 
 	if err = reqBody.verify(ctx); err != nil {
-		return ctx.respError(proto.Code_Error, err.Error(), nil)
+		ctx.respError(proto.Code_Error, err.Error(), nil)
+		return
 	}
 
-	if err = rpcCall(reqBody.Addr, "DaemonTask.GetDaemonJobList", {
+	if err = rpcCall(reqBody.Addr, "DaemonJob.GetDaemonJobList", struct{ Page, Pagesize int }{
 		Page:     reqBody.Page,
 		Pagesize: reqBody.Pagesize,
-	},&jobList); err != nil {
-		return ctx.respError(proto.Code_Error, err.Error(), nil)
+	}, &jobList); err != nil {
+		ctx.respError(proto.Code_Error, err.Error(), nil)
+		return
 	}
 
-	return ctx.respSucc("", jobList)
+	ctx.respSucc("", jobList)
 }
 
 func actionDaemonTask(c iris.Context) {
 	var (
-		ctx = wrapCtx(c)
-		err error
-		reply bool
-		ok bool
+		ctx     = wrapCtx(c)
+		err     error
+		reply   bool
+		ok      bool
 		reqBody actionTaskReqParams
-		methods = map[string]string{
-			"start":proto.StartDaemonTask,
-			"stop":proto.StopDaemonTask,
-			"delete":proto.DeleteDaemonTask,
+		methods = map[string]int{
+			"start":  proto.StartDaemonTask,
+			"stop":   proto.StopDaemonTask,
+			"delete": proto.DeleteDaemonTask,
 		}
-		action string
+		action int
 	)
 
-	if action,ok = methods[reqBody.Action]; !ok {
-		return ctx.respError(proto.Code_Error, "参数错误")
+	if action, ok = methods[reqBody.Action]; !ok {
+		ctx.respError(proto.Code_Error, "参数错误", nil)
+		return
 	}
-	if err = rpcCall(addr, "DaemonTask.ActionDaemonTask",proto.ActionDaemonTaskArgs{
-		Action:  op,
-		TaskIds: taskIds,
+	if err = rpcCall(reqBody.Addr, "DaemonJob.ActionDaemonTask", proto.ActionDaemonJobArgs{
+		Action: action,
+		JobIDs: reqBody.JobIDs,
 	}, &reply); err != nil {
-		return ctx.respError(proto.Code_Error, err.Error())
+		ctx.respError(proto.Code_Error, err.Error(), nil)
+		return
 	}
 
-	return ctx.respSucc("", nil)
-
+	ctx.respSucc("", nil)
 }
 
 func editDaemonJob(c iris.Context) {
 	var (
-		err error
-		reply int
-		ctx = wrapCtx(c)
-		reqBody editDaemonJobReqParams
+		err       error
+		reply     int
+		ctx       = wrapCtx(c)
+		reqBody   editDaemonJobReqParams
 		daemonJob models.DaemonJob
 	)
 
-	if err = reqBody.verify(ctx);err != nil {
-		goto failed
+	if err = reqBody.verify(ctx); err != nil {
+		ctx.respError(proto.Code_Error, err.Error(), nil)
+		return
 	}
 
 	daemonJob = models.DaemonJob{
-		Name:reqBody.Name,
-		ErrorMailNotify:reqBody.ErrorMailNotify,
-		ErrorAPINotify:reqBody.ErrorMailNotify,
-		MailTo:reqBody.MailTo,
-		APITo:reqBody.APITo,
-		Commands:reqBody.Commands,
-		FailRestart:reqBody.FailRestart,
+		Name:            reqBody.Name,
+		ErrorMailNotify: reqBody.ErrorMailNotify,
+		ErrorAPINotify:  reqBody.ErrorMailNotify,
+		MailTo:          reqBody.MailTo,
+		APITo:           reqBody.APITo,
+		Commands:        reqBody.Commands,
+		FailRestart:     reqBody.FailRestart,
 	}
 
-	if err = rpcCall(addr, "DaemonTask.EditDaemonJob", daemonJob, &reply); err != nil {
-		return ctx.respError(proto.Code_Error, err.Error(), nil)
+	if err = rpcCall(reqBody.Addr, "DaemonJob.EditDaemonJob", daemonJob, &reply); err != nil {
+		ctx.respError(proto.Code_Error, err.Error(), nil)
+		return
 	}
 
-	return ctx.respSucc("", reply)
+	ctx.respSucc("", reply)
 }
 
 func getDaemonJob(c iris.Context) {
 	var (
-		ctx = wrapCtx(c)
-		reqBody getJobReqParams
+		ctx       = wrapCtx(c)
+		reqBody   getJobReqParams
 		daemonJob models.DaemonJob
-		err error
+		err       error
 	)
 	if err = reqBody.verify(ctx); err != nil {
-		return ctx.respError(proto.Code_Error, err.Error(), nil)
+		ctx.respError(proto.Code_Error, err.Error(), nil)
+		return
 	}
 
-	if err = rpcCall(addr, "daemonJob.GetDaemonJob", reqBody.JobID, &daemonJob); err != nil {
-		return ctx.respError(proto.Code_Error, err.Error(), nil)
+	if err = rpcCall(reqBody.Addr, "daemonJob.GetDaemonJob", reqBody.JobID, &daemonJob); err != nil {
+		ctx.respError(proto.Code_Error, err.Error(), nil)
+		return
 	}
 
-	return ctx.respSucc("", daemonJob)
+	ctx.respSucc("", daemonJob)
 }
 
 func getRecentDaemonLog(c iris.Context) {
@@ -112,34 +121,35 @@ func getRecentDaemonLog(c iris.Context) {
 		ctx       = wrapCtx(c)
 		searchRet proto.SearchLogResult
 		reqBody   getLogReqParams
+		logList   []string
 	)
-
 
 	if err = reqBody.verify(ctx); err != nil {
 		goto failed
 	}
 
-	if err := rpc.Call(reqBody.Addr, "DaemonTask.Log", proto.SearchLog{
+	if err := rpc.Call(reqBody.Addr, "DaemonJob.Log", proto.SearchLog{
 		JobID:    reqBody.JobID,
 		Page:     reqBody.Page,
 		Pagesize: reqBody.Pagesize,
 		Date:     reqBody.Date,
-		Pattern:  reqBody.pattern,
-		IsTail:   isTail,
+		Pattern:  reqBody.Pattern,
+		IsTail:   reqBody.IsTail,
 	}, &searchRet); err != nil {
-		ctx.ViewData("error", err)
+		goto failed
 	}
 
-	logList := strings.Split(string(searchRet.Content), "\n")
+	logList = strings.Split(string(searchRet.Content), "\n")
 
-	return ctx.respSucc("", map[string]interface{}{
+	ctx.respSucc("", map[string]interface{}{
 		"logList":  logList,
 		"curAddr":  reqBody.Addr,
 		"total":    searchRet.Total,
 		"page":     reqBody.Page,
 		"pagesize": reqBody.Pagesize,
 	})
+	return
 
 failed:
-	return ctx.respError(proto.Code_Error, "", err.Error())
+	ctx.respError(proto.Code_Error, "", err.Error())
 }

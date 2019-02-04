@@ -37,7 +37,7 @@ func New() *Jiacrontabd {
 }
 
 // AddJob add job
-func (j *Jiacrontabd) AddJob(job *crontab.Job) {
+func (j *Jiacrontabd) addJob(job *crontab.Job) {
 	j.mux.Lock()
 	if _, ok := j.jobs[job.ID]; ok {
 		j.mux.Unlock()
@@ -54,6 +54,15 @@ func (j *Jiacrontabd) execTask(job *crontab.Job) {
 	if task, ok := j.jobs[job.ID]; !ok {
 		j.mux.RUnlock()
 		task.exec()
+		return
+	}
+}
+
+func (j *Jiacrontabd) killTask(jobID int) {
+	j.mux.RLock()
+	if task, ok := j.jobs[jobID]; !ok {
+		j.mux.RUnlock()
+		task.kill()
 		return
 	}
 }
@@ -140,15 +149,15 @@ func (j *Jiacrontabd) pushPipeDepend(deps []*depEntry, depEntryID string) bool {
 					j.dep.add(v)
 				} else {
 					var reply bool
-					err := rpcCall("Logic.Depends", []proto.DependsTask{{
-						ID:         v.id,
-						Name:       v.name,
-						Dest:       v.dest,
-						From:       v.from,
-						JobEntryID: v.jobID,
-						ProcessID:  v.processID,
-						Commands:   v.commands,
-						Timeout:    v.timeout,
+					err := rpcCall("Srv.Depends", []proto.DepJob{{
+						ID:        v.id,
+						Name:      v.name,
+						Dest:      v.dest,
+						From:      v.from,
+						JobID:     v.jobID,
+						ProcessID: v.processID,
+						Commands:  v.commands,
+						Timeout:   v.timeout,
 					}}, &reply)
 					if !reply || err != nil {
 						log.Error("Logic.Depends error:", err, "server addr:", cfg.AdminAddr)
@@ -177,17 +186,21 @@ func (j *Jiacrontabd) count() int {
 }
 
 func (j *Jiacrontabd) heartBeat() {
-	var mail proto.MailArgs
-	err := rpcCall(rpc.RegisterService, models.Client{
+	var reply bool
+	hostname := cfg.Hostname
+	if hostname == "" {
+		hostname = util.GetHostname()
+	}
+	err := rpcCall(rpc.RegisterService, models.Node{
 		Addr:           cfg.LocalAddr,
 		DaemonTaskNum:  j.daemon.count(),
 		CrontabTaskNum: j.count(),
-		State:          1,
 		Mail:           cfg.MailTo,
-	}, &mail)
+		Name:           hostname,
+	}, &reply)
 
 	if err != nil {
-		log.Error("Logic.Register error:", err, "server addr:", cfg.AdminAddr)
+		log.Error("Srv.Register error:", err, ",server addr:", cfg.AdminAddr)
 	}
 
 	time.AfterFunc(heartbeatPeriod, j.heartBeat)
@@ -195,11 +208,10 @@ func (j *Jiacrontabd) heartBeat() {
 
 // Main main function
 func (j *Jiacrontabd) Main() {
-
 	if cfg.AutoCleanTaskLog {
 		go finder.SearchAndDeleteFileOnDisk(cfg.LogPath, 24*time.Hour*30, 1<<30)
 	}
 
 	j.heartBeat()
-	rpc.ListenAndServe(cfg.ListenAddr)
+	rpc.ListenAndServe(cfg.ListenAddr, newCrontabJobSrv(j))
 }

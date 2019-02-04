@@ -56,7 +56,6 @@ func (d *dependencies) exec(task *depEntry) {
 	var (
 		reply      bool
 		logContent []byte
-		errMsg     string
 	)
 
 	if task.timeout == 0 {
@@ -81,25 +80,19 @@ func (d *dependencies) exec(task *depEntry) {
 	task.done = true
 	task.err = err
 
-	if err != nil {
-		errMsg = err.Error()
-	} else {
-		errMsg = ""
-	}
-
 	task.dest, task.from = task.from, task.dest
 
 	if !d.crond.filterDepend(task) {
-		err = rpcCall("Logic.DependDone", proto.DependsTask{
+		err = rpcCall("Srv.DependDone", proto.DepJob{
 			ID:         task.id,
 			Name:       task.name,
 			Dest:       task.dest,
 			From:       task.from,
 			ProcessID:  task.processID,
-			JobEntryID: task.jobID,
+			JobID:      task.jobID,
 			Commands:   task.commands,
 			LogContent: task.logContent,
-			Err:        errMsg,
+			Err:        err,
 			Timeout:    task.timeout,
 		}, &reply)
 

@@ -22,7 +22,8 @@ func runtimeInfo(c iris.Context) {
 		goto failed
 	}
 
-	return ctx.respSucc("", info)
+	ctx.respSucc("", info)
+	return
 
 failed:
 	ctx.respError(proto.Code_Error, err.Error(), nil)

@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	configFile = "client.ini"
+	configFile = "jiacrontabd.ini"
 	appname    = "jiacrontabd"
 )
 
@@ -22,7 +22,7 @@ type Config struct {
 	LogLevel         string `opt:"log_level" default:"warn"`
 	VerboseJobLog    bool   `opt:"verbose_job_log" default:"true"`
 	ListenAddr       string `opt:"listen_addr" default:":20001"`
-	LocalAddr        string `opt:"local_addr default:"127.0.0.1:20002"`
+	LocalAddr        string `opt:"local_addr" default:"127.0.0.1:20002"`
 	AdminAddr        string `opt:"admin_addr" default:"127.0.0.1:20003"`
 	LogPath          string `opt:"log_path" default:"./logs"`
 	PprofAddr        string `opt:"pprof_addr" default:"127.0.0.1:20004"`
@@ -90,4 +90,5 @@ func loadConfig() *ini.File {
 
 func init() {
 	cfg = newConfig()
+	log.Printf("%+v", cfg)
 }

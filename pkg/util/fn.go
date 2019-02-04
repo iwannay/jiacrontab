@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"bytes"
-	"encoding/base64"
 	"encoding/gob"
 	"encoding/json"
 
@@ -15,12 +14,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
+	"jiacrontab/pkg/log"
 	"math/rand"
 	"net"
 	"net/http"
 	"net/rpc"
-	"net/smtp"
 
 	"os"
 	"path/filepath"
@@ -99,7 +97,7 @@ func SystemInfo(startTime time.Time) map[string]interface{} {
 func TryOpen(path string, flag int) (*os.File, error) {
 	fabs, err := filepath.Abs(path)
 	if err != nil {
-		log.Println(err)
+		log.Errorf("TryOpen:", err)
 		return nil, err
 	}
 
@@ -242,32 +240,32 @@ func PrintStruct(v interface{}) interface{} {
 	return c
 }
 
-func SendMail(title, content, host, from, pass, port, mailTo string) {
-	if from == "" || pass == "" || port == "" || mailTo == "" {
-		log.Printf("mail %v", errors.New("missing parameters"))
-		return
-	}
-	auth := smtp.PlainAuth("", from, pass, host)
+// func SendMail(title, content, host, from, pass, port, mailTo string) {
+// 	if from == "" || pass == "" || port == "" || mailTo == "" {
+// 		log.Errorf("SendMail: %v", errors.New("missing parameters"))
+// 		return
+// 	}
+// 	auth := smtp.PlainAuth("", from, pass, host)
 
-	to := strings.Split(mailTo, ",")
-	toStr := strings.Join(to, ",")
-	header := make(map[string]string)
+// 	to := strings.Split(mailTo, ",")
+// 	toStr := strings.Join(to, ",")
+// 	header := make(map[string]string)
 
-	header["From"] = from
-	header["To"] = toStr
-	header["Subject"] = fmt.Sprintf("=?UTF-8?B?%s?=", base64.StdEncoding.EncodeToString([]byte(title)))
-	header["MIME-Version"] = "1.0"
-	header["Content-Type"] = "text/html; charset=UTF-8"
-	header["Content-Transfer-Encoding"] = "base64"
-	message := ""
-	for k, v := range header {
-		message += fmt.Sprintf("%s: %s\r\n", k, v)
-	}
-	message += "\r\n" + base64.StdEncoding.EncodeToString([]byte(content))
+// 	header["From"] = from
+// 	header["To"] = toStr
+// 	header["Subject"] = fmt.Sprintf("=?UTF-8?B?%s?=", base64.StdEncoding.EncodeToString([]byte(title)))
+// 	header["MIME-Version"] = "1.0"
+// 	header["Content-Type"] = "text/html; charset=UTF-8"
+// 	header["Content-Transfer-Encoding"] = "base64"
+// 	message := ""
+// 	for k, v := range header {
+// 		message += fmt.Sprintf("%s: %s\r\n", k, v)
+// 	}
+// 	message += "\r\n" + base64.StdEncoding.EncodeToString([]byte(content))
 
-	err := smtp.SendMail(host+":"+port, auth, from, to, []byte(message))
-	log.Printf("send mail to %s %v", toStr, err)
-}
+// 	err := smtp.SendMail(host+":"+port, auth, from, to, []byte(message))
+// 	log.Infof("send mail to %s %v", toStr, err)
+// }
 
 func ParseInt(i string) int {
 	v, _ := strconv.Atoi(i)
@@ -302,6 +300,14 @@ func InArray(val interface{}, arr interface{}) bool {
 	}
 
 	return false
+}
+
+func GetHostname() string {
+	hostname, err := os.Hostname()
+	if err != nil {
+		log.Error("GetHostname:", err)
+	}
+	return hostname
 }
 
 func init() {

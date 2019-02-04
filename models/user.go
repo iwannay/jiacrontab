@@ -14,8 +14,8 @@ type User struct {
 	Name   string `gorm:"not null; unique"`
 	Passwd string
 	Salt   string
-	Role   string
-	Root   int
+	Group  int
+	Root   bool
 	Mail   string
 }
 
@@ -51,5 +51,9 @@ func (u *User) Verify(name, passwd string) bool {
 
 func (u *User) Add() error {
 	u.Salt = u.getSalt()
+	return DB().Create(u).Error
+}
+
+func (u *User) SignUp() error {
 	return DB().Create(u).Error
 }

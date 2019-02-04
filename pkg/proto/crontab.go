@@ -6,9 +6,9 @@ import (
 	"errors"
 )
 
-type DependsTasks []DependsTask
+type DepJobs []DepJob
 
-func (d *DependsTasks) Scan(v interface{}) error {
+func (d *DepJobs) Scan(v interface{}) error {
 	switch val := v.(type) {
 	case string:
 		return json.Unmarshal([]byte(val), d)
@@ -20,7 +20,7 @@ func (d *DependsTasks) Scan(v interface{}) error {
 
 }
 
-func (d DependsTasks) Value() (driver.Value, error) {
+func (d DepJobs) Value() (driver.Value, error) {
 	bts, err := json.Marshal(d)
 	return string(bts), err
 }
@@ -50,17 +50,17 @@ func (c CrontabArgs) Value() (driver.Value, error) {
 	return string(bts), err
 }
 
-type DependsTask struct {
+type DepJob struct {
 	Name       string
 	Dest       string
 	From       string
 	ProcessID  int
-	ID         string `json:"-"`
-	JobEntryID int    `json:"-"`
+	ID         string
+	JobID      int
 	Commands   []string
 	Timeout    int64
-	Err        string `json:"-"`
-	LogContent []byte `json:"-"`
+	Err        error
+	LogContent []byte
 }
 
 type PipeComamnds [][]string
@@ -81,3 +81,5 @@ func (p PipeComamnds) Value() (driver.Value, error) {
 	bts, err := json.Marshal(p)
 	return string(bts), err
 }
+
+type QueryJobArg struct{ Page, Pagesize int }

@@ -9,8 +9,8 @@ BINARY_NODE=jiacrontabd
 BINARY_ADMIN_UNIX=$(BINARY_ADMIN)_unix
 BINARY_NODE_UNIX=$(BINARY_NODE)_unix
 WORKDIR=./build
-ADMINDIR=$(WORKDIR)/jiacrontab/jiacrontab_admin
-NODEDIR=$(WORKDIR)/jiacrontab/jiacrontabd
+ADMINDIR=$(WORKDIR)/jiacrontab_admin
+NODEDIR=$(WORKDIR)/jiacrontabd
 
 
 .PHONY: all build test clean run build-linux build-windows

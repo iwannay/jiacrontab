@@ -13,20 +13,19 @@ import (
 )
 
 const (
-	configFile = "node.ini"
-	appname    = "jiacrontabd"
+	configFile = "jiacrontab_admin.ini"
+	appname    = "jiacrontab"
 )
 
 var cfg *Config
 
 type appOpt struct {
-	HttpListenAddr string `opt:"http_listen_addr" default:"20000"`
+	HttpListenAddr string `opt:"http_listen_addr" default:":20000"`
 	StaticDir      string `opt:"static_dir" default:"./static"`
 	TplDir         string `opt:"tpl_dir" default:"tpl_dir"`
 	TplExt         string `opt:"tpl_ext" default:"tpl_ext"`
-	RpcListenAddr  string `opt:"rpc_listen_addr" default:"20003"`
-
-	AppName string `opt:"app_name" default:"jiacrontab"`
+	RpcListenAddr  string `opt:"rpc_listen_addr" default:":20003"`
+	AppName        string `opt:"app_name" default:"jiacrontab"`
 }
 
 type jwtOpt struct {
@@ -66,21 +65,23 @@ func (c *Config) init() {
 	typ := val.Type()
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
-		opt := field.Tag.Get("opt")
-		if opt == "" {
+		section := field.Tag.Get("section")
+		if section == "" {
 			continue
 		}
-
-		subVal := reflect.ValueOf(val.Field(i)).Elem()
+		subVal := reflect.ValueOf(val.Field(i).Interface()).Elem()
 		subtyp := subVal.Type()
-		for j := 0; j < subtyp.NumField(); i++ {
-			subField := typ.Field(i)
+		for j := 0; j < subtyp.NumField(); j++ {
+			subField := subtyp.Field(j)
 			subOpt := subField.Tag.Get("opt")
-			defaultVal := cf.Section(opt).Key(subOpt).String()
+			if subOpt == "" {
+				continue
+			}
+			defaultVal := cf.Section(section).Key(subOpt).String()
 			if defaultVal == "" {
 				defaultVal = field.Tag.Get("default")
 			}
-			if defaultVal == "" || opt == "" {
+			if defaultVal == "" {
 				continue
 			}
 
@@ -92,14 +93,18 @@ func (c *Config) init() {
 				}
 				subVal.Field(i).SetBool(setVal)
 			case reflect.String:
-				subVal.Field(i).SetString(defaultVal)
+				subVal.Field(j).SetString(defaultVal)
 			}
 		}
 	}
 }
 
 func newConfig() *Config {
-	c := &Config{}
+	c := &Config{
+		App:    &appOpt{},
+		Mailer: &mailerOpt{},
+		Jwt:    &jwtOpt{},
+	}
 	c.init()
 	return c
 }
@@ -114,11 +119,9 @@ func loadConfig() *ini.File {
 
 func getConfig(c iris.Context) {
 	var (
-		err error
 		ctx = wrapCtx(c)
 	)
-
-	return ctx.respSucc("", cfg)
+	ctx.respSucc("", cfg)
 }
 
 func sendTestMail(c iris.Context) {
@@ -133,17 +136,18 @@ func sendTestMail(c iris.Context) {
 	}
 
 	if cfg.Mailer.Enabled {
-		err = mailer.SendMail([]string{mailTo}, "测试邮件", "测试邮件请勿回复！")
+		err = mailer.SendMail([]string{reqBody.MailTo}, "测试邮件", "测试邮件请勿回复！")
 		if err != nil {
 			goto failed
 		}
-		return ctx.respSucc("", nil)
+		ctx.respSucc("", nil)
+		return
 	}
 
 	err = errors.New("邮箱服务未开启")
 
 failed:
-	return ctx.respError(proto.Code_Error, err.Error(), nil)
+	ctx.respError(proto.Code_Error, err.Error(), nil)
 }
 
 func init() {

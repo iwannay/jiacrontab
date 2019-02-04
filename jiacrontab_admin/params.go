@@ -12,12 +12,12 @@ var (
 )
 
 type execTaskReqParams struct {
-	JobID int    `json:"jobID"`
+	JobID uint   `json:"jobID"`
 	Addr  string `json:"addr"`
 }
 
 func (p *execTaskReqParams) verify(ctx iris.Context) error {
-	if err = ctx.ReadJSON(p); err != nil || p.JobID == 0 || p.Addr == "" {
+	if err := ctx.ReadJSON(p); err != nil || p.JobID == 0 || p.Addr == "" {
 		return paramsError
 	}
 
@@ -25,12 +25,12 @@ func (p *execTaskReqParams) verify(ctx iris.Context) error {
 }
 
 type startTaskReqParams struct {
-	JobID int    `json:"jobID"`
+	JobID uint   `json:"jobID"`
 	Addr  string `json:"addr"`
 }
 
 func (p *startTaskReqParams) verify(ctx iris.Context) error {
-	if err = ctx.ReadJSON(p); err != nil || p.JobID == 0 || p.Addr == "" {
+	if err := ctx.ReadJSON(p); err != nil || p.JobID == 0 || p.Addr == "" {
 		return paramsError
 	}
 
@@ -44,8 +44,8 @@ type stopTaskReqParams struct {
 }
 
 func (p *stopTaskReqParams) verify(ctx iris.Context) error {
-	if err = ctx.ReadJSON(p); err != nil ||
-		len(p.JobIDs) == 0 || p.Addr == "" || p.Action {
+	if err := ctx.ReadJSON(p); err != nil ||
+		len(p.JobIDs) == 0 || p.Addr == "" || p.Action == "" {
 		return paramsError
 	}
 
@@ -53,19 +53,18 @@ func (p *stopTaskReqParams) verify(ctx iris.Context) error {
 }
 
 type editJobReqParams struct {
-	ID              int               `json:"id"`
+	ID              uint              `json:"id"`
 	Addr            string            `json:"addr"`
 	IsSync          bool              `json:"isSync"`
 	Commands        []string          `json:"command"`
 	Args            string            `json:"args"`
 	Name            string            `json:"name"`
-	Timeout         string            `json:"timeout"`
-	MaxConcurrent   string            `json:"maxConcurrent"`
+	Timeout         int               `json:"timeout"`
+	MaxConcurrent   uint              `json:"maxConcurrent"`
 	ErrorMailNotify bool              `json:"mailNotify"`
 	ErrorAPINotify  bool              `json:"APINotify"`
 	MailTo          string            `json:"mailTo"`
 	APITo           string            `json:"APITo"`
-	Timeout         string            `json:"timeout"`
 	PipeCommands    [][]string        `json:"pipeCommands"`
 	DependJobs      models.DependJobs `json:"dependents"`
 	Month           string            `json:"month"`
@@ -77,7 +76,7 @@ type editJobReqParams struct {
 }
 
 func (p *editJobReqParams) verify(ctx iris.Context) error {
-	if err = ctx.ReadJSON(p); err != nil || p.Addr == "" {
+	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" {
 		return paramsError
 	}
 
@@ -95,7 +94,7 @@ type getLogReqParams struct {
 }
 
 func (p *getLogReqParams) verify(ctx iris.Context) error {
-	if err = ctx.ReadJSON(p); err != nil || p.Addr == "" {
+	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" {
 		return paramsError
 	}
 
@@ -109,11 +108,12 @@ func (p *getLogReqParams) verify(ctx iris.Context) error {
 }
 
 type deleteNodeReqParams struct {
-	Addr string `json:"addr"`
+	NodeID int    `json:"nodeID"`
+	Addr   string `json:"addr"`
 }
 
 func (p *deleteNodeReqParams) verify(ctx iris.Context) error {
-	if err = ctx.ReadJSON(p); err != nil || p.Addr == "" {
+	if err := ctx.ReadJSON(p); err != nil || p.NodeID == 0 || p.Addr == "" {
 		return paramsError
 	}
 	return nil
@@ -124,7 +124,7 @@ type sendTestMailReqParams struct {
 }
 
 func (p *sendTestMailReqParams) verify(ctx iris.Context) error {
-	if err = ctx.ReadJSON(p); err != nil || p.MailTo == "" {
+	if err := ctx.ReadJSON(p); err != nil || p.MailTo == "" {
 		return paramsError
 	}
 	return nil
@@ -135,7 +135,7 @@ type runtimeInfoReqParams struct {
 }
 
 func (p *runtimeInfoReqParams) verify(ctx iris.Context) error {
-	if err = ctx.ReadJSON(p); err != nil || p.Addr == "" {
+	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" {
 		return paramsError
 	}
 	return nil
@@ -163,9 +163,9 @@ func (p *jobListReqParams) verify(ctx iris.Context) error {
 }
 
 type actionTaskReqParams struct {
-	Action string   `json:"action"`
-	Addr   string   `json:"addr"`
-	JobIDs []string `json:"jobIDs"`
+	Action string `json:"action"`
+	Addr   string `json:"addr"`
+	JobIDs []uint `json:"jobIDs"`
 }
 
 func (p *actionTaskReqParams) verify(ctx iris.Context) error {
@@ -197,13 +197,29 @@ func (p *editDaemonJobReqParams) verify(ctx iris.Context) error {
 }
 
 type getJobReqParams struct {
-	JobID int    `json:"jobID"`
+	JobID uint   `json:"jobID"`
 	Addr  string `json:"addr"`
 }
 
 func (p *getJobReqParams) verify(ctx iris.Context) error {
 	if err := ctx.ReadJSON(p); err != nil || p.JobID == 0 || p.Addr == "" {
-		return
+		return paramsError
 	}
+	return nil
+}
+
+type userReqParams struct {
+	Name   string `json:"name"`
+	Passwd string `json:"string"`
+	Group  int    `json:"group"`
+	Root   bool   `json:"root"`
+	Email  string `json:"email"`
+}
+
+func (p *userReqParams) verify(ctx iris.Context) error {
+	if err := ctx.ReadJSON(p); err != nil || p.Name == "" || p.Passwd == "" {
+		return paramsError
+	}
+
 	return nil
 }

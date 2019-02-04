@@ -9,8 +9,6 @@ import (
 
 	"jiacrontab/pkg/proto"
 
-	"jiacrontab/server/conf"
-	"net/http"
 	"net/url"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -27,18 +25,17 @@ func route(app *iris.Application) {
 		},
 
 		Extractor: func(ctx iris.Context) (string, error) {
-			token, err := url.QueryUnescape(ctx.GetCookie(conf.JwtService.TokenCookieName))
+			token, err := url.QueryUnescape(ctx.GetCookie(cfg.Jwt.Name))
 			return token, err
 		},
 
-		ErrorHandler: func(ctx iris.Context, data string) {
+		ErrorHandler: func(c iris.Context, data string) {
+			ctx := wrapCtx(c)
 			app.Logger().Error("jwt 认证失败", data)
-			if ctx.RequestPath(true) != "/login" {
-				ctx.Redirect("/login", http.StatusFound)
-				ctx.JSON(respError(proto.Code_FailedAuth, "auth failed", nil))
+			if ctx.RequestPath(true) != "/user/login" {
+				ctx.respError(proto.Code_FailedAuth, "认证失败", nil)
 				return
 			}
-
 			ctx.Next()
 		},
 

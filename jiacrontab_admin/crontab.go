@@ -1,14 +1,12 @@
 package admin
 
 import (
-	"fmt"
+	"errors"
 	"jiacrontab/model"
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/rpc"
-	"net/http"
 	"strings"
-	"time"
 
 	"github.com/kataras/iris"
 )
@@ -18,8 +16,8 @@ func getJobList(c iris.Context) {
 	var (
 		systemInfo map[string]interface{}
 		jobList    []models.CrontabJob
-		nodeList []models.Node
-		node     models.Node
+		nodeList   []models.Node
+		node       models.Node
 		ctx        = wrapCtx(c)
 		addr       = ctx.FormValue("addr")
 	)
@@ -56,8 +54,8 @@ func getJobList(c iris.Context) {
 	ctx.respSucc("", map[string]interface{}{
 		"taskList":   jobList,
 		"addr":       addr,
-		"node":     node,
-		"nodeList": nodeList,
+		"node":       node,
+		"nodeList":   nodeList,
 		"systemInfo": systemInfo,
 	})
 }
@@ -68,55 +66,56 @@ func getRecentLog(c iris.Context) {
 		ctx       = wrapCtx(c)
 		searchRet proto.SearchLogResult
 		reqBody   getLogReqParams
+		logList   []string
 	)
-
 
 	if err = reqBody.verify(ctx); err != nil {
 		goto failed
 	}
 
-	if err := rpc.Call(reqBody.Addr, "CrontabJob.Log", proto.SearchLog{
+	if err = rpc.Call(reqBody.Addr, "CrontabJob.Log", proto.SearchLog{
 		JobID:    reqBody.JobID,
 		Page:     reqBody.Page,
 		Pagesize: reqBody.Pagesize,
 		Date:     reqBody.Date,
-		Pattern:  reqBody.pattern,
-		IsTail:   isTail,
+		Pattern:  reqBody.Pattern,
+		IsTail:   reqBody.IsTail,
 	}, &searchRet); err != nil {
 		ctx.ViewData("error", err)
 	}
 
-	logList := strings.Split(string(searchRet.Content), "\n")
+	logList = strings.Split(string(searchRet.Content), "\n")
 
-	return ctx.respSucc("", map[string]interface{}{
+	ctx.respSucc("", map[string]interface{}{
 		"logList":  logList,
 		"curAddr":  reqBody.Addr,
 		"total":    searchRet.Total,
 		"page":     reqBody.Page,
 		"pagesize": reqBody.Pagesize,
 	})
+	return
 
 failed:
-	return ctx.respError(proto.Code_Error, "", err.Error())
+	ctx.respError(proto.Code_Error, "", err.Error())
 }
 
 func editJob(c iris.Context) {
 	var (
-		err error
+		err     error
+		reply   bool
 		ctx     = wrapCtx(c)
 		reqBody editJobReqParams
 		rpcArgs models.CrontabJob
 	)
 
-	if err = reqBody.verify(ctx);err != nil {
+	if err = reqBody.verify(ctx); err != nil {
 		goto failed
 	}
-	
 
 	rpcArgs = models.CrontabJob{
 		Name:     reqBody.Name,
 		Commands: reqBody.Commands,
-		TimeArgs: {
+		TimeArgs: models.TimeArgs{
 			Month:   reqBody.Month,
 			Day:     reqBody.Day,
 			Hour:    reqBody.Hour,
@@ -124,11 +123,10 @@ func editJob(c iris.Context) {
 			Weekday: reqBody.Weekday,
 		},
 		PipeCommands:    reqBody.PipeCommands,
-		Timeout:         reqBody.ExecuteTimeout,
+		Timeout:         reqBody.Timeout,
 		TimeoutTrigger:  reqBody.TimeoutTrigger,
-		Create:          time.Now().Unix(),
 		MailTo:          reqBody.MailTo,
-		ApiTo:           reqBody.APITo,
+		APITo:           reqBody.APITo,
 		MaxConcurrent:   reqBody.MaxConcurrent,
 		DependJobs:      reqBody.DependJobs,
 		ErrorMailNotify: reqBody.ErrorMailNotify,
@@ -138,13 +136,14 @@ func editJob(c iris.Context) {
 
 	rpcArgs.ID = reqBody.ID
 
-	if err := rpcCall(addr, "CrontabJob.Update", rpcArgs, &reply); err != nil {
+	if err := rpcCall(reqBody.Addr, "CrontabJob.Edit", rpcArgs, &reply); err != nil {
 		goto failed
 	}
-	return ctx.respSucc("", nil)
+	ctx.respSucc("", nil)
+	return
 
-	failed:
-	return ctx.respError(proto.Code_Error, err.Error(), nil)
+failed:
+	ctx.respError(proto.Code_Error, err.Error(), nil)
 }
 
 func stopTask(c iris.Context) {
@@ -152,96 +151,101 @@ func stopTask(c iris.Context) {
 		ctx     = wrapCtx(c)
 		err     error
 		reply   bool
-		ok bool
-		method string
+		ok      bool
+		method  string
 		reqBody stopTaskReqParams
 		methods = map[string]string{
-			"stop":"CrontabJob.Stop",
-			"delete":"CrontabJob.Delete",
-			"kill":"CrontabJob.Kill"
+			"stop":   "CrontabJob.Stop",
+			"delete": "CrontabJob.Delete",
+			"kill":   "CrontabJob.Kill",
 		}
 	)
 
-	if reqBody.verify(ctx);err != nil {
+	if reqBody.verify(ctx); err != nil {
 		goto failed
 	}
 
-	if method,ok = methods[reqBody.Action];!ok {
+	if method, ok = methods[reqBody.Action]; !ok {
 		err = errors.New("action无法识别")
 		goto failed
 	}
 
-
-	if err := rpcCall(addr, method, reqBody.JobIDs, &reply); err != nil {
+	if err := rpcCall(reqBody.Addr, method, reqBody.JobIDs, &reply); err != nil {
 		goto failed
 	}
 
-	return ctx.respSucc("", reply)
+	ctx.respSucc("", reply)
+	return
 
-	failed:
-	return	ctx.respError(proto.Code_Error,err.Error(),nil)
+failed:
+	ctx.respError(proto.Code_Error, err.Error(), nil)
 
 }
 
 func startTask(c iris.Context) {
 	var (
-		ctx = wrapCtx(c)
-		reply bool
+		err     error
+		ctx     = wrapCtx(c)
+		reply   bool
 		reqBody startTaskReqParams
 	)
 
-	if err = reqBody.verify(ctx);err != nil {
+	if err = reqBody.verify(ctx); err != nil {
 		goto failed
 	}
 
-	if err := rpcCall(addr, "CrontabJob.Start", taskId, &reply); err != nil {
-		
+	if err := rpcCall(reqBody.Addr, "CrontabJob.Start", reqBody.JobID, &reply); err != nil {
 		goto failed
 	}
 
-	return ctx.respSucc("", reply)
+	ctx.respSucc("", reply)
+	return
 failed:
-	return ctx.respError(proto.Code_Error,err.Error(), nil)
+	ctx.respError(proto.Code_Error, err.Error(), nil)
 }
 
 func execTask(c iris.Context) {
 	var (
-		ctx = wrapCtx(c)
-		err error
-		reply bool
+		ctx     = wrapCtx(c)
+		err     error
+		reply   []byte
 		logList []string
 		reqBody execTaskReqParams
 	)
 
-	if err = reqBody.verify(ctx);err != nil {
+	if err = reqBody.verify(ctx); err != nil {
 		goto failed
 	}
 
-	if err = rpcCall(reqBody.Addr, "CrontabJob.QuickStart",reqBody.JobID, &reply); err != nil {
+	if err = rpcCall(reqBody.Addr, "CrontabJob.QuickStart", reqBody.JobID, &reply); err != nil {
 		goto failed
 	}
 
-	logList = strings.Split(string(reply),"\n")
-	return ctx.respSucc("", logList)
+	logList = strings.Split(string(reply), "\n")
+	ctx.respSucc("", logList)
+	return
 
 failed:
-	return ctx.respError(proto.Code_Error,err.Error(), nil)
+	ctx.respError(proto.Code_Error, err.Error(), nil)
 }
 
 func getJob(c iris.Context) {
 	var (
-		ctx = wrapCtx(c)
-		reqBody getJobReqParams
+		ctx       = wrapCtx(c)
+		reqBody   getJobReqParams
 		daemonJob models.DaemonJob
-		err error
+		err       error
 	)
 	if err = reqBody.verify(ctx); err != nil {
-		return ctx.respError(proto.Code_Error, err.Error(), nil)
+		goto failed
 	}
 
-	if err = rpcCall(addr, "CrontabJob.GetJob", reqBody.JobID, &daemonJob); err != nil {
-		return ctx.respError(proto.Code_Error, err.Error(), nil)
+	if err = rpcCall(reqBody.Addr, "CrontabJob.GetJob", reqBody.JobID, &daemonJob); err != nil {
+		goto failed
 	}
 
-	return ctx.respSucc("", daemonJob)
+	ctx.respSucc("", daemonJob)
+	return
+failed:
+	ctx.respError(proto.Code_Error, err.Error(), nil)
 }
