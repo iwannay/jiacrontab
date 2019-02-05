@@ -209,11 +209,11 @@ func (p *getJobReqParams) verify(ctx iris.Context) error {
 }
 
 type userReqParams struct {
-	Name   string `json:"name"`
-	Passwd string `json:"string"`
-	Group  int    `json:"group"`
-	Root   bool   `json:"root"`
-	Email  string `json:"email"`
+	Name    string `json:"name"`
+	Passwd  string `json:"string"`
+	GroupID int    `json:"group"`
+	Root    bool   `json:"root"`
+	Email   string `json:"email"`
 }
 
 func (p *userReqParams) verify(ctx iris.Context) error {

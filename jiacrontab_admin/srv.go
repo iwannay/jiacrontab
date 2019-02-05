@@ -10,16 +10,22 @@ import (
 	"jiacrontab/pkg/rpc"
 	"net/http"
 	"strings"
-	"time"
 )
 
 type Srv struct{}
 
 func (s *Srv) Register(args models.Node, reply *bool) error {
 	*reply = true
-	ret := models.DB().Where("addr=? and group=?", args.Addr, args.Group).Save(&args)
+	log.Info(args.Addr, args.GroupID)
+	cfg.SetUsed()
+	ret := models.DB().Model(&models.Node{}).Where("addr=? and group_id=?", args.Addr, args.GroupID).Updates(map[string]interface{}{
+		"name":             args.Name,
+		"daemon_task_num":  args.DaemonTaskNum,
+		"crontab_task_num": args.CrontabTaskNum,
+		"addr":             args.Addr,
+		"mail":             args.Mail,
+	})
 	if ret.RowsAffected == 0 {
-		args.Name = time.Now().Format("20060102150405")
 		ret = models.DB().Create(&args)
 	}
 
@@ -40,7 +46,7 @@ func (s *Srv) Depends(args proto.DepJobs, reply *bool) error {
 }
 
 func (s *Srv) DependDone(args proto.DepJob, reply *bool) error {
-	log.Infof("Callee Srv.DependDone jobID:%s", args.JobID)
+	log.Infof("Callee Srv.DependDone jobID:%d", args.JobID)
 	*reply = true
 	if err := rpc.Call(args.Dest, "CrontabJob.ResolvedDepends", args, &reply); err != nil {
 		*reply = false

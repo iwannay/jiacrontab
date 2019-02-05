@@ -5,7 +5,10 @@ import (
 	"jiacrontab/pkg/mailer"
 	"jiacrontab/pkg/rpc"
 
+	_ "github.com/jinzhu/gorm/dialects/mysql"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
+
 	"github.com/kataras/iris"
 )
 
@@ -17,6 +20,18 @@ func New() *Admin {
 }
 
 func (a *Admin) init() {
+
+	models.CreateDB(cfg.Database.DriverName, cfg.Database.DSN)
+
+	models.DB().CreateTable(&models.Node{})
+	models.DB().AutoMigrate(&models.Node{})
+
+	models.DB().CreateTable(&models.Group{})
+	models.DB().AutoMigrate(&models.Group{})
+
+	models.DB().CreateTable(&models.User{})
+	models.DB().AutoMigrate(&models.User{})
+
 	// mail
 	if cfg.Mailer.Enabled {
 		mailer.InitMailer(&mailer.Mailer{
@@ -41,16 +56,6 @@ func (a *Admin) init() {
 }
 
 func (a *Admin) Main() {
-	models.CreateDB("sqlite3", "data/jiacrontab_admin.db")
-
-	models.DB().CreateTable(&models.Node{})
-	models.DB().AutoMigrate(&models.Node{})
-
-	models.DB().CreateTable(&models.Group{})
-	models.DB().AutoMigrate(&models.Group{})
-
-	models.DB().CreateTable(&models.User{})
-	models.DB().AutoMigrate(&models.User{})
 
 	a.init()
 

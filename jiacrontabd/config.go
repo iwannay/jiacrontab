@@ -2,11 +2,10 @@ package jiacrontabd
 
 import (
 	"fmt"
+	"jiacrontab/pkg/util"
 	"jiacrontab/pkg/version"
 	"log"
-	"os"
 	"reflect"
-	"strings"
 
 	ini "gopkg.in/ini.v1"
 )
@@ -28,26 +27,48 @@ type Config struct {
 	PprofAddr        string `opt:"pprof_addr" default:"127.0.0.1:20004"`
 	MailTo           string `opt:"mail_to" default:""`
 	AutoCleanTaskLog bool   `opt:"auto_clean_task_log" default:"true"`
-	ClientID         string `opt:"clent_id" default:""`
 	Hostname         string `opt:"hostname" default:""`
 	UserAgent        string `opt:"user_agent" default:""`
+	iniFile          *ini.File
+	FirstUse         bool   `opt:"first_use" default:"true"`
+	DriverName       string `opt:"driver_name" default:"sqlite3"`
+	DSN              string `opt:"dsn" default:"data/jiacrontab_admin.db"`
+}
+
+func (c *Config) SetUsed() {
+	c.FirstUse = false
+	c.iniFile.Section("jiacrontabd").NewKey("first_use", "false")
+	c.iniFile.SaveTo(configFile)
 }
 
 func (c *Config) init() error {
-	cf := loadConfig()
+	c.iniFile = loadConfig()
 	val := reflect.ValueOf(c).Elem()
 	typ := val.Type()
+	hostname := util.GetHostname()
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
 		opt := field.Tag.Get("opt")
-
-		defaultVal := cf.Section("jiacrontabd").Key(opt).String()
+		if opt == "" {
+			continue
+		}
+		key := c.iniFile.Section("jiacrontabd").Key(opt)
+		defaultVal := key.String()
 
 		if defaultVal == "" {
 			defaultVal = field.Tag.Get("default")
 		}
 
-		if defaultVal == "" || opt == "" {
+		if defaultVal == "" {
+			switch opt {
+			case "hostname":
+				val.Field(i).SetString(hostname)
+				key.SetValue(hostname)
+			case "user_agent":
+				ua := fmt.Sprintf("%s/%s", hostname, version.String(appname))
+				val.Field(i).SetString(ua)
+				key.SetValue(ua)
+			}
 			continue
 		}
 
@@ -61,16 +82,10 @@ func (c *Config) init() error {
 		case reflect.String:
 			val.Field(i).SetString(defaultVal)
 		}
+		key.SetValue(defaultVal)
 	}
 
-	hostname, err := os.Hostname()
-	if err != nil {
-		log.Fatalf("ERROR: unable to get hostname %s", err.Error())
-	}
-
-	c.ClientID = strings.Split(hostname, ".")[0]
-	c.Hostname = hostname
-	c.UserAgent = fmt.Sprintf("%s", version.String(appname))
+	c.SetUsed()
 	return nil
 }
 
