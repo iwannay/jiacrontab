@@ -1,6 +1,7 @@
 package jiacrontabd
 
 import (
+	"jiacrontab/model"
 	"jiacrontab/models"
 	"jiacrontab/pkg/crontab"
 	"jiacrontab/pkg/finder"
@@ -204,6 +205,12 @@ func (j *Jiacrontabd) heartBeat() {
 	}
 
 	time.AfterFunc(heartbeatPeriod, j.heartBeat)
+}
+
+func (j *Jiacrontabd) init() {
+	models.CreateDB(cfg.DriverName, cfg.DSN)
+	model.DB().CreateTable(&models.CrontabJob{}, &models.DaemonJob{})
+	model.DB().AutoMigrate(&models.CrontabJob{}, &models.DaemonJob{})
 }
 
 // Main main function

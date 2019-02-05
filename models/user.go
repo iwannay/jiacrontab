@@ -11,12 +11,12 @@ import (
 
 type User struct {
 	gorm.Model
-	Name   string `gorm:"not null; unique"`
-	Passwd string
-	Salt   string
-	Group  int
-	Root   bool
-	Mail   string
+	Name    string `gorm:"not null; unique"`
+	Passwd  string
+	Salt    string
+	GroupID int
+	Root    bool
+	Mail    string
 }
 
 func (u *User) getSalt() string {

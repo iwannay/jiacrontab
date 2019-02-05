@@ -9,7 +9,7 @@ type Node struct {
 	DaemonTaskNum  int
 	CrontabTaskNum int
 	Mail           string
-	Group          int    `gorm:"not null;unique_index:uni_group_addr" `
+	GroupID        int    `gorm:"not null;unique_index:uni_group_addr" `
 	Addr           string `gorm:"not null;unique_index:uni_group_addr"`
 }
 

@@ -26,6 +26,7 @@ type appOpt struct {
 	TplExt         string `opt:"tpl_ext" default:"tpl_ext"`
 	RpcListenAddr  string `opt:"rpc_listen_addr" default:":20003"`
 	AppName        string `opt:"app_name" default:"jiacrontab"`
+	FirstUse       bool   `opt:"first_use" default:"true"`
 }
 
 type jwtOpt struct {
@@ -52,15 +53,28 @@ type mailerOpt struct {
 	UsePlainText   bool   `opt:"use_plain_text" default:""`
 }
 
+type databaseOpt struct {
+	DriverName string `opt:"driver_name" default:"sqlite3"`
+	DSN        string `opt:"dsn" default:"data/jiacrontab_admin.db"`
+}
+
 type Config struct {
-	Mailer          *mailerOpt `section:"mail"`
-	Jwt             *jwtOpt    `section:"jwt`
-	App             *appOpt    `section:"app"`
-	ServerStartTime time.Time  `json:"-"`
+	Mailer          *mailerOpt   `section:"mail"`
+	Jwt             *jwtOpt      `section:"jwt`
+	App             *appOpt      `section:"app"`
+	Database        *databaseOpt `section:"database"`
+	iniFile         *ini.File
+	ServerStartTime time.Time `json:"-"`
+}
+
+func (c *Config) SetUsed() {
+	c.App.FirstUse = false
+	c.iniFile.Section("app").NewKey("first_use", "false")
+	c.iniFile.SaveTo(configFile)
 }
 
 func (c *Config) init() {
-	cf := loadConfig()
+	c.iniFile = loadConfig()
 	val := reflect.ValueOf(c).Elem()
 	typ := val.Type()
 	for i := 0; i < typ.NumField(); i++ {
@@ -77,9 +91,11 @@ func (c *Config) init() {
 			if subOpt == "" {
 				continue
 			}
-			defaultVal := cf.Section(section).Key(subOpt).String()
+			key := c.iniFile.Section(section).Key(subOpt)
+			defaultVal := key.String()
+
 			if defaultVal == "" {
-				defaultVal = field.Tag.Get("default")
+				defaultVal = subField.Tag.Get("default")
 			}
 			if defaultVal == "" {
 				continue
@@ -91,19 +107,21 @@ func (c *Config) init() {
 				if defaultVal == "true" {
 					setVal = true
 				}
-				subVal.Field(i).SetBool(setVal)
+				subVal.Field(j).SetBool(setVal)
 			case reflect.String:
 				subVal.Field(j).SetString(defaultVal)
 			}
+			key.SetValue(defaultVal)
 		}
 	}
 }
 
 func newConfig() *Config {
 	c := &Config{
-		App:    &appOpt{},
-		Mailer: &mailerOpt{},
-		Jwt:    &jwtOpt{},
+		App:      &appOpt{},
+		Mailer:   &mailerOpt{},
+		Jwt:      &jwtOpt{},
+		Database: &databaseOpt{},
 	}
 	c.init()
 	return c

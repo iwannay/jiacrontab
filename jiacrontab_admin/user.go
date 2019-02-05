@@ -12,7 +12,7 @@ import (
 type CustomerClaims struct {
 	jwt.StandardClaims
 	Username string
-	Group    int
+	GroupID  int
 	Root     bool
 }
 
@@ -35,7 +35,7 @@ func login(c iris.Context) {
 
 	customerClaims.ExpiresAt = cfg.Jwt.Expires + time.Now().Unix()
 	customerClaims.Username = reqBody.Username
-	customerClaims.Group = user.Group
+	customerClaims.GroupID = user.GroupID
 	customerClaims.Root = user.Root
 
 	if reqBody.Remember {
@@ -67,7 +67,7 @@ func signUp(c iris.Context) {
 
 	user.Name = reqBody.Name
 	user.Passwd = reqBody.Passwd
-	user.Group = reqBody.Group
+	user.GroupID = reqBody.GroupID
 	user.Root = reqBody.Root
 
 	if err = user.SignUp(); err != nil {

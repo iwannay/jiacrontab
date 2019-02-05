@@ -101,7 +101,7 @@ func (d *dependencies) exec(task *depEntry) {
 		}
 
 		if !reply {
-			log.Errorf("task %s %s %s call Logic.DependDone failed! err:%v", task.name, task.commands, err)
+			log.Errorf("task %s %v call Logic.DependDone failed! err:%v", task.name, task.commands, err)
 		}
 	}
 }
