@@ -1,13 +1,13 @@
 package jiacrontabd
 
 import (
-	"jiacrontab/model"
 	"jiacrontab/models"
 	"jiacrontab/pkg/crontab"
 	"jiacrontab/pkg/finder"
 	"jiacrontab/pkg/log"
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/rpc"
+
 	"jiacrontab/pkg/util"
 	"sync"
 	"time"
@@ -209,16 +209,16 @@ func (j *Jiacrontabd) heartBeat() {
 
 func (j *Jiacrontabd) init() {
 	models.CreateDB(cfg.DriverName, cfg.DSN)
-	model.DB().CreateTable(&models.CrontabJob{}, &models.DaemonJob{})
-	model.DB().AutoMigrate(&models.CrontabJob{}, &models.DaemonJob{})
+	models.DB().CreateTable(&models.CrontabJob{}, &models.DaemonJob{})
+	models.DB().AutoMigrate(&models.CrontabJob{}, &models.DaemonJob{})
+	if cfg.AutoCleanTaskLog {
+		go finder.SearchAndDeleteFileOnDisk(cfg.LogPath, 24*time.Hour*30, 1<<30)
+	}
 }
 
 // Main main function
 func (j *Jiacrontabd) Main() {
-	if cfg.AutoCleanTaskLog {
-		go finder.SearchAndDeleteFileOnDisk(cfg.LogPath, 24*time.Hour*30, 1<<30)
-	}
-
+	j.init()
 	j.heartBeat()
-	rpc.ListenAndServe(cfg.ListenAddr, newCrontabJobSrv(j))
+	rpc.ListenAndServe(cfg.ListenAddr, newCrontabJobSrv(j), &Srv{})
 }

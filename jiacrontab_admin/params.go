@@ -56,17 +56,16 @@ type editJobReqParams struct {
 	ID              uint              `json:"id"`
 	Addr            string            `json:"addr"`
 	IsSync          bool              `json:"isSync"`
-	Commands        []string          `json:"command"`
-	Args            string            `json:"args"`
 	Name            string            `json:"name"`
+	Commands        []string          `json:"commands"`
 	Timeout         int               `json:"timeout"`
 	MaxConcurrent   uint              `json:"maxConcurrent"`
-	ErrorMailNotify bool              `json:"mailNotify"`
-	ErrorAPINotify  bool              `json:"APINotify"`
+	ErrorMailNotify bool              `json:"ErrormailNotify"`
+	ErrorAPINotify  bool              `json:"ErrorAPINotify"`
 	MailTo          string            `json:"mailTo"`
 	APITo           string            `json:"APITo"`
 	PipeCommands    [][]string        `json:"pipeCommands"`
-	DependJobs      models.DependJobs `json:"dependents"`
+	DependJobs      models.DependJobs `json:"dependJobs"`
 	Month           string            `json:"month"`
 	Weekday         string            `json:"weekday"`
 	Day             string            `json:"day"`
@@ -100,7 +99,8 @@ func (p *getLogReqParams) verify(ctx iris.Context) error {
 
 	if p.Page == 0 {
 		p.Page = 1
-	} else if p.Pagesize <= 0 {
+	}
+	if p.Pagesize <= 0 {
 		p.Pagesize = 50
 	}
 
@@ -209,17 +209,47 @@ func (p *getJobReqParams) verify(ctx iris.Context) error {
 }
 
 type userReqParams struct {
-	Name    string `json:"name"`
-	Passwd  string `json:"string"`
-	GroupID int    `json:"group"`
-	Root    bool   `json:"root"`
-	Email   string `json:"email"`
+	Username string `json:"username"`
+	Passwd   string `json:"passwd"`
+	GroupID  int    `json:"groupID"`
+	Root     bool   `json:"root"`
+	Mail     string `json:"mail"`
 }
 
 func (p *userReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.Name == "" || p.Passwd == "" {
+	if err := ctx.ReadJSON(p); err != nil || p.Username == "" || p.Passwd == "" {
 		return paramsError
 	}
 
+	return nil
+}
+
+type loginReqParams struct {
+	Username string `json:"username"`
+	Passwd   string `json:"passwd"`
+	Remember bool   `json:"remember"`
+}
+
+func (p *loginReqParams) verify(ctx iris.Context) error {
+	if err := ctx.ReadJSON(p); err != nil || p.Username == "" || p.Passwd == "" {
+		return paramsError
+	}
+
+	return nil
+}
+
+type getNodeListReqParams struct {
+	Page     int `json:"page"`
+	Pagesize int `json:"pagesize"`
+	GroupID  int `json:"groupID"`
+}
+
+func (p *getNodeListReqParams) verify(ctx iris.Context) error {
+	if p.Page == 0 {
+		p.Page = 1
+	}
+	if p.Pagesize <= 0 {
+		p.Pagesize = 50
+	}
 	return nil
 }

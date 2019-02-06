@@ -4,6 +4,7 @@ import (
 	"errors"
 	"jiacrontab/pkg/mailer"
 	"jiacrontab/pkg/proto"
+	"jiacrontab/pkg/util"
 	"reflect"
 	"time"
 
@@ -20,11 +21,11 @@ const (
 var cfg *Config
 
 type appOpt struct {
-	HttpListenAddr string `opt:"http_listen_addr" default:":20000"`
+	HTTPListenAddr string `opt:"http_listen_addr" default:":20000"`
 	StaticDir      string `opt:"static_dir" default:"./static"`
 	TplDir         string `opt:"tpl_dir" default:"tpl_dir"`
 	TplExt         string `opt:"tpl_ext" default:"tpl_ext"`
-	RpcListenAddr  string `opt:"rpc_listen_addr" default:":20003"`
+	RPCListenAddr  string `opt:"rpc_listen_addr" default:":20003"`
 	AppName        string `opt:"app_name" default:"jiacrontab"`
 	FirstUse       bool   `opt:"first_use" default:"true"`
 }
@@ -32,7 +33,7 @@ type appOpt struct {
 type jwtOpt struct {
 	SigningKey string `opt:"signing_key" default:"ADSFdfs2342$@@#"`
 	Name       string `opt:"name" default:"token"`
-	Expires    int64  `opt:"name" default:"3600"`
+	Expires    int64  `opt:"expires" default:"3600"`
 }
 
 type mailerOpt struct {
@@ -60,7 +61,7 @@ type databaseOpt struct {
 
 type Config struct {
 	Mailer          *mailerOpt   `section:"mail"`
-	Jwt             *jwtOpt      `section:"jwt`
+	Jwt             *jwtOpt      `section:"jwt"`
 	App             *appOpt      `section:"app"`
 	Database        *databaseOpt `section:"database"`
 	iniFile         *ini.File
@@ -110,6 +111,8 @@ func (c *Config) init() {
 				subVal.Field(j).SetBool(setVal)
 			case reflect.String:
 				subVal.Field(j).SetString(defaultVal)
+			case reflect.Int64:
+				subVal.Field(j).SetInt(util.ParseInt64(defaultVal))
 			}
 			key.SetValue(defaultVal)
 		}
@@ -136,9 +139,13 @@ func loadConfig() *ini.File {
 }
 
 func getConfig(c iris.Context) {
-	var (
-		ctx = wrapCtx(c)
-	)
+
+	ctx := wrapCtx(c)
+	gid, err := ctx.getGroupIDFromToken()
+	if err != nil || gid != 0 {
+		ctx.respError(proto.Code_Error, "无权访问", nil)
+		return
+	}
 	ctx.respSucc("", cfg)
 }
 

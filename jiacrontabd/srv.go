@@ -14,6 +14,13 @@ import (
 	"time"
 )
 
+type Srv struct {
+}
+
+func (s *Srv) Ping(args *proto.EmptyArgs, reply *proto.EmptyReply) error {
+	return nil
+}
+
 type CrontabJob struct {
 	jd *Jiacrontabd
 }
