@@ -272,6 +272,11 @@ func ParseInt(i string) int {
 	return v
 }
 
+func ParseInt64(i string) int64 {
+	v, _ := strconv.Atoi(i)
+	return int64(v)
+}
+
 func Struct2Map(i interface{}, o *map[string]interface{}) error {
 
 	if o == nil {

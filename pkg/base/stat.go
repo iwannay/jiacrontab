@@ -1,7 +1,6 @@
 package base
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -79,7 +78,6 @@ func (s *stat) QueryIntervalErrorData(key string) uint64 {
 }
 
 func (s *stat) AddRequestCount(page string, code int, num uint64) uint64 {
-	fmt.Println(page, strings.HasPrefix(page, "debug"))
 
 	if !strings.HasPrefix(page, "/debug") {
 		atomic.AddUint64(&s.TotalRequestCount, num)

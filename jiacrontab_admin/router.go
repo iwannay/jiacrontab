@@ -1,15 +1,11 @@
 package admin
 
 import (
-	"fmt"
-	"jiacrontab/pkg/base"
+	"jiacrontab/pkg/proto"
+	"net/url"
 	"path/filepath"
 
 	"github.com/kataras/iris"
-
-	"jiacrontab/pkg/proto"
-
-	"net/url"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
@@ -25,14 +21,16 @@ func route(app *iris.Application) {
 		},
 
 		Extractor: func(ctx iris.Context) (string, error) {
-			token, err := url.QueryUnescape(ctx.GetCookie(cfg.Jwt.Name))
+			token, err := url.QueryUnescape(ctx.GetHeader(cfg.Jwt.Name))
 			return token, err
 		},
+		Expiration: true,
 
 		ErrorHandler: func(c iris.Context, data string) {
 			ctx := wrapCtx(c)
-			app.Logger().Error("jwt 认证失败", data)
-			if ctx.RequestPath(true) != "/user/login" {
+			app.Logger().Error("jwt 认证失败:", data)
+
+			if ctx.RequestPath(true) != "/user/login" && ctx.RequestPath(true) != "/user/signUp" {
 				ctx.respError(proto.Code_FailedAuth, "认证失败", nil)
 				return
 			}
@@ -42,42 +40,35 @@ func route(app *iris.Application) {
 		SigningMethod: jwt.SigningMethodHS256,
 	})
 
-	app.UseGlobal(func(ctx iris.Context) {
-		base.Stat.AddConcurrentCount()
-		defer func() {
-			if err := recover(); err != nil {
-				base.Stat.AddErrorCount(ctx.RequestPath(true), fmt.Errorf("%v", err), 1)
-			}
-			base.Stat.AddRequestCount(ctx.RequestPath(true), ctx.GetStatusCode(), 1)
-		}()
-		ctx.Next()
-	})
+	app.UseGlobal(newRecover())
 
-	app.Use(jwtHandler.Serve, func(ctx iris.Context) {
-		token := ctx.Values().Get("jwt").(*jwt.Token)
-		ctx.Values().Set("sess", token.Claims)
-		ctx.Next()
-	})
+	adm := app.Party("/adm")
+	{
+		adm.Use(jwtHandler.Serve)
 
-	app.Post("/node/list", getNodeList)
-	app.Post("/node/delete", deleteNode)
-	app.Post("/crontab/job/list", getJobList)
-	app.Post("/crontab/job/get", getJob)
-	app.Post("/crontab/job/log", getRecentLog)
-	app.Post("/crontab/job/edit", editJob)
-	app.Post("/crontab/job/stop", stopTask)
-	app.Post("/crontab/job/start", startTask)
-	app.Post("/crontab/job/exec", execTask)
+		adm.Post("/node/list", getNodeList)
+		adm.Post("/node/delete", deleteNode)
+		adm.Post("/crontab/job/list", getJobList)
+		adm.Post("/crontab/job/get", getJob)
+		adm.Post("/crontab/job/log", getRecentLog)
+		adm.Post("/crontab/job/edit", editJob)
+		adm.Post("/crontab/job/stop", stopTask)
+		adm.Post("/crontab/job/start", startTask)
+		adm.Post("/crontab/job/exec", execTask)
+
+		adm.Post("/config/get", getConfig)
+		adm.Post("/runtime/info", runtimeInfo)
+
+		adm.Post("/daemon/job/list", getDaemonJobList)
+		adm.Post("/daemon/job/action", actionDaemonTask)
+		adm.Post("/daemon/job/edit", editDaemonJob)
+		adm.Post("/daemon/job/get", getDaemonJob)
+		adm.Post("/daemon/job/log", getRecentDaemonLog)
+
+	}
 
 	app.Post("/user/login", login)
-	app.Post("/config/get", getConfig)
-	app.Post("/runtime/info", runtimeInfo)
-
-	app.Post("/daemon/job/list", getDaemonJobList)
-	app.Post("/daemon/job/action", actionDaemonTask)
-	app.Post("/daemon/job/edit", editDaemonJob)
-	app.Post("/daemon/job/get", getDaemonJob)
-	app.Post("/daemon/job/log", getRecentDaemonLog)
+	app.Post("/user/signUp", signUp)
 
 	debug := app.Party("/debug")
 	{

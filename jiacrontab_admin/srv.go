@@ -16,7 +16,6 @@ type Srv struct{}
 
 func (s *Srv) Register(args models.Node, reply *bool) error {
 	*reply = true
-	log.Info(args.Addr, args.GroupID)
 	cfg.SetUsed()
 	ret := models.DB().Model(&models.Node{}).Where("addr=? and group_id=?", args.Addr, args.GroupID).Updates(map[string]interface{}{
 		"name":             args.Name,

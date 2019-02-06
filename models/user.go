@@ -11,12 +11,12 @@ import (
 
 type User struct {
 	gorm.Model
-	Name    string `gorm:"not null; unique"`
-	Passwd  string
-	Salt    string
-	GroupID int
-	Root    bool
-	Mail    string
+	Username string `json:"username" gorm:"not null; unique"`
+	Passwd   string `json:"passwd"`
+	Salt     string `json:"salt"`
+	GroupID  int    `json:"groupID"`
+	Root     bool   `json:"root"`
+	Mail     string `json:"mail"`
 }
 
 func (u *User) getSalt() string {
@@ -32,8 +32,8 @@ func (u *User) getSalt() string {
 }
 
 // Verify 验证用户
-func (u *User) Verify(name, passwd string) bool {
-	ret := DB().Take(u, "Name=?", name)
+func (u *User) Verify(username, passwd string) bool {
+	ret := DB().Take(u, "username=?", username)
 
 	if ret.Error != nil {
 		log.Error("user.Verify:", ret.Error)
@@ -41,7 +41,6 @@ func (u *User) Verify(name, passwd string) bool {
 	}
 
 	bts := md5.Sum([]byte(fmt.Sprint(passwd, u.Salt)))
-
 	if fmt.Sprintf("%x", bts) == u.Passwd {
 		return true
 	}
@@ -49,11 +48,13 @@ func (u *User) Verify(name, passwd string) bool {
 	return false
 }
 
-func (u *User) Add() error {
+func (u *User) setPasswd() {
 	u.Salt = u.getSalt()
-	return DB().Create(u).Error
+	bts := md5.Sum([]byte(fmt.Sprint(u.Passwd, u.Salt)))
+	u.Passwd = fmt.Sprintf("%x", bts)
 }
 
-func (u *User) SignUp() error {
+func (u *User) Create() error {
+	u.setPasswd()
 	return DB().Create(u).Error
 }

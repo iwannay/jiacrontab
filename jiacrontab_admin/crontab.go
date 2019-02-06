@@ -102,7 +102,7 @@ failed:
 func editJob(c iris.Context) {
 	var (
 		err     error
-		reply   bool
+		reply   int
 		ctx     = wrapCtx(c)
 		reqBody editJobReqParams
 		rpcArgs models.CrontabJob
@@ -136,10 +136,11 @@ func editJob(c iris.Context) {
 
 	rpcArgs.ID = reqBody.ID
 
-	if err := rpcCall(reqBody.Addr, "CrontabJob.Edit", rpcArgs, &reply); err != nil {
+	if err = rpcCall(reqBody.Addr, "CrontabJob.Edit", rpcArgs, &reply); err != nil {
 		goto failed
 	}
-	ctx.respSucc("", nil)
+
+	ctx.respSucc("", reply)
 	return
 
 failed:

@@ -5,10 +5,6 @@ import (
 	"jiacrontab/pkg/mailer"
 	"jiacrontab/pkg/rpc"
 
-	_ "github.com/jinzhu/gorm/dialects/mysql"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
-
 	"github.com/kataras/iris"
 )
 
@@ -65,6 +61,6 @@ func (a *Admin) Main() {
 	// app.RegisterView(html)
 
 	route(app)
-	go rpc.ListenAndServe(cfg.App.RpcListenAddr, &Srv{})
-	app.Run(iris.Addr(cfg.App.HttpListenAddr))
+	go rpc.ListenAndServe(cfg.App.RPCListenAddr, &Srv{})
+	app.Run(iris.Addr(cfg.App.HTTPListenAddr))
 }
