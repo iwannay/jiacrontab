@@ -11,10 +11,10 @@ import (
 )
 
 type depEntry struct {
-	jobID      int    // 定时任务id
-	processID  int    // 当前依赖的父级任务（可能存在多个并发的task
-	id         string // 依赖id
-	from       string //
+	jobID      int // 定时任务id
+	processID  int // 当前依赖的父级任务（可能存在多个并发的task)
+	saveID     string
+	from       string
 	commands   []string
 	dest       string
 	done       bool
@@ -70,7 +70,7 @@ func (d *dependencies) exec(task *depEntry) {
 	cmdList := [][]string{task.commands}
 	logPath := filepath.Join(cfg.LogPath, "depend_job")
 
-	err := wrapExecScript(ctx, fmt.Sprintf("%d-%s.log", task.jobID, task.id), cmdList, logPath, &logContent)
+	err := wrapExecScript(ctx, fmt.Sprintf("%s.log", task.saveID), cmdList, logPath, &logContent)
 	cancel()
 	costTime := time.Now().UnixNano() - start
 
@@ -84,7 +84,7 @@ func (d *dependencies) exec(task *depEntry) {
 
 	if !d.crond.filterDepend(task) {
 		err = rpcCall("Srv.DependDone", proto.DepJob{
-			ID:         task.id,
+			ID:         task.saveID,
 			Name:       task.name,
 			Dest:       task.dest,
 			From:       task.from,
