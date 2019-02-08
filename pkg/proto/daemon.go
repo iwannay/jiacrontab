@@ -1,9 +1,9 @@
 package proto
 
 const (
-	StopDaemonTask = iota
-	StartDaemonTask
-	DeleteDaemonTask
+	ActionStopDaemonTask = iota
+	ActionStartDaemonTask
+	ActionDeleteDaemonTask
 )
 
 type ActionDaemonJobArgs struct {

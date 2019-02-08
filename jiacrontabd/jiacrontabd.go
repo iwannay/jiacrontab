@@ -37,26 +37,26 @@ func New() *Jiacrontabd {
 	return j
 }
 
-// AddJob add job
 func (j *Jiacrontabd) addJob(job *crontab.Job) {
 	j.mux.Lock()
 	if _, ok := j.jobs[job.ID]; ok {
 		j.mux.Unlock()
-		return
+	} else {
+		j.jobs[job.ID] = newJobEntry(job, j)
+		j.mux.Unlock()
 	}
-
-	j.jobs[job.ID] = newJobEntry(job)
-	j.mux.Unlock()
+	job.NextExecutionTime(time.Now())
 	j.crontab.AddJob(job)
 }
 
 func (j *Jiacrontabd) execTask(job *crontab.Job) {
+	job.NextExecutionTime(time.Now())
 	j.mux.RLock()
 	if task, ok := j.jobs[job.ID]; !ok {
 		j.mux.RUnlock()
 		task.exec()
-		return
 	}
+
 }
 
 func (j *Jiacrontabd) killTask(jobID int) {
@@ -68,7 +68,6 @@ func (j *Jiacrontabd) killTask(jobID int) {
 	}
 }
 
-// Run start Jiacrontabd instance
 func (j *Jiacrontabd) run() {
 	// tcp server
 	j.wg.Wrap(j.crontab.QueueScanWorker)
@@ -103,8 +102,8 @@ func (j *Jiacrontabd) filterDepend(task *depEntry) bool {
 						logContent = append(logContent, vv.logContent...)
 					}
 
-					if vv.id == task.id && v.sync {
-						if ok := j.pushPipeDepend(v.depends, vv.id); ok {
+					if vv.saveID == task.saveID && v.sync {
+						if ok := j.pushPipeDepend(v.depends, vv.saveID); ok {
 							return true
 						}
 					}
@@ -151,7 +150,7 @@ func (j *Jiacrontabd) pushPipeDepend(deps []*depEntry, depEntryID string) bool {
 				} else {
 					var reply bool
 					err := rpcCall("Srv.Depends", []proto.DepJob{{
-						ID:        v.id,
+						ID:        v.saveID,
 						Name:      v.name,
 						Dest:      v.dest,
 						From:      v.from,
@@ -169,7 +168,7 @@ func (j *Jiacrontabd) pushPipeDepend(deps []*depEntry, depEntryID string) bool {
 				break
 			}
 
-			if (v.id == depEntryID) && (l != k) {
+			if (v.saveID == depEntryID) && (l != k) {
 				flag = true
 			}
 
@@ -177,6 +176,37 @@ func (j *Jiacrontabd) pushPipeDepend(deps []*depEntry, depEntryID string) bool {
 
 	}
 	return flag
+}
+
+func (j *Jiacrontabd) pushDepend(deps []*depEntry) bool {
+	var depJobs proto.DepJobs
+	for _, v := range deps {
+		// 检测目标服务器是本机直接执行脚本
+		if v.dest == cfg.LocalAddr {
+			j.dep.add(v)
+		} else {
+			depJobs = append(depJobs, proto.DepJob{
+				ID:        v.saveID,
+				Name:      v.name,
+				Dest:      v.dest,
+				From:      v.from,
+				ProcessID: v.processID,
+				JobID:     v.jobID,
+				Commands:  v.commands,
+				Timeout:   v.timeout,
+			})
+		}
+	}
+
+	if len(depJobs) > 0 {
+		var reply bool
+		if err := rpcCall("Srv.Depends", depJobs, &reply); err != nil {
+			log.Error("Srv.Depends error:", err, "server addr:", cfg.AdminAddr)
+			return false
+		}
+	}
+
+	return true
 }
 
 func (j *Jiacrontabd) count() int {

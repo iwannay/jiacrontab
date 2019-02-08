@@ -9,22 +9,40 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+// JobStatus 任务状态
+type JobStatus int
+
+const (
+	// StatusJobUnaudited 未审核
+	StatusJobUnaudited = 0
+	// StatusJobOk 等待调度
+	StatusJobOk JobStatus = 1
+	// StatusJobTiming 定时中
+	StatusJobTiming JobStatus = 2
+	// StatusJobRunning 执行中
+	StatusJobRunning JobStatus = 3
+	// StatusJobStop 已停止
+	StatusJobStop = 4
+)
+
 type CrontabJob struct {
 	gorm.Model
 	Name            string       `json:"name" gorm:"unique;not null"`
 	Commands        StringSlice  `json:"commands" gorm:"type:TEXT"`
 	DependJobs      DependJobs   `json:"dependJobs" gorm:"type:TEXT"`
 	PipeCommands    PipeComamnds `json:"pipeCommands" gorm:"type:TEXT"`
-	LastCostTime    int64        `json:"lastCostTime"`
+	LastCostTime    float64      `json:"lastCostTime"`
 	LastExecTime    time.Time    `json:"lastExecTime"`
 	NextExecTime    time.Time    `json:"nextExecTime"`
 	LastExitStatus  string       `json:"lastExitStatus"`
 	Timeout         int          `json:"timeout"`
+	ProcessNum      int          `json:"processNum"`
 	ErrorMailNotify bool         `json:"errorMailNotify"`
 	ErrorAPINotify  bool         `json:"errorAPINotify"`
+	Status          JobStatus    `json:"status"`
 	IsSync          bool         `json:"isSync"` // 脚本是否同步执行
-	MailTo          string       `json:"mailTo"`
-	APITo           string       `json:"APITo"`
+	MailTo          StringSlice  `json:"mailTo"`
+	APITo           StringSlice  `json:"APITo"`
 	MaxConcurrent   uint         `json:"maxConcurrent"`  // 脚本最大并发量
 	TimeoutTrigger  string       `json:"timeoutTrigger"` // email/kill/email_and_kill/ignore/api
 	TimeArgs        TimeArgs     `json:"timeArgs" gorm:"type:TEXT"`

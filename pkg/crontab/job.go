@@ -23,6 +23,14 @@ type Job struct {
 	Value             interface{}
 }
 
+func (j *Job) GetNextExecTime() time.Time {
+	return j.nextExecutionTime
+}
+
+func (j *Job) GetLastExecTime() time.Time {
+	return j.lastExecutionTime
+}
+
 // NextExecutionTime 下次执行时间
 func (j *Job) NextExecutionTime(now time.Time) (time.Time, error) {
 	var (

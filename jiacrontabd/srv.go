@@ -36,8 +36,8 @@ func (j *CrontabJob) List(args proto.QueryJobArg, reply *[]models.CrontabJob) er
 }
 
 func (j *CrontabJob) Edit(args models.CrontabJob, rowsAffected *int64) error {
-	if args.MailTo == "" {
-		args.MailTo = cfg.MailTo
+	if len(args.MailTo) == 0 {
+		args.MailTo = append(args.MailTo, cfg.MailTo)
 	}
 
 	if args.MaxConcurrent == 0 {
@@ -110,7 +110,7 @@ func (j *CrontabJob) Exec(jobID int, reply *[]byte) error {
 	if ret.Error == nil {
 		*reply = newJobEntry(&crontab.Job{
 			Value: job,
-		}).exec()
+		}, j.jd).exec()
 	} else {
 		*reply = []byte("failed to start")
 	}
@@ -162,7 +162,7 @@ func (j *CrontabJob) ResolvedDepends(args proto.DepJob, reply *bool) error {
 func (j *CrontabJob) ExecDepend(args models.DependJob, reply *bool) error {
 	j.jd.dep.add(&depEntry{
 		jobID:    args.JobID,
-		id:       args.ID,
+		saveID:   args.ID,
 		dest:     args.Dest,
 		from:     args.From,
 		name:     args.Name,

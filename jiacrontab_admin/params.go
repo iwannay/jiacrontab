@@ -62,8 +62,8 @@ type editJobReqParams struct {
 	MaxConcurrent   uint              `json:"maxConcurrent"`
 	ErrorMailNotify bool              `json:"ErrormailNotify"`
 	ErrorAPINotify  bool              `json:"ErrorAPINotify"`
-	MailTo          string            `json:"mailTo"`
-	APITo           string            `json:"APITo"`
+	MailTo          []string          `json:"mailTo"`
+	APITo           []string          `json:"APITo"`
 	PipeCommands    [][]string        `json:"pipeCommands"`
 	DependJobs      models.DependJobs `json:"dependJobs"`
 	Month           string            `json:"month"`

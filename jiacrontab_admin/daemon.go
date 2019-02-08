@@ -41,9 +41,9 @@ func actionDaemonTask(c iris.Context) {
 		ok      bool
 		reqBody actionTaskReqParams
 		methods = map[string]int{
-			"start":  proto.StartDaemonTask,
-			"stop":   proto.StopDaemonTask,
-			"delete": proto.DeleteDaemonTask,
+			"start":  proto.ActionStartDaemonTask,
+			"stop":   proto.ActionStopDaemonTask,
+			"delete": proto.ActionDeleteDaemonTask,
 		}
 		action int
 	)

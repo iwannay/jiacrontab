@@ -229,6 +229,16 @@ func pipeExecScript(ctx context.Context, cmdList [][]string, logname string, log
 
 }
 
+func writeLog(logpath string, logname string, content *[]byte) {
+	logPath := filepath.Join(logpath, time.Now().Format("2006/01/02"))
+	f, err := util.TryOpen(filepath.Join(logPath, logname), os.O_APPEND|os.O_CREATE|os.O_RDWR)
+	if err != nil {
+		log.Errorf("write log %v", err)
+	}
+	defer f.Close()
+	f.Write(*content)
+}
+
 type pipeCmd struct {
 	*kproc.KCmd
 }

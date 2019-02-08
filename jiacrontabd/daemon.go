@@ -14,12 +14,6 @@ import (
 	"time"
 )
 
-const (
-	stopDaemonTask = iota
-	startDaemonTask
-	deleteDaemonTask
-)
-
 type daemonTask struct {
 	job        *models.DaemonJob
 	daemon     *daemon
@@ -107,7 +101,7 @@ func (d *daemonTask) do(ctx context.Context) {
 	}
 	t.Stop()
 
-	if d.action == proto.DeleteDaemonTask {
+	if d.action == proto.ActionDeleteDaemonTask {
 		// model.DB().Unscoped().Delete(d.task, "id=?", d.task.ID)
 	}
 
@@ -152,11 +146,22 @@ func (d *daemon) run() {
 	}
 
 	for _, v := range jobList {
+		var action int
 		log.Info("init daemon task_name:", v.Name, "task_id:", v.ID, "status:", v.Status)
 		job := v
+
+		switch v.Status {
+		case models.StatusJobOk:
+			action = proto.ActionStartDaemonTask
+		case models.StatusJobStop:
+			action = proto.ActionStopDaemonTask
+		default:
+			continue
+		}
+
 		d.add(&daemonTask{
 			job:    &job,
-			action: v.Status,
+			action: action,
 		})
 	}
 
@@ -164,7 +169,7 @@ func (d *daemon) run() {
 		var ctx context.Context
 		for v := range d.taskChannel {
 			switch v.action {
-			case startDaemonTask:
+			case proto.ActionStartDaemonTask:
 				d.lock.Lock()
 				if t := d.taskMap[v.job.ID]; t == nil {
 					d.taskMap[v.job.ID] = v
@@ -176,7 +181,7 @@ func (d *daemon) run() {
 					d.lock.Unlock()
 
 				}
-			case deleteDaemonTask:
+			case proto.ActionDeleteDaemonTask:
 				d.lock.Lock()
 				if t := d.taskMap[v.job.ID]; t != nil {
 					d.lock.Unlock()
@@ -186,7 +191,7 @@ func (d *daemon) run() {
 					model.DB().Unscoped().Delete(v.job, "id=?", v.job.ID)
 					d.lock.Unlock()
 				}
-			case stopDaemonTask:
+			case proto.ActionStopDaemonTask:
 				d.lock.Lock()
 				if t := d.taskMap[v.job.ID]; t != nil {
 					d.lock.Unlock()
@@ -194,7 +199,7 @@ func (d *daemon) run() {
 					t.cancel()
 				} else {
 					d.lock.Unlock()
-					model.DB().Model(&model.DaemonTask{}).Where("id = ?", v.job.ID).Update("status", stopDaemonTask)
+					model.DB().Model(&model.DaemonTask{}).Where("id = ?", v.job.ID).Update("status", models.StatusJobStop)
 				}
 			}
 		}
