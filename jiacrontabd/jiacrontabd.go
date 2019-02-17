@@ -226,7 +226,6 @@ func (j *Jiacrontabd) heartBeat() {
 		Addr:           cfg.LocalAddr,
 		DaemonTaskNum:  j.daemon.count(),
 		CrontabTaskNum: j.count(),
-		Mail:           cfg.MailTo,
 		Name:           hostname,
 	}, &reply)
 

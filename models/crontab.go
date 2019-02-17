@@ -41,8 +41,8 @@ type CrontabJob struct {
 	ErrorAPINotify  bool         `json:"errorAPINotify"`
 	Status          JobStatus    `json:"status"`
 	IsSync          bool         `json:"isSync"` // 脚本是否同步执行
-	MailTo          StringSlice  `json:"mailTo"`
-	APITo           StringSlice  `json:"APITo"`
+	MailTo          StringSlice  `json:"mailTo" gorm:"type:varchar(1000)"`
+	APITo           StringSlice  `json:"APITo"  gorm:"type:varchar(1000)"`
 	MaxConcurrent   uint         `json:"maxConcurrent"`  // 脚本最大并发量
 	TimeoutTrigger  string       `json:"timeoutTrigger"` // email/kill/email_and_kill/ignore/api
 	TimeArgs        TimeArgs     `json:"timeArgs" gorm:"type:TEXT"`

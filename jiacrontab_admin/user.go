@@ -11,8 +11,10 @@ import (
 
 type CustomerClaims struct {
 	jwt.StandardClaims
+	UserID   uint
+	Mail     string
 	Username string
-	GroupID  int
+	GroupID  uint
 	Root     bool
 }
 
@@ -36,6 +38,8 @@ func login(c iris.Context) {
 
 	customerClaims.ExpiresAt = cfg.Jwt.Expires + time.Now().Unix()
 	customerClaims.Username = reqBody.Username
+	customerClaims.UserID = user.ID
+	customerClaims.Mail = user.Mail
 	customerClaims.GroupID = user.GroupID
 	customerClaims.Root = user.Root
 
@@ -65,7 +69,6 @@ func signUp(c iris.Context) {
 		ctx.respError(proto.Code_Error, err.Error(), nil)
 		return
 	}
-
 	user.Username = reqBody.Username
 	user.Passwd = reqBody.Passwd
 	user.GroupID = reqBody.GroupID
@@ -77,5 +80,6 @@ func signUp(c iris.Context) {
 		return
 	}
 
+	ctx.pubEvent(event_SignUpUser, "", reqBody)
 	ctx.respSucc("", true)
 }
