@@ -45,6 +45,11 @@ func actionDaemonTask(c iris.Context) {
 			"stop":   proto.ActionStopDaemonTask,
 			"delete": proto.ActionDeleteDaemonTask,
 		}
+		eDesc = map[string]string{
+			"start":  event_StartDaemonJob,
+			"stop":   event_StopDaemonJob,
+			"delete": event_DelDaemonJob,
+		}
 		action int
 	)
 
@@ -60,6 +65,7 @@ func actionDaemonTask(c iris.Context) {
 		return
 	}
 
+	ctx.pubEvent(eDesc[reqBody.Action], reqBody.Addr, reqBody)
 	ctx.respSucc("", nil)
 }
 
@@ -91,7 +97,7 @@ func editDaemonJob(c iris.Context) {
 		ctx.respError(proto.Code_Error, err.Error(), nil)
 		return
 	}
-
+	ctx.pubEvent(event_EditDaemonJob, reqBody.Addr, reqBody)
 	ctx.respSucc("", reply)
 }
 

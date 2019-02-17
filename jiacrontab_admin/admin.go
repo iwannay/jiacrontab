@@ -28,6 +28,9 @@ func (a *Admin) init() {
 	models.DB().CreateTable(&models.User{})
 	models.DB().AutoMigrate(&models.User{})
 
+	models.DB().CreateTable(&models.Event{})
+	models.DB().AutoMigrate(&models.Event{})
+
 	// mail
 	if cfg.Mailer.Enabled {
 		mailer.InitMailer(&mailer.Mailer{

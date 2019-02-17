@@ -14,7 +14,7 @@ type User struct {
 	Username string `json:"username" gorm:"not null; unique"`
 	Passwd   string `json:"passwd"`
 	Salt     string `json:"salt"`
-	GroupID  int    `json:"groupID"`
+	GroupID  uint   `json:"groupID"`
 	Root     bool   `json:"root"`
 	Mail     string `json:"mail"`
 }
@@ -57,4 +57,8 @@ func (u *User) setPasswd() {
 func (u *User) Create() error {
 	u.setPasswd()
 	return DB().Create(u).Error
+}
+
+func (u *User) SetGroup() error {
+	return DB().Model(u).Where("user_id=?", u.ID).Update("group_id", u.GroupID).Error
 }

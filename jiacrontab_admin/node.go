@@ -2,10 +2,8 @@ package admin
 
 import (
 	"jiacrontab/models"
-	"jiacrontab/pkg/log"
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/rpc"
-	"jiacrontab/pkg/util"
 
 	"github.com/kataras/iris"
 )
@@ -16,7 +14,7 @@ func getNodeList(c iris.Context) {
 		ctx      = wrapCtx(c)
 		err      error
 		nodeList []models.Node
-		reqBody  getNodeListReqParams
+		reqBody  pageReqParams
 		groupID  int
 	)
 	if groupID, err = ctx.getGroupIDFromToken(); err != nil {
@@ -33,9 +31,7 @@ func getNodeList(c iris.Context) {
 		groupID = reqBody.GroupID
 	}
 
-	sInfo := util.SystemInfo(cfg.ServerStartTime)
 	if groupID == 0 {
-		log.Info("here:", groupID, "page:", reqBody.Page, "pagesize:", reqBody.Pagesize)
 		err = models.DB().Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&nodeList).Error
 	} else {
 		err = models.DB().Where("group_id=?", groupID).Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&nodeList).Error
@@ -46,10 +42,7 @@ func getNodeList(c iris.Context) {
 		return
 	}
 
-	ctx.respSucc("", map[string]interface{}{
-		"nodeList":   nodeList,
-		"systemInfo": sInfo,
-	})
+	ctx.respSucc("", nodeList)
 }
 
 func deleteNode(c iris.Context) {
@@ -69,6 +62,6 @@ func deleteNode(c iris.Context) {
 		ctx.respError(proto.Code_Error, "删除失败", nil)
 		return
 	}
-
+	ctx.pubEvent(event_DelNodeDesc, reqBody.Addr, "")
 	ctx.respSucc("", nil)
 }

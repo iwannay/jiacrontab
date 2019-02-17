@@ -139,7 +139,7 @@ func editJob(c iris.Context) {
 	if err = rpcCall(reqBody.Addr, "CrontabJob.Edit", rpcArgs, &reply); err != nil {
 		goto failed
 	}
-
+	ctx.pubEvent(event_EditCronJob, reqBody.Addr, reqBody)
 	ctx.respSucc("", reply)
 	return
 
@@ -147,18 +147,23 @@ failed:
 	ctx.respError(proto.Code_Error, err.Error(), nil)
 }
 
-func stopTask(c iris.Context) {
+func actionTask(c iris.Context) {
 	var (
 		ctx     = wrapCtx(c)
 		err     error
 		reply   bool
 		ok      bool
 		method  string
-		reqBody stopTaskReqParams
+		reqBody actionTaskReqParams
 		methods = map[string]string{
 			"stop":   "CrontabJob.Stop",
 			"delete": "CrontabJob.Delete",
 			"kill":   "CrontabJob.Kill",
+		}
+		eDesc = map[string]string{
+			"stop":   event_StopCronJob,
+			"delete": event_DelCronJob,
+			"kill":   event_KillCronJob,
 		}
 	)
 
@@ -175,6 +180,7 @@ func stopTask(c iris.Context) {
 		goto failed
 	}
 
+	ctx.pubEvent(eDesc[reqBody.Action], reqBody.Addr, reqBody)
 	ctx.respSucc("", reply)
 	return
 
@@ -199,6 +205,7 @@ func startTask(c iris.Context) {
 		goto failed
 	}
 
+	ctx.pubEvent(event_StartCronJob, reqBody.Addr, reqBody)
 	ctx.respSucc("", reply)
 	return
 failed:
@@ -218,10 +225,11 @@ func execTask(c iris.Context) {
 		goto failed
 	}
 
-	if err = rpcCall(reqBody.Addr, "CrontabJob.QuickStart", reqBody.JobID, &reply); err != nil {
+	if err = rpcCall(reqBody.Addr, "CrontabJob.Exec", reqBody.JobID, &reply); err != nil {
 		goto failed
 	}
 
+	ctx.pubEvent(event_ExecCronJob, reqBody.Addr, reqBody)
 	logList = strings.Split(string(reply), "\n")
 	ctx.respSucc("", logList)
 	return

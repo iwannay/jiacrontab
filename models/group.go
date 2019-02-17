@@ -7,3 +7,7 @@ type Group struct {
 	Name     string `json:"name" gorm:"not null; unique"`
 	NodeAddr string `json:"nodeAddr" gorm:"not null; unique"`
 }
+
+func (g *Group) Save() error {
+	return DB().Save(g).Error
+}

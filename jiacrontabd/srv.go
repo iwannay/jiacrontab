@@ -36,9 +36,6 @@ func (j *CrontabJob) List(args proto.QueryJobArg, reply *[]models.CrontabJob) er
 }
 
 func (j *CrontabJob) Edit(args models.CrontabJob, rowsAffected *int64) error {
-	if len(args.MailTo) == 0 {
-		args.MailTo = append(args.MailTo, cfg.MailTo)
-	}
 
 	if args.MaxConcurrent == 0 {
 		args.MaxConcurrent = 1

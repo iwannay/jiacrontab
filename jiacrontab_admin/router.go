@@ -52,7 +52,7 @@ func route(app *iris.Application) {
 		adm.Post("/crontab/job/get", getJob)
 		adm.Post("/crontab/job/log", getRecentLog)
 		adm.Post("/crontab/job/edit", editJob)
-		adm.Post("/crontab/job/stop", stopTask)
+		adm.Post("/crontab/job/stop", actionTask)
 		adm.Post("/crontab/job/start", startTask)
 		adm.Post("/crontab/job/exec", execTask)
 
@@ -65,6 +65,9 @@ func route(app *iris.Application) {
 		adm.Post("/daemon/job/get", getDaemonJob)
 		adm.Post("/daemon/job/log", getRecentDaemonLog)
 
+		adm.Post("/group/list", getGroupList)
+		adm.Post("/group/edit", editGroup)
+		adm.Post("/group/set", setGroup)
 	}
 
 	app.Post("/user/login", login)

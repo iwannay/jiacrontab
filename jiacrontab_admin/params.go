@@ -37,21 +37,6 @@ func (p *startTaskReqParams) verify(ctx iris.Context) error {
 	return nil
 }
 
-type stopTaskReqParams struct {
-	JobIDs []int  `json:"jobID"`
-	Addr   string `json:"addr"`
-	Action string `json:"action"`
-}
-
-func (p *stopTaskReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil ||
-		len(p.JobIDs) == 0 || p.Addr == "" || p.Action == "" {
-		return paramsError
-	}
-
-	return nil
-}
-
 type editJobReqParams struct {
 	ID              uint              `json:"id"`
 	Addr            string            `json:"addr"`
@@ -211,7 +196,7 @@ func (p *getJobReqParams) verify(ctx iris.Context) error {
 type userReqParams struct {
 	Username string `json:"username"`
 	Passwd   string `json:"passwd"`
-	GroupID  int    `json:"groupID"`
+	GroupID  uint   `json:"groupID"`
 	Root     bool   `json:"root"`
 	Mail     string `json:"mail"`
 }
@@ -238,18 +223,48 @@ func (p *loginReqParams) verify(ctx iris.Context) error {
 	return nil
 }
 
-type getNodeListReqParams struct {
+type pageReqParams struct {
 	Page     int `json:"page"`
 	Pagesize int `json:"pagesize"`
 	GroupID  int `json:"groupID"`
 }
 
-func (p *getNodeListReqParams) verify(ctx iris.Context) error {
+func (p *pageReqParams) verify(ctx iris.Context) error {
+	if err := ctx.ReadJSON(p); err != nil {
+		return paramsError
+	}
+
 	if p.Page == 0 {
 		p.Page = 1
 	}
 	if p.Pagesize <= 0 {
 		p.Pagesize = 50
+	}
+	return nil
+}
+
+type editGroupReqParams struct {
+	GroupID  uint   `json:"groupID"`
+	Name     string `json:"name"`
+	NodeAddr string `json:"nodeAddr"`
+}
+
+func (p *editGroupReqParams) verify(ctx iris.Context) error {
+	if err := ctx.ReadJSON(p); err != nil || p.Name == "" || p.NodeAddr == "" {
+		return paramsError
+	}
+	return nil
+}
+
+type setGroupReqParams struct {
+	TargetGroupID uint   `json:"targetGroupID"`
+	UserID        uint   `json:"userID"`
+	NodeAddr      string `json:"nodeAddr"`
+}
+
+func (p *setGroupReqParams) verify(ctx iris.Context) error {
+	if err := ctx.ReadJSON(p); err != nil || (p.UserID == 0 && p.NodeAddr == "") {
+		return paramsError
 	}
 	return nil
 }

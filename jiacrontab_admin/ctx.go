@@ -3,7 +3,9 @@ package admin
 import (
 	"crypto/md5"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"jiacrontab/models"
 	"jiacrontab/pkg/log"
 	"jiacrontab/pkg/proto"
 
@@ -74,4 +76,44 @@ func (ctx *myctx) getGroupIDFromToken() (int, error) {
 	json.Unmarshal(bts, &data)
 	log.Infof("%+v", data)
 	return int(data.GroupID), nil
+}
+
+func (ctx *myctx) getClaimsFromToken() (CustomerClaims, error) {
+	var data CustomerClaims
+	token, ok := ctx.Values().Get("jwt").(*jwt.Token)
+	if !ok {
+		return data, errors.New("claims is nil")
+	}
+	bts, err := json.Marshal(token.Claims)
+	if err != nil {
+		return data, err
+	}
+	json.Unmarshal(bts, &data)
+	return data, err
+}
+
+func (ctx *myctx) pubEvent(desc, nodeAddr string, v interface{}) {
+	content := ""
+	claims, err := ctx.getClaimsFromToken()
+	if err != nil {
+		return
+	}
+
+	if v != nil {
+		bts, err := json.Marshal(v)
+		if err != nil {
+			return
+		}
+		content = string(bts)
+	}
+
+	e := models.Event{
+		GroupID:   claims.GroupID,
+		UserID:    claims.UserID,
+		Username:  claims.Username,
+		EventDesc: desc,
+		NodeAddr:  nodeAddr,
+		Content:   content,
+	}
+	e.Pub()
 }

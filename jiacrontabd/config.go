@@ -25,14 +25,13 @@ type Config struct {
 	AdminAddr        string `opt:"admin_addr" default:"127.0.0.1:20003"`
 	LogPath          string `opt:"log_path" default:"./logs"`
 	PprofAddr        string `opt:"pprof_addr" default:"127.0.0.1:20004"`
-	MailTo           string `opt:"mail_to" default:""`
 	AutoCleanTaskLog bool   `opt:"auto_clean_task_log" default:"true"`
 	Hostname         string `opt:"hostname" default:""`
 	UserAgent        string `opt:"user_agent" default:""`
 	iniFile          *ini.File
 	FirstUse         bool   `opt:"first_use" default:"true"`
 	DriverName       string `opt:"driver_name" default:"sqlite3"`
-	DSN              string `opt:"dsn" default:"data/jiacrontab_admin.db"`
+	DSN              string `opt:"dsn" default:"data/jiacrontabd.db"`
 }
 
 func (c *Config) SetUsed() {

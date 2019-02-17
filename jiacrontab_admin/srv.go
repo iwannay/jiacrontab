@@ -22,7 +22,6 @@ func (s *Srv) Register(args models.Node, reply *bool) error {
 		"daemon_task_num":  args.DaemonTaskNum,
 		"crontab_task_num": args.CrontabTaskNum,
 		"addr":             args.Addr,
-		"mail":             args.Mail,
 	})
 	if ret.RowsAffected == 0 {
 		ret = models.DB().Create(&args)
