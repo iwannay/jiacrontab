@@ -76,8 +76,9 @@ func getRelationEvent(c iris.Context) {
 		ctx.respError(proto.Code_Error, "无法获得token信息", err)
 		return
 	}
+
 	err = models.DB().Where("user_id=?", customerClaims.UserID).Order(fmt.Sprintf("create_at %s", reqBody.Orderby)).
-		Find(events).Error
+		Find(&events).Error
 
 	if err != nil {
 		ctx.respError(proto.Code_Error, "暂无数据", err)
