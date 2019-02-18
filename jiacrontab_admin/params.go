@@ -268,3 +268,25 @@ func (p *setGroupReqParams) verify(ctx iris.Context) error {
 	}
 	return nil
 }
+
+type readMoreReqParams struct {
+	LastID   uint   `json:"lastID"`
+	Pagesize int    `json:"pagesize"`
+	Orderby  string `json:"orderby"`
+}
+
+func (p *readMoreReqParams) verify(ctx iris.Context) error {
+	if err := ctx.ReadJSON(p); err != nil {
+		return paramsError
+	}
+
+	if p.Pagesize == 0 {
+		p.Pagesize = 20
+	}
+
+	if p.Orderby == "" {
+		p.Orderby = "desc"
+	}
+
+	return nil
+}
