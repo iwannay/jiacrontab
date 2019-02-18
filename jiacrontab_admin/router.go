@@ -69,7 +69,7 @@ func route(app *iris.Application) {
 		adm.Post("/group/edit", editGroup)
 		adm.Post("/group/set", setGroup)
 
-		adm.Post("/user/events", getRelationEvent)
+		adm.Post("/user/activity_list", getRelationEvent)
 	}
 
 	app.Post("/user/login", login)
