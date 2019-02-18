@@ -25,11 +25,14 @@ func wrapExecScript(ctx context.Context, logname string, cmdList [][]string, log
 		}
 	}()
 
-	var err error
-	var f *os.File
-	var cmdStr string
-	var bin string
-	var args []string
+	var (
+		err    error
+		f      *os.File
+		cmdStr string
+		bin    string
+		args   []string
+	)
+
 	if len(cmdList) > 1 {
 		for k, v := range cmdList {
 			if k > 0 {

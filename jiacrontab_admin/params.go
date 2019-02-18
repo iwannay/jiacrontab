@@ -11,29 +11,15 @@ var (
 	paramsError = errors.New("参数错误")
 )
 
-type execTaskReqParams struct {
+type jobReqParams struct {
 	JobID uint   `json:"jobID"`
 	Addr  string `json:"addr"`
 }
 
-func (p *execTaskReqParams) verify(ctx iris.Context) error {
+func (p *jobReqParams) verify(ctx iris.Context) error {
 	if err := ctx.ReadJSON(p); err != nil || p.JobID == 0 || p.Addr == "" {
 		return paramsError
 	}
-
-	return nil
-}
-
-type startTaskReqParams struct {
-	JobID uint   `json:"jobID"`
-	Addr  string `json:"addr"`
-}
-
-func (p *startTaskReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.JobID == 0 || p.Addr == "" {
-		return paramsError
-	}
-
 	return nil
 }
 
@@ -286,6 +272,42 @@ func (p *readMoreReqParams) verify(ctx iris.Context) error {
 
 	if p.Orderby == "" {
 		p.Orderby = "desc"
+	}
+
+	return nil
+}
+
+type updateNodeReqParams struct {
+	NodeID uint   `json:"nodeID"`
+	Addr   string `json:"addr"`
+	Name   string `json:"name"`
+}
+
+func (p *updateNodeReqParams) verify(ctx iris.Context) error {
+	if err := ctx.ReadJSON(p); err != nil || p.NodeID == 0 || p.Addr == "" {
+		return paramsError
+	}
+	return nil
+}
+
+type auditJobReqParams struct {
+	jobReqParams
+	JobType string `json:"jobType"`
+}
+
+func (p *auditJobReqParams) verify(ctx iris.Context) error {
+
+	jobTypeMap := map[string]bool{
+		"crontab": true,
+		"daemon":  true,
+	}
+
+	if err := p.jobReqParams.verify(ctx); err != nil {
+		return err
+	}
+
+	if jobTypeMap[p.JobType] == false {
+		return paramsError
 	}
 
 	return nil

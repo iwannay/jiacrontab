@@ -82,4 +82,6 @@ func (p PipeComamnds) Value() (driver.Value, error) {
 	return string(bts), err
 }
 
-type QueryJobArg struct{ Page, Pagesize int }
+type QueryJobArgs struct{ Page, Pagesize int }
+
+type AuditJobArgs struct{ JobID uint }

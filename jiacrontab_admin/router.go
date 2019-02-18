@@ -48,6 +48,8 @@ func route(app *iris.Application) {
 
 		adm.Post("/node/list", getNodeList)
 		adm.Post("/node/delete", deleteNode)
+		adm.Post("/node/update", updateNode)
+
 		adm.Post("/crontab/job/list", getJobList)
 		adm.Post("/crontab/job/get", getJob)
 		adm.Post("/crontab/job/log", getRecentLog)
@@ -70,6 +72,7 @@ func route(app *iris.Application) {
 		adm.Post("/group/set", setGroup)
 
 		adm.Post("/user/activity_list", getRelationEvent)
+		adm.Post("/user/auditJob", auditJob)
 	}
 
 	app.Post("/user/login", login)
