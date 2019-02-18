@@ -194,7 +194,7 @@ func startTask(c iris.Context) {
 		err     error
 		ctx     = wrapCtx(c)
 		reply   bool
-		reqBody startTaskReqParams
+		reqBody jobReqParams
 	)
 
 	if err = reqBody.verify(ctx); err != nil {
@@ -218,7 +218,7 @@ func execTask(c iris.Context) {
 		err     error
 		reply   []byte
 		logList []string
-		reqBody execTaskReqParams
+		reqBody jobReqParams
 	)
 
 	if err = reqBody.verify(ctx); err != nil {
@@ -240,21 +240,25 @@ failed:
 
 func getJob(c iris.Context) {
 	var (
-		ctx       = wrapCtx(c)
-		reqBody   getJobReqParams
-		daemonJob models.DaemonJob
-		err       error
+		ctx        = wrapCtx(c)
+		reqBody    getJobReqParams
+		crontabJob models.CrontabJob
+		err        error
 	)
 	if err = reqBody.verify(ctx); err != nil {
 		goto failed
 	}
 
-	if err = rpcCall(reqBody.Addr, "CrontabJob.GetJob", reqBody.JobID, &daemonJob); err != nil {
+	if err = rpcCall(reqBody.Addr, "CrontabJob.GetJob", reqBody.JobID, &crontabJob); err != nil {
 		goto failed
 	}
 
-	ctx.respSucc("", daemonJob)
+	ctx.respSucc("", crontabJob)
 	return
 failed:
 	ctx.respError(proto.Code_Error, err.Error(), nil)
+}
+
+func auditCrontabJob(c iris.Context) {
+
 }

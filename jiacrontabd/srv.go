@@ -31,8 +31,12 @@ func newCrontabJobSrv(d *Jiacrontabd) *CrontabJob {
 	}
 }
 
-func (j *CrontabJob) List(args proto.QueryJobArg, reply *[]models.CrontabJob) error {
+func (j *CrontabJob) List(args proto.QueryJobArgs, reply *[]models.CrontabJob) error {
 	return models.DB().Offset(args.Page - 1).Limit(args.Pagesize).Find(reply).Error
+}
+
+func (j *CrontabJob) Audit(args proto.AuditJobArgs, reply *bool) error {
+	return models.DB().Model(&models.CrontabJob{}).Where("id=?", args.JobID).Update("status", models.StatusJobOk).Error
 }
 
 func (j *CrontabJob) Edit(args models.CrontabJob, rowsAffected *int64) error {
@@ -198,7 +202,7 @@ func (j *DaemonJob) Edit(args models.DaemonJob, reply *int64) error {
 	return ret.Error
 }
 
-func (j *DaemonJob) ListDaemonJob(args proto.QueryJobArg, reply *[]models.DaemonJob) error {
+func (j *DaemonJob) ListDaemonJob(args proto.QueryJobArgs, reply *[]models.DaemonJob) error {
 	return models.DB().Find(reply).Offset((args.Page - 1) * args.Pagesize).Limit(args.Pagesize).Order("update_at desc").Error
 }
 
@@ -256,4 +260,8 @@ func (j *DaemonJob) Log(args proto.SearchLog, reply *proto.SearchLogResult) erro
 	reply.Total = int(fd.Count())
 	return err
 
+}
+
+func (j *DaemonJob) Audit(args proto.AuditJobArgs, reply *bool) error {
+	return models.DB().Model(&models.DaemonJob{}).Where("id=?", args.JobID).Update("status", models.StatusJobOk).Error
 }

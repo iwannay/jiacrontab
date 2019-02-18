@@ -1,7 +1,9 @@
 package admin
 
 const (
-	event_DelNodeDesc  = "删除节点"
+	event_DelNodeDesc = "删除节点"
+	event_RenameNode  = "更新节点名"
+
 	event_EditCronJob  = "编辑计划任务"
 	event_DelCronJob   = "删除计划任务"
 	event_StopCronJob  = "停止计划任务"
@@ -18,4 +20,7 @@ const (
 	event_SetSrouceGroup = "设置资源分组"
 
 	event_SignUpUser = "创建新用户"
+
+	event_AuditCrontabJob = "审核计划任务"
+	event_AuditDaemonJob  = "审核常驻任务"
 )

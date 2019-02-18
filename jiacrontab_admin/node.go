@@ -73,3 +73,29 @@ func deleteNode(c iris.Context) {
 	ctx.pubEvent(event_DelNodeDesc, reqBody.Addr, "")
 	ctx.respSucc("", nil)
 }
+
+func updateNode(c iris.Context) {
+	var (
+		err     error
+		ctx     = wrapCtx(c)
+		reqBody updateNodeReqParams
+		node    models.Node
+	)
+
+	if err = reqBody.verify(ctx); err != nil {
+		ctx.respError(proto.Code_Error, err.Error(), nil)
+		return
+	}
+
+	node.ID = reqBody.NodeID
+	node.Addr = reqBody.Addr
+	node.Name = reqBody.Name
+
+	if err = node.Rename(); err == nil {
+		ctx.respError(proto.Code_Error, "更新失败", err)
+		return
+	}
+
+	ctx.pubEvent(event_RenameNode, reqBody.Addr, reqBody)
+	ctx.respSucc("", nil)
+}

@@ -91,6 +91,62 @@ func getRelationEvent(c iris.Context) {
 	})
 }
 
+func auditJob(c iris.Context) {
+	var (
+		ctx            = wrapCtx(c)
+		err            error
+		customerClaims CustomerClaims
+		reqBody        auditJobReqParams
+		node           models.Node
+		reply          bool
+	)
+
+	if err = reqBody.verify(ctx); err != nil {
+		ctx.respError(proto.Code_Error, err.Error(), nil)
+		return
+	}
+
+	if customerClaims, err = ctx.getClaimsFromToken(); err != nil {
+		ctx.respError(proto.Code_Error, "无法获得token信息", err)
+		return
+	}
+
+	if customerClaims.GroupID != 0 {
+		if customerClaims.Root == false {
+			ctx.respError(proto.Code_Error, "无权操作", nil)
+			return
+		}
+
+		node.GroupID = customerClaims.GroupID
+		node.Addr = reqBody.Addr
+		if node.Exists() == false {
+			ctx.respError(proto.Code_Error, "无权操作", nil)
+			return
+		}
+	}
+
+	if reqBody.JobType == "crontab" {
+		if err = rpcCall(reqBody.Addr, "CrontabJob.AuditJob", proto.AuditJobArgs{
+			JobID: reqBody.JobID,
+		}, &reply); err != nil {
+			ctx.respError(proto.Code_Error, err.Error(), nil)
+			return
+		}
+		ctx.pubEvent(event_AuditCrontabJob, reqBody.Addr, reqBody)
+	} else {
+		if err = rpcCall(reqBody.Addr, "DaemonJob.AuditJob", proto.AuditJobArgs{
+			JobID: reqBody.JobID,
+		}, &reply); err != nil {
+			ctx.respError(proto.Code_Error, err.Error(), nil)
+			return
+		}
+		ctx.pubEvent(event_AuditDaemonJob, reqBody.Addr, reqBody)
+	}
+
+	ctx.respSucc("", reply)
+
+}
+
 func signUp(c iris.Context) {
 	var (
 		err     error
