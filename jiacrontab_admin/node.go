@@ -16,6 +16,7 @@ func getNodeList(c iris.Context) {
 		nodeList []models.Node
 		reqBody  pageReqParams
 		groupID  int
+		count    int
 	)
 	if groupID, err = ctx.getGroupIDFromToken(); err != nil {
 		ctx.respError(proto.Code_Error, err.Error(), nil)
@@ -33,8 +34,10 @@ func getNodeList(c iris.Context) {
 
 	if groupID == 0 {
 		err = models.DB().Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&nodeList).Error
+		models.DB().Model(&models.Node{}).Count(&count)
 	} else {
 		err = models.DB().Where("group_id=?", groupID).Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&nodeList).Error
+		models.DB().Model(&models.Node{}).Where("group_id=?", groupID).Count(&count)
 	}
 
 	if err != nil {
@@ -42,7 +45,12 @@ func getNodeList(c iris.Context) {
 		return
 	}
 
-	ctx.respSucc("", nodeList)
+	ctx.respSucc("", map[string]interface{}{
+		"list":     nodeList,
+		"total":    count,
+		"page":     reqBody.Page,
+		"pagesize": reqBody.Pagesize,
+	})
 }
 
 func deleteNode(c iris.Context) {

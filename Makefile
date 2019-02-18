@@ -33,8 +33,8 @@ build:
 	mv $(binAdm) $(buildAdmDir)
 	mv $(binNode) $(buildNodeDir)
 test:
-	$(GOTEST) -mod=vendor -v $(sourceAdmDir)
-	$(GOTEST) -mod=vendor -v $(sourceNodeDir)
+	$(goTest) -mod=vendor -v $(sourceAdmDir)
+	$(goTest) -mod=vendor -v $(sourceNodeDir)
 clean:
 	rm -f $(binAdm)
 	rm -f $(binNode)
