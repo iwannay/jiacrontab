@@ -21,7 +21,7 @@ import (
 const (
 	exitError       = "error"
 	exitKilled      = "kill"
-	exitSuccess     = "succ"
+	exitSuccess     = "success"
 	exitDependError = "depend error"
 	exitTimeout     = "timeout"
 )
@@ -106,11 +106,13 @@ func (p *process) exec(logContent *[]byte) {
 		isTimeout bool
 		err       error
 		done      bool
+		myCmdUint cmdUint
 	)
+
 	type errAPIPost struct {
 		JobName   string
 		JobID     int
-		Commands  []string
+		Commands  [][]string
 		CreatedAt time.Time
 		Timeout   int64
 		Type      string
@@ -122,7 +124,6 @@ func (p *process) exec(logContent *[]byte) {
 		p.logContent = append(p.logContent, []byte(errMsg)...)
 		writeLog(p.logPath, fmt.Sprintf("%d.log", p.job.ID), &p.logContent)
 		p.job.LastExitStatus = exitDependError
-		// errNotify := true
 		if p.job.ErrorMailNotify && len(p.job.MailTo) != 0 {
 			p.endTime = time.Now()
 			if err := rpcCall("Srv.SendMail", proto.SendMail{
@@ -136,9 +137,7 @@ func (p *process) exec(logContent *[]byte) {
 			}
 		}
 	} else {
-		var cmds [][]string
-		cmds = append(cmds, p.job.Commands)
-		cmds = append(cmds, p.job.PipeCommands...)
+
 		if p.job.Timeout != 0 {
 			time.AfterFunc(
 				time.Duration(p.job.Timeout)*time.Second, func() {
@@ -197,7 +196,14 @@ func (p *process) exec(logContent *[]byte) {
 				})
 		}
 
-		if err = wrapExecScript(p.ctx, fmt.Sprintf("%d", p.job.ID), cmds, p.logPath, &p.logContent); err != nil {
+		myCmdUint.ctx = p.ctx
+		myCmdUint.dir = p.job.WorkDir
+		myCmdUint.user = p.job.User
+		myCmdUint.logName = fmt.Sprintf("%d.log", p.job.ID)
+		myCmdUint.logPath = p.logPath
+		err = myCmdUint.launch()
+
+		if err != nil {
 			if isTimeout == false {
 				p.job.LastExitStatus = exitError
 			}
@@ -279,7 +285,6 @@ func (j *JobEntry) getPc() int {
 func (j *JobEntry) exec() []byte {
 
 	j.wg.Wrap(func() {
-
 		job := j.job.Value.(models.CrontabJob)
 		err := models.DB().Take(job, "id=? and status=?", job.ID, models.StatusJobTiming).Error
 		if err != nil {

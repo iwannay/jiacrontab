@@ -122,7 +122,7 @@ func editJob(c iris.Context) {
 			Minute:  reqBody.Minute,
 			Weekday: reqBody.Weekday,
 		},
-		PipeCommands:    reqBody.PipeCommands,
+		// PipeCommands:    reqBody.PipeCommands,
 		Timeout:         reqBody.Timeout,
 		TimeoutTrigger:  reqBody.TimeoutTrigger,
 		MailTo:          reqBody.MailTo,

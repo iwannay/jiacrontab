@@ -45,15 +45,23 @@ func (d *daemonTask) do(ctx context.Context) {
 	}()
 
 	for {
-		var cmdList [][]string
-		var logContent []byte
 
-		stop := false
-		cmdList = append(cmdList, d.job.Commands)
+		var (
+			myCmdUint cmdUint
+			stop      bool
+			err       error
+		)
 
-		logPath := filepath.Join(cfg.LogPath, "daemon_job")
-		log.Info("daemon exec jobName:", d.job.Name, " jobID", d.job.ID)
-		err := wrapExecScript(ctx, fmt.Sprintf("%d.log", d.job.ID), cmdList, logPath, &logContent)
+		myCmdUint.ctx = ctx
+		myCmdUint.dir = d.job.WorkDir
+		myCmdUint.user = d.job.User
+		myCmdUint.logName = fmt.Sprintf("%d.log", d.job.ID)
+		myCmdUint.logPath = filepath.Join(cfg.LogPath, "daemon_job")
+
+		log.Info("daemon exec job, jobName:", d.job.Name, " jobID", d.job.ID)
+
+		err = myCmdUint.launch()
+
 		if err != nil {
 			if d.job.ErrorMailNotify && d.job.MailTo != "" {
 				err := rpcCall("Srv.SendMail", proto.SendMail{
