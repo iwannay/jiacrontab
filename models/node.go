@@ -6,6 +6,7 @@ type Node struct {
 	gorm.Model
 	Name           string `json:"name" gorm:"not null"`
 	DaemonTaskNum  int    `json:"daemonTaskNum"`
+	Disabled       bool   `json:"disabled"`
 	CrontabTaskNum int    `json:"crontabTaskNum"`
 	GroupID        uint   `json:"groupID" gorm:"not null;unique_index:uni_group_addr" `
 	Addr           string `json:"addr"gorm:"not null;unique_index:uni_group_addr"`
