@@ -15,6 +15,18 @@ func CommandContext(ctx context.Context, name string, arg ...string) *KCmd {
 	}
 }
 
+func (k *KCmd) SetUser(username string) {
+	// TODO:windows切换用户
+}
+
+func (k *KCmd) SetEnv(env []string) {
+	k.Cmd.Env = env
+}
+
+func (k *KCmd) SetDir(dir string) {
+	k.Cmd.Dir = dir
+}
+
 func (k *KCmd) KillAll() {
 	select {
 	case k.done <- struct{}{}:

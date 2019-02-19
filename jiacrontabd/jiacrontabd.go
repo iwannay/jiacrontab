@@ -55,21 +55,23 @@ func (j *Jiacrontabd) execTask(job *crontab.Job) {
 	if task, ok := j.jobs[job.ID]; !ok {
 		j.mux.RUnlock()
 		task.exec()
+		return
 	}
+	j.mux.RUnlock()
 
 }
 
 func (j *Jiacrontabd) killTask(jobID int) {
 	j.mux.RLock()
-	if task, ok := j.jobs[jobID]; !ok {
+	if task, ok := j.jobs[jobID]; ok {
 		j.mux.RUnlock()
 		task.kill()
 		return
 	}
+	j.mux.RUnlock()
 }
 
 func (j *Jiacrontabd) run() {
-	// tcp server
 	j.wg.Wrap(j.crontab.QueueScanWorker)
 	for v := range j.crontab.Ready() {
 		v := v.Value.(*crontab.Job)

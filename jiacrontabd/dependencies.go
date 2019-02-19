@@ -13,6 +13,9 @@ import (
 type depEntry struct {
 	jobID      int // 定时任务id
 	processID  int // 当前依赖的父级任务（可能存在多个并发的task)
+	workDir    string
+	user       string
+	env        []string
 	saveID     string
 	from       string
 	commands   []string
@@ -54,8 +57,9 @@ func (d *dependencies) run() {
 func (d *dependencies) exec(task *depEntry) {
 
 	var (
-		reply      bool
-		logContent []byte
+		reply     bool
+		myCmdUint cmdUint
+		err       error
 	)
 
 	if task.timeout == 0 {
@@ -67,16 +71,20 @@ func (d *dependencies) exec(task *depEntry) {
 
 	startTime := time.Now()
 	start := startTime.UnixNano()
-	cmdList := [][]string{task.commands}
-	logPath := filepath.Join(cfg.LogPath, "depend_job")
 
-	err := wrapExecScript(ctx, fmt.Sprintf("%s.log", task.saveID), cmdList, logPath, &logContent)
+	myCmdUint.ctx = ctx
+	myCmdUint.dir = task.workDir
+	myCmdUint.user = task.user
+	myCmdUint.logName = fmt.Sprintf("%s.log", task.saveID)
+	myCmdUint.logPath = filepath.Join(cfg.LogPath, "depend_job")
+
+	err = myCmdUint.launch()
 	cancel()
 	costTime := time.Now().UnixNano() - start
 
 	log.Infof("exec %s %s cost %.4fs %v", task.name, task.commands, float64(costTime)/1000000000, err)
 
-	task.logContent = bytes.TrimRight(logContent, "\x00")
+	task.logContent = bytes.TrimRight(myCmdUint.content, "\x00")
 	task.done = true
 	task.err = err
 

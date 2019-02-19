@@ -126,7 +126,7 @@ func auditJob(c iris.Context) {
 	}
 
 	if reqBody.JobType == "crontab" {
-		if err = rpcCall(reqBody.Addr, "CrontabJob.AuditJob", proto.AuditJobArgs{
+		if err = rpcCall(reqBody.Addr, "CrontabJob.Audit", proto.AuditJobArgs{
 			JobID: reqBody.JobID,
 		}, &reply); err != nil {
 			ctx.respError(proto.Code_Error, err.Error(), nil)
@@ -134,7 +134,7 @@ func auditJob(c iris.Context) {
 		}
 		ctx.pubEvent(event_AuditCrontabJob, reqBody.Addr, reqBody)
 	} else {
-		if err = rpcCall(reqBody.Addr, "DaemonJob.AuditJob", proto.AuditJobArgs{
+		if err = rpcCall(reqBody.Addr, "DaemonJob.Audit", proto.AuditJobArgs{
 			JobID: reqBody.JobID,
 		}, &reply); err != nil {
 			ctx.respError(proto.Code_Error, err.Error(), nil)

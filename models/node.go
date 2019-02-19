@@ -12,8 +12,7 @@ type Node struct {
 }
 
 func (n *Node) Delete(id int) error {
-	return DB().Delete(n, "id=?", id).Error
-
+	return DB().Delete(n, "id=? and disabled=1", id).Error
 }
 
 func (n *Node) Rename() error {

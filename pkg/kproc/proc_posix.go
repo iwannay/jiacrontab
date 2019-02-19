@@ -4,8 +4,11 @@ package kproc
 
 import (
 	"context"
+	"jiacrontab/pkg/log"
 	"os"
 	"os/exec"
+	"os/user"
+	"strconv"
 	"syscall"
 )
 
@@ -18,6 +21,26 @@ func CommandContext(ctx context.Context, name string, arg ...string) *KCmd {
 		Cmd:  cmd,
 		done: make(chan struct{}),
 	}
+}
+
+func (k *KCmd) SetUser(username string) {
+	u, err := user.Lookup(username)
+	if err == nil {
+		log.Infof("uid=%s,gid=%s", u.Uid, u.Gid)
+		uid, _ := strconv.Atoi(u.Uid)
+		gid, _ := strconv.Atoi(u.Gid)
+
+		k.SysProcAttr = &syscall.SysProcAttr{}
+		k.SysProcAttr.Credential = &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)}
+	}
+}
+
+func (k *KCmd) SetEnv(env []string) {
+	k.Cmd.Env = env
+}
+
+func (k *KCmd) SetDir(dir string) {
+	k.Cmd.Dir = dir
 }
 
 func (k *KCmd) KillAll() {

@@ -24,25 +24,25 @@ func (p *jobReqParams) verify(ctx iris.Context) error {
 }
 
 type editJobReqParams struct {
-	ID              uint              `json:"id"`
-	Addr            string            `json:"addr"`
-	IsSync          bool              `json:"isSync"`
-	Name            string            `json:"name"`
-	Commands        []string          `json:"commands"`
-	Timeout         int               `json:"timeout"`
-	MaxConcurrent   uint              `json:"maxConcurrent"`
-	ErrorMailNotify bool              `json:"ErrormailNotify"`
-	ErrorAPINotify  bool              `json:"ErrorAPINotify"`
-	MailTo          []string          `json:"mailTo"`
-	APITo           []string          `json:"APITo"`
-	PipeCommands    [][]string        `json:"pipeCommands"`
-	DependJobs      models.DependJobs `json:"dependJobs"`
-	Month           string            `json:"month"`
-	Weekday         string            `json:"weekday"`
-	Day             string            `json:"day"`
-	Hour            string            `json:"hour"`
-	Minute          string            `json:"minute"`
-	TimeoutTrigger  string            `json:"timeoutTrigger"`
+	ID              uint       `json:"id"`
+	Addr            string     `json:"addr"`
+	IsSync          bool       `json:"isSync"`
+	Name            string     `json:"name"`
+	Commands        [][]string `json:"commands"`
+	Timeout         int        `json:"timeout"`
+	MaxConcurrent   uint       `json:"maxConcurrent"`
+	ErrorMailNotify bool       `json:"ErrormailNotify"`
+	ErrorAPINotify  bool       `json:"ErrorAPINotify"`
+	MailTo          []string   `json:"mailTo"`
+	APITo           []string   `json:"APITo"`
+	// PipeCommands    [][]string        `json:"pipeCommands"`
+	DependJobs     models.DependJobs `json:"dependJobs"`
+	Month          string            `json:"month"`
+	Weekday        string            `json:"weekday"`
+	Day            string            `json:"day"`
+	Hour           string            `json:"hour"`
+	Minute         string            `json:"minute"`
+	TimeoutTrigger string            `json:"timeoutTrigger"`
 }
 
 func (p *editJobReqParams) verify(ctx iris.Context) error {
