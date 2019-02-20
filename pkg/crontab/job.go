@@ -16,7 +16,7 @@ type Job struct {
 	Day               string
 	Weekday           string
 	Month             string
-	ID                int
+	ID                uint
 	now               time.Time
 	lastExecutionTime time.Time
 	nextExecutionTime time.Time

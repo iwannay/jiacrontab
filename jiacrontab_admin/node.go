@@ -14,8 +14,8 @@ func getNodeList(c iris.Context) {
 		ctx      = wrapCtx(c)
 		err      error
 		nodeList []models.Node
-		reqBody  pageReqParams
-		groupID  int
+		reqBody  getNodeListReqParams
+		groupID  uint
 		count    int
 	)
 	if groupID, err = ctx.getGroupIDFromToken(); err != nil {

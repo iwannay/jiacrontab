@@ -17,7 +17,7 @@ import (
 type Jiacrontabd struct {
 	crontab *crontab.Crontab
 	// All jobs added
-	jobs            map[int]*JobEntry
+	jobs            map[uint]*JobEntry
 	dep             *dependencies
 	daemon          *daemon
 	heartbeatPeriod time.Duration
@@ -28,9 +28,10 @@ type Jiacrontabd struct {
 // New return a Jiacrontabd instance
 func New() *Jiacrontabd {
 	j := &Jiacrontabd{
-		jobs:            make(map[int]*JobEntry),
+		jobs:            make(map[uint]*JobEntry),
 		daemon:          newDaemon(100),
 		heartbeatPeriod: 5 * time.Second,
+		crontab:         crontab.New(),
 	}
 	j.dep = newDependencies(j)
 
@@ -45,14 +46,26 @@ func (j *Jiacrontabd) addJob(job *crontab.Job) {
 		j.jobs[job.ID] = newJobEntry(job, j)
 		j.mux.Unlock()
 	}
-	job.NextExecutionTime(time.Now())
-	j.crontab.AddJob(job)
+	if t, err := job.NextExecutionTime(time.Now()); err != nil {
+		log.Error("NextExecutionTime:", err, " timeArgs:", job)
+	} else {
+
+		if err := models.DB().Model(&models.CrontabJob{}).Where("id=?", job.ID).Debug().
+			Updates(map[string]interface{}{
+				"next_exec_time": t,
+				"status":         models.StatusJobTiming,
+			}).Error; err != nil {
+			log.Error(err)
+		}
+
+		j.crontab.AddJob(job)
+	}
 }
 
 func (j *Jiacrontabd) execTask(job *crontab.Job) {
 	job.NextExecutionTime(time.Now())
 	j.mux.RLock()
-	if task, ok := j.jobs[job.ID]; !ok {
+	if task, ok := j.jobs[job.ID]; ok {
 		j.mux.RUnlock()
 		task.exec()
 		return
@@ -61,7 +74,7 @@ func (j *Jiacrontabd) execTask(job *crontab.Job) {
 
 }
 
-func (j *Jiacrontabd) killTask(jobID int) {
+func (j *Jiacrontabd) killTask(jobID uint) {
 	j.mux.RLock()
 	if task, ok := j.jobs[jobID]; ok {
 		j.mux.RUnlock()
@@ -75,6 +88,7 @@ func (j *Jiacrontabd) run() {
 	j.wg.Wrap(j.crontab.QueueScanWorker)
 	for v := range j.crontab.Ready() {
 		v := v.Value.(*crontab.Job)
+		log.Info("job queue:", v)
 		j.execTask(v)
 	}
 }
@@ -251,5 +265,6 @@ func (j *Jiacrontabd) init() {
 func (j *Jiacrontabd) Main() {
 	j.init()
 	j.heartBeat()
+	go j.run()
 	rpc.ListenAndServe(cfg.ListenAddr, newCrontabJobSrv(j), &Srv{})
 }

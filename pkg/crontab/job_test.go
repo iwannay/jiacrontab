@@ -41,4 +41,15 @@ func TestJob_NextExecutionTime(t *testing.T) {
 	tt, err = j.NextExecutionTime(tt)
 	t.Logf("job2 3 next:%s, %v", tt.Format(timeLayout), err)
 
+	j = &Job{
+		Second:  "50",
+		Minute:  "*",
+		Hour:    "*",
+		Day:     "*",
+		Weekday: "*",
+		Month:   "*",
+	}
+	tt, err = j.NextExecutionTime(time.Now())
+	t.Logf("job3 1 next:%s, %v", tt.Format(timeLayout), err)
+
 }

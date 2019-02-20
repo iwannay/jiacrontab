@@ -14,7 +14,7 @@ type JobStatus int
 
 const (
 	// StatusJobUnaudited 未审核
-	StatusJobUnaudited = 0
+	StatusJobUnaudited uint = 0
 	// StatusJobOk 等待调度
 	StatusJobOk JobStatus = 1
 	// StatusJobTiming 定时中
@@ -117,7 +117,7 @@ type DependJob struct {
 	Name     string   `json:"name"`
 	Dest     string   `json:"dest"`
 	From     string   `json:"from"`
-	JobID    int      `json:"jobID"`
+	JobID    uint     `json:"jobID"`
 	ID       string   `json:"id"`
 	User     string   `json:"user"`
 	WorkDir  string   `json:"workDir"`
