@@ -2,7 +2,6 @@ package admin
 
 import (
 	"errors"
-	"jiacrontab/model"
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/rpc"
@@ -14,49 +13,31 @@ import (
 func getJobList(c iris.Context) {
 
 	var (
-		systemInfo map[string]interface{}
-		jobList    []models.CrontabJob
-		nodeList   []models.Node
-		node       models.Node
-		ctx        = wrapCtx(c)
-		addr       = ctx.FormValue("addr")
+		jobRet       proto.QueryCrontabJobRet
+		ctx          = wrapCtx(c)
+		err          error
+		reqBody      getJobListReqParams
+		rpcReqParams proto.QueryJobArgs
 	)
 
-	if strings.TrimSpace(addr) == "" {
-		ctx.respError(proto.Code_Error, "参数错误", nil)
-		return
-	}
-
-	model.DB().Model(&models.Node{}).Find(&nodeList)
-
-	if len(nodeList) == 0 {
-		ctx.respError(proto.Code_Error, "暂无数据", nil)
-		return
-	}
-
-	for _, v := range nodeList {
-		if v.Addr == addr {
-			node = v
-			break
-		}
-	}
-
-	if err := rpc.Call(addr, "CrontabJob.All", "", &jobList); err != nil {
+	if err = reqBody.verify(ctx); err != nil {
 		ctx.respError(proto.Code_Error, err.Error(), nil)
 		return
 	}
 
-	if err := rpc.Call(addr, "Admin.SystemInfo", "", &systemInfo); err != nil {
+	rpcReqParams.Page = reqBody.Page
+	rpcReqParams.Pagesize = reqBody.Pagesize
+
+	if err := rpc.Call(reqBody.Addr, "CrontabJob.List", rpcReqParams, &jobRet); err != nil {
 		ctx.respError(proto.Code_Error, err.Error(), nil)
 		return
 	}
 
 	ctx.respSucc("", map[string]interface{}{
-		"taskList":   jobList,
-		"addr":       addr,
-		"node":       node,
-		"nodeList":   nodeList,
-		"systemInfo": systemInfo,
+		"list":     jobRet.List,
+		"page":     jobRet.Page,
+		"pagesize": jobRet.Pagesize,
+		"total":    jobRet.Total,
 	})
 }
 
@@ -121,6 +102,7 @@ func editJob(c iris.Context) {
 			Hour:    reqBody.Hour,
 			Minute:  reqBody.Minute,
 			Weekday: reqBody.Weekday,
+			Second:  reqBody.Second,
 		},
 		// PipeCommands:    reqBody.PipeCommands,
 		Timeout:         reqBody.Timeout,
@@ -201,7 +183,7 @@ func startTask(c iris.Context) {
 		goto failed
 	}
 
-	if err := rpcCall(reqBody.Addr, "CrontabJob.Start", reqBody.JobID, &reply); err != nil {
+	if err = rpcCall(reqBody.Addr, "CrontabJob.Start", reqBody.JobIDs, &reply); err != nil {
 		goto failed
 	}
 
@@ -225,7 +207,7 @@ func execTask(c iris.Context) {
 		goto failed
 	}
 
-	if err = rpcCall(reqBody.Addr, "CrontabJob.Exec", reqBody.JobID, &reply); err != nil {
+	if err = rpcCall(reqBody.Addr, "CrontabJob.Exec", reqBody.JobIDs, &reply); err != nil {
 		goto failed
 	}
 
@@ -249,7 +231,7 @@ func getJob(c iris.Context) {
 		goto failed
 	}
 
-	if err = rpcCall(reqBody.Addr, "CrontabJob.GetJob", reqBody.JobID, &crontabJob); err != nil {
+	if err = rpcCall(reqBody.Addr, "CrontabJob.Get", reqBody.JobID, &crontabJob); err != nil {
 		goto failed
 	}
 
@@ -257,8 +239,4 @@ func getJob(c iris.Context) {
 	return
 failed:
 	ctx.respError(proto.Code_Error, err.Error(), nil)
-}
-
-func auditCrontabJob(c iris.Context) {
-
 }

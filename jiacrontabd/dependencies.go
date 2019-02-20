@@ -11,8 +11,8 @@ import (
 )
 
 type depEntry struct {
-	jobID      int // 定时任务id
-	processID  int // 当前依赖的父级任务（可能存在多个并发的task)
+	jobID      uint // 定时任务id
+	processID  int  // 当前依赖的父级任务（可能存在多个并发的task)
 	workDir    string
 	user       string
 	env        []string

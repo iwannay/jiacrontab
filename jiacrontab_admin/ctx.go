@@ -66,7 +66,7 @@ func (ctx *myctx) respSucc(msg string, v interface{}) {
 	})
 }
 
-func (ctx *myctx) getGroupIDFromToken() (int, error) {
+func (ctx *myctx) getGroupIDFromToken() (uint, error) {
 	var data CustomerClaims
 	token := ctx.Values().Get("jwt").(*jwt.Token)
 	bts, err := json.Marshal(token.Claims)
@@ -75,7 +75,7 @@ func (ctx *myctx) getGroupIDFromToken() (int, error) {
 	}
 	json.Unmarshal(bts, &data)
 	log.Infof("%+v", data)
-	return int(data.GroupID), nil
+	return data.GroupID, nil
 }
 
 func (ctx *myctx) getClaimsFromToken() (CustomerClaims, error) {

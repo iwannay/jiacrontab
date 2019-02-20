@@ -50,7 +50,7 @@ func newProcess(id int, job *models.CrontabJob) *process {
 	for _, v := range p.job.DependJobs {
 		saveID := fmt.Sprintf("dep-%d-%d-%s", p.job.ID, p.id, v.ID)
 		p.deps = append(p.deps, &depEntry{
-			jobID:     int(p.job.ID),
+			jobID:     p.job.ID,
 			processID: id,
 			saveID:    saveID,
 			from:      v.From,
@@ -248,8 +248,8 @@ func (p *process) exec(logContent *[]byte) {
 }
 
 type JobEntry struct {
-	job        *crontab.Job
-	id         int
+	job *crontab.Job
+	// id         int
 	ctx        context.Context
 	cancel     context.CancelFunc
 	processNum int32
@@ -285,8 +285,8 @@ func (j *JobEntry) getPc() int {
 func (j *JobEntry) exec() []byte {
 
 	j.wg.Wrap(func() {
-		job := j.job.Value.(models.CrontabJob)
-		err := models.DB().Take(job, "id=? and status=?", job.ID, models.StatusJobTiming).Error
+		var job models.CrontabJob
+		err := models.DB().Debug().Take(&job, "id=? and status=?", j.job.ID, models.StatusJobTiming).Error
 		if err != nil {
 			log.Error("JobEntry.exec:", err)
 			return
