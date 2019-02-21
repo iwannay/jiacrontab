@@ -111,15 +111,15 @@ func (j *Jiacrontabd) filterDepend(task *depEntry) bool {
 		for _, v := range h.processes {
 			if v.id == task.processID {
 				curTaskEntry = v
-				for _, vv := range v.depends {
+				for _, vv := range v.jobEntry.depends {
 					if vv.done == false {
 						isAllDone = false
 					} else {
 						logContent = append(logContent, vv.logContent...)
 					}
 
-					if vv.saveID == task.saveID && v.sync {
-						if ok := j.pushPipeDepend(v.depends, vv.saveID); ok {
+					if vv.saveID == task.saveID && v.jobEntry.sync {
+						if ok := j.pushPipeDepend(v.jobEntry.depends, vv.saveID); ok {
 							return true
 						}
 					}
@@ -139,8 +139,8 @@ func (j *Jiacrontabd) filterDepend(task *depEntry) bool {
 		}
 
 		if isAllDone {
-			curTaskEntry.ready <- struct{}{}
-			curTaskEntry.logContent = logContent
+			curTaskEntry.jobEntry.ready <- struct{}{}
+			curTaskEntry.jobEntry.logContent = logContent
 		}
 
 	} else {
@@ -216,7 +216,7 @@ func (j *Jiacrontabd) pushDepend(deps []*depEntry) bool {
 
 	if len(depJobs) > 0 {
 		var reply bool
-		if err := rpcCall("Srv.Depends", depJobs, &reply); err != nil {
+		if err := rpcCall("Srv.Depend", depJobs, &reply); err != nil {
 			log.Error("Srv.Depends error:", err, "server addr:", cfg.AdminAddr)
 			return false
 		}
@@ -266,5 +266,5 @@ func (j *Jiacrontabd) Main() {
 	j.init()
 	j.heartBeat()
 	go j.run()
-	rpc.ListenAndServe(cfg.ListenAddr, newCrontabJobSrv(j), &Srv{})
+	rpc.ListenAndServe(cfg.ListenAddr, newCrontabJobSrv(j), newDaemonJobSrv(j), &Srv{})
 }

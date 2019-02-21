@@ -1,7 +1,7 @@
 package rpc
 
 import (
-	"log"
+	"jiacrontab/pkg/log"
 	"net"
 	"net/rpc"
 )
@@ -20,9 +20,9 @@ func listen(addr string, srcvr ...interface{}) error {
 		return err
 	}
 	defer func() {
-		log.Println("listen rpc", addr, "close")
+		log.Info("listen rpc", addr, "close")
 		if err := l.Close(); err != nil {
-			log.Printf("listen.Close() error(%v)", err)
+			log.Infof("listen.Close() error(%v)", err)
 		}
 	}()
 
@@ -32,10 +32,10 @@ func listen(addr string, srcvr ...interface{}) error {
 
 // ListenAndServe  run rpc server
 func ListenAndServe(addr string, srcvr ...interface{}) {
+	log.Info("rpc server listen:", addr)
 	err := listen(addr, srcvr...)
 	if err != nil {
 		panic(err)
 	}
-	log.Println("rpc server listen:", addr)
 
 }

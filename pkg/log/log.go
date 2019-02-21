@@ -21,14 +21,6 @@ const (
 	LevelFatal
 )
 
-var levelMap = map[int]string{
-	LevelDebug: "[DEBUG] ",
-	LevelInfo:  "[INFO] ",
-	LevelWarn:  "[WARN] ",
-	LevelError: "[ERROR] ",
-	LevelFatal: "[FATAL] ",
-}
-
 type logContent struct {
 	level   int
 	content string
