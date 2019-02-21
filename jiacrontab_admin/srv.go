@@ -7,7 +7,6 @@ import (
 	"jiacrontab/pkg/log"
 	"jiacrontab/pkg/mailer"
 	"jiacrontab/pkg/proto"
-	"jiacrontab/pkg/rpc"
 	"net/http"
 	"strings"
 )
@@ -30,11 +29,11 @@ func (s *Srv) Register(args models.Node, reply *bool) error {
 	return ret.Error
 }
 
-func (s *Srv) Depends(args proto.DepJobs, reply *bool) error {
+func (s *Srv) Depend(args proto.DepJobs, reply *bool) error {
 	log.Infof("Callee Srv.Depend jobID:%d", args[0].JobID)
 	*reply = true
 	for _, v := range args {
-		if err := rpc.Call(v.Dest, "CrontabJob.ExecDepend", v, &reply); err != nil {
+		if err := rpcCall(v.Dest, "CrontabJob.ExecDepend", v, &reply); err != nil {
 			*reply = false
 			return err
 		}
@@ -46,7 +45,7 @@ func (s *Srv) Depends(args proto.DepJobs, reply *bool) error {
 func (s *Srv) DependDone(args proto.DepJob, reply *bool) error {
 	log.Infof("Callee Srv.DependDone jobID:%d", args.JobID)
 	*reply = true
-	if err := rpc.Call(args.Dest, "CrontabJob.ResolvedDepends", args, &reply); err != nil {
+	if err := rpcCall(args.Dest, "CrontabJob.ResolvedDepend", args, &reply); err != nil {
 		*reply = false
 		return err
 	}

@@ -158,7 +158,7 @@ func (j *CrontabJob) Log(args proto.SearchLog, reply *proto.SearchLogResult) err
 
 }
 
-func (j *CrontabJob) ResolvedDepends(args proto.DepJob, reply *bool) error {
+func (j *CrontabJob) ResolvedDepend(args proto.DepJob, reply *bool) error {
 	*reply = j.jd.filterDepend(&depEntry{
 		jobID:      args.JobID,
 		processID:  args.ProcessID,
