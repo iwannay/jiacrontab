@@ -2,6 +2,7 @@ package main
 
 import (
 	admin "jiacrontab/jiacrontab_admin"
+	"jiacrontab/pkg/pprof"
 
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -9,6 +10,7 @@ import (
 )
 
 func main() {
+	pprof.ListenPprof()
 	admin := admin.New()
 	admin.Main()
 }

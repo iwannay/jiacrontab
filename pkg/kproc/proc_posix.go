@@ -4,12 +4,13 @@ package kproc
 
 import (
 	"context"
-	"github.com/iwannay/log"
 	"os"
 	"os/exec"
 	"os/user"
 	"strconv"
 	"syscall"
+
+	"github.com/iwannay/log"
 )
 
 func CommandContext(ctx context.Context, name string, arg ...string) *KCmd {
@@ -17,9 +18,10 @@ func CommandContext(ctx context.Context, name string, arg ...string) *KCmd {
 	cmd.SysProcAttr = &syscall.SysProcAttr{}
 	cmd.SysProcAttr.Setsid = true
 	return &KCmd{
-		ctx:  ctx,
-		Cmd:  cmd,
-		done: make(chan struct{}),
+		ctx:                ctx,
+		Cmd:                cmd,
+		isKillChildProcess: true,
+		done:               make(chan struct{}),
 	}
 }
 
@@ -35,14 +37,6 @@ func (k *KCmd) SetUser(username string) {
 	}
 }
 
-func (k *KCmd) SetEnv(env []string) {
-	k.Cmd.Env = env
-}
-
-func (k *KCmd) SetDir(dir string) {
-	k.Cmd.Dir = dir
-}
-
 func (k *KCmd) KillAll() {
 
 	select {
@@ -51,6 +45,10 @@ func (k *KCmd) KillAll() {
 	}
 
 	if k.Process == nil {
+		return
+	}
+
+	if k.isKillChildProcess == false {
 		return
 	}
 
