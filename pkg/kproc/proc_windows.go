@@ -9,22 +9,15 @@ import (
 func CommandContext(ctx context.Context, name string, arg ...string) *KCmd {
 	cmd := exec.CommandContext(ctx, name, arg...)
 	return &KCmd{
-		Cmd:  cmd,
-		ctx:  ctx,
-		done: make(chan struct{}),
+		Cmd:                cmd,
+		ctx:                ctx,
+		isKillChildProcess: true,
+		done:               make(chan struct{}),
 	}
 }
 
 func (k *KCmd) SetUser(username string) {
 	// TODO:windows切换用户
-}
-
-func (k *KCmd) SetEnv(env []string) {
-	k.Cmd.Env = env
-}
-
-func (k *KCmd) SetDir(dir string) {
-	k.Cmd.Dir = dir
 }
 
 func (k *KCmd) KillAll() {
@@ -35,6 +28,11 @@ func (k *KCmd) KillAll() {
 	if k.Process == nil {
 		return
 	}
+
+	if k.isKillChildProcess == false {
+		return
+	}
+
 	c := exec.Command("taskkill", "/t", "/f", "/pid", fmt.Sprint(k.Process.Pid))
 	c.Stdout = k.Cmd.Stdout
 	c.Stderr = k.Cmd.Stderr

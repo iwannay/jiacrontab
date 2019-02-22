@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"jiacrontab/models"
 	"jiacrontab/pkg/crontab"
-	"github.com/iwannay/log"
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/util"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/iwannay/log"
 
 	"github.com/jinzhu/gorm"
 )
@@ -320,7 +321,9 @@ func (j *JobEntry) exec() []byte {
 		j.processes[id] = p
 		j.mux.Unlock()
 		// 执行脚本
+		log.Debug(1)
 		p.exec(nil)
+		log.Debug(2)
 	})
 	return nil
 }
