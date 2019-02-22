@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/iwannay/log"
 )
 
 func Exist(path string) bool {
@@ -14,12 +16,13 @@ func Exist(path string) bool {
 	return err == nil || os.IsExist(err)
 }
 
-func GetCurrentDirectory() (string, error) {
+func GetCurrentDirectory() string {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
-		return "", err
+		log.Error(err)
+		return ""
 	}
-	return filepath.Clean(strings.Replace(dir, "\\", "/", -1)), nil
+	return filepath.Clean(strings.Replace(dir, "\\", "/", -1))
 
 }
 

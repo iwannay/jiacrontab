@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"jiacrontab/models"
 	"jiacrontab/pkg/crontab"
-	"jiacrontab/pkg/log"
+	"github.com/iwannay/log"
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/util"
 	"path/filepath"

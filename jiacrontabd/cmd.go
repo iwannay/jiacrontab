@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io"
 	"jiacrontab/pkg/kproc"
-	"jiacrontab/pkg/log"
+	"github.com/iwannay/log"
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/util"
 	"os"

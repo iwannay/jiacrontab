@@ -4,14 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"jiacrontab/model"
 	"jiacrontab/models"
-	"jiacrontab/pkg/log"
 	"jiacrontab/pkg/proto"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/iwannay/log"
 )
 
 type daemonTask struct {
@@ -110,7 +110,7 @@ func (d *daemonTask) do(ctx context.Context) {
 	t.Stop()
 
 	if d.action == proto.ActionDeleteDaemonTask {
-		// model.DB().Unscoped().Delete(d.task, "id=?", d.task.ID)
+		// models.DB().Unscoped().Delete(d.task, "id=?", d.task.ID)
 	}
 
 	d.daemon.lock.Lock()
@@ -148,7 +148,7 @@ func (d *daemon) add(t *daemonTask) {
 func (d *daemon) run() {
 
 	var jobList []models.DaemonJob
-	err := model.DB().Find(&jobList).Error
+	err := models.DB().Find(&jobList).Error
 	if err != nil {
 		log.Error("init daemon task error:", err)
 	}
@@ -196,7 +196,7 @@ func (d *daemon) run() {
 					t.action = v.action
 					t.cancel()
 				} else {
-					model.DB().Unscoped().Delete(v.job, "id=?", v.job.ID)
+					models.DB().Unscoped().Delete(v.job, "id=?", v.job.ID)
 					d.lock.Unlock()
 				}
 			case proto.ActionStopDaemonTask:
@@ -207,7 +207,7 @@ func (d *daemon) run() {
 					t.cancel()
 				} else {
 					d.lock.Unlock()
-					model.DB().Model(&model.DaemonTask{}).Where("id = ?", v.job.ID).Update("status", models.StatusJobStop)
+					models.DB().Model(&models.DaemonJob{}).Where("id = ?", v.job.ID).Update("status", models.StatusJobStop)
 				}
 			}
 		}

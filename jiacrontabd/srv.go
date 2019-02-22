@@ -6,7 +6,7 @@ import (
 	"jiacrontab/models"
 	"jiacrontab/pkg/crontab"
 	"jiacrontab/pkg/finder"
-	"jiacrontab/pkg/log"
+	"github.com/iwannay/log"
 	"jiacrontab/pkg/proto"
 	"os"
 	"path/filepath"

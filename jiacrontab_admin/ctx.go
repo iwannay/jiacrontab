@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"jiacrontab/models"
-	"jiacrontab/pkg/log"
+	"github.com/iwannay/log"
 	"jiacrontab/pkg/proto"
 
 	jwt "github.com/dgrijalva/jwt-go"
