@@ -4,19 +4,20 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/iwannay/log"
 	"jiacrontab/pkg/proto"
 	"path/filepath"
 	"time"
+
+	"github.com/iwannay/log"
 )
 
 type depEntry struct {
-	jobID      uint // 定时任务id
-	processID  int  // 当前依赖的父级任务（可能存在多个并发的task)
+	jobID      uint   // 定时任务id
+	processID  int    // 当前依赖的父级任务（可能存在多个并发的task)
+	id         string // depID
 	workDir    string
 	user       string
 	env        []string
-	saveID     string
 	from       string
 	commands   []string
 	dest       string
@@ -48,7 +49,7 @@ func (d *dependencies) run() {
 		for {
 			select {
 			case t := <-d.dep:
-				go func(t *depEntry) {}(t)
+				go d.exec(t)
 			}
 		}
 	}()
@@ -58,7 +59,7 @@ func (d *dependencies) exec(task *depEntry) {
 
 	var (
 		reply     bool
-		myCmdUint cmdUint
+		myCmdUnit cmdUint
 		err       error
 	)
 
@@ -72,19 +73,20 @@ func (d *dependencies) exec(task *depEntry) {
 	startTime := time.Now()
 	start := startTime.UnixNano()
 
-	myCmdUint.ctx = ctx
-	myCmdUint.dir = task.workDir
-	myCmdUint.user = task.user
-	myCmdUint.logName = fmt.Sprintf("%s.log", task.saveID)
-	myCmdUint.logPath = filepath.Join(cfg.LogPath, "depend_job")
+	myCmdUnit.args = [][]string{task.commands}
+	myCmdUnit.ctx = ctx
+	myCmdUnit.dir = task.workDir
+	myCmdUnit.user = task.user
+	myCmdUnit.logName = fmt.Sprintf("%d-%s.log", task.jobID, task.id)
+	myCmdUnit.logPath = filepath.Join(cfg.LogPath, "depend_job")
 
-	err = myCmdUint.launch()
+	err = myCmdUnit.launch()
 	cancel()
 	costTime := time.Now().UnixNano() - start
 
 	log.Infof("exec %s %s cost %.4fs %v", task.name, task.commands, float64(costTime)/1000000000, err)
 
-	task.logContent = bytes.TrimRight(myCmdUint.content, "\x00")
+	task.logContent = bytes.TrimRight(myCmdUnit.content, "\x00")
 	task.done = true
 	task.err = err
 
@@ -92,10 +94,10 @@ func (d *dependencies) exec(task *depEntry) {
 
 	if !d.crond.filterDepend(task) {
 		err = rpcCall("Srv.DependDone", proto.DepJob{
-			ID:         task.saveID,
 			Name:       task.name,
 			Dest:       task.dest,
 			From:       task.from,
+			ID:         task.id,
 			ProcessID:  task.processID,
 			JobID:      task.jobID,
 			Commands:   task.commands,

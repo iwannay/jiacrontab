@@ -1,6 +1,7 @@
 package log
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -17,6 +18,7 @@ const (
 	LevelWarn
 	LevelError
 	LevelFatal
+	LevelPrint
 )
 
 type logContent struct {
@@ -31,6 +33,8 @@ func output(log *logContent) {
 		if log.level >= logLevel {
 			DefaultLogger.Output(3, content)
 		}
+	case LevelPrint:
+		DefaultLogger.Output(3, closeColor(content))
 	case LevelFatal:
 		DefaultLogger.Output(3, content)
 		os.Exit(1)
@@ -105,6 +109,51 @@ func Fatalf(format string, v ...interface{}) {
 	output(&logContent{
 		level:   LevelFatal,
 		content: fmt.Sprintf(format, v...),
+	})
+}
+
+func Print(v ...interface{}) {
+	output(&logContent{
+		level:   LevelPrint,
+		content: fmt.Sprintln(v...),
+	})
+}
+
+func Printf(format string, v ...interface{}) {
+	output(&logContent{
+		level:   LevelPrint,
+		content: fmt.Sprintf(format, v...),
+	})
+}
+
+func Println(v ...interface{}) {
+	output(&logContent{
+		level:   LevelPrint,
+		content: fmt.Sprint(v...),
+	})
+}
+
+func JSON(v ...interface{}) {
+	var (
+		err error
+		bts []byte
+	)
+	for k, vv := range v {
+
+		if _, ok := vv.(string); ok {
+			continue
+		}
+
+		bts, err = json.MarshalIndent(vv, "", "  ")
+		v[k] = string(bts)
+		if err != nil {
+			Debug(err)
+		}
+	}
+
+	output(&logContent{
+		level:   LevelPrint,
+		content: fmt.Sprint(v...),
 	})
 }
 

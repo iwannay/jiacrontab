@@ -6,12 +6,13 @@ import (
 	"jiacrontab/models"
 	"jiacrontab/pkg/crontab"
 	"jiacrontab/pkg/finder"
-	"github.com/iwannay/log"
 	"jiacrontab/pkg/proto"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/iwannay/log"
 )
 
 type Srv struct {
@@ -174,7 +175,7 @@ func (j *CrontabJob) ResolvedDepend(args proto.DepJob, reply *bool) error {
 func (j *CrontabJob) ExecDepend(args models.DependJob, reply *bool) error {
 	j.jd.dep.add(&depEntry{
 		jobID:    args.JobID,
-		saveID:   args.ID,
+		id:       args.ID,
 		dest:     args.Dest,
 		from:     args.From,
 		name:     args.Name,

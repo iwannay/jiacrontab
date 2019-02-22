@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"jiacrontab/pkg/util"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -83,6 +84,11 @@ func (d *DependJobs) Scan(v interface{}) error {
 }
 
 func (d DependJobs) Value() (driver.Value, error) {
+
+	for k, _ := range d {
+		d[k].ID = util.UUID()
+	}
+
 	bts, err := json.Marshal(d)
 	return string(bts), err
 }

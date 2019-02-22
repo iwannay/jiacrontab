@@ -79,8 +79,6 @@ github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7/go.mod h1:Fecb
 github.com/grpc-ecosystem/grpc-gateway v1.5.0/go.mod h1:RSKVYQBd5MCa4OVpNdGskqpgL2+G+NZTnrVHpWWfpdw=
 github.com/hpcloud/tail v1.0.0 h1:nfCOvKYfkgYP8hkirhJocXT2+zOD8yUNjXaWfTlyFKI=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
-github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6 h1:UDMh68UUwekSh5iP2OMhRRZJiiBccgV7axzUG8vi56c=
-github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/imkira/go-interpol v1.1.0 h1:KIiKr0VSG2CUW1hl1jpiyuzuJeKUUpC8iM1AIE7N1Vk=
 github.com/imkira/go-interpol v1.1.0/go.mod h1:z0h2/2T3XF8kyEPpRgJ3kmNv+C43p+I/CoI+jC3w2iA=
 github.com/iris-contrib/blackfriday v2.0.0+incompatible h1:o5sHQHHm0ToHUlAJSTjW9UWicjJSDDauOOQ2AHuIVp4=
@@ -93,8 +91,8 @@ github.com/iris-contrib/httpexpect v0.0.0-20180314041918-ebe99fcebbce h1:q8Ka/ex
 github.com/iris-contrib/httpexpect v0.0.0-20180314041918-ebe99fcebbce/go.mod h1:VER17o2JZqquOx41avolD/wMGQSFEFBKWmhag9/RQRY=
 github.com/iris-contrib/middleware v0.0.0-20181021162728-8bd5d51b3c2e h1:kj3vB5WsLvahUNG7X6TDRXuYlTNgcZGMFmrd4fmAk6A=
 github.com/iris-contrib/middleware v0.0.0-20181021162728-8bd5d51b3c2e/go.mod h1:lZivVjxn00uQH7vp452Wa2p9GD+2ElkVms944o+f0+Y=
-github.com/iwannay/log v0.0.0-20190222032153-b9c072c2c632 h1:Syj1IgBWHc5QFFB7z7l/7wOL4Qu3D3BmECvcb0I2VQ8=
-github.com/iwannay/log v0.0.0-20190222032153-b9c072c2c632/go.mod h1:uZNVAfgxWNr2WSlZaPFV4nd8pLH3qDWD/A498RmicAI=
+github.com/iwannay/log v0.0.0-20190222094645-1eae5453dbcd h1:ODmB/9nnvC32NaHjevwo86+aL+QLBKTH0GU3oFXGVLg=
+github.com/iwannay/log v0.0.0-20190222094645-1eae5453dbcd/go.mod h1:uZNVAfgxWNr2WSlZaPFV4nd8pLH3qDWD/A498RmicAI=
 github.com/jellevandenhooff/dkim v0.0.0-20150330215556-f50fe3d243e1/go.mod h1:E0B/fFc00Y+Rasa88328GlI/XbtyysCtTHZS8h7IrBU=
 github.com/jinzhu/gorm v1.9.2 h1:lCvgEaqe/HVE+tjAR2mt4HbbHAZsQOv3XAZiEZV37iw=
 github.com/jinzhu/gorm v1.9.2/go.mod h1:Vla75njaFJ8clLU1W44h34PjIkijhjHIYnZxMqCdxqo=
