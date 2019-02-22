@@ -48,11 +48,10 @@ func newProcess(id int, jobEntry *JobEntry) *process {
 	p.ctx, p.cancel = context.WithCancel(context.Background())
 
 	for _, v := range p.jobEntry.detail.DependJobs {
-		saveID := fmt.Sprintf("dep-%d-%d-%s", p.jobEntry.detail.ID, p.id, v.ID)
 		p.deps = append(p.deps, &depEntry{
 			jobID:     p.jobEntry.detail.ID,
 			processID: id,
-			saveID:    saveID,
+			id:        v.ID,
 			from:      v.From,
 			commands:  v.Commands,
 			dest:      v.Dest,
@@ -67,7 +66,6 @@ func newProcess(id int, jobEntry *JobEntry) *process {
 func (p *process) waitDepExecDone() bool {
 
 	if len(p.deps) == 0 {
-		log.Infof("%s jobID:%d has no dep", p.jobEntry.detail.Name, p.jobEntry.detail.ID)
 		return true
 	}
 
@@ -107,7 +105,7 @@ func (p *process) exec(logContent *[]byte) {
 		isTimeout bool
 		err       error
 		done      bool
-		myCmdUint cmdUint
+		myCmdUnit cmdUint
 	)
 
 	type errAPIPost struct {
@@ -197,12 +195,14 @@ func (p *process) exec(logContent *[]byte) {
 				})
 		}
 
-		myCmdUint.ctx = p.ctx
-		myCmdUint.dir = p.jobEntry.detail.WorkDir
-		myCmdUint.user = p.jobEntry.detail.User
-		myCmdUint.logName = fmt.Sprintf("%d.log", p.jobEntry.detail.ID)
-		myCmdUint.logPath = p.logPath
-		err = myCmdUint.launch()
+		log.Debugf("%+v", p.jobEntry.detail.Commands)
+		myCmdUnit.args = p.jobEntry.detail.Commands
+		myCmdUnit.ctx = p.ctx
+		myCmdUnit.dir = p.jobEntry.detail.WorkDir
+		myCmdUnit.user = p.jobEntry.detail.User
+		myCmdUnit.logName = fmt.Sprintf("%d.log", p.jobEntry.detail.ID)
+		myCmdUnit.logPath = p.logPath
+		err = myCmdUnit.launch()
 
 		if err != nil {
 			if isTimeout == false {
@@ -321,9 +321,7 @@ func (j *JobEntry) exec() []byte {
 		j.processes[id] = p
 		j.mux.Unlock()
 		// 执行脚本
-		log.Debug(1)
 		p.exec(nil)
-		log.Debug(2)
 	})
 	return nil
 }

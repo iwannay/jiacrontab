@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"io"
 	"jiacrontab/pkg/kproc"
-	"github.com/iwannay/log"
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/util"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"time"
+
+	"github.com/iwannay/log"
 )
 
 type cmdUint struct {
@@ -33,11 +35,10 @@ func (cu *cmdUint) release() {
 	}
 }
 
-// ctx context.Context, logname string, cmdList [][]string, logpath string, content *[]byte
 func (cu *cmdUint) launch() error {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Errorf("wrapExecScript error:%v", err)
+			log.Errorf("wrapExecScript error:%v\n%s", err, debug.Stack())
 		}
 		cu.release()
 	}()
@@ -83,7 +84,7 @@ func (cu *cmdUint) setLogFile() error {
 }
 
 func (cu *cmdUint) exec() error {
-
+	log.Debug("args:", cu.args)
 	cmdName := cu.args[0][0]
 	args := cu.args[0][1:]
 	cmd := kproc.CommandContext(cu.ctx, cmdName, args...)

@@ -20,6 +20,8 @@ github.com/fatih/structs
 github.com/flosch/pongo2
 # github.com/go-sql-driver/mysql v1.4.1
 github.com/go-sql-driver/mysql
+# github.com/gofrs/uuid v3.2.0+incompatible
+github.com/gofrs/uuid
 # github.com/iris-contrib/blackfriday v2.0.0+incompatible
 github.com/iris-contrib/blackfriday
 # github.com/iris-contrib/formBinder v0.0.0-20190104093907-fbd5963f41e1
@@ -28,7 +30,7 @@ github.com/iris-contrib/formBinder
 github.com/iris-contrib/go.uuid
 # github.com/iris-contrib/middleware v0.0.0-20181021162728-8bd5d51b3c2e
 github.com/iris-contrib/middleware/jwt
-# github.com/iwannay/log v0.0.0-20190222032153-b9c072c2c632
+# github.com/iwannay/log v0.0.0-20190222094645-1eae5453dbcd
 github.com/iwannay/log
 # github.com/jinzhu/gorm v1.9.2
 github.com/jinzhu/gorm/dialects/mysql

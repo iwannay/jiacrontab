@@ -4,9 +4,10 @@ import (
 	"jiacrontab/models"
 	"jiacrontab/pkg/crontab"
 	"jiacrontab/pkg/finder"
-	"github.com/iwannay/log"
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/rpc"
+
+	"github.com/iwannay/log"
 
 	"jiacrontab/pkg/util"
 	"sync"
@@ -85,6 +86,7 @@ func (j *Jiacrontabd) killTask(jobID uint) {
 }
 
 func (j *Jiacrontabd) run() {
+	j.dep.run()
 	j.wg.Wrap(j.crontab.QueueScanWorker)
 	for v := range j.crontab.Ready() {
 		v := v.Value.(*crontab.Job)
@@ -118,8 +120,8 @@ func (j *Jiacrontabd) filterDepend(task *depEntry) bool {
 						logContent = append(logContent, vv.logContent...)
 					}
 
-					if vv.saveID == task.saveID && v.jobEntry.sync {
-						if ok := j.pushPipeDepend(v.jobEntry.depends, vv.saveID); ok {
+					if vv.id == task.id && v.jobEntry.sync {
+						if ok := j.pushPipeDepend(v.jobEntry.depends, vv.id); ok {
 							return true
 						}
 					}
@@ -166,7 +168,7 @@ func (j *Jiacrontabd) pushPipeDepend(deps []*depEntry, depEntryID string) bool {
 				} else {
 					var reply bool
 					err := rpcCall("Srv.Depends", []proto.DepJob{{
-						ID:        v.saveID,
+						ID:        v.id,
 						Name:      v.name,
 						Dest:      v.dest,
 						From:      v.from,
@@ -184,7 +186,7 @@ func (j *Jiacrontabd) pushPipeDepend(deps []*depEntry, depEntryID string) bool {
 				break
 			}
 
-			if (v.saveID == depEntryID) && (l != k) {
+			if (v.id == depEntryID) && (l != k) {
 				flag = true
 			}
 
@@ -202,7 +204,7 @@ func (j *Jiacrontabd) pushDepend(deps []*depEntry) bool {
 			j.dep.add(v)
 		} else {
 			depJobs = append(depJobs, proto.DepJob{
-				ID:        v.saveID,
+				ID:        v.id,
 				Name:      v.name,
 				Dest:      v.dest,
 				From:      v.from,
