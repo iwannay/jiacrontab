@@ -1,7 +1,7 @@
 package rpc
 
 import (
-	"jiacrontab/pkg/log"
+	"github.com/iwannay/log"
 	"net"
 	"net/rpc"
 )

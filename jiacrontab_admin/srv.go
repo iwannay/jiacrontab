@@ -4,11 +4,12 @@ import (
 	"io"
 	"io/ioutil"
 	"jiacrontab/models"
-	"jiacrontab/pkg/log"
 	"jiacrontab/pkg/mailer"
 	"jiacrontab/pkg/proto"
 	"net/http"
 	"strings"
+
+	"github.com/iwannay/log"
 )
 
 type Srv struct{}

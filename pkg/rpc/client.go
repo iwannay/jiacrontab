@@ -2,7 +2,7 @@ package rpc
 
 import (
 	"errors"
-	"jiacrontab/pkg/log"
+	"github.com/iwannay/log"
 	"jiacrontab/pkg/proto"
 	"net"
 	"net/rpc"

@@ -2,7 +2,7 @@ package admin
 
 import (
 	"jiacrontab/models"
-	"jiacrontab/pkg/log"
+	"github.com/iwannay/log"
 	"jiacrontab/pkg/rpc"
 )
 
