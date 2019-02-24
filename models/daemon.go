@@ -17,6 +17,8 @@ type DaemonJob struct {
 	APITo           string    `json:"APITo"`
 	FailRestart     bool      `json:"failRestart"`
 	StartAt         time.Time `json:"startAt"`
+	User            string    `json:"user"`
+	WorkDir         string    `json:"workDir"`
 
 	Commands StringSlice `json:"commands" gorm:"type:TEXT"`
 }

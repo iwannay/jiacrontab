@@ -1,56 +1,33 @@
 package util
 
 import (
-	"bufio"
 	"jiacrontab/pkg/file"
 	"reflect"
 	"strconv"
 
-	"bytes"
-	"encoding/gob"
-	"encoding/json"
+	"github.com/gofrs/uuid"
 
-	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
-	"jiacrontab/pkg/log"
 	"math/rand"
-	"net"
-	"net/http"
-	"net/rpc"
+
+	"github.com/iwannay/log"
 
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"time"
 )
-
-func ReplaceEmpty(str, replaceStr string) string {
-	if strings.TrimSpace(str) == "" {
-		return replaceStr
-	}
-	return str
-}
-
-func RandNum() int64 {
-	return rand.Int63()
-}
 
 func RandIntn(end int) int {
 	return rand.Intn(end)
 }
 
-func Date(t int64) string {
+func CurrentTime(t int64) string {
 	if t == 0 {
 		return "0"
 	}
 	return time.Unix(t, 0).Format("2006-01-02 15:04:05")
-}
-
-func Int2floatstr(f string, n int64, l int) string {
-	return fmt.Sprintf(f, float64(n)/float64(l))
 }
 
 func SystemInfo(startTime time.Time) map[string]interface{} {
@@ -135,138 +112,6 @@ func CatFile(filepath string, limit int64, content *string) (isPath bool, err er
 	return false, nil
 }
 
-func SortedMap(i map[string]interface{}) {}
-
-func DialHTTP(network, address, path string) (*rpc.Client, error) {
-	var err error
-	conn, err := net.DialTimeout(network, address, 3*time.Second)
-	if err != nil {
-		return nil, err
-	}
-	// err = conn.SetReadDeadline(time.Now().Add(1 * time.Second))
-	// if err != nil {
-	// 	return nil, err
-	// }
-	io.WriteString(conn, "CONNECT "+path+" HTTP/1.0\n\n")
-
-	// Require successful HTTP response
-	// before switching to RPC protocol.
-	resp, err := http.ReadResponse(bufio.NewReader(conn), &http.Request{Method: "CONNECT"})
-	connected := "200 Connected to Go RPC"
-
-	if err == nil && resp.Status == connected {
-		return rpc.NewClient(conn), nil
-	}
-	if err == nil {
-		err = errors.New("unexpected HTTP response: " + resp.Status)
-	}
-	conn.Close()
-	return nil, &net.OpError{
-		Op:   "dial-http",
-		Net:  network + " " + address,
-		Addr: nil,
-		Err:  err,
-	}
-}
-
-func DeepCopy(dst, src interface{}) error {
-	var buf bytes.Buffer
-	if err := gob.NewEncoder(&buf).Encode(src); err != nil {
-		return err
-	}
-	return gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(dst)
-}
-
-// DeepCopy2 for map slice
-func DeepCopy2(value interface{}) interface{} {
-	if valueMap, ok := value.(map[string]interface{}); ok {
-		newMap := make(map[string]interface{})
-		for k, v := range valueMap {
-			newMap[k] = DeepCopy2(v)
-		}
-
-		return newMap
-	} else if valueSlice, ok := value.([]interface{}); ok {
-		newSlice := make([]interface{}, len(valueSlice))
-		for k, v := range valueSlice {
-			newSlice[k] = DeepCopy2(v)
-		}
-
-		return newSlice
-	}
-
-	return value
-}
-
-// DeepFind recursive query in the map
-func DeepFind(in map[string]interface{}, keyStr string) interface{} {
-	if strings.Contains(keyStr, ".") {
-		kSlic := strings.Split(keyStr, ".")
-		if v, ok := in[kSlic[0]]; ok {
-			if v, ok := v.(map[string]interface{}); ok && len(kSlic) >= 2 {
-				return DeepFind(v, strings.Join(kSlic[1:], "."))
-			}
-
-		}
-		return nil
-	} else {
-		return in[keyStr]
-	}
-
-	return nil
-}
-
-func PrintStruct(v interface{}) interface{} {
-	c := make(map[string]interface{})
-	values := reflect.ValueOf(v)
-	types := reflect.TypeOf(v)
-	l := values.NumField()
-	for i := 0; i < l; i++ {
-		v := values.Field(i)
-		t := types.Field(i)
-		if t.Name == "passwd" {
-			continue
-		}
-		switch v.Kind() {
-		case reflect.String:
-			c[t.Name] = v.String()
-		case reflect.Int64:
-			c[t.Name] = v.Int()
-		case reflect.Bool:
-			c[t.Name] = v.Bool()
-		}
-
-	}
-	return c
-}
-
-// func SendMail(title, content, host, from, pass, port, mailTo string) {
-// 	if from == "" || pass == "" || port == "" || mailTo == "" {
-// 		log.Errorf("SendMail: %v", errors.New("missing parameters"))
-// 		return
-// 	}
-// 	auth := smtp.PlainAuth("", from, pass, host)
-
-// 	to := strings.Split(mailTo, ",")
-// 	toStr := strings.Join(to, ",")
-// 	header := make(map[string]string)
-
-// 	header["From"] = from
-// 	header["To"] = toStr
-// 	header["Subject"] = fmt.Sprintf("=?UTF-8?B?%s?=", base64.StdEncoding.EncodeToString([]byte(title)))
-// 	header["MIME-Version"] = "1.0"
-// 	header["Content-Type"] = "text/html; charset=UTF-8"
-// 	header["Content-Transfer-Encoding"] = "base64"
-// 	message := ""
-// 	for k, v := range header {
-// 		message += fmt.Sprintf("%s: %s\r\n", k, v)
-// 	}
-// 	message += "\r\n" + base64.StdEncoding.EncodeToString([]byte(content))
-
-// 	err := smtp.SendMail(host+":"+port, auth, from, to, []byte(message))
-// 	log.Infof("send mail to %s %v", toStr, err)
-// }
-
 func ParseInt(i string) int {
 	v, _ := strconv.Atoi(i)
 	return v
@@ -275,21 +120,6 @@ func ParseInt(i string) int {
 func ParseInt64(i string) int64 {
 	v, _ := strconv.Atoi(i)
 	return int64(v)
-}
-
-func Struct2Map(i interface{}, o *map[string]interface{}) error {
-
-	if o == nil {
-		return errors.New("o not nil")
-	}
-
-	bts, err := json.Marshal(i)
-	if err != nil {
-		return err
-	}
-
-	return json.Unmarshal(bts, &o)
-
 }
 
 func InArray(val interface{}, arr interface{}) bool {
@@ -305,6 +135,18 @@ func InArray(val interface{}, arr interface{}) bool {
 	}
 
 	return false
+}
+
+func UUID() string {
+
+	uu, err := uuid.NewGen().NewV1()
+
+	if err != nil {
+		log.Error(err)
+		return fmt.Sprint(time.Now().UnixNano())
+	}
+
+	return uu.String()
 }
 
 func GetHostname() string {

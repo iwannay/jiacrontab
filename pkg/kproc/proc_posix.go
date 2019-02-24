@@ -6,7 +6,11 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"os/user"
+	"strconv"
 	"syscall"
+
+	"github.com/iwannay/log"
 )
 
 func CommandContext(ctx context.Context, name string, arg ...string) *KCmd {
@@ -14,9 +18,22 @@ func CommandContext(ctx context.Context, name string, arg ...string) *KCmd {
 	cmd.SysProcAttr = &syscall.SysProcAttr{}
 	cmd.SysProcAttr.Setsid = true
 	return &KCmd{
-		ctx:  ctx,
-		Cmd:  cmd,
-		done: make(chan struct{}),
+		ctx:                ctx,
+		Cmd:                cmd,
+		isKillChildProcess: true,
+		done:               make(chan struct{}),
+	}
+}
+
+func (k *KCmd) SetUser(username string) {
+	u, err := user.Lookup(username)
+	if err == nil {
+		log.Infof("uid=%s,gid=%s", u.Uid, u.Gid)
+		uid, _ := strconv.Atoi(u.Uid)
+		gid, _ := strconv.Atoi(u.Gid)
+
+		k.SysProcAttr = &syscall.SysProcAttr{}
+		k.SysProcAttr.Credential = &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)}
 	}
 }
 
@@ -28,6 +45,10 @@ func (k *KCmd) KillAll() {
 	}
 
 	if k.Process == nil {
+		return
+	}
+
+	if k.isKillChildProcess == false {
 		return
 	}
 

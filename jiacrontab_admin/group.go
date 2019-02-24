@@ -12,8 +12,8 @@ func getGroupList(c iris.Context) {
 		ctx       = wrapCtx(c)
 		err       error
 		groupList []models.Group
-		reqBody   pageReqParams
-		groupID   int
+		reqBody   getGroupListReqParams
+		groupID   uint
 	)
 	if groupID, err = ctx.getGroupIDFromToken(); err != nil {
 		ctx.respError(proto.Code_Error, err.Error(), nil)

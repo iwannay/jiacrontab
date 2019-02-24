@@ -12,12 +12,12 @@ var (
 )
 
 type jobReqParams struct {
-	JobID uint   `json:"jobID"`
-	Addr  string `json:"addr"`
+	JobIDs []uint `json:"jobIDs"`
+	Addr   string `json:"addr"`
 }
 
 func (p *jobReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.JobID == 0 || p.Addr == "" {
+	if err := ctx.ReadJSON(p); err != nil || len(p.JobIDs) == 0 || p.Addr == "" {
 		return paramsError
 	}
 	return nil
@@ -28,26 +28,51 @@ type editJobReqParams struct {
 	Addr            string            `json:"addr"`
 	IsSync          bool              `json:"isSync"`
 	Name            string            `json:"name"`
-	Commands        []string          `json:"commands"`
+	Commands        [][]string        `json:"commands"`
 	Timeout         int               `json:"timeout"`
 	MaxConcurrent   uint              `json:"maxConcurrent"`
-	ErrorMailNotify bool              `json:"ErrormailNotify"`
-	ErrorAPINotify  bool              `json:"ErrorAPINotify"`
+	ErrorMailNotify bool              `json:"errorMailNotify"`
+	ErrorAPINotify  bool              `json:"errorAPINotify"`
 	MailTo          []string          `json:"mailTo"`
 	APITo           []string          `json:"APITo"`
-	PipeCommands    [][]string        `json:"pipeCommands"`
 	DependJobs      models.DependJobs `json:"dependJobs"`
 	Month           string            `json:"month"`
 	Weekday         string            `json:"weekday"`
 	Day             string            `json:"day"`
 	Hour            string            `json:"hour"`
 	Minute          string            `json:"minute"`
+	Second          string            `json:"second"`
 	TimeoutTrigger  string            `json:"timeoutTrigger"`
 }
 
+// TODO:验证参数
 func (p *editJobReqParams) verify(ctx iris.Context) error {
 	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" {
 		return paramsError
+	}
+
+	if p.Month == "" {
+		p.Month = "*"
+	}
+
+	if p.Weekday == "" {
+		p.Weekday = "*"
+	}
+
+	if p.Day == "" {
+		p.Day = "*"
+	}
+
+	if p.Hour == "" {
+		p.Hour = "*"
+	}
+
+	if p.Minute == "" {
+		p.Minute = "*"
+	}
+
+	if p.Second == "" {
+		p.Second = "*"
 	}
 
 	return nil
@@ -112,14 +137,33 @@ func (p *runtimeInfoReqParams) verify(ctx iris.Context) error {
 	return nil
 }
 
-type jobListReqParams struct {
-	Addr     string `json:"addr"`
-	Page     int    `json:"page"`
-	Pagesize int    `json:"pagesize"`
+type getJobListReqParams struct {
+	Addr string `json:"addr"`
+	pageReqParams
 }
 
-func (p *jobListReqParams) verify(ctx iris.Context) error {
+func (p *getJobListReqParams) verify(ctx iris.Context) error {
 	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" {
+		return paramsError
+	}
+
+	if p.Page <= 1 {
+		p.Page = 1
+	}
+
+	if p.Pagesize <= 0 {
+		p.Pagesize = 50
+	}
+	return nil
+}
+
+type getGroupListReqParams struct {
+	GroupID uint `json:"groupID"`
+	pageReqParams
+}
+
+func (p *getGroupListReqParams) verify(ctx iris.Context) error {
+	if err := ctx.ReadJSON(p); err != nil {
 		return paramsError
 	}
 
@@ -212,10 +256,14 @@ func (p *loginReqParams) verify(ctx iris.Context) error {
 type pageReqParams struct {
 	Page     int `json:"page"`
 	Pagesize int `json:"pagesize"`
-	GroupID  int `json:"groupID"`
 }
 
-func (p *pageReqParams) verify(ctx iris.Context) error {
+type getNodeListReqParams struct {
+	pageReqParams
+	GroupID uint `json:"groupID"`
+}
+
+func (p *getNodeListReqParams) verify(ctx iris.Context) error {
 	if err := ctx.ReadJSON(p); err != nil {
 		return paramsError
 	}

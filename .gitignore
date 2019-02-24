@@ -38,3 +38,7 @@ binTmp
 dump.rdb
 app/jiacrontab_admin/jiacrontab_admin
 app/jiacrontabd/jiacrontabd
+
+app/jiacrontabd/logs
+app/jiacrontab_admin/logs
+pprof

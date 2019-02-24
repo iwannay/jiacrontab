@@ -2,8 +2,8 @@ package rpc
 
 import (
 	"errors"
+	"github.com/iwannay/log"
 	"jiacrontab/pkg/proto"
-	"log"
 	"net"
 	"net/rpc"
 	"time"
@@ -51,7 +51,7 @@ func (c *Client) dial() (err error) {
 
 func (c *Client) Call(serviceMethod string, args interface{}, reply interface{}) error {
 	if serviceMethod != PingService && serviceMethod != RegisterService {
-		log.Println("rpc call", c.options.Addr, serviceMethod)
+		log.Info("rpc call", c.options.Addr, serviceMethod)
 	}
 
 	if c.Client == nil {
@@ -87,18 +87,18 @@ func (c *Client) Ping(serviceMethod string) {
 			if err = c.Call(serviceMethod, &proto.EmptyArgs{}, &proto.EmptyReply{}); err != nil {
 				c.err = err
 				c.Client.Close()
-				log.Printf("client.Call(%s, args, reply) error (%v) \n", serviceMethod, err)
+				log.Infof("client.Call(%s, args, reply) error (%v) \n", serviceMethod, err)
 			}
 		} else {
 			if err = c.dial(); err == nil {
 				c.err = nil
-				log.Println("client reconnet ", c.options.Addr)
+				log.Info("client reconnet ", c.options.Addr)
 			}
 		}
 		time.Sleep(pingDuration)
 	}
 closed:
-	log.Println("rpc quited", c.options.Addr)
+	log.Info("rpc quited", c.options.Addr)
 	if c.Client != nil {
 		c.Client.Close()
 	}

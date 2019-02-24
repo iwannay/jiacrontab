@@ -12,8 +12,8 @@ import (
 func getDaemonJobList(c iris.Context) {
 	var (
 		ctx     = wrapCtx(c)
-		reqBody jobListReqParams
-		jobList []models.DaemonJob
+		reqBody getJobListReqParams
+		jobRet  proto.QueryDaemonJobRet
 		err     error
 	)
 
@@ -22,15 +22,20 @@ func getDaemonJobList(c iris.Context) {
 		return
 	}
 
-	if err = rpcCall(reqBody.Addr, "DaemonJob.GetDaemonJobList", struct{ Page, Pagesize int }{
+	if err = rpcCall(reqBody.Addr, "DaemonJob.List", &proto.QueryJobArgs{
 		Page:     reqBody.Page,
 		Pagesize: reqBody.Pagesize,
-	}, &jobList); err != nil {
+	}, &jobRet); err != nil {
 		ctx.respError(proto.Code_Error, err.Error(), nil)
 		return
 	}
 
-	ctx.respSucc("", jobList)
+	ctx.respSucc("", map[string]interface{}{
+		"list":     jobRet.List,
+		"page":     jobRet.Page,
+		"pagesize": jobRet.Pagesize,
+		"total":    jobRet.Total,
+	})
 }
 
 func actionDaemonTask(c iris.Context) {

@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"jiacrontab/models"
 )
 
 type DepJobs []DepJob
@@ -56,7 +57,7 @@ type DepJob struct {
 	From       string
 	ProcessID  int
 	ID         string
-	JobID      int
+	JobID      uint
 	Commands   []string
 	Timeout    int64
 	Err        error
@@ -84,4 +85,18 @@ func (p PipeComamnds) Value() (driver.Value, error) {
 
 type QueryJobArgs struct{ Page, Pagesize int }
 
-type AuditJobArgs struct{ JobID uint }
+type QueryCrontabJobRet struct {
+	Total    int
+	Page     int
+	Pagesize int
+	List     []models.CrontabJob
+}
+
+type QueryDaemonJobRet struct {
+	Total    int
+	Page     int
+	Pagesize int
+	List     []models.DaemonJob
+}
+
+type AuditJobArgs struct{ JobIDs []uint }

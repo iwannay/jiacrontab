@@ -6,12 +6,13 @@ import (
 	"jiacrontab/models"
 	"jiacrontab/pkg/crontab"
 	"jiacrontab/pkg/finder"
-	"jiacrontab/pkg/log"
 	"jiacrontab/pkg/proto"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/iwannay/log"
 )
 
 type Srv struct {
@@ -31,16 +32,25 @@ func newCrontabJobSrv(d *Jiacrontabd) *CrontabJob {
 	}
 }
 
-func (j *CrontabJob) List(args proto.QueryJobArgs, reply *[]models.CrontabJob) error {
-	return models.DB().Offset(args.Page - 1).Limit(args.Pagesize).Find(reply).Error
+func (j *CrontabJob) List(args proto.QueryJobArgs, reply *proto.QueryCrontabJobRet) error {
+	err := models.DB().Model(&models.CrontabJob{}).Count(&reply.Total).Error
+	if err != nil {
+		return err
+	}
+
+	reply.Page = args.Page
+	reply.Pagesize = args.Pagesize
+
+	return models.DB().Offset(args.Page - 1).Limit(args.Pagesize).Find(&reply.List).Error
 }
 
 func (j *CrontabJob) Audit(args proto.AuditJobArgs, reply *bool) error {
-	return models.DB().Model(&models.CrontabJob{}).Where("id=?", args.JobID).Update("status", models.StatusJobOk).Error
+	return models.DB().Model(&models.CrontabJob{}).Where("id in(?)", args.JobIDs).Update("status", models.StatusJobOk).Error
 }
 
 func (j *CrontabJob) Edit(args models.CrontabJob, rowsAffected *int64) error {
 
+	log.Info(args)
 	if args.MaxConcurrent == 0 {
 		args.MaxConcurrent = 1
 	}
@@ -51,15 +61,15 @@ func (j *CrontabJob) Edit(args models.CrontabJob, rowsAffected *int64) error {
 		return ret.Error
 	}
 
-	ret := models.DB().Where("id=?", args.ID).Save(&args)
+	ret := models.DB().Where("id=?", args.ID).Debug().Save(&args)
 	*rowsAffected = ret.RowsAffected
 	return ret.Error
 }
-func (j *CrontabJob) Get(args int, reply *models.CrontabJob) error {
+func (j *CrontabJob) Get(args uint, reply *models.CrontabJob) error {
 	return models.DB().Find(reply, "id=?", args).Error
 }
 
-func (j *CrontabJob) Start(ids []int, ok *bool) error {
+func (j *CrontabJob) Start(ids []uint, ok *bool) error {
 	var (
 		jobs []models.CrontabJob
 	)
@@ -77,8 +87,10 @@ func (j *CrontabJob) Start(ids []int, ok *bool) error {
 
 	for _, v := range jobs {
 		j.jd.addJob(&crontab.Job{
+			ID:      v.ID,
 			Second:  v.TimeArgs.Second,
 			Minute:  v.TimeArgs.Minute,
+			Hour:    v.TimeArgs.Hour,
 			Day:     v.TimeArgs.Day,
 			Month:   v.TimeArgs.Month,
 			Weekday: v.TimeArgs.Weekday,
@@ -88,22 +100,22 @@ func (j *CrontabJob) Start(ids []int, ok *bool) error {
 	return nil
 }
 
-func (j *CrontabJob) Stop(ids []int, ok *bool) error {
+func (j *CrontabJob) Stop(ids []uint, ok *bool) error {
 	*ok = true
 	return models.DB().Model(&models.CrontabJob{}).Where("id in (?)", ids).Update("disabled", true).Error
 }
 
-func (j *CrontabJob) Delete(ids []int, ok *bool) error {
+func (j *CrontabJob) Delete(ids []uint, ok *bool) error {
 	*ok = true
 	return models.DB().Model(&models.CrontabJob{}).Delete("id in (?)", ids).Error
 }
 
-func (j *CrontabJob) Kill(jobID int, ok *bool) error {
+func (j *CrontabJob) Kill(jobID uint, ok *bool) error {
 	j.jd.killTask(jobID)
 	return nil
 }
 
-func (j *CrontabJob) Exec(jobID int, reply *[]byte) error {
+func (j *CrontabJob) Exec(jobID uint, reply *[]byte) error {
 
 	var job models.CrontabJob
 	ret := models.DB().Find(&job, "id=?", jobID)
@@ -147,7 +159,7 @@ func (j *CrontabJob) Log(args proto.SearchLog, reply *proto.SearchLogResult) err
 
 }
 
-func (j *CrontabJob) ResolvedDepends(args proto.DepJob, reply *bool) error {
+func (j *CrontabJob) ResolvedDepend(args proto.DepJob, reply *bool) error {
 	*reply = j.jd.filterDepend(&depEntry{
 		jobID:      args.JobID,
 		processID:  args.ProcessID,
@@ -163,7 +175,7 @@ func (j *CrontabJob) ResolvedDepends(args proto.DepJob, reply *bool) error {
 func (j *CrontabJob) ExecDepend(args models.DependJob, reply *bool) error {
 	j.jd.dep.add(&depEntry{
 		jobID:    args.JobID,
-		saveID:   args.ID,
+		id:       args.ID,
 		dest:     args.Dest,
 		from:     args.From,
 		name:     args.Name,
@@ -186,6 +198,18 @@ func newDaemonJobSrv(jd *Jiacrontabd) *DaemonJob {
 	return &DaemonJob{
 		jd: jd,
 	}
+}
+
+func (j *DaemonJob) List(args proto.QueryJobArgs, reply *proto.QueryDaemonJobRet) error {
+	err := models.DB().Model(&models.DaemonJob{}).Count(&reply.Total).Error
+	if err != nil {
+		return err
+	}
+
+	reply.Page = args.Page
+	reply.Pagesize = args.Pagesize
+
+	return models.DB().Offset(args.Page - 1).Limit(args.Pagesize).Find(&reply.List).Error
 }
 
 func (j *DaemonJob) Edit(args models.DaemonJob, reply *int64) error {
@@ -263,5 +287,5 @@ func (j *DaemonJob) Log(args proto.SearchLog, reply *proto.SearchLogResult) erro
 }
 
 func (j *DaemonJob) Audit(args proto.AuditJobArgs, reply *bool) error {
-	return models.DB().Model(&models.DaemonJob{}).Where("id=?", args.JobID).Update("status", models.StatusJobOk).Error
+	return models.DB().Model(&models.DaemonJob{}).Where("id in (?)", args.JobIDs).Update("status", models.StatusJobOk).Error
 }

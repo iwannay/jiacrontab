@@ -4,9 +4,10 @@ import (
 	"jiacrontab/models"
 	"jiacrontab/pkg/crontab"
 	"jiacrontab/pkg/finder"
-	"jiacrontab/pkg/log"
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/rpc"
+
+	"github.com/iwannay/log"
 
 	"jiacrontab/pkg/util"
 	"sync"
@@ -17,7 +18,7 @@ import (
 type Jiacrontabd struct {
 	crontab *crontab.Crontab
 	// All jobs added
-	jobs            map[int]*JobEntry
+	jobs            map[uint]*JobEntry
 	dep             *dependencies
 	daemon          *daemon
 	heartbeatPeriod time.Duration
@@ -28,9 +29,10 @@ type Jiacrontabd struct {
 // New return a Jiacrontabd instance
 func New() *Jiacrontabd {
 	j := &Jiacrontabd{
-		jobs:            make(map[int]*JobEntry),
+		jobs:            make(map[uint]*JobEntry),
 		daemon:          newDaemon(100),
 		heartbeatPeriod: 5 * time.Second,
+		crontab:         crontab.New(),
 	}
 	j.dep = newDependencies(j)
 
@@ -45,34 +47,50 @@ func (j *Jiacrontabd) addJob(job *crontab.Job) {
 		j.jobs[job.ID] = newJobEntry(job, j)
 		j.mux.Unlock()
 	}
-	job.NextExecutionTime(time.Now())
-	j.crontab.AddJob(job)
+	if t, err := job.NextExecutionTime(time.Now()); err != nil {
+		log.Error("NextExecutionTime:", err, " timeArgs:", job)
+	} else {
+
+		if err := models.DB().Model(&models.CrontabJob{}).Where("id=?", job.ID).Debug().
+			Updates(map[string]interface{}{
+				"next_exec_time": t,
+				"status":         models.StatusJobTiming,
+			}).Error; err != nil {
+			log.Error(err)
+		}
+
+		j.crontab.AddJob(job)
+	}
 }
 
 func (j *Jiacrontabd) execTask(job *crontab.Job) {
 	job.NextExecutionTime(time.Now())
 	j.mux.RLock()
-	if task, ok := j.jobs[job.ID]; !ok {
+	if task, ok := j.jobs[job.ID]; ok {
 		j.mux.RUnlock()
 		task.exec()
+		return
 	}
+	j.mux.RUnlock()
 
 }
 
-func (j *Jiacrontabd) killTask(jobID int) {
+func (j *Jiacrontabd) killTask(jobID uint) {
 	j.mux.RLock()
-	if task, ok := j.jobs[jobID]; !ok {
+	if task, ok := j.jobs[jobID]; ok {
 		j.mux.RUnlock()
 		task.kill()
 		return
 	}
+	j.mux.RUnlock()
 }
 
 func (j *Jiacrontabd) run() {
-	// tcp server
+	j.dep.run()
 	j.wg.Wrap(j.crontab.QueueScanWorker)
 	for v := range j.crontab.Ready() {
 		v := v.Value.(*crontab.Job)
+		log.Info("job queue:", v)
 		j.execTask(v)
 	}
 }
@@ -95,15 +113,15 @@ func (j *Jiacrontabd) filterDepend(task *depEntry) bool {
 		for _, v := range h.processes {
 			if v.id == task.processID {
 				curTaskEntry = v
-				for _, vv := range v.depends {
+				for _, vv := range v.jobEntry.depends {
 					if vv.done == false {
 						isAllDone = false
 					} else {
 						logContent = append(logContent, vv.logContent...)
 					}
 
-					if vv.saveID == task.saveID && v.sync {
-						if ok := j.pushPipeDepend(v.depends, vv.saveID); ok {
+					if vv.id == task.id && v.jobEntry.sync {
+						if ok := j.pushPipeDepend(v.jobEntry.depends, vv.id); ok {
 							return true
 						}
 					}
@@ -123,8 +141,8 @@ func (j *Jiacrontabd) filterDepend(task *depEntry) bool {
 		}
 
 		if isAllDone {
-			curTaskEntry.ready <- struct{}{}
-			curTaskEntry.logContent = logContent
+			curTaskEntry.jobEntry.ready <- struct{}{}
+			curTaskEntry.jobEntry.logContent = logContent
 		}
 
 	} else {
@@ -150,7 +168,7 @@ func (j *Jiacrontabd) pushPipeDepend(deps []*depEntry, depEntryID string) bool {
 				} else {
 					var reply bool
 					err := rpcCall("Srv.Depends", []proto.DepJob{{
-						ID:        v.saveID,
+						ID:        v.id,
 						Name:      v.name,
 						Dest:      v.dest,
 						From:      v.from,
@@ -168,7 +186,7 @@ func (j *Jiacrontabd) pushPipeDepend(deps []*depEntry, depEntryID string) bool {
 				break
 			}
 
-			if (v.saveID == depEntryID) && (l != k) {
+			if (v.id == depEntryID) && (l != k) {
 				flag = true
 			}
 
@@ -186,7 +204,7 @@ func (j *Jiacrontabd) pushDepend(deps []*depEntry) bool {
 			j.dep.add(v)
 		} else {
 			depJobs = append(depJobs, proto.DepJob{
-				ID:        v.saveID,
+				ID:        v.id,
 				Name:      v.name,
 				Dest:      v.dest,
 				From:      v.from,
@@ -200,7 +218,7 @@ func (j *Jiacrontabd) pushDepend(deps []*depEntry) bool {
 
 	if len(depJobs) > 0 {
 		var reply bool
-		if err := rpcCall("Srv.Depends", depJobs, &reply); err != nil {
+		if err := rpcCall("Srv.Depend", depJobs, &reply); err != nil {
 			log.Error("Srv.Depends error:", err, "server addr:", cfg.AdminAddr)
 			return false
 		}
@@ -249,5 +267,6 @@ func (j *Jiacrontabd) init() {
 func (j *Jiacrontabd) Main() {
 	j.init()
 	j.heartBeat()
-	rpc.ListenAndServe(cfg.ListenAddr, newCrontabJobSrv(j), &Srv{})
+	go j.run()
+	rpc.ListenAndServe(cfg.ListenAddr, newCrontabJobSrv(j), newDaemonJobSrv(j), &Srv{})
 }
