@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"jiacrontab/pkg/util"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -14,7 +15,7 @@ type JobStatus int
 
 const (
 	// StatusJobUnaudited 未审核
-	StatusJobUnaudited = 0
+	StatusJobUnaudited uint = 0
 	// StatusJobOk 等待调度
 	StatusJobOk JobStatus = 1
 	// StatusJobTiming 定时中
@@ -27,25 +28,27 @@ const (
 
 type CrontabJob struct {
 	gorm.Model
-	Name            string       `json:"name" gorm:"unique;not null"`
-	Commands        StringSlice  `json:"commands" gorm:"type:TEXT"`
-	DependJobs      DependJobs   `json:"dependJobs" gorm:"type:TEXT"`
-	PipeCommands    PipeComamnds `json:"pipeCommands" gorm:"type:TEXT"`
-	LastCostTime    float64      `json:"lastCostTime"`
-	LastExecTime    time.Time    `json:"lastExecTime"`
-	NextExecTime    time.Time    `json:"nextExecTime"`
-	LastExitStatus  string       `json:"lastExitStatus"`
-	Timeout         int          `json:"timeout"`
-	ProcessNum      int          `json:"processNum"`
-	ErrorMailNotify bool         `json:"errorMailNotify"`
-	ErrorAPINotify  bool         `json:"errorAPINotify"`
-	Status          JobStatus    `json:"status"`
-	IsSync          bool         `json:"isSync"` // 脚本是否同步执行
-	MailTo          StringSlice  `json:"mailTo" gorm:"type:varchar(1000)"`
-	APITo           StringSlice  `json:"APITo"  gorm:"type:varchar(1000)"`
-	MaxConcurrent   uint         `json:"maxConcurrent"`  // 脚本最大并发量
-	TimeoutTrigger  string       `json:"timeoutTrigger"` // email/kill/email_and_kill/ignore/api
-	TimeArgs        TimeArgs     `json:"timeArgs" gorm:"type:TEXT"`
+	Name       string       `json:"name" gorm:"unique;not null"`
+	Commands   PipeComamnds `json:"commands" gorm:"type:TEXT"`
+	DependJobs DependJobs   `json:"dependJobs" gorm:"type:TEXT"`
+	// PipeCommands    PipeComamnds `json:"pipeCommands" gorm:"type:TEXT"`
+	LastCostTime    float64     `json:"lastCostTime"`
+	LastExecTime    time.Time   `json:"lastExecTime"`
+	NextExecTime    time.Time   `json:"nextExecTime"`
+	LastExitStatus  string      `json:"lastExitStatus"`
+	User            string      `json:"user"`
+	WorkDir         string      `json:"workDir"`
+	Timeout         int         `json:"timeout"`
+	ProcessNum      int         `json:"processNum"`
+	ErrorMailNotify bool        `json:"errorMailNotify"`
+	ErrorAPINotify  bool        `json:"errorAPINotify"`
+	Status          JobStatus   `json:"status"`
+	IsSync          bool        `json:"isSync"` // 脚本是否同步执行
+	MailTo          StringSlice `json:"mailTo" gorm:"type:varchar(1000)"`
+	APITo           StringSlice `json:"APITo"  gorm:"type:varchar(1000)"`
+	MaxConcurrent   uint        `json:"maxConcurrent"`  // 脚本最大并发量
+	TimeoutTrigger  string      `json:"timeoutTrigger"` // email/kill/email_and_kill/ignore/api
+	TimeArgs        TimeArgs    `json:"timeArgs" gorm:"type:TEXT"`
 }
 type StringSlice []string
 
@@ -81,6 +84,11 @@ func (d *DependJobs) Scan(v interface{}) error {
 }
 
 func (d DependJobs) Value() (driver.Value, error) {
+
+	for k, _ := range d {
+		d[k].ID = util.UUID()
+	}
+
 	bts, err := json.Marshal(d)
 	return string(bts), err
 }
@@ -115,8 +123,10 @@ type DependJob struct {
 	Name     string   `json:"name"`
 	Dest     string   `json:"dest"`
 	From     string   `json:"from"`
-	JobID    int      `json:"jobID"`
+	JobID    uint     `json:"jobID"`
 	ID       string   `json:"id"`
+	User     string   `json:"user"`
+	WorkDir  string   `json:"workDir"`
 	Commands []string `json:"commands"`
 	Timeout  int64    `json:"timeout"`
 }

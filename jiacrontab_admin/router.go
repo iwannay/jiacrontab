@@ -7,9 +7,10 @@ import (
 
 	"github.com/kataras/iris"
 
+	"jiacrontab/pkg/file"
+
 	jwt "github.com/dgrijalva/jwt-go"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
-	"github.com/iwannay/jiaweb/utils/file"
 )
 
 func route(app *iris.Application) {

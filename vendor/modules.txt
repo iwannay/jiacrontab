@@ -20,6 +20,8 @@ github.com/fatih/structs
 github.com/flosch/pongo2
 # github.com/go-sql-driver/mysql v1.4.1
 github.com/go-sql-driver/mysql
+# github.com/gofrs/uuid v3.2.0+incompatible
+github.com/gofrs/uuid
 # github.com/iris-contrib/blackfriday v2.0.0+incompatible
 github.com/iris-contrib/blackfriday
 # github.com/iris-contrib/formBinder v0.0.0-20190104093907-fbd5963f41e1
@@ -28,25 +30,23 @@ github.com/iris-contrib/formBinder
 github.com/iris-contrib/go.uuid
 # github.com/iris-contrib/middleware v0.0.0-20181021162728-8bd5d51b3c2e
 github.com/iris-contrib/middleware/jwt
-# github.com/iwannay/jiaweb v0.0.0-20180905130309-7d0d6c412345
-github.com/iwannay/jiaweb/utils/file
+# github.com/iwannay/log v0.0.0-20190222094645-1eae5453dbcd
+github.com/iwannay/log
 # github.com/jinzhu/gorm v1.9.2
-github.com/jinzhu/gorm/dialects/sqlite
 github.com/jinzhu/gorm/dialects/mysql
 github.com/jinzhu/gorm/dialects/postgres
+github.com/jinzhu/gorm/dialects/sqlite
 github.com/jinzhu/gorm
 # github.com/jinzhu/inflection v0.0.0-20180308033659-04140366298a
 github.com/jinzhu/inflection
 # github.com/json-iterator/go v1.1.5
 github.com/json-iterator/go
-# github.com/juju/errors v0.0.0-20181118221551-089d3ea4e4d5
+# github.com/juju/errors v0.0.0-20190207033735-e65537c515d7
 github.com/juju/errors
 # github.com/kataras/golog v0.0.0-20180321173939-03be10146386
 github.com/kataras/golog
 # github.com/kataras/iris v11.1.0+incompatible
 github.com/kataras/iris
-github.com/kataras/iris/middleware/logger
-github.com/kataras/iris/middleware/recover
 github.com/kataras/iris/context
 github.com/kataras/iris/cache
 github.com/kataras/iris/core/errors
@@ -54,6 +54,8 @@ github.com/kataras/iris/core/handlerconv
 github.com/kataras/iris/core/host
 github.com/kataras/iris/core/netutil
 github.com/kataras/iris/core/router
+github.com/kataras/iris/middleware/logger
+github.com/kataras/iris/middleware/recover
 github.com/kataras/iris/view
 github.com/kataras/iris/core/memstore
 github.com/kataras/iris/macro
@@ -92,14 +94,14 @@ github.com/modern-go/reflect2
 github.com/ryanuber/columnize
 # github.com/shurcooL/sanitized_anchor_name v1.0.0
 github.com/shurcooL/sanitized_anchor_name
-# golang.org/x/crypto v0.0.0-20190103213133-ff983b9c42bc
+# golang.org/x/crypto v0.0.0-20190219172222-a4c6cb3142f2
 golang.org/x/crypto/acme/autocert
 golang.org/x/crypto/acme
-# golang.org/x/net v0.0.0-20181220203305-927f97764cc3
+# golang.org/x/net v0.0.0-20190213061140-3a22650c66bd
 golang.org/x/net/publicsuffix
 golang.org/x/net/html
 golang.org/x/net/html/atom
-# golang.org/x/sys v0.0.0-20190115152922-a457fd036447
+# golang.org/x/sys v0.0.0-20190221222158-ec7b60b042fd
 golang.org/x/sys/unix
 # google.golang.org/appengine v1.4.0
 google.golang.org/appengine/cloudsql
@@ -107,7 +109,7 @@ google.golang.org/appengine/cloudsql
 gopkg.in/alexcesaro/quotedprintable.v3
 # gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 gopkg.in/gomail.v2
-# gopkg.in/ini.v1 v1.41.0
+# gopkg.in/ini.v1 v1.42.0
 gopkg.in/ini.v1
 # gopkg.in/yaml.v2 v2.2.2
 gopkg.in/yaml.v2

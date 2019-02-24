@@ -1,7 +1,7 @@
 package models
 
 import (
-	"jiacrontab/pkg/log"
+	"github.com/iwannay/log"
 
 	"github.com/jinzhu/gorm"
 )

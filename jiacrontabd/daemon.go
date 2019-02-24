@@ -4,14 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"jiacrontab/model"
 	"jiacrontab/models"
-	"jiacrontab/pkg/log"
 	"jiacrontab/pkg/proto"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/iwannay/log"
 )
 
 type daemonTask struct {
@@ -45,15 +45,23 @@ func (d *daemonTask) do(ctx context.Context) {
 	}()
 
 	for {
-		var cmdList [][]string
-		var logContent []byte
 
-		stop := false
-		cmdList = append(cmdList, d.job.Commands)
+		var (
+			myCmdUint cmdUint
+			stop      bool
+			err       error
+		)
 
-		logPath := filepath.Join(cfg.LogPath, "daemon_job")
-		log.Info("daemon exec jobName:", d.job.Name, " jobID", d.job.ID)
-		err := wrapExecScript(ctx, fmt.Sprintf("%d.log", d.job.ID), cmdList, logPath, &logContent)
+		myCmdUint.ctx = ctx
+		myCmdUint.dir = d.job.WorkDir
+		myCmdUint.user = d.job.User
+		myCmdUint.logName = fmt.Sprintf("%d.log", d.job.ID)
+		myCmdUint.logPath = filepath.Join(cfg.LogPath, "daemon_job")
+
+		log.Info("daemon exec job, jobName:", d.job.Name, " jobID", d.job.ID)
+
+		err = myCmdUint.launch()
+
 		if err != nil {
 			if d.job.ErrorMailNotify && d.job.MailTo != "" {
 				err := rpcCall("Srv.SendMail", proto.SendMail{
@@ -102,7 +110,7 @@ func (d *daemonTask) do(ctx context.Context) {
 	t.Stop()
 
 	if d.action == proto.ActionDeleteDaemonTask {
-		// model.DB().Unscoped().Delete(d.task, "id=?", d.task.ID)
+		// models.DB().Unscoped().Delete(d.task, "id=?", d.task.ID)
 	}
 
 	d.daemon.lock.Lock()
@@ -140,7 +148,7 @@ func (d *daemon) add(t *daemonTask) {
 func (d *daemon) run() {
 
 	var jobList []models.DaemonJob
-	err := model.DB().Find(&jobList).Error
+	err := models.DB().Find(&jobList).Error
 	if err != nil {
 		log.Error("init daemon task error:", err)
 	}
@@ -188,7 +196,7 @@ func (d *daemon) run() {
 					t.action = v.action
 					t.cancel()
 				} else {
-					model.DB().Unscoped().Delete(v.job, "id=?", v.job.ID)
+					models.DB().Unscoped().Delete(v.job, "id=?", v.job.ID)
 					d.lock.Unlock()
 				}
 			case proto.ActionStopDaemonTask:
@@ -199,7 +207,7 @@ func (d *daemon) run() {
 					t.cancel()
 				} else {
 					d.lock.Unlock()
-					model.DB().Model(&model.DaemonTask{}).Where("id = ?", v.job.ID).Update("status", models.StatusJobStop)
+					models.DB().Model(&models.DaemonJob{}).Where("id = ?", v.job.ID).Update("status", models.StatusJobStop)
 				}
 			}
 		}

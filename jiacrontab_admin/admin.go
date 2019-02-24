@@ -65,5 +65,6 @@ func (a *Admin) Main() {
 
 	route(app)
 	go rpc.ListenAndServe(cfg.App.RPCListenAddr, &Srv{})
+
 	app.Run(iris.Addr(cfg.App.HTTPListenAddr))
 }

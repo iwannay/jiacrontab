@@ -3,7 +3,7 @@ package models
 import (
 	"crypto/md5"
 	"fmt"
-	"jiacrontab/pkg/log"
+	"github.com/iwannay/log"
 	"jiacrontab/pkg/util"
 
 	"github.com/jinzhu/gorm"

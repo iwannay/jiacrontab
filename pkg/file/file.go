@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/iwannay/log"
 )
 
 func Exist(path string) bool {
@@ -14,12 +16,13 @@ func Exist(path string) bool {
 	return err == nil || os.IsExist(err)
 }
 
-func GetCurrentDirectory() (string, error) {
+func GetCurrentDirectory() string {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
-		return "", err
+		log.Error(err)
+		return ""
 	}
-	return filepath.Clean(strings.Replace(dir, "\\", "/", -1)), nil
+	return filepath.Clean(strings.Replace(dir, "\\", "/", -1))
 
 }
 
@@ -78,4 +81,12 @@ func humanateBytes(s uint64, base float64, sizes []string) string {
 func FileSize(s int64) string {
 	sizes := []string{"B", "KB", "MB", "GB", "TB", "PB", "EB"}
 	return humanateBytes(uint64(s), 1024, sizes)
+}
+
+func CreateFile(path string) (*os.File, error) {
+	err := os.MkdirAll(filepath.Dir(path), os.ModePerm)
+	if err != nil {
+		return nil, err
+	}
+	return os.Create(path)
 }
