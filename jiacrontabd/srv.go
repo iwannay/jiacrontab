@@ -159,27 +159,32 @@ func (j *CrontabJob) Log(args proto.SearchLog, reply *proto.SearchLogResult) err
 
 }
 
-func (j *CrontabJob) ResolvedDepend(args proto.DepJob, reply *bool) error {
-	*reply = j.jd.filterDepend(&depEntry{
-		jobID:      args.JobID,
-		processID:  args.ProcessID,
-		dest:       args.Dest,
-		from:       args.From,
-		done:       true,
-		logContent: args.LogContent,
-		err:        args.Err,
+// SetDependDone 依赖执行完毕时设置相关状态
+func (j *CrontabJob) SetDependDone(args proto.DepJob, reply *bool) error {
+	*reply = j.jd.SetDependDone(&depEntry{
+		jobID:       args.JobID,
+		processID:   args.ProcessID,
+		jobUniqueID: args.JobUniqueID,
+		dest:        args.Dest,
+		from:        args.From,
+		done:        true,
+		logContent:  args.LogContent,
+		err:         args.Err,
 	})
 	return nil
 }
 
-func (j *CrontabJob) ExecDepend(args models.DependJob, reply *bool) error {
+// ExecDepend 执行依赖
+func (j *CrontabJob) ExecDepend(args proto.DepJob, reply *bool) error {
 	j.jd.dep.add(&depEntry{
-		jobID:    args.JobID,
-		id:       args.ID,
-		dest:     args.Dest,
-		from:     args.From,
-		name:     args.Name,
-		commands: args.Commands,
+		jobUniqueID: args.JobUniqueID,
+		processID:   args.ProcessID,
+		jobID:       args.JobID,
+		id:          args.ID,
+		dest:        args.Dest,
+		from:        args.From,
+		name:        args.Name,
+		commands:    args.Commands,
 	})
 	*reply = true
 	log.Infof("job %s %v add to execution queue ", args.Name, args.Commands)

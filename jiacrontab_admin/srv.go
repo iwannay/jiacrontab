@@ -30,8 +30,8 @@ func (s *Srv) Register(args models.Node, reply *bool) error {
 	return ret.Error
 }
 
-func (s *Srv) Depend(args proto.DepJobs, reply *bool) error {
-	log.Infof("Callee Srv.Depend jobID:%d", args[0].JobID)
+func (s *Srv) ExecDepend(args proto.DepJobs, reply *bool) error {
+	log.Infof("Callee Srv.ExecDepend jobID:%d", args[0].JobID)
 	*reply = true
 	for _, v := range args {
 		if err := rpcCall(v.Dest, "CrontabJob.ExecDepend", v, &reply); err != nil {
@@ -43,10 +43,10 @@ func (s *Srv) Depend(args proto.DepJobs, reply *bool) error {
 	return nil
 }
 
-func (s *Srv) DependDone(args proto.DepJob, reply *bool) error {
-	log.Infof("Callee Srv.DependDone jobID:%d", args.JobID)
+func (s *Srv) SetDependDone(args proto.DepJob, reply *bool) error {
+	log.Infof("Callee Srv.SetDependDone jobID:%d", args.JobID)
 	*reply = true
-	if err := rpcCall(args.Dest, "CrontabJob.ResolvedDepend", args, &reply); err != nil {
+	if err := rpcCall(args.Dest, "CrontabJob.SetDependDone", args, &reply); err != nil {
 		*reply = false
 		return err
 	}

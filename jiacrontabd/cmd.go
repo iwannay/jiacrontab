@@ -18,21 +18,24 @@ import (
 )
 
 type cmdUint struct {
-	ctx     context.Context
-	logName string
-	args    [][]string
-	logPath string
-	content []byte
-	logFile *os.File
-	user    string
-	env     []string
-	dir     string
+	ctx       context.Context
+	logName   string
+	args      [][]string
+	logPath   string
+	content   []byte
+	logFile   *os.File
+	user      string
+	env       []string
+	dir       string
+	startTime time.Time
+	costTime  time.Duration
 }
 
 func (cu *cmdUint) release() {
 	if cu.logFile != nil {
 		cu.logFile.Close()
 	}
+	cu.costTime = time.Now().Sub(cu.startTime)
 }
 
 func (cu *cmdUint) launch() error {
@@ -42,6 +45,8 @@ func (cu *cmdUint) launch() error {
 		}
 		cu.release()
 	}()
+
+	cu.startTime = time.Now()
 
 	var err error
 
