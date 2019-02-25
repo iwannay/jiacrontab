@@ -8,7 +8,6 @@ type Node struct {
 	DaemonTaskNum  int    `json:"daemonTaskNum"`
 	Disabled       bool   `json:"disabled"`
 	CrontabTaskNum int    `json:"crontabTaskNum"`
-	Disabled       bool   `json:"disabled"`
 	GroupID        uint   `json:"groupID" gorm:"not null;unique_index:uni_group_addr" `
 	Addr           string `json:"addr"gorm:"not null;unique_index:uni_group_addr"`
 }

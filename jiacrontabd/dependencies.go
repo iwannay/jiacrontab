@@ -12,20 +12,21 @@ import (
 )
 
 type depEntry struct {
-	jobID      uint   // 定时任务id
-	processID  int    // 当前依赖的父级任务（可能存在多个并发的task)
-	id         string // depID
-	workDir    string
-	user       string
-	env        []string
-	from       string
-	commands   []string
-	dest       string
-	done       bool
-	timeout    int64
-	err        error
-	name       string
-	logContent []byte
+	jobID       uint   // 定时任务id
+	jobUniqueID string // job的唯一标志
+	processID   int    // 当前依赖的父级任务（可能存在多个并发的task)
+	id          string // depID
+	workDir     string
+	user        string
+	env         []string
+	from        string
+	commands    []string
+	dest        string
+	done        bool
+	timeout     int64
+	err         error
+	name        string
+	logContent  []byte
 }
 
 func newDependencies(crond *Jiacrontabd) *dependencies {
@@ -70,9 +71,6 @@ func (d *dependencies) exec(task *depEntry) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(task.timeout)*time.Second)
 
-	startTime := time.Now()
-	start := startTime.UnixNano()
-
 	myCmdUnit.args = [][]string{task.commands}
 	myCmdUnit.ctx = ctx
 	myCmdUnit.dir = task.workDir
@@ -82,9 +80,8 @@ func (d *dependencies) exec(task *depEntry) {
 
 	err = myCmdUnit.launch()
 	cancel()
-	costTime := time.Now().UnixNano() - start
 
-	log.Infof("exec %s %s cost %.4fs %v", task.name, task.commands, float64(costTime)/1000000000, err)
+	log.Infof("exec %s %s cost %.4fs %v", task.name, task.commands, float64(myCmdUnit.costTime)/1000000000, err)
 
 	task.logContent = bytes.TrimRight(myCmdUnit.content, "\x00")
 	task.done = true
@@ -92,26 +89,27 @@ func (d *dependencies) exec(task *depEntry) {
 
 	task.dest, task.from = task.from, task.dest
 
-	if !d.crond.filterDepend(task) {
-		err = rpcCall("Srv.DependDone", proto.DepJob{
-			Name:       task.name,
-			Dest:       task.dest,
-			From:       task.from,
-			ID:         task.id,
-			ProcessID:  task.processID,
-			JobID:      task.jobID,
-			Commands:   task.commands,
-			LogContent: task.logContent,
-			Err:        err,
-			Timeout:    task.timeout,
+	if !d.crond.SetDependDone(task) {
+		err = rpcCall("Srv.SetDependDone", proto.DepJob{
+			Name:        task.name,
+			Dest:        task.dest,
+			From:        task.from,
+			ID:          task.id,
+			JobUniqueID: task.jobUniqueID,
+			ProcessID:   task.processID,
+			JobID:       task.jobID,
+			Commands:    task.commands,
+			LogContent:  task.logContent,
+			Err:         err,
+			Timeout:     task.timeout,
 		}, &reply)
 
 		if err != nil {
-			log.Error("Logic.DependDone error:", err, "server addr:", cfg.AdminAddr)
+			log.Error("Srv.SetDependDone error:", err, "server addr:", cfg.AdminAddr)
 		}
 
 		if !reply {
-			log.Errorf("task %s %v call Logic.DependDone failed! err:%v", task.name, task.commands, err)
+			log.Errorf("task %s %v call Srv.SetDependDone failed! err:%v", task.name, task.commands, err)
 		}
 	}
 }

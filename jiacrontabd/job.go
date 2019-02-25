@@ -15,8 +15,6 @@ import (
 	"time"
 
 	"github.com/iwannay/log"
-
-	"github.com/jinzhu/gorm"
 )
 
 const (
@@ -35,6 +33,7 @@ type process struct {
 	logPath   string
 	startTime time.Time
 	endTime   time.Time
+	ready     chan struct{}
 	jobEntry  *JobEntry
 }
 
@@ -42,6 +41,7 @@ func newProcess(id int, jobEntry *JobEntry) *process {
 	p := &process{
 		id:       id,
 		jobEntry: jobEntry,
+		ready:    make(chan struct{}),
 		logPath:  filepath.Join(cfg.LogPath, "crontab_task"),
 	}
 
@@ -49,14 +49,15 @@ func newProcess(id int, jobEntry *JobEntry) *process {
 
 	for _, v := range p.jobEntry.detail.DependJobs {
 		p.deps = append(p.deps, &depEntry{
-			jobID:     p.jobEntry.detail.ID,
-			processID: id,
-			id:        v.ID,
-			from:      v.From,
-			commands:  v.Commands,
-			dest:      v.Dest,
-			done:      false,
-			timeout:   v.Timeout,
+			jobID:       p.jobEntry.detail.ID,
+			processID:   id,
+			jobUniqueID: p.jobEntry.uniqueID,
+			id:          v.ID,
+			from:        v.From,
+			commands:    v.Commands,
+			dest:        v.Dest,
+			done:        false,
+			timeout:     v.Timeout,
 		})
 	}
 
@@ -69,19 +70,19 @@ func (p *process) waitDepExecDone() bool {
 		return true
 	}
 
-	syncFlag := true
+	ok := true
 	if p.jobEntry.detail.IsSync {
 		// 同步
-		syncFlag = p.jobEntry.jd.pushPipeDepend(p.deps, "")
+		ok = p.jobEntry.jd.dispatchDependSync(p.deps, "")
 	} else {
 		// 并发模式
-		syncFlag = p.jobEntry.jd.pushDepend(p.deps)
+		ok = p.jobEntry.jd.dispatchDependAsync(p.deps)
 	}
 
-	if !syncFlag {
+	if !ok {
 		prefix := fmt.Sprintf("[%s %s] ", time.Now().Format("2006-01-02 15:04:05"), cfg.LocalAddr)
 		p.jobEntry.logContent = append(p.jobEntry.logContent, []byte(prefix+"failed to exec depends, push depends error\n")...)
-		return syncFlag
+		return ok
 	}
 
 	c := time.NewTimer(3600 * time.Second)
@@ -93,8 +94,9 @@ func (p *process) waitDepExecDone() bool {
 		case <-c.C:
 			log.Errorf("jobID:%d exec dep timeout!", p.jobEntry.detail.ID)
 			return false
-		case <-p.jobEntry.ready:
+		case <-p.ready:
 			log.Infof("jobID:%d exec all dep done.", p.jobEntry.detail.ID)
+			return true
 		}
 	}
 }
@@ -136,7 +138,6 @@ func (p *process) exec(logContent *[]byte) {
 			}
 		}
 	} else {
-
 		if p.jobEntry.detail.Timeout != 0 {
 			time.AfterFunc(
 				time.Duration(p.jobEntry.detail.Timeout)*time.Second, func() {
@@ -195,7 +196,6 @@ func (p *process) exec(logContent *[]byte) {
 				})
 		}
 
-		log.Debugf("%+v", p.jobEntry.detail.Commands)
 		myCmdUnit.args = p.jobEntry.detail.Commands
 		myCmdUnit.ctx = p.ctx
 		myCmdUnit.dir = p.jobEntry.detail.WorkDir
@@ -240,7 +240,7 @@ func (p *process) exec(logContent *[]byte) {
 
 	}
 
-	p.jobEntry.detail.LastCostTime = p.endTime.Sub(p.startTime).Seconds()
+	p.jobEntry.detail.LastCostTime = myCmdUnit.costTime.Seconds()
 	if logContent != nil {
 		*logContent = p.jobEntry.logContent
 	}
@@ -249,27 +249,26 @@ func (p *process) exec(logContent *[]byte) {
 }
 
 type JobEntry struct {
-	job    *crontab.Job
-	detail models.CrontabJob
-	// id         int
+	job        *crontab.Job
+	detail     models.CrontabJob
 	ctx        context.Context
 	cancel     context.CancelFunc
 	processNum int32
 	processes  map[int]*process
 	pc         int32
 	wg         util.WaitGroupWrapper
-	ready      chan struct{}
-	depends    []*depEntry
 	logContent []byte
 	jd         *Jiacrontabd
 	mux        sync.RWMutex
 	sync       bool
+	uniqueID   string
 }
 
 func newJobEntry(job *crontab.Job, jd *Jiacrontabd) *JobEntry {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	return &JobEntry{
+		uniqueID:  util.UUID(),
 		job:       job,
 		cancel:    cancel,
 		processes: make(map[int]*process),
@@ -278,8 +277,8 @@ func newJobEntry(job *crontab.Job, jd *Jiacrontabd) *JobEntry {
 	}
 }
 
-func (j *JobEntry) setPc() {
-	atomic.AddInt32(&j.pc, 1)
+func (j *JobEntry) setPc() int {
+	return int(atomic.AddInt32(&j.pc, 1))
 }
 func (j *JobEntry) getPc() int {
 	return int(atomic.LoadInt32(&j.pc))
@@ -295,15 +294,21 @@ func (j *JobEntry) exec() []byte {
 			return
 		}
 
+		j.jd.addJob(j.job)
+
+		if atomic.LoadInt32(&j.processNum) > int32(j.detail.MaxConcurrent) {
+			return
+		}
+
 		atomic.AddInt32(&j.processNum, 1)
 
-		j.setPc()
-		id := j.getPc()
+		id := j.setPc()
+
 		defer func() {
 			atomic.AddInt32(&j.processNum, -1)
 			models.DB().Model(&j.detail).Debug().Updates(map[string]interface{}{
 				"status":           models.StatusJobTiming,
-				"process_num":      gorm.Expr("process_num-?", 1),
+				"process_num":      j.processNum,
 				"last_cost_time":   j.detail.LastCostTime,
 				"last_exit_status": j.detail.LastExitStatus,
 			})
@@ -311,7 +316,7 @@ func (j *JobEntry) exec() []byte {
 
 		models.DB().Model(&j.detail).Debug().Updates(map[string]interface{}{
 			"status":         models.StatusJobRunning,
-			"process_num":    gorm.Expr("process_num+?", 1),
+			"process_num":    j.processNum,
 			"last_exec_time": j.job.GetLastExecTime(),
 			"next_exec_time": j.job.GetNextExecTime(),
 		})

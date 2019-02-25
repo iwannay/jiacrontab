@@ -50,7 +50,6 @@ func (j *Jiacrontabd) addJob(job *crontab.Job) {
 	if t, err := job.NextExecutionTime(time.Now()); err != nil {
 		log.Error("NextExecutionTime:", err, " timeArgs:", job)
 	} else {
-
 		if err := models.DB().Model(&models.CrontabJob{}).Where("id=?", job.ID).Debug().
 			Updates(map[string]interface{}{
 				"next_exec_time": t,
@@ -64,7 +63,7 @@ func (j *Jiacrontabd) addJob(job *crontab.Job) {
 }
 
 func (j *Jiacrontabd) execTask(job *crontab.Job) {
-	job.NextExecutionTime(time.Now())
+
 	j.mux.RLock()
 	if task, ok := j.jobs[job.ID]; ok {
 		j.mux.RUnlock()
@@ -95,36 +94,47 @@ func (j *Jiacrontabd) run() {
 	}
 }
 
-// filterDepend 本地执行的脚本依赖不再请求网络，直接转发到对应的处理模块
+// SetDependDone 依赖执行完毕时设置相关状态
 // 目标网络不是本机时返回false
-func (j *Jiacrontabd) filterDepend(task *depEntry) bool {
+func (j *Jiacrontabd) SetDependDone(task *depEntry) bool {
+
 	if task.dest != cfg.LocalAddr {
 		return false
 	}
 
 	isAllDone := true
 	j.mux.Lock()
-	if h, ok := j.jobs[task.jobID]; ok {
+	if h, ok := j.jobs[task.jobID]; ok && task.jobUniqueID == h.uniqueID {
 		j.mux.Unlock()
-
 		var logContent []byte
 		var curTaskEntry *process
 
-		for _, v := range h.processes {
-			if v.id == task.processID {
-				curTaskEntry = v
-				for _, vv := range v.jobEntry.depends {
-					if vv.done == false {
-						isAllDone = false
-					} else {
-						logContent = append(logContent, vv.logContent...)
+		for _, p := range h.processes {
+			if p.id == task.processID {
+				curTaskEntry = p
+				for _, dep := range p.deps {
+
+					if dep.id == task.id {
+						dep.dest = task.dest
+						dep.from = task.from
+						dep.logContent = task.logContent
+						dep.err = task.err
+						dep.done = true
 					}
 
-					if vv.id == task.id && v.jobEntry.sync {
-						if ok := j.pushPipeDepend(v.jobEntry.depends, vv.id); ok {
+					if dep.done == false {
+
+						isAllDone = false
+					} else {
+						logContent = append(logContent, dep.logContent...)
+					}
+
+					if dep.id == task.id && p.jobEntry.sync {
+						if ok := j.dispatchDependSync(p.deps, dep.id); ok {
 							return true
 						}
 					}
+
 				}
 			}
 		}
@@ -134,14 +144,14 @@ func (j *Jiacrontabd) filterDepend(task *depEntry) bool {
 			return true
 		}
 
-		// 如果依赖脚本执行出错直接通知主脚本停止
+		// 如果依赖任务执行出错直接通知主任务停止
 		if task.err != nil {
 			isAllDone = true
 			log.Infof("depend %s %s exec failed %s try to stop master task", task.name, task.commands, task.err)
 		}
 
 		if isAllDone {
-			curTaskEntry.jobEntry.ready <- struct{}{}
+			curTaskEntry.ready <- struct{}{}
 			curTaskEntry.jobEntry.logContent = logContent
 		}
 
@@ -154,31 +164,33 @@ func (j *Jiacrontabd) filterDepend(task *depEntry) bool {
 
 }
 
-func (j *Jiacrontabd) pushPipeDepend(deps []*depEntry, depEntryID string) bool {
-	var flag = true
+// 同步模式根据depEntryID确定位置实现任务的依次调度
+func (j *Jiacrontabd) dispatchDependSync(deps []*depEntry, depEntryID string) bool {
+	flag := true
 	if len(deps) > 0 {
 		flag = false
 		l := len(deps) - 1
 		for k, v := range deps {
+			// 根据flag实现调度下一个依赖任务
 			if flag || depEntryID == "" {
 				// 检测目标服务器为本机时直接执行脚本
-				log.Infof("sync push %s %s", v.dest, v.commands)
 				if v.dest == cfg.LocalAddr {
 					j.dep.add(v)
 				} else {
 					var reply bool
-					err := rpcCall("Srv.Depends", []proto.DepJob{{
-						ID:        v.id,
-						Name:      v.name,
-						Dest:      v.dest,
-						From:      v.from,
-						JobID:     v.jobID,
-						ProcessID: v.processID,
-						Commands:  v.commands,
-						Timeout:   v.timeout,
+					err := rpcCall("Srv.ExecDepend", []proto.DepJob{{
+						ID:          v.id,
+						Name:        v.name,
+						Dest:        v.dest,
+						From:        v.from,
+						JobUniqueID: v.jobUniqueID,
+						JobID:       v.jobID,
+						ProcessID:   v.processID,
+						Commands:    v.commands,
+						Timeout:     v.timeout,
 					}}, &reply)
 					if !reply || err != nil {
-						log.Error("Logic.Depends error:", err, "server addr:", cfg.AdminAddr)
+						log.Error("Srv.ExecDepend error:", err, "server addr:", cfg.AdminAddr)
 						return false
 					}
 				}
@@ -196,7 +208,7 @@ func (j *Jiacrontabd) pushPipeDepend(deps []*depEntry, depEntryID string) bool {
 	return flag
 }
 
-func (j *Jiacrontabd) pushDepend(deps []*depEntry) bool {
+func (j *Jiacrontabd) dispatchDependAsync(deps []*depEntry) bool {
 	var depJobs proto.DepJobs
 	for _, v := range deps {
 		// 检测目标服务器是本机直接执行脚本
@@ -204,22 +216,23 @@ func (j *Jiacrontabd) pushDepend(deps []*depEntry) bool {
 			j.dep.add(v)
 		} else {
 			depJobs = append(depJobs, proto.DepJob{
-				ID:        v.id,
-				Name:      v.name,
-				Dest:      v.dest,
-				From:      v.from,
-				ProcessID: v.processID,
-				JobID:     v.jobID,
-				Commands:  v.commands,
-				Timeout:   v.timeout,
+				ID:          v.id,
+				Name:        v.name,
+				Dest:        v.dest,
+				From:        v.from,
+				ProcessID:   v.processID,
+				JobID:       v.jobID,
+				JobUniqueID: v.jobUniqueID,
+				Commands:    v.commands,
+				Timeout:     v.timeout,
 			})
 		}
 	}
 
 	if len(depJobs) > 0 {
 		var reply bool
-		if err := rpcCall("Srv.Depend", depJobs, &reply); err != nil {
-			log.Error("Srv.Depends error:", err, "server addr:", cfg.AdminAddr)
+		if err := rpcCall("Srv.ExecDepend", depJobs, &reply); err != nil {
+			log.Error("Srv.ExecDepend error:", err, "server addr:", cfg.AdminAddr)
 			return false
 		}
 	}

@@ -6,8 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"jiacrontab/models"
-	"github.com/iwannay/log"
 	"jiacrontab/pkg/proto"
+
+	"github.com/iwannay/log"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
@@ -44,7 +45,7 @@ func (ctx *myctx) respError(code int, msg string, v interface{}) {
 		log.Error("errorResp:", err)
 	}
 
-	sign = fmt.Sprintf("%x", md5.Sum(bts))
+	sign = fmt.Sprintf("%x", md5.Sum(append(bts, []byte(cfg.App.SigningKey)...)))
 
 end:
 	ctx.JSON(proto.Resp{
@@ -59,10 +60,19 @@ func (ctx *myctx) respSucc(msg string, v interface{}) {
 	if msg == "" {
 		msg = "success"
 	}
+
+	bts, err := json.Marshal(v)
+	if err != nil {
+		log.Error("errorResp:", err)
+	}
+
+	sign := fmt.Sprintf("%x", md5.Sum(append(bts, []byte(cfg.App.SigningKey)...)))
+
 	ctx.JSON(proto.Resp{
 		Code: proto.SuccessRespCode,
 		Msg:  msg,
-		Data: v,
+		Data: string(bts),
+		Sign: sign,
 	})
 }
 

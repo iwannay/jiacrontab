@@ -28,6 +28,7 @@ type appOpt struct {
 	RPCListenAddr  string `opt:"rpc_listen_addr" default:":20003"`
 	AppName        string `opt:"app_name" default:"jiacrontab"`
 	FirstUse       bool   `opt:"first_use" default:"true"`
+	SigningKey     string `opt:"signing_key" default:"WERRTT1234$@#@@$"`
 }
 
 type jwtOpt struct {
