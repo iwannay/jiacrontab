@@ -41,4 +41,5 @@ app/jiacrontabd/jiacrontabd
 
 app/jiacrontabd/logs
 app/jiacrontab_admin/logs
-pprof
+app/jiacrontabd/pprof
+app/jiacrontab_admin/pprof
