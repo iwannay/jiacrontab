@@ -118,12 +118,22 @@ func (j *CrontabJob) Kill(jobID uint, ok *bool) error {
 func (j *CrontabJob) Exec(jobID uint, reply *[]byte) error {
 
 	var job models.CrontabJob
-	ret := models.DB().Find(&job, "id=?", jobID)
+	ret := models.DB().Debug().Find(&job, "id=?", jobID)
 
 	if ret.Error == nil {
-		*reply = newJobEntry(&crontab.Job{
+		jobInstance := newJobEntry(&crontab.Job{
+			ID:    job.ID,
 			Value: job,
-		}, j.jd).exec()
+		}, j.jd)
+
+		j.jd.addTmpJob(jobInstance)
+		defer j.jd.removeTmpJob(jobInstance)
+
+		jobInstance.once = true
+		jobInstance.exec()
+
+		*reply = jobInstance.waitDone()
+
 	} else {
 		*reply = []byte("failed to start")
 	}
@@ -249,7 +259,7 @@ func (j *DaemonJob) ActionDaemonJob(args proto.ActionDaemonJobArgs, reply *bool)
 
 	for _, v := range jobs {
 		job := v
-		j.jd.daemon.add(&daemonTask{
+		j.jd.daemon.add(&daemonJob{
 			job:    &job,
 			action: args.Action,
 		})

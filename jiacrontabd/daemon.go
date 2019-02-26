@@ -14,22 +14,23 @@ import (
 	"github.com/iwannay/log"
 )
 
-type daemonTask struct {
+type ApiNotifyArgs struct {
+	JobName    string
+	JobID      uint
+	Commands   []string
+	CreatedAt  time.Time
+	NotifyType string
+}
+
+type daemonJob struct {
 	job        *models.DaemonJob
-	daemon     *daemon
+	daemon     *Daemon
 	action     int
 	cancel     context.CancelFunc
 	processNum int
 }
 
-func (d *daemonTask) do(ctx context.Context) {
-	type apiPost struct {
-		JobName   string
-		JobID     uint
-		Commmands []string
-		CreatedAt time.Time
-		Type      string
-	}
+func (d *daemonJob) do(ctx context.Context) {
 
 	var reply bool
 	d.processNum = 1
@@ -47,16 +48,15 @@ func (d *daemonTask) do(ctx context.Context) {
 	for {
 
 		var (
-			myCmdUint cmdUint
-			stop      bool
-			err       error
+			stop bool
+			err  error
 		)
-
-		myCmdUint.ctx = ctx
-		myCmdUint.dir = d.job.WorkDir
-		myCmdUint.user = d.job.User
-		myCmdUint.logName = fmt.Sprintf("%d.log", d.job.ID)
-		myCmdUint.logPath = filepath.Join(cfg.LogPath, "daemon_job")
+		myCmdUint := cmdUint{
+			ctx:     ctx,
+			dir:     d.job.WorkDir,
+			user:    d.job.User,
+			logPath: filepath.Join(cfg.LogPath, "daemon_job", time.Now().Format("2006/01/02"), fmt.Sprintf("%d.log", d.job.ID)),
+		}
 
 		log.Info("daemon exec job, jobName:", d.job.Name, " jobID", d.job.ID)
 
@@ -68,7 +68,8 @@ func (d *daemonTask) do(ctx context.Context) {
 					MailTo:  strings.Split(d.job.MailTo, ","),
 					Subject: cfg.LocalAddr + "提醒常驻脚本异常退出",
 					Content: fmt.Sprintf(
-						"任务名：%s\n详情：%v\n开始时间：%s\n异常：%s", d.job.Name, d.job.Commands, time.Now().Format("2006-01-02 15:04:05"), err.Error()),
+						"任务名：%s\n详情：%v\n开始时间：%s\n异常：%s",
+						d.job.Name, d.job.Commands, time.Now().Format(proto.DefaultTimeLayout), err.Error()),
 				}, &reply)
 				if err != nil {
 					log.Error("Logic.SendMail error:", err, "server addr:", cfg.AdminAddr)
@@ -76,12 +77,12 @@ func (d *daemonTask) do(ctx context.Context) {
 			}
 
 			if d.job.ErrorAPINotify && d.job.APITo != "" {
-				postData, err := json.Marshal(apiPost{
-					JobName:   d.job.Name,
-					JobID:     d.job.ID,
-					Commmands: d.job.Commands,
-					CreatedAt: d.job.CreatedAt,
-					Type:      "error",
+				postData, err := json.Marshal(ApiNotifyArgs{
+					JobName:    d.job.Name,
+					JobID:      d.job.ID,
+					Commands:   d.job.Commands,
+					CreatedAt:  d.job.CreatedAt,
+					NotifyType: "error",
 				})
 				if err != nil {
 					log.Error("json.Marshal error:", err)
@@ -90,6 +91,7 @@ func (d *daemonTask) do(ctx context.Context) {
 					Url:  d.job.APITo,
 					Data: string(postData),
 				}, &reply)
+
 				if err != nil {
 					log.Error("Logic.ApiPost error:", err, "server addr:", cfg.AdminAddr)
 				}
@@ -109,8 +111,8 @@ func (d *daemonTask) do(ctx context.Context) {
 	}
 	t.Stop()
 
-	if d.action == proto.ActionDeleteDaemonTask {
-		// models.DB().Unscoped().Delete(d.task, "id=?", d.task.ID)
+	if d.action == proto.ActionDeleteDaemonJob {
+		models.DB().Delete(d.job, "id=?", d.job.ID)
 	}
 
 	d.daemon.lock.Lock()
@@ -123,21 +125,21 @@ func (d *daemonTask) do(ctx context.Context) {
 
 }
 
-type daemon struct {
-	taskChannel chan *daemonTask
-	taskMap     map[uint]*daemonTask
+type Daemon struct {
+	taskChannel chan *daemonJob
+	taskMap     map[uint]*daemonJob
 	lock        sync.Mutex
 	wait        sync.WaitGroup
 }
 
-func newDaemon(taskChannelLength int) *daemon {
-	return &daemon{
-		taskMap:     make(map[uint]*daemonTask),
-		taskChannel: make(chan *daemonTask, taskChannelLength),
+func newDaemon(taskChannelLength int) *Daemon {
+	return &Daemon{
+		taskMap:     make(map[uint]*daemonJob),
+		taskChannel: make(chan *daemonJob, taskChannelLength),
 	}
 }
 
-func (d *daemon) add(t *daemonTask) {
+func (d *Daemon) add(t *daemonJob) {
 	if t != nil {
 		log.Infof("daemon.add(%s)\n", t.job.Name)
 		t.daemon = d
@@ -145,7 +147,7 @@ func (d *daemon) add(t *daemonTask) {
 	}
 }
 
-func (d *daemon) run() {
+func (d *Daemon) run() {
 
 	var jobList []models.DaemonJob
 	err := models.DB().Find(&jobList).Error
@@ -160,14 +162,14 @@ func (d *daemon) run() {
 
 		switch v.Status {
 		case models.StatusJobOk:
-			action = proto.ActionStartDaemonTask
+			action = proto.ActionStartDaemonJob
 		case models.StatusJobStop:
-			action = proto.ActionStopDaemonTask
+			action = proto.ActionStopDaemonJob
 		default:
 			continue
 		}
 
-		d.add(&daemonTask{
+		d.add(&daemonJob{
 			job:    &job,
 			action: action,
 		})
@@ -177,7 +179,7 @@ func (d *daemon) run() {
 		var ctx context.Context
 		for v := range d.taskChannel {
 			switch v.action {
-			case proto.ActionStartDaemonTask:
+			case proto.ActionStartDaemonJob:
 				d.lock.Lock()
 				if t := d.taskMap[v.job.ID]; t == nil {
 					d.taskMap[v.job.ID] = v
@@ -189,17 +191,17 @@ func (d *daemon) run() {
 					d.lock.Unlock()
 
 				}
-			case proto.ActionDeleteDaemonTask:
+			case proto.ActionDeleteDaemonJob:
 				d.lock.Lock()
 				if t := d.taskMap[v.job.ID]; t != nil {
 					d.lock.Unlock()
 					t.action = v.action
 					t.cancel()
 				} else {
-					models.DB().Unscoped().Delete(v.job, "id=?", v.job.ID)
+					models.DB().Delete(v.job, "id=?", v.job.ID)
 					d.lock.Unlock()
 				}
-			case proto.ActionStopDaemonTask:
+			case proto.ActionStopDaemonJob:
 				d.lock.Lock()
 				if t := d.taskMap[v.job.ID]; t != nil {
 					d.lock.Unlock()
@@ -214,7 +216,7 @@ func (d *daemon) run() {
 	}()
 }
 
-func (d *daemon) count() int {
+func (d *Daemon) count() int {
 	var count int
 	d.lock.Lock()
 	count = len(d.taskMap)
@@ -222,6 +224,6 @@ func (d *daemon) count() int {
 	return count
 }
 
-func (d *daemon) waitDone() {
+func (d *Daemon) waitDone() {
 	d.wait.Wait()
 }

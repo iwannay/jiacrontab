@@ -3,7 +3,6 @@ package jiacrontabd
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"jiacrontab/models"
 	"jiacrontab/pkg/crontab"
@@ -14,15 +13,17 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/jinzhu/gorm"
+
 	"github.com/iwannay/log"
 )
 
 const (
-	exitError       = "error"
-	exitKilled      = "kill"
-	exitSuccess     = "success"
-	exitDependError = "depend error"
-	exitTimeout     = "timeout"
+	exitError       = "Error"
+	exitKilled      = "Killed"
+	exitSuccess     = "Success"
+	exitDependError = "Dependent job execution failed"
+	exitTimeout     = "Timeout"
 )
 
 type process struct {
@@ -30,7 +31,7 @@ type process struct {
 	deps      []*depEntry
 	ctx       context.Context
 	cancel    context.CancelFunc
-	logPath   string
+	err       error
 	startTime time.Time
 	endTime   time.Time
 	ready     chan struct{}
@@ -39,10 +40,10 @@ type process struct {
 
 func newProcess(id int, jobEntry *JobEntry) *process {
 	p := &process{
-		id:       id,
-		jobEntry: jobEntry,
-		ready:    make(chan struct{}),
-		logPath:  filepath.Join(cfg.LogPath, "crontab_task"),
+		id:        id,
+		jobEntry:  jobEntry,
+		startTime: time.Now(),
+		ready:     make(chan struct{}),
 	}
 
 	p.ctx, p.cancel = context.WithCancel(context.Background())
@@ -56,6 +57,7 @@ func newProcess(id int, jobEntry *JobEntry) *process {
 			from:        v.From,
 			commands:    v.Commands,
 			dest:        v.Dest,
+			logPath:     filepath.Join(cfg.LogPath, "depend_job", time.Now().Format("2006/01/02"), fmt.Sprintf("%d-%s.log", v.JobID, v.ID)),
 			done:        false,
 			timeout:     v.Timeout,
 		})
@@ -86,12 +88,15 @@ func (p *process) waitDepExecDone() bool {
 	}
 
 	c := time.NewTimer(3600 * time.Second)
+
 	defer c.Stop()
+
 	for {
 		select {
 		case <-p.ctx.Done():
 			return false
 		case <-c.C:
+			p.cancel()
 			log.Errorf("jobID:%d exec dep timeout!", p.jobEntry.detail.ID)
 			return false
 		case <-p.ready:
@@ -101,149 +106,59 @@ func (p *process) waitDepExecDone() bool {
 	}
 }
 
-func (p *process) exec(logContent *[]byte) {
+func (p *process) exec() {
 	var (
-		reply     bool
-		isTimeout bool
-		err       error
-		done      bool
-		myCmdUnit cmdUint
+		ok         bool
+		err        error
+		doneChan   = make(chan struct{}, 1)
+		ignoreChan = make(chan struct{}, 1)
 	)
 
-	type errAPIPost struct {
-		JobName   string
-		JobID     int
-		Commands  [][]string
-		CreatedAt time.Time
-		Timeout   int64
-		Type      string
-	}
-
-	p.startTime = time.Now()
-	if ok := p.waitDepExecDone(); !ok {
-		errMsg := fmt.Sprintf("[%s %s %s] Execution of dependency job failed\n", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, p.jobEntry.detail.Name)
-		p.jobEntry.logContent = append(p.jobEntry.logContent, []byte(errMsg)...)
-		writeLog(p.logPath, fmt.Sprintf("%d.log", p.jobEntry.detail.ID), &p.jobEntry.logContent)
-		p.jobEntry.detail.LastExitStatus = exitDependError
-		if p.jobEntry.detail.ErrorMailNotify && len(p.jobEntry.detail.MailTo) != 0 {
-			p.endTime = time.Now()
-			if err := rpcCall("Srv.SendMail", proto.SendMail{
-				MailTo:  p.jobEntry.detail.MailTo,
-				Subject: cfg.LocalAddr + "提醒脚本依赖异常退出",
-				Content: fmt.Sprintf(
-					"任务名：%s\n详情：%v\n开始时间：%s\n耗时：%.4f\n异常：%s",
-					p.jobEntry.detail.Name, p.jobEntry.detail.Commands, p.endTime.Format(proto.DefaultTimeLayout), p.endTime.Sub(p.startTime).Seconds(), errors.New(errMsg)),
-			}, &reply); err != nil {
-				log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
-			}
-		}
+	if ok = p.waitDepExecDone(); !ok {
+		p.jobEntry.handleDepError(p.startTime)
 	} else {
 		if p.jobEntry.detail.Timeout != 0 {
 			time.AfterFunc(
 				time.Duration(p.jobEntry.detail.Timeout)*time.Second, func() {
-					if done {
-						isTimeout = true
-						switch p.jobEntry.detail.TimeoutTrigger {
-						case "api":
-							p.jobEntry.detail.LastExitStatus = exitTimeout
-							postData, err := json.Marshal(errAPIPost{
-								JobName:   p.jobEntry.detail.Name,
-								JobID:     int(p.jobEntry.detail.ID),
-								Commands:  p.jobEntry.detail.Commands,
-								CreatedAt: p.jobEntry.detail.CreatedAt,
-								Timeout:   int64(p.jobEntry.detail.Timeout),
-								Type:      "timeout",
-							})
-							if err != nil {
-								log.Error("json.Marshal error:", err)
-								return
-							}
-							for _, url := range p.jobEntry.detail.APITo {
-								if err = rpcCall("Srv.ErrorNotify err:", proto.ApiPost{
-									Url:  url,
-									Data: string(postData),
-								}, &reply); err != nil {
-									log.Error("Srv.ErrorNotify err:", err, "server addr:", cfg.AdminAddr)
-								}
-							}
-
-						case "email":
-							p.jobEntry.detail.LastExitStatus = exitTimeout
-							if err = rpcCall("Srv.SendMail", proto.SendMail{
-								MailTo:  p.jobEntry.detail.MailTo,
-								Subject: cfg.LocalAddr + "提醒脚本执行超时",
-								Content: fmt.Sprintf(
-									"任务名：%s\n详情：%v\n开始时间：%s\n超时：%ds",
-									p.jobEntry.detail.Name, p.jobEntry.detail.Commands, p.endTime.Format(proto.DefaultTimeLayout), p.jobEntry.detail.Timeout),
-							}, &reply); err != nil {
-								log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
-							}
-						case "kill":
-							p.jobEntry.detail.LastExitStatus = exitTimeout
-							p.cancel()
-						case "email_and_kill":
-							p.jobEntry.detail.LastExitStatus = exitTimeout
-							p.cancel()
-							if err = rpcCall("Srv.SendMail", proto.SendMail{}, &reply); err != nil {
-								log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
-							}
-						case "ignore":
-							isTimeout = false
+					for {
+						log.Debug("timeout loop", "jobID:", p.jobEntry.detail.ID)
+						select {
+						case <-doneChan:
+							close(doneChan)
+							return
 						default:
+							if p.jobEntry.timeoutTrigger(p) {
+								ignoreChan <- struct{}{}
+							}
 						}
 					}
-
 				})
 		}
 
-		myCmdUnit.args = p.jobEntry.detail.Commands
-		myCmdUnit.ctx = p.ctx
-		myCmdUnit.dir = p.jobEntry.detail.WorkDir
-		myCmdUnit.user = p.jobEntry.detail.User
-		myCmdUnit.logName = fmt.Sprintf("%d.log", p.jobEntry.detail.ID)
-		myCmdUnit.logPath = p.logPath
-		err = myCmdUnit.launch()
-
-		if err != nil {
-			if isTimeout == false {
-				p.jobEntry.detail.LastExitStatus = exitError
-			}
-
-			if p.jobEntry.detail.ErrorMailNotify {
-				if err = rpcCall("Srv.SendMail", proto.SendMail{
-					MailTo:  p.jobEntry.detail.MailTo,
-					Subject: cfg.LocalAddr + "提醒脚本异常退出",
-					Content: fmt.Sprintf(
-						"任务名：%s\n详情：%v\n开始时间：%s\n异常：%s",
-						p.jobEntry.detail.Name, p.jobEntry.detail.Commands, p.endTime.Format(proto.DefaultTimeLayout), err.Error()),
-				}, &reply); err != nil {
-					log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
-				}
-			}
-
-			if p.jobEntry.detail.ErrorAPINotify {
-				postData, err := json.Marshal(proto.ApiPost{})
-				if err != nil {
-					log.Error("json.Marshal error:", err)
-				}
-				for _, url := range p.jobEntry.detail.APITo {
-					if err = rpcCall("Srv.ApiPost", proto.ApiPost{
-						Url:  url,
-						Data: string(postData),
-					}, &reply); err != nil {
-						log.Error("Srv.ApiPost error:", err, "server addr:", cfg.AdminAddr)
-					}
-				}
-			}
+		myCmdUnit := cmdUint{
+			args:    p.jobEntry.detail.Commands,
+			ctx:     p.ctx,
+			dir:     p.jobEntry.detail.WorkDir,
+			user:    p.jobEntry.detail.User,
+			logPath: p.jobEntry.logPath,
 		}
-		done = true
 
+		p.err = myCmdUnit.launch()
+		doneChan <- struct{}{}
+
+		if p.err != nil {
+			select {
+			case <-ignoreChan:
+				p.jobEntry.detail.LastExitStatus = exitError
+				close(ignoreChan)
+			default:
+			}
+			p.jobEntry.handleNotify(p)
+		}
 	}
 
-	p.jobEntry.detail.LastCostTime = myCmdUnit.costTime.Seconds()
-	if logContent != nil {
-		*logContent = p.jobEntry.logContent
-	}
+	p.endTime = time.Now()
+	p.jobEntry.detail.LastCostTime = p.endTime.Sub(p.startTime).Seconds()
 
 	log.Infof("%s:%v %d %.3fs %v", p.jobEntry.detail.Name, p.jobEntry.detail.Commands, p.jobEntry.detail.Timeout, p.jobEntry.detail.LastCostTime, err)
 }
@@ -251,28 +166,25 @@ func (p *process) exec(logContent *[]byte) {
 type JobEntry struct {
 	job        *crontab.Job
 	detail     models.CrontabJob
-	ctx        context.Context
-	cancel     context.CancelFunc
 	processNum int32
 	processes  map[int]*process
 	pc         int32
 	wg         util.WaitGroupWrapper
 	logContent []byte
+	logPath    string
 	jd         *Jiacrontabd
 	mux        sync.RWMutex
+	once       bool // 只执行一次
 	sync       bool
 	uniqueID   string
 }
 
 func newJobEntry(job *crontab.Job, jd *Jiacrontabd) *JobEntry {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
 	return &JobEntry{
 		uniqueID:  util.UUID(),
 		job:       job,
-		cancel:    cancel,
 		processes: make(map[int]*process),
-		ctx:       ctx,
+		logPath:   filepath.Join(cfg.LogPath, "crontab_task", time.Now().Format("2006/01/02"), fmt.Sprintf("%d.log", job.ID)),
 		jd:        jd,
 	}
 }
@@ -284,17 +196,159 @@ func (j *JobEntry) getPc() int {
 	return int(atomic.LoadInt32(&j.pc))
 }
 
-func (j *JobEntry) exec() []byte {
+func (j *JobEntry) writeLog() {
+	writeFile(j.logPath, &j.logContent)
+}
 
+func (j *JobEntry) handleDepError(startTime time.Time) {
+	err := fmt.Errorf("%s %s execution of dependency job failed, jobID:%d", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, j.detail.ID)
+	endTime := time.Now()
+	reply := true
+
+	j.logContent = append(j.logContent, []byte(err.Error()+"\n")...)
+	j.detail.LastExitStatus = exitDependError
+	j.writeLog()
+
+	if j.detail.ErrorMailNotify && len(j.detail.MailTo) != 0 {
+
+		if err := rpcCall("Srv.SendMail", proto.SendMail{
+			MailTo:  j.detail.MailTo,
+			Subject: cfg.LocalAddr + "提醒脚本依赖异常退出",
+			Content: fmt.Sprintf(
+				"任务名：%s\n详情：%v\n开始时间：%s\n耗时：%.4f\n异常：%s",
+				j.detail.Name, j.detail.Commands, endTime.Format(proto.DefaultTimeLayout), endTime.Sub(startTime).Seconds(), err),
+		}, &reply); err != nil {
+			log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
+		}
+	}
+}
+
+func (j *JobEntry) handleNotify(p *process) {
+
+	var (
+		err   error
+		reply bool
+	)
+
+	if p.err == nil {
+		return
+	}
+
+	if j.detail.ErrorMailNotify {
+		if err = rpcCall("Srv.SendMail", proto.SendMail{
+			MailTo:  j.detail.MailTo,
+			Subject: cfg.LocalAddr + "提醒脚本异常退出",
+			Content: fmt.Sprintf(
+				"任务名：%s\n详情：%v\n开始时间：%s\n异常：%s",
+				j.detail.Name, j.detail.Commands, p.endTime.Format(proto.DefaultTimeLayout), p.err.Error()),
+		}, &reply); err != nil {
+			log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
+		}
+	}
+
+	if j.detail.ErrorAPINotify {
+		postData, err := json.Marshal(proto.ApiPost{})
+		if err != nil {
+			log.Error("json.Marshal error:", err)
+		}
+		for _, url := range j.detail.APITo {
+			if err = rpcCall("Srv.ApiPost", proto.ApiPost{
+				Url:  url,
+				Data: string(postData),
+			}, &reply); err != nil {
+				log.Error("Srv.ApiPost error:", err, "server addr:", cfg.AdminAddr)
+			}
+		}
+	}
+}
+
+func (j *JobEntry) timeoutTrigger(p *process) (ignore bool) {
+
+	var (
+		err   error
+		reply bool
+	)
+
+	type errAPIPost struct {
+		JobName   string
+		JobID     int
+		Commands  [][]string
+		CreatedAt time.Time
+		Timeout   int64
+		Type      string
+	}
+
+	switch j.detail.TimeoutTrigger {
+	case "CallApi":
+		j.detail.LastExitStatus = exitTimeout
+		postData, err := json.Marshal(errAPIPost{
+			JobName:   j.detail.Name,
+			JobID:     int(j.detail.ID),
+			Commands:  j.detail.Commands,
+			CreatedAt: j.detail.CreatedAt,
+			Timeout:   int64(j.detail.Timeout),
+			Type:      "timeout",
+		})
+		if err != nil {
+			log.Error("json.Marshal error:", err)
+			return false
+		}
+
+		for _, url := range j.detail.APITo {
+			if err = rpcCall("Srv.ErrorNotify err:", proto.ApiPost{
+				Url:  url,
+				Data: string(postData),
+			}, &reply); err != nil {
+				log.Error("Srv.ErrorNotify err:", err, "server addr:", cfg.AdminAddr)
+			}
+		}
+
+	case "SendEmail":
+		j.detail.LastExitStatus = exitTimeout
+		if err = rpcCall("Srv.SendMail", proto.SendMail{
+			MailTo:  j.detail.MailTo,
+			Subject: cfg.LocalAddr + "提醒脚本执行超时",
+			Content: fmt.Sprintf(
+				"任务名：%s\n详情：%v\n开始时间：%s\n超时：%ds",
+				j.detail.Name, j.detail.Commands, p.startTime.Format(proto.DefaultTimeLayout), j.detail.Timeout),
+		}, &reply); err != nil {
+			log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
+		}
+	case "Killed":
+		j.detail.LastExitStatus = exitTimeout
+		p.cancel()
+	case "SendEmail&killed":
+		j.detail.LastExitStatus = exitTimeout
+		p.cancel()
+		if err = rpcCall("Srv.SendMail", proto.SendMail{}, &reply); err != nil {
+			log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
+		}
+	case "Ignore":
+		return true
+	default:
+	}
+
+	return false
+}
+
+func (j *JobEntry) exec() {
 	j.wg.Wrap(func() {
+		var err error
 
-		err := models.DB().Debug().Take(&j.detail, "id=? and status=?", j.job.ID, models.StatusJobTiming).Error
+		if j.once {
+			err = models.DB().Debug().Take(&j.detail, "id=?", j.job.ID).Error
+		} else {
+			err = models.DB().Debug().Take(&j.detail, "id=? and status=?", j.job.ID, models.StatusJobTiming).Error
+		}
+
 		if err != nil {
 			log.Error("JobEntry.exec:", err)
 			return
 		}
 
-		j.jd.addJob(j.job)
+		if !j.once {
+			j.jd.addJob(j.job)
+		}
 
 		if atomic.LoadInt32(&j.processNum) > int32(j.detail.MaxConcurrent) {
 			return
@@ -306,34 +360,42 @@ func (j *JobEntry) exec() []byte {
 
 		defer func() {
 			atomic.AddInt32(&j.processNum, -1)
-			models.DB().Model(&j.detail).Debug().Updates(map[string]interface{}{
-				"status":           models.StatusJobTiming,
-				"process_num":      j.processNum,
-				"last_cost_time":   j.detail.LastCostTime,
-				"last_exit_status": j.detail.LastExitStatus,
-			})
+			j.updateJob(models.StatusJobTiming)
 		}()
 
-		models.DB().Model(&j.detail).Debug().Updates(map[string]interface{}{
-			"status":         models.StatusJobRunning,
-			"process_num":    j.processNum,
-			"last_exec_time": j.job.GetLastExecTime(),
-			"next_exec_time": j.job.GetNextExecTime(),
-		})
+		j.updateJob(models.StatusJobRunning)
 
 		p := newProcess(id, j)
 		j.mux.Lock()
 		j.processes[id] = p
 		j.mux.Unlock()
 		// 执行脚本
-		p.exec(nil)
+		p.exec()
 	})
-	return nil
+}
+
+func (j *JobEntry) updateJob(status models.JobStatus) {
+	data := map[string]interface{}{
+		"status":         status,
+		"process_num":    atomic.LoadInt32(&j.processNum),
+		"last_exec_time": j.job.GetLastExecTime(),
+		"next_exec_time": j.job.GetNextExecTime(),
+	}
+
+	if j.once && (status == models.StatusJobRunning) {
+		data["process_num"] = gorm.Expr("process_num + ?", 1)
+	}
+
+	if j.once && (status == models.StatusJobTiming) {
+		data["process_num"] = gorm.Expr("process_num - ?", 1)
+	}
+
+	models.DB().Model(&j.detail).Debug().Updates(data)
+
 }
 
 func (j *JobEntry) kill() {
-	j.cancel()
-	j.done()
+	j.exit()
 	if err := models.DB().Model(&models.CrontabJob{}).Updates(map[string]interface{}{
 		"status":      models.StatusJobStop,
 		"process_num": 0,
@@ -342,19 +404,17 @@ func (j *JobEntry) kill() {
 	}
 }
 
-func (j *JobEntry) done() {
-	select {
-	case <-j.ctx.Done():
-		j.mux.Lock()
-		for _, v := range j.processes {
-			v.cancel()
-		}
-		j.mux.Unlock()
-		j.wg.Wait()
-		log.Infof("job exit, ID:%d", j.job.ID)
-	}
+func (j *JobEntry) waitDone() []byte {
+	j.wg.Wait()
+	return j.logContent
 }
 
 func (j *JobEntry) exit() {
-	j.cancel()
+	j.mux.Lock()
+	for _, v := range j.processes {
+		v.cancel()
+	}
+	j.mux.Unlock()
+
+	j.waitDone()
 }

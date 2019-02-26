@@ -3,9 +3,7 @@ package jiacrontabd
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"jiacrontab/pkg/proto"
-	"path/filepath"
 	"time"
 
 	"github.com/iwannay/log"
@@ -26,6 +24,7 @@ type depEntry struct {
 	timeout     int64
 	err         error
 	name        string
+	logPath     string
 	logContent  []byte
 }
 
@@ -56,6 +55,7 @@ func (d *dependencies) run() {
 	}()
 }
 
+// TODO: 主任务退出杀死依赖
 func (d *dependencies) exec(task *depEntry) {
 
 	var (
@@ -70,16 +70,15 @@ func (d *dependencies) exec(task *depEntry) {
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(task.timeout)*time.Second)
+	defer cancel()
 
 	myCmdUnit.args = [][]string{task.commands}
 	myCmdUnit.ctx = ctx
 	myCmdUnit.dir = task.workDir
 	myCmdUnit.user = task.user
-	myCmdUnit.logName = fmt.Sprintf("%d-%s.log", task.jobID, task.id)
-	myCmdUnit.logPath = filepath.Join(cfg.LogPath, "depend_job")
+	myCmdUnit.logPath = task.logPath
 
 	err = myCmdUnit.launch()
-	cancel()
 
 	log.Infof("exec %s %s cost %.4fs %v", task.name, task.commands, float64(myCmdUnit.costTime)/1000000000, err)
 

@@ -10,7 +10,6 @@ import (
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/util"
 	"os"
-	"path/filepath"
 	"runtime/debug"
 	"time"
 
@@ -19,7 +18,6 @@ import (
 
 type cmdUint struct {
 	ctx       context.Context
-	logName   string
 	args      [][]string
 	logPath   string
 	content   []byte
@@ -80,8 +78,7 @@ func (cu *cmdUint) launch() error {
 
 func (cu *cmdUint) setLogFile() error {
 	var err error
-	logPath := filepath.Join(cu.logPath, time.Now().Format("2006/01/02"))
-	cu.logFile, err = util.TryOpen(filepath.Join(logPath, cu.logName), os.O_APPEND|os.O_CREATE|os.O_RDWR)
+	cu.logFile, err = util.TryOpen(cu.logPath, os.O_APPEND|os.O_CREATE|os.O_RDWR)
 	if err != nil {
 		return err
 	}
@@ -90,9 +87,14 @@ func (cu *cmdUint) setLogFile() error {
 
 func (cu *cmdUint) exec() error {
 	log.Debug("args:", cu.args)
+
 	cmdName := cu.args[0][0]
 	args := cu.args[0][1:]
 	cmd := kproc.CommandContext(cu.ctx, cmdName, args...)
+
+	cmd.SetDir(cu.dir)
+	cmd.SetEnv(cu.env)
+	cmd.SetUser(cu.user)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -166,7 +168,6 @@ func (cu *cmdUint) exec() error {
 	return nil
 }
 
-// ctx context.Context, cmdList [][]string, logname string, logpath string, content *[]byte
 func (cu *cmdUint) pipeExec() error {
 	var (
 		outBufer       bytes.Buffer
@@ -181,6 +182,11 @@ func (cu *cmdUint) pipeExec() error {
 		args := v[1:]
 
 		cmd := kproc.CommandContext(cu.ctx, cmdName, args...)
+
+		cmd.SetDir(cu.dir)
+		cmd.SetEnv(cu.env)
+		cmd.SetUser(cu.user)
+
 		cmdEntryList = append(cmdEntryList, &pipeCmd{cmd})
 	}
 
@@ -213,9 +219,9 @@ func (cu *cmdUint) pipeExec() error {
 		if err != nil || err == io.EOF {
 			break
 		}
-		// 默认给err信息加上日期标志
+
 		if cfg.VerboseJobLog {
-			prefix := fmt.Sprintf("[%s %s %v] ", time.Now().Format("2006-01-02 15:04:05"), cfg.LocalAddr, cu.args)
+			prefix := fmt.Sprintf("[%s %s %v] ", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, cu.args)
 			line = append([]byte(prefix), line...)
 			cu.content = append(cu.content, line...)
 		} else {
@@ -230,14 +236,30 @@ func (cu *cmdUint) pipeExec() error {
 
 }
 
-func writeLog(logpath string, logname string, content *[]byte) {
-	logPath := filepath.Join(logpath, time.Now().Format("2006/01/02"))
-	f, err := util.TryOpen(filepath.Join(logPath, logname), os.O_APPEND|os.O_CREATE|os.O_RDWR)
-	if err != nil {
-		log.Errorf("write log %v", err)
+func call(stack []*pipeCmd, pipes []*io.PipeWriter) (err error) {
+	if stack[0].Process == nil {
+		if err = stack[0].Start(); err != nil {
+			return err
+		}
 	}
-	defer f.Close()
-	f.Write(*content)
+
+	if len(stack) > 1 {
+		if err = stack[1].Start(); err != nil {
+			return err
+		}
+
+		defer func() {
+			pipes[0].Close()
+			if err == nil {
+				err = call(stack[1:], pipes[1:])
+			}
+			if err != nil {
+				// fixed zombie process
+				stack[1].Wait()
+			}
+		}()
+	}
+	return stack[0].Wait()
 }
 
 type pipeCmd struct {

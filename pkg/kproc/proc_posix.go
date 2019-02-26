@@ -26,9 +26,12 @@ func CommandContext(ctx context.Context, name string, arg ...string) *KCmd {
 }
 
 func (k *KCmd) SetUser(username string) {
+	if username == "" {
+		return
+	}
 	u, err := user.Lookup(username)
 	if err == nil {
-		log.Infof("uid=%s,gid=%s", u.Uid, u.Gid)
+		log.Infof("KCmd set uid=%s,gid=%s", u.Uid, u.Gid)
 		uid, _ := strconv.Atoi(u.Uid)
 		gid, _ := strconv.Atoi(u.Gid)
 
