@@ -12,11 +12,23 @@ var (
 )
 
 type jobReqParams struct {
+	JobID uint   `json:"jobID"`
+	Addr  string `json:"addr"`
+}
+
+func (p *jobReqParams) verify(ctx iris.Context) error {
+	if err := ctx.ReadJSON(p); err != nil || p.JobID == 0 || p.Addr == "" {
+		return paramsError
+	}
+	return nil
+}
+
+type jobsReqParams struct {
 	JobIDs []uint `json:"jobIDs"`
 	Addr   string `json:"addr"`
 }
 
-func (p *jobReqParams) verify(ctx iris.Context) error {
+func (p *jobsReqParams) verify(ctx iris.Context) error {
 	if err := ctx.ReadJSON(p); err != nil || len(p.JobIDs) == 0 || p.Addr == "" {
 		return paramsError
 	}
@@ -339,7 +351,7 @@ func (p *updateNodeReqParams) verify(ctx iris.Context) error {
 }
 
 type auditJobReqParams struct {
-	jobReqParams
+	jobsReqParams
 	JobType string `json:"jobType"`
 }
 
@@ -350,7 +362,7 @@ func (p *auditJobReqParams) verify(ctx iris.Context) error {
 		"daemon":  true,
 	}
 
-	if err := p.jobReqParams.verify(ctx); err != nil {
+	if err := p.jobsReqParams.verify(ctx); err != nil {
 		return err
 	}
 

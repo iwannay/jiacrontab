@@ -176,7 +176,7 @@ func startTask(c iris.Context) {
 		err     error
 		ctx     = wrapCtx(c)
 		reply   bool
-		reqBody jobReqParams
+		reqBody jobsReqParams
 	)
 
 	if err = reqBody.verify(ctx); err != nil {
@@ -207,7 +207,7 @@ func execTask(c iris.Context) {
 		goto failed
 	}
 
-	if err = rpcCall(reqBody.Addr, "CrontabJob.Exec", reqBody.JobIDs, &reply); err != nil {
+	if err = rpcCall(reqBody.Addr, "CrontabJob.Exec", reqBody.JobID, &reply); err != nil {
 		goto failed
 	}
 

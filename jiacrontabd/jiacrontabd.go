@@ -19,8 +19,9 @@ type Jiacrontabd struct {
 	crontab *crontab.Crontab
 	// All jobs added
 	jobs            map[uint]*JobEntry
+	tmpJobs         map[string]*JobEntry
 	dep             *dependencies
-	daemon          *daemon
+	daemon          *Daemon
 	heartbeatPeriod time.Duration
 	mux             sync.RWMutex
 	wg              util.WaitGroupWrapper
@@ -30,6 +31,7 @@ type Jiacrontabd struct {
 func New() *Jiacrontabd {
 	j := &Jiacrontabd{
 		jobs:            make(map[uint]*JobEntry),
+		tmpJobs:         make(map[string]*JobEntry),
 		daemon:          newDaemon(100),
 		heartbeatPeriod: 5 * time.Second,
 		crontab:         crontab.New(),
@@ -39,9 +41,22 @@ func New() *Jiacrontabd {
 	return j
 }
 
+func (j *Jiacrontabd) addTmpJob(job *JobEntry) {
+	j.mux.Lock()
+	j.tmpJobs[job.uniqueID] = job
+	j.mux.Unlock()
+}
+
+func (j *Jiacrontabd) removeTmpJob(job *JobEntry) {
+	j.mux.Lock()
+	delete(j.tmpJobs, job.uniqueID)
+	j.mux.Unlock()
+}
+
 func (j *Jiacrontabd) addJob(job *crontab.Job) {
 	j.mux.Lock()
-	if _, ok := j.jobs[job.ID]; ok {
+	if v, ok := j.jobs[job.ID]; ok {
+		v.job = job
 		j.mux.Unlock()
 	} else {
 		j.jobs[job.ID] = newJobEntry(job, j)
@@ -104,12 +119,18 @@ func (j *Jiacrontabd) SetDependDone(task *depEntry) bool {
 
 	isAllDone := true
 	j.mux.Lock()
-	if h, ok := j.jobs[task.jobID]; ok && task.jobUniqueID == h.uniqueID {
-		j.mux.Unlock()
+	job, ok := j.jobs[task.jobID]
+	if !ok {
+		job, ok = j.tmpJobs[task.jobUniqueID]
+	}
+	j.mux.Unlock()
+
+	if ok && task.jobUniqueID == job.uniqueID {
+
 		var logContent []byte
 		var curTaskEntry *process
 
-		for _, p := range h.processes {
+		for _, p := range job.processes {
 			if p.id == task.processID {
 				curTaskEntry = p
 				for _, dep := range p.deps {
@@ -123,7 +144,6 @@ func (j *Jiacrontabd) SetDependDone(task *depEntry) bool {
 					}
 
 					if dep.done == false {
-
 						isAllDone = false
 					} else {
 						logContent = append(logContent, dep.logContent...)
@@ -147,7 +167,7 @@ func (j *Jiacrontabd) SetDependDone(task *depEntry) bool {
 		// 如果依赖任务执行出错直接通知主任务停止
 		if task.err != nil {
 			isAllDone = true
-			log.Infof("depend %s %s exec failed %s try to stop master task", task.name, task.commands, task.err)
+			log.Infof("depend %s %s exec failed, %s, try to stop master task", task.name, task.commands, task.err)
 		}
 
 		if isAllDone {
