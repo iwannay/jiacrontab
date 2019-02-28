@@ -23,7 +23,7 @@ func login(c iris.Context) {
 	var (
 		err            error
 		ctx            = wrapCtx(c)
-		reqBody        loginReqParams
+		reqBody        LoginReqParams
 		user           models.User
 		customerClaims CustomerClaims
 	)
@@ -63,7 +63,7 @@ func getRelationEvent(c iris.Context) {
 		ctx            = wrapCtx(c)
 		err            error
 		customerClaims CustomerClaims
-		reqBody        readMoreReqParams
+		reqBody        ReadMoreReqParams
 		events         []models.Event
 	)
 
@@ -96,7 +96,7 @@ func auditJob(c iris.Context) {
 		ctx            = wrapCtx(c)
 		err            error
 		customerClaims CustomerClaims
-		reqBody        auditJobReqParams
+		reqBody        AuditJobReqParams
 		node           models.Node
 		reply          bool
 	)
@@ -152,7 +152,7 @@ func signUp(c iris.Context) {
 		err     error
 		ctx     = wrapCtx(c)
 		user    models.User
-		reqBody userReqParams
+		reqBody UserReqParams
 	)
 
 	if err = reqBody.verify(ctx); err != nil {

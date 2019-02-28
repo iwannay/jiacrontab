@@ -14,7 +14,7 @@ func getNodeList(c iris.Context) {
 		ctx      = wrapCtx(c)
 		err      error
 		nodeList []models.Node
-		reqBody  getNodeListReqParams
+		reqBody  GetNodeListReqParams
 		groupID  uint
 		count    int
 	)
@@ -57,7 +57,7 @@ func deleteNode(c iris.Context) {
 	var (
 		err     error
 		ctx     = wrapCtx(c)
-		reqBody deleteNodeReqParams
+		reqBody DeleteNodeReqParams
 		node    models.Node
 	)
 	if err = reqBody.verify(ctx); err != nil {
@@ -78,7 +78,7 @@ func updateNode(c iris.Context) {
 	var (
 		err     error
 		ctx     = wrapCtx(c)
-		reqBody updateNodeReqParams
+		reqBody UpdateNodeReqParams
 		node    models.Node
 	)
 

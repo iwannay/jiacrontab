@@ -53,8 +53,9 @@ func (d *daemonJob) do(ctx context.Context) {
 		)
 		myCmdUint := cmdUint{
 			ctx:     ctx,
+			env:     d.job.WorkEnv,
 			dir:     d.job.WorkDir,
-			user:    d.job.User,
+			user:    d.job.WorkUser,
 			logPath: filepath.Join(cfg.LogPath, "daemon_job", time.Now().Format("2006/01/02"), fmt.Sprintf("%d.log", d.job.ID)),
 		}
 

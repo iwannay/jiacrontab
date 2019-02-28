@@ -11,7 +11,7 @@ func runtimeInfo(c iris.Context) {
 		err     error
 		ctx     = wrapCtx(c)
 		info    map[string]interface{}
-		reqBody runtimeInfoReqParams
+		reqBody RuntimeInfoReqParams
 	)
 
 	if err = reqBody.verify(ctx); err != nil {

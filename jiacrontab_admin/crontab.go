@@ -16,7 +16,7 @@ func getJobList(c iris.Context) {
 		jobRet       proto.QueryCrontabJobRet
 		ctx          = wrapCtx(c)
 		err          error
-		reqBody      getJobListReqParams
+		reqBody      GetJobListReqParams
 		rpcReqParams proto.QueryJobArgs
 	)
 
@@ -46,7 +46,7 @@ func getRecentLog(c iris.Context) {
 		err       error
 		ctx       = wrapCtx(c)
 		searchRet proto.SearchLogResult
-		reqBody   getLogReqParams
+		reqBody   GetLogReqParams
 		logList   []string
 	)
 
@@ -85,12 +85,29 @@ func editJob(c iris.Context) {
 		err     error
 		reply   int
 		ctx     = wrapCtx(c)
-		reqBody editJobReqParams
+		reqBody EditJobReqParams
 		rpcArgs models.CrontabJob
+		userID  uint
+		cla     CustomerClaims
+		node    models.Node
 	)
+
+	cla, _ = ctx.getClaimsFromToken()
 
 	if err = reqBody.verify(ctx); err != nil {
 		goto failed
+	}
+
+	if !node.VerifyUserGroup(cla.UserID, cla.GroupID, reqBody.Addr) {
+		err = errors.New("permission not allowed")
+		goto failed
+	}
+	if reqBody.ID != 0 {
+		if !(cla.GroupID == 0 || cla.Root) {
+			userID = cla.UserID
+		}
+	} else {
+		userID = cla.UserID
 	}
 
 	rpcArgs = models.CrontabJob{
@@ -104,7 +121,11 @@ func editJob(c iris.Context) {
 			Weekday: reqBody.Weekday,
 			Second:  reqBody.Second,
 		},
-		// PipeCommands:    reqBody.PipeCommands,
+		UserID:          userID,
+		WorkDir:         reqBody.WorkDir,
+		WorkUser:        reqBody.WorkUser,
+		WorkEnv:         reqBody.WorkEnv,
+		RetryNum:        reqBody.RetryNum,
 		Timeout:         reqBody.Timeout,
 		TimeoutTrigger:  reqBody.TimeoutTrigger,
 		MailTo:          reqBody.MailTo,
@@ -136,7 +157,7 @@ func actionTask(c iris.Context) {
 		reply   bool
 		ok      bool
 		method  string
-		reqBody actionTaskReqParams
+		reqBody ActionTaskReqParams
 		methods = map[string]string{
 			"stop":   "CrontabJob.Stop",
 			"delete": "CrontabJob.Delete",
@@ -176,7 +197,7 @@ func startTask(c iris.Context) {
 		err     error
 		ctx     = wrapCtx(c)
 		reply   bool
-		reqBody jobsReqParams
+		reqBody JobsReqParams
 	)
 
 	if err = reqBody.verify(ctx); err != nil {
@@ -200,7 +221,7 @@ func execTask(c iris.Context) {
 		err     error
 		reply   []byte
 		logList []string
-		reqBody jobReqParams
+		reqBody JobReqParams
 	)
 
 	if err = reqBody.verify(ctx); err != nil {
@@ -223,7 +244,7 @@ failed:
 func getJob(c iris.Context) {
 	var (
 		ctx        = wrapCtx(c)
-		reqBody    getJobReqParams
+		reqBody    GetJobReqParams
 		crontabJob models.CrontabJob
 		err        error
 	)
