@@ -12,7 +12,7 @@ func getGroupList(c iris.Context) {
 		ctx       = wrapCtx(c)
 		err       error
 		groupList []models.Group
-		reqBody   getGroupListReqParams
+		reqBody   GetGroupListReqParams
 		groupID   uint
 	)
 	if groupID, err = ctx.getGroupIDFromToken(); err != nil {
@@ -47,7 +47,7 @@ func getGroupList(c iris.Context) {
 func editGroup(c iris.Context) {
 	var (
 		ctx     = wrapCtx(c)
-		reqBody editGroupReqParams
+		reqBody EditGroupReqParams
 		err     error
 		group   models.Group
 	)
@@ -70,7 +70,7 @@ func editGroup(c iris.Context) {
 func setGroup(c iris.Context) {
 	var (
 		ctx     = wrapCtx(c)
-		reqBody setGroupReqParams
+		reqBody SetGroupReqParams
 		err     error
 		user    models.User
 		node    models.Node

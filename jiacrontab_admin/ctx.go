@@ -36,10 +36,6 @@ func (ctx *myctx) respError(code int, msg string, v interface{}) {
 		msg = "error"
 	}
 
-	if v == nil {
-		goto end
-	}
-
 	bts, err = json.Marshal(v)
 	if err != nil {
 		log.Error("errorResp:", err)
@@ -47,7 +43,6 @@ func (ctx *myctx) respError(code int, msg string, v interface{}) {
 
 	sign = fmt.Sprintf("%x", md5.Sum(append(bts, []byte(cfg.App.SigningKey)...)))
 
-end:
 	ctx.JSON(proto.Resp{
 		Code: code,
 		Msg:  msg,
@@ -77,15 +72,11 @@ func (ctx *myctx) respSucc(msg string, v interface{}) {
 }
 
 func (ctx *myctx) getGroupIDFromToken() (uint, error) {
-	var data CustomerClaims
-	token := ctx.Values().Get("jwt").(*jwt.Token)
-	bts, err := json.Marshal(token.Claims)
+	cla, err := ctx.getClaimsFromToken()
 	if err != nil {
 		return 0, err
 	}
-	json.Unmarshal(bts, &data)
-	log.Infof("%+v", data)
-	return data.GroupID, nil
+	return cla.GroupID, nil
 }
 
 func (ctx *myctx) getClaimsFromToken() (CustomerClaims, error) {

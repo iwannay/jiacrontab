@@ -1,7 +1,7 @@
 package rpc
 
 import (
-	"jiacrontab/libs/proto"
+	"jiacrontab/pkg/proto"
 	"log"
 	"net/http"
 	_ "net/http/pprof"

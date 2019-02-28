@@ -12,7 +12,7 @@ import (
 func getDaemonJobList(c iris.Context) {
 	var (
 		ctx     = wrapCtx(c)
-		reqBody getJobListReqParams
+		reqBody GetJobListReqParams
 		jobRet  proto.QueryDaemonJobRet
 		err     error
 	)
@@ -44,7 +44,7 @@ func actionDaemonTask(c iris.Context) {
 		err     error
 		reply   bool
 		ok      bool
-		reqBody actionTaskReqParams
+		reqBody ActionTaskReqParams
 		methods = map[string]int{
 			"start":  proto.ActionStartDaemonJob,
 			"stop":   proto.ActionStopDaemonJob,
@@ -79,7 +79,7 @@ func editDaemonJob(c iris.Context) {
 		err       error
 		reply     int
 		ctx       = wrapCtx(c)
-		reqBody   editDaemonJobReqParams
+		reqBody   EditDaemonJobReqParams
 		daemonJob models.DaemonJob
 	)
 
@@ -109,7 +109,7 @@ func editDaemonJob(c iris.Context) {
 func getDaemonJob(c iris.Context) {
 	var (
 		ctx       = wrapCtx(c)
-		reqBody   getJobReqParams
+		reqBody   GetJobReqParams
 		daemonJob models.DaemonJob
 		err       error
 	)
@@ -131,7 +131,7 @@ func getRecentDaemonLog(c iris.Context) {
 		err       error
 		ctx       = wrapCtx(c)
 		searchRet proto.SearchLogResult
-		reqBody   getLogReqParams
+		reqBody   GetLogReqParams
 		logList   []string
 	)
 

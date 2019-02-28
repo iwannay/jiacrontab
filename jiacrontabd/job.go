@@ -35,6 +35,7 @@ type process struct {
 	startTime time.Time
 	endTime   time.Time
 	ready     chan struct{}
+	retryNum  int
 	jobEntry  *JobEntry
 }
 
@@ -106,7 +107,7 @@ func (p *process) waitDepExecDone() bool {
 	}
 }
 
-func (p *process) exec() {
+func (p *process) exec() error {
 	var (
 		ok         bool
 		err        error
@@ -139,7 +140,8 @@ func (p *process) exec() {
 			args:    p.jobEntry.detail.Commands,
 			ctx:     p.ctx,
 			dir:     p.jobEntry.detail.WorkDir,
-			user:    p.jobEntry.detail.User,
+			user:    p.jobEntry.detail.WorkUser,
+			env:     p.jobEntry.detail.WorkEnv,
 			logPath: p.jobEntry.logPath,
 		}
 
@@ -161,6 +163,7 @@ func (p *process) exec() {
 	p.jobEntry.detail.LastCostTime = p.endTime.Sub(p.startTime).Seconds()
 
 	log.Infof("%s:%v %d %.3fs %v", p.jobEntry.detail.Name, p.jobEntry.detail.Commands, p.jobEntry.detail.Timeout, p.jobEntry.detail.LastCostTime, err)
+	return p.err
 }
 
 type JobEntry struct {
@@ -239,17 +242,28 @@ func (j *JobEntry) handleNotify(p *process) {
 			MailTo:  j.detail.MailTo,
 			Subject: cfg.LocalAddr + "提醒脚本异常退出",
 			Content: fmt.Sprintf(
-				"任务名：%s\n详情：%v\n开始时间：%s\n异常：%s",
-				j.detail.Name, j.detail.Commands, p.endTime.Format(proto.DefaultTimeLayout), p.err.Error()),
+				"任务名：%s\n详情：%v\n开始时间：%s\n异常：%s\n重试次数：%d",
+				j.detail.Name, j.detail.Commands,
+				p.endTime.Format(proto.DefaultTimeLayout), p.err.Error(), p.retryNum),
 		}, &reply); err != nil {
 			log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
 		}
 	}
 
 	if j.detail.ErrorAPINotify {
-		postData, err := json.Marshal(proto.ApiPost{})
+		postData, err := json.Marshal(proto.ApiNotifyBody{
+			NodeAddr:  cfg.LocalAddr,
+			JobName:   j.detail.Name,
+			JobID:     int(j.detail.ID),
+			Commands:  j.detail.Commands,
+			CreatedAt: j.detail.CreatedAt,
+			Timeout:   int64(j.detail.Timeout),
+			Type:      "error",
+			RetryNum:  p.retryNum,
+		})
 		if err != nil {
 			log.Error("json.Marshal error:", err)
+			return
 		}
 		for _, url := range j.detail.APITo {
 			if err = rpcCall("Srv.ApiPost", proto.ApiPost{
@@ -269,25 +283,18 @@ func (j *JobEntry) timeoutTrigger(p *process) (ignore bool) {
 		reply bool
 	)
 
-	type errAPIPost struct {
-		JobName   string
-		JobID     int
-		Commands  [][]string
-		CreatedAt time.Time
-		Timeout   int64
-		Type      string
-	}
-
 	switch j.detail.TimeoutTrigger {
 	case "CallApi":
 		j.detail.LastExitStatus = exitTimeout
-		postData, err := json.Marshal(errAPIPost{
+		postData, err := json.Marshal(proto.ApiNotifyBody{
+			NodeAddr:  cfg.LocalAddr,
 			JobName:   j.detail.Name,
 			JobID:     int(j.detail.ID),
 			Commands:  j.detail.Commands,
 			CreatedAt: j.detail.CreatedAt,
 			Timeout:   int64(j.detail.Timeout),
 			Type:      "timeout",
+			RetryNum:  p.retryNum,
 		})
 		if err != nil {
 			log.Error("json.Marshal error:", err)
@@ -309,8 +316,9 @@ func (j *JobEntry) timeoutTrigger(p *process) (ignore bool) {
 			MailTo:  j.detail.MailTo,
 			Subject: cfg.LocalAddr + "提醒脚本执行超时",
 			Content: fmt.Sprintf(
-				"任务名：%s\n详情：%v\n开始时间：%s\n超时：%ds",
-				j.detail.Name, j.detail.Commands, p.startTime.Format(proto.DefaultTimeLayout), j.detail.Timeout),
+				"任务名：%s\n详情：%v\n开始时间：%s\n超时：%ds\n重试次数：%d",
+				j.detail.Name, j.detail.Commands, p.startTime.Format(proto.DefaultTimeLayout),
+				j.detail.Timeout, p.retryNum),
 		}, &reply); err != nil {
 			log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
 		}
@@ -320,7 +328,14 @@ func (j *JobEntry) timeoutTrigger(p *process) (ignore bool) {
 	case "SendEmail&killed":
 		j.detail.LastExitStatus = exitTimeout
 		p.cancel()
-		if err = rpcCall("Srv.SendMail", proto.SendMail{}, &reply); err != nil {
+		if err = rpcCall("Srv.SendMail", proto.SendMail{
+			MailTo:  j.detail.MailTo,
+			Subject: cfg.LocalAddr + "提醒脚本执行超时",
+			Content: fmt.Sprintf(
+				"任务名：%s\n详情：%v\n开始时间：%s\n超时：%ds\n重试次数：%d",
+				j.detail.Name, j.detail.Commands, p.startTime.Format(proto.DefaultTimeLayout),
+				j.detail.Timeout, p.retryNum),
+		}, &reply); err != nil {
 			log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
 		}
 	case "Ignore":
@@ -365,12 +380,28 @@ func (j *JobEntry) exec() {
 
 		j.updateJob(models.StatusJobRunning)
 
-		p := newProcess(id, j)
-		j.mux.Lock()
-		j.processes[id] = p
-		j.mux.Unlock()
-		// 执行脚本
-		p.exec()
+		for i := 0; i <= j.detail.RetryNum; i++ {
+
+			log.Debug("jobID:", j.detail.ID, "retryNum:", i)
+
+			p := newProcess(id, j)
+			p.retryNum = i
+
+			j.mux.Lock()
+			j.processes[id] = p
+			j.mux.Unlock()
+
+			defer func() {
+				j.mux.Lock()
+				delete(j.processes, id)
+				j.mux.Unlock()
+			}()
+
+			// 执行脚本
+			if p.exec() == nil || j.once {
+				break
+			}
+		}
 	})
 }
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"jiacrontab/models"
+	"time"
 )
 
 type DepJobs []DepJob
@@ -101,3 +102,14 @@ type QueryDaemonJobRet struct {
 }
 
 type AuditJobArgs struct{ JobIDs []uint }
+
+type ApiNotifyBody struct {
+	NodeAddr  string
+	JobName   string
+	JobID     int
+	Commands  [][]string
+	CreatedAt time.Time
+	Timeout   int64
+	Type      string
+	RetryNum  int
+}

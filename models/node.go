@@ -12,12 +12,24 @@ type Node struct {
 	Addr           string `json:"addr"gorm:"not null;unique_index:uni_group_addr"`
 }
 
+func (n *Node) VerifyUserGroup(userID, groupID uint, addr string) bool {
+	var user User
+	if DB().Take(user, "user_id=? and group_id", userID, groupID).Error != nil {
+		return false
+	}
+
+	n.GroupID = groupID
+	n.Addr = addr
+
+	return n.Exists()
+}
+
 func (n *Node) Delete(id int) error {
 	return DB().Delete(n, "id=? and disabled=1", id).Error
 }
 
 func (n *Node) Rename() error {
-	return DB().Where("id=? and addr=?", n.ID, n.Addr).Updates(n).Error
+	return DB().Model(n).Where("id=? and addr=?", n.ID, n.Addr).Updates(n).Error
 }
 
 func (n *Node) Exists() bool {

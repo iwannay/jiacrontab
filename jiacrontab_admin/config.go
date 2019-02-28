@@ -154,7 +154,7 @@ func sendTestMail(c iris.Context) {
 	var (
 		ctx     = wrapCtx(c)
 		err     error
-		reqBody sendTestMailReqParams
+		reqBody SendTestMailReqParams
 	)
 
 	if err = reqBody.verify(ctx); err != nil {
