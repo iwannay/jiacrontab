@@ -17,23 +17,19 @@ func (n *Node) VerifyUserGroup(userID, groupID uint, addr string) bool {
 	if DB().Take(user, "user_id=? and group_id", userID, groupID).Error != nil {
 		return false
 	}
-
-	n.GroupID = groupID
-	n.Addr = addr
-
-	return n.Exists()
+	return n.Exists(groupID, addr)
 }
 
-func (n *Node) Delete(id int) error {
-	return DB().Delete(n, "id=? and disabled=1", id).Error
+func (n *Node) Delete(groupID uint, addr string) error {
+	return DB().Delete(n, "disabled=1 and group_id=? and addr=?", groupID, addr).Error
 }
 
-func (n *Node) Rename() error {
-	return DB().Model(n).Where("id=? and addr=?", n.ID, n.Addr).Updates(n).Error
+func (n *Node) Rename(groupID uint, addr string) error {
+	return DB().Model(n).Where("group_id=? and addr=?", groupID, addr).Updates(n).Error
 }
 
-func (n *Node) Exists() bool {
-	if DB().Take(n, "group_id=? and addr=?", n.GroupID, n.Addr).Error != nil {
+func (n *Node) Exists(groupID uint, addr string) bool {
+	if DB().Take(n, "group_id=? and addr=?", groupID, addr).Error != nil {
 		return false
 	}
 	return true

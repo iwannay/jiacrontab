@@ -103,6 +103,7 @@ func editJob(c iris.Context) {
 		goto failed
 	}
 	if reqBody.ID != 0 {
+		// 修改job时要判断权限
 		if !(cla.GroupID == 0 || cla.Root) {
 			userID = cla.UserID
 		}
@@ -159,11 +160,14 @@ func actionTask(c iris.Context) {
 		method  string
 		reqBody ActionTaskReqParams
 		methods = map[string]string{
+			"start":  "CrontabJob.Start",
 			"stop":   "CrontabJob.Stop",
 			"delete": "CrontabJob.Delete",
 			"kill":   "CrontabJob.Kill",
 		}
+
 		eDesc = map[string]string{
+			"start":  event_StartCronJob,
 			"stop":   event_StopCronJob,
 			"delete": event_DelCronJob,
 			"kill":   event_KillCronJob,
@@ -179,7 +183,7 @@ func actionTask(c iris.Context) {
 		goto failed
 	}
 
-	if err := rpcCall(reqBody.Addr, method, reqBody.JobIDs, &reply); err != nil {
+	if err = rpcCall(reqBody.Addr, method, reqBody.JobIDs, &reply); err != nil {
 		goto failed
 	}
 
@@ -190,29 +194,6 @@ func actionTask(c iris.Context) {
 failed:
 	ctx.respError(proto.Code_Error, err.Error(), nil)
 
-}
-
-func startTask(c iris.Context) {
-	var (
-		err     error
-		ctx     = wrapCtx(c)
-		reply   bool
-		reqBody JobsReqParams
-	)
-
-	if err = reqBody.verify(ctx); err != nil {
-		goto failed
-	}
-
-	if err = rpcCall(reqBody.Addr, "CrontabJob.Start", reqBody.JobIDs, &reply); err != nil {
-		goto failed
-	}
-
-	ctx.pubEvent(event_StartCronJob, reqBody.Addr, reqBody)
-	ctx.respSucc("", reply)
-	return
-failed:
-	ctx.respError(proto.Code_Error, err.Error(), nil)
 }
 
 func execTask(c iris.Context) {
