@@ -9,7 +9,10 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-var db *gorm.DB
+// D alias DB
+type D = gorm.DB
+
+var db *D
 
 func CreateDB(dialect string, args ...interface{}) {
 
@@ -39,7 +42,7 @@ func createSqlite3(dialect string, args ...interface{}) {
 
 }
 
-func DB() *gorm.DB {
+func DB() *D {
 	if db == nil {
 		panic("you must call CreateDb first")
 	}

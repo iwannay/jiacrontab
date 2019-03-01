@@ -96,7 +96,7 @@ func (p *EditJobReqParams) verify(ctx iris.Context) error {
 
 type GetLogReqParams struct {
 	Addr     string `json:"addr"`
-	JobID    int    `json:"jobID"`
+	JobID    uint   `json:"jobID"`
 	Date     string `json:"date"`
 	Pattern  string `json:"pattern"`
 	IsTail   bool   `json:"isTail"`
@@ -120,12 +120,12 @@ func (p *GetLogReqParams) verify(ctx iris.Context) error {
 }
 
 type DeleteNodeReqParams struct {
-	NodeID int    `json:"nodeID"`
-	Addr   string `json:"addr"`
+	Addr    string `json:"addr"`
+	GroupID uint   `json:"groupID"`
 }
 
 func (p *DeleteNodeReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.NodeID == 0 || p.Addr == "" {
+	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" {
 		return paramsError
 	}
 	return nil
@@ -279,7 +279,6 @@ type PageReqParams struct {
 
 type GetNodeListReqParams struct {
 	PageReqParams
-	GroupID uint `json:"groupID"`
 }
 
 func (p *GetNodeListReqParams) verify(ctx iris.Context) error {
@@ -297,13 +296,12 @@ func (p *GetNodeListReqParams) verify(ctx iris.Context) error {
 }
 
 type EditGroupReqParams struct {
-	GroupID  uint   `json:"groupID"`
-	Name     string `json:"name"`
-	NodeAddr string `json:"nodeAddr"`
+	GroupID uint   `json:"groupID"`
+	Name    string `json:"name"`
 }
 
 func (p *EditGroupReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.Name == "" || p.NodeAddr == "" {
+	if err := ctx.ReadJSON(p); err != nil || p.Name == "" {
 		return paramsError
 	}
 	return nil
@@ -345,13 +343,13 @@ func (p *ReadMoreReqParams) verify(ctx iris.Context) error {
 }
 
 type UpdateNodeReqParams struct {
-	NodeID uint   `json:"nodeID"`
-	Addr   string `json:"addr"`
-	Name   string `json:"name"`
+	Addr    string `json:"addr"`
+	Name    string `json:"name"`
+	GroupID uint   `json:"groupID"`
 }
 
 func (p *UpdateNodeReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.NodeID == 0 || p.Addr == "" {
+	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" {
 		return paramsError
 	}
 	return nil

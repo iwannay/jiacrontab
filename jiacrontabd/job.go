@@ -351,9 +351,10 @@ func (j *JobEntry) exec() {
 		var err error
 
 		if j.once {
-			err = models.DB().Debug().Take(&j.detail, "id=?", j.job.ID).Error
+			err = models.DB().Debug().Take(&j.detail, "id=? and ", j.job.ID).Error
 		} else {
-			err = models.DB().Debug().Take(&j.detail, "id=? and status=?", j.job.ID, models.StatusJobTiming).Error
+			err = models.DB().Debug().Take(&j.detail, "id=? and status=? and next_exec_time=?",
+				j.job.ID, models.StatusJobTiming, j.job.GetNextExecTime()).Error
 		}
 
 		if err != nil {

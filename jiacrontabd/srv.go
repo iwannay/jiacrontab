@@ -50,26 +50,37 @@ func (j *CrontabJob) Audit(args proto.AuditJobArgs, reply *bool) error {
 
 func (j *CrontabJob) Edit(args models.CrontabJob, rowsAffected *int64) error {
 
-	log.Info(args)
+	var (
+		db *models.D
+	)
+
+	log.Debug(args)
+
 	if args.MaxConcurrent == 0 {
 		args.MaxConcurrent = 1
 	}
 
 	if args.ID == 0 {
-		ret := models.DB().Create(&args)
-		*rowsAffected = ret.RowsAffected
-		return ret.Error
+		db = models.DB().Create(&args)
+		*rowsAffected = db.RowsAffected
+		return db.Error
 	}
 
-	ret := models.DB().Debug().Omit(
+	m := models.DB().Debug().Omit(
 		"updated_at", "created_at", "deleted_at",
 		"last_cost_time", "last_exec_time",
 		"next_exec_time", "last_exit_status", "process_num",
 		"status",
-	).Save(&args)
+	)
 
-	*rowsAffected = ret.RowsAffected
-	return ret.Error
+	if args.UserID == 0 {
+		db = m.Save(&args)
+	} else {
+		db = m.Where("user_id=?", args.UserID).Save(&args)
+	}
+
+	*rowsAffected = db.RowsAffected
+	return db.Error
 }
 func (j *CrontabJob) Get(args uint, reply *models.CrontabJob) error {
 	return models.DB().Find(reply, "id=?", args).Error
@@ -108,7 +119,7 @@ func (j *CrontabJob) Start(ids []uint, ok *bool) error {
 
 func (j *CrontabJob) Stop(ids []uint, ok *bool) error {
 	*ok = true
-	return models.DB().Model(&models.CrontabJob{}).Where("id in (?)", ids).Update("disabled", true).Error
+	return models.DB().Model(&models.CrontabJob{}).Where("id in (?)", ids).Update("status", models.StatusJobStop).Error
 }
 
 func (j *CrontabJob) Delete(ids []uint, ok *bool) error {
@@ -116,8 +127,10 @@ func (j *CrontabJob) Delete(ids []uint, ok *bool) error {
 	return models.DB().Model(&models.CrontabJob{}).Delete("id in (?)", ids).Error
 }
 
-func (j *CrontabJob) Kill(jobID uint, ok *bool) error {
-	j.jd.killTask(jobID)
+func (j *CrontabJob) Kill(jobIDs []uint, ok *bool) error {
+	for _, jobID := range jobIDs {
+		j.jd.killTask(jobID)
+	}
 	return nil
 }
 
@@ -155,7 +168,9 @@ func (j *CrontabJob) Log(args proto.SearchLog, reply *proto.SearchLogResult) err
 		if len(arr) != 2 {
 			return false
 		}
+
 		if arr[1] == "log" && arr[0] == fmt.Sprint(args.JobID) {
+			log.Info("here")
 			return true
 		}
 		return false
@@ -169,6 +184,7 @@ func (j *CrontabJob) Log(args proto.SearchLog, reply *proto.SearchLogResult) err
 	}
 
 	rootpath := filepath.Join(cfg.LogPath, "crontab_task", args.Date)
+	log.Debug(rootpath)
 	err := fd.Search(rootpath, args.Pattern, &reply.Content, args.Page, args.Pagesize)
 	reply.Total = int(fd.Count())
 	return err

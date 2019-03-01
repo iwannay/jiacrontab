@@ -113,14 +113,12 @@ func auditJob(c iris.Context) {
 
 	if customerClaims.GroupID != 0 {
 		if customerClaims.Root == false {
-			ctx.respError(proto.Code_Error, "无权操作", nil)
+			ctx.respError(proto.Code_Error, proto.Msg_NotAllowed, nil)
 			return
 		}
 
-		node.GroupID = customerClaims.GroupID
-		node.Addr = reqBody.Addr
-		if node.Exists() == false {
-			ctx.respError(proto.Code_Error, "无权操作", nil)
+		if node.Exists(customerClaims.GroupID, reqBody.Addr) == false {
+			ctx.respError(proto.Code_Error, proto.Msg_NotAllowed, nil)
 			return
 		}
 	}
@@ -159,11 +157,16 @@ func signUp(c iris.Context) {
 		ctx.respError(proto.Code_Error, err.Error(), nil)
 		return
 	}
+
 	user.Username = reqBody.Username
 	user.Passwd = reqBody.Passwd
 	user.GroupID = reqBody.GroupID
 	user.Root = reqBody.Root
 	user.Mail = reqBody.Mail
+
+	if user.GroupID == 0 {
+		user.Root = true
+	}
 
 	if err = user.Create(); err != nil {
 		ctx.respError(proto.Code_Error, err.Error(), nil)

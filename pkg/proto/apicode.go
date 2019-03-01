@@ -6,3 +6,7 @@ const (
 	Code_Success    = 0
 	Code_NotFound   = 50004
 )
+
+const (
+	Msg_NotAllowed = "permission not allowed"
+)

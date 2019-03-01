@@ -26,7 +26,7 @@ var Days = [...]string{
 }
 
 type SearchLog struct {
-	JobID          int
+	JobID          uint
 	IsTail         bool
 	Page, Pagesize int
 	Date           string

@@ -7,6 +7,7 @@ import (
 	"github.com/kataras/iris"
 )
 
+// TODO:remove
 func getGroupList(c iris.Context) {
 	var (
 		ctx       = wrapCtx(c)
@@ -58,12 +59,12 @@ func editGroup(c iris.Context) {
 	}
 	group.ID = reqBody.GroupID
 	group.Name = reqBody.Name
-	group.NodeAddr = reqBody.NodeAddr
+
 	if err = group.Save(); err != nil {
 		ctx.respError(proto.Code_Error, err.Error(), nil)
 		return
 	}
-	ctx.pubEvent(event_EditGroup, reqBody.NodeAddr, reqBody)
+	ctx.pubEvent(event_EditGroup, "", reqBody)
 	ctx.respSucc("", nil)
 }
 

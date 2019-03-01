@@ -55,8 +55,7 @@ func route(app *iris.Application) {
 		adm.Post("/crontab/job/get", getJob)
 		adm.Post("/crontab/job/log", getRecentLog)
 		adm.Post("/crontab/job/edit", editJob)
-		adm.Post("/crontab/job/stop", actionTask)
-		adm.Post("/crontab/job/start", startTask)
+		adm.Post("/crontab/job/action", actionTask)
 		adm.Post("/crontab/job/exec", execTask)
 
 		adm.Post("/config/get", getConfig)
