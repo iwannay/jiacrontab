@@ -3,18 +3,30 @@ package admin
 import (
 	"jiacrontab/pkg/proto"
 	"net/url"
-	"path/filepath"
 
 	"github.com/kataras/iris"
-
-	"jiacrontab/pkg/file"
+	"github.com/kataras/iris/middleware/logger"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
 )
 
-func route(app *iris.Application) {
-	app.StaticWeb(cfg.App.StaticDir, filepath.Join(file.GetCurrentDirectory(), cfg.App.StaticDir))
+func newApp() *iris.Application {
+
+	app := iris.New()
+	app.UseGlobal(newRecover())
+	app.Logger().SetLevel("debug")
+	app.Use(logger.New())
+
+	app.RegisterView(iris.HTML("./public", ".html"))
+
+	app.Get("/", func(ctx iris.Context) {
+		ctx.View("index.html")
+	})
+
+	assetHandler := app.StaticHandler("./public", true, true)
+
+	app.SPA(assetHandler).AddIndexName("index.html")
 
 	jwtHandler := jwtmiddleware.New(jwtmiddleware.Config{
 		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
@@ -40,8 +52,6 @@ func route(app *iris.Application) {
 
 		SigningMethod: jwt.SigningMethodHS256,
 	})
-
-	app.UseGlobal(newRecover())
 
 	adm := app.Party("/adm")
 	{
@@ -85,4 +95,5 @@ func route(app *iris.Application) {
 		debug.Get("/pprof/{key:string}", pprofHandler)
 	}
 
+	return app
 }
