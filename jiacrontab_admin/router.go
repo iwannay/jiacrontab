@@ -3,18 +3,14 @@ package admin
 import (
 	"jiacrontab/pkg/proto"
 	"net/url"
-	"path/filepath"
 
 	"github.com/kataras/iris"
-
-	"jiacrontab/pkg/file"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
 )
 
 func route(app *iris.Application) {
-	app.StaticWeb(cfg.App.StaticDir, filepath.Join(file.GetCurrentDirectory(), cfg.App.StaticDir))
 
 	jwtHandler := jwtmiddleware.New(jwtmiddleware.Config{
 		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
@@ -42,7 +38,6 @@ func route(app *iris.Application) {
 	})
 
 	app.UseGlobal(newRecover())
-
 	adm := app.Party("/adm")
 	{
 		adm.Use(jwtHandler.Serve)
