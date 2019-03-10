@@ -1,0 +1,3 @@
+[submodule "jiacrontab_admin/static"]
+	path = jiacrontab_admin/static
+	url = https://gitee.com/iwannay_admin/jiacrontab-frontend.git

@@ -43,3 +43,4 @@ app/jiacrontabd/logs
 app/jiacrontab_admin/logs
 app/jiacrontabd/pprof
 app/jiacrontab_admin/pprof
+/node_modules

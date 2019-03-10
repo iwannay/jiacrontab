@@ -22,9 +22,9 @@ var cfg *Config
 
 type appOpt struct {
 	HTTPListenAddr string `opt:"http_listen_addr" default:":20000"`
-	StaticDir      string `opt:"static_dir" default:"./static"`
-	TplDir         string `opt:"tpl_dir" default:"tpl_dir"`
-	TplExt         string `opt:"tpl_ext" default:"tpl_ext"`
+	StaticDir      string `opt:"static_dir" default:"./dist"`
+	TplDir         string `opt:"tpl_dir" default:"./dist/"`
+	TplExt         string `opt:"tpl_ext" default:".html"`
 	RPCListenAddr  string `opt:"rpc_listen_addr" default:":20003"`
 	AppName        string `opt:"app_name" default:"jiacrontab"`
 	FirstUse       bool   `opt:"first_use" default:"true"`
