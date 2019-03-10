@@ -2,11 +2,12 @@ package rpc
 
 import (
 	"errors"
-	"github.com/iwannay/log"
 	"jiacrontab/pkg/proto"
 	"net"
 	"net/rpc"
 	"time"
+
+	"github.com/iwannay/log"
 )
 
 const (

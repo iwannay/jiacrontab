@@ -55,7 +55,9 @@ func login(c iris.Context) {
 		return
 	}
 
-	ctx.respSucc("", token)
+	ctx.respSucc("", map[string]interface{}{
+		"token": token,
+	})
 }
 
 func getRelationEvent(c iris.Context) {

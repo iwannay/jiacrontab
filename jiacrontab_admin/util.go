@@ -2,8 +2,9 @@ package admin
 
 import (
 	"jiacrontab/models"
-	"github.com/iwannay/log"
 	"jiacrontab/pkg/rpc"
+
+	"github.com/iwannay/log"
 )
 
 func rpcCall(addr string, serviceMethod string, args interface{}, reply interface{}) error {
@@ -13,6 +14,7 @@ func rpcCall(addr string, serviceMethod string, args interface{}, reply interfac
 		if ret.Error != nil {
 			log.Errorf("rpcCall:%v", ret.Error)
 		}
+		rpc.Del(addr)
 	}
 	return err
 }
