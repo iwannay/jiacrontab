@@ -60,8 +60,8 @@ define init
 	mkdir $(buildAdmDir)
 	mkdir $(buildNodeDir)
 	# cd $(staticSourceDir) && yarn && yarn build
-	mv $(staticDir) $(buildAdmDir)/dist
-	
+	# mv $(staticDir) $(buildAdmDir)/dist
+
 	cp $(admCfg) $(buildAdmDir)
 	cp $(nodeCfg) $(buildNodeDir)
 endef

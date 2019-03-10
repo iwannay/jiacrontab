@@ -5,8 +5,6 @@ import (
 	"jiacrontab/pkg/mailer"
 	"jiacrontab/pkg/rpc"
 
-	"github.com/kataras/iris/middleware/logger"
-
 	"github.com/kataras/iris"
 )
 
@@ -60,11 +58,8 @@ func (a *Admin) Main() {
 
 	a.init()
 
-	app := iris.New()
-	app.Logger().SetLevel("debug")
-	app.Use(logger.New())
+	app := newApp()
 
-	route(app)
 	go rpc.ListenAndServe(cfg.App.RPCListenAddr, &Srv{})
 
 	app.Run(iris.Addr(cfg.App.HTTPListenAddr))
