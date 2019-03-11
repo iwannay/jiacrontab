@@ -61,7 +61,7 @@ func (c *Crontab) Ready() <-chan *Task {
 }
 
 func (c *Crontab) QueueScanWorker() {
-	refreshTicker := time.NewTicker(100 * time.Millisecond)
+	refreshTicker := time.NewTicker(200 * time.Millisecond)
 	for {
 		select {
 		case <-refreshTicker.C:
@@ -76,7 +76,6 @@ func (c *Crontab) QueueScanWorker() {
 				continue
 			}
 			c.ready <- job
-		default:
 		}
 	}
 }

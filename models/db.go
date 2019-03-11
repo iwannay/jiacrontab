@@ -15,12 +15,16 @@ type D = gorm.DB
 var db *D
 
 func CreateDB(dialect string, args ...interface{}) {
-
 	switch dialect {
 	case "sqlite3":
 		createSqlite3(dialect, args...)
+	case "postgres", "mysql":
+		var err error
+		db, err = gorm.Open(dialect, args...)
+		if err != nil {
+			panic(err)
+		}
 	}
-
 }
 
 func createSqlite3(dialect string, args ...interface{}) {
