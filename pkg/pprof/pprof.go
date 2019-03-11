@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"syscall"
+	"time"
 
 	"github.com/iwannay/log"
 )
@@ -41,6 +42,8 @@ func cupprofile() {
 
 	if err := pprof.StartCPUProfile(f); err != nil {
 		log.Error("could not start CPU profile: ", err)
+	} else {
+		time.Sleep(time.Minute)
 	}
 	defer pprof.StopCPUProfile()
 }
