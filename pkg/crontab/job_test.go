@@ -43,9 +43,9 @@ func TestJob_NextExecutionTime(t *testing.T) {
 
 	j = &Job{
 		Second:  "50",
-		Minute:  "*",
+		Minute:  "6",
 		Hour:    "*",
-		Day:     "*",
+		Day:     "L",
 		Weekday: "*",
 		Month:   "*",
 	}
