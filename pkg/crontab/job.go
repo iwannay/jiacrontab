@@ -84,138 +84,33 @@ func (j *Job) NextExecutionTime(now time.Time) (time.Time, error) {
 }
 
 func (j *Job) parseSecond() (int, bool, error) {
-	var seconds []int
 	cur := int(j.now.Second())
 	if j.Second == "*" {
-		cur++
-		if cur > 59 {
-			return 0, true, nil
-		}
-		return cur, false, nil
+		return validWildcardPattern(cur, 59, 0, true)
 	} else if strings.Contains(j.Second, ",") {
-		for _, v := range strings.Split(j.Second, ",") {
-			seconds = append(seconds, util.ParseInt(v))
-		}
-		sort.Sort(sort.IntSlice(seconds))
-		for _, v := range seconds {
-			if v > cur {
-				return v, false, nil
-			}
-		}
-		return seconds[0], true, nil
-
+		return validEnumPattern(j.Second, cur, true)
 	} else if strings.Contains(j.Second, "/") {
-		if arr := strings.Split(j.Second, "/"); len(arr) == 2 {
-
-			s := 0
-			e := util.ParseInt(arr[1])
-
-			if arr[0] != "*" {
-				s = util.ParseInt(arr[0])
-			}
-
-			for i, j := s, e; i <= 59; i += j {
-				if i > cur {
-					return i, false, nil
-				}
-			}
-			return s, true, nil
-		}
+		return validSplitPattern(j.Second, cur, 59, true)
 	} else if strings.Contains(j.Second, "-") {
-		if arr := strings.Split(j.Second, "-"); len(arr) == 2 {
-			s := util.ParseInt(arr[0])
-			e := util.ParseInt(arr[1])
-			for i, j := s, e; i <= j; i++ {
-				if i > cur {
-					return i, false, nil
-				}
-			}
-			return s, true, nil
-		}
+		return validSerialPattern(j.Second, cur, true)
 	} else if sec, err := strconv.Atoi(j.Second); err == nil {
-		if sec > cur {
-			return sec, false, nil
-		}
-		return sec, true, nil
+		return validNumPattern(cur, sec, true)
 	}
 	return 0, false, errors.New("Invalid second parameter")
 }
 
 func (j *Job) parseMinute(next bool) (int, bool, error) {
-	var minutes []int
 	cur := int(j.now.Minute())
 	if j.Minute == "*" {
-
-		if next {
-			cur++
-		}
-
-		if cur > 59 {
-			return 0, true, nil
-		}
-
-		return cur, false, nil
+		return validWildcardPattern(cur, 59, 0, next)
 	} else if strings.Contains(j.Minute, ",") {
-		for _, v := range strings.Split(j.Minute, ",") {
-			minutes = append(minutes, util.ParseInt(v))
-		}
-		sort.Sort(sort.IntSlice(minutes))
-		for _, v := range minutes {
-			if v > cur {
-				return v, false, nil
-			} else if v == cur {
-				if next {
-					continue
-				}
-				return v, false, nil
-			}
-		}
-		return minutes[0], true, nil
-
+		return validEnumPattern(j.Minute, cur, next)
 	} else if strings.Contains(j.Minute, "/") {
-		if arr := strings.Split(j.Minute, "/"); len(arr) == 2 {
-
-			s := 0
-			e := util.ParseInt(arr[1])
-
-			if arr[0] != "*" {
-				s = util.ParseInt(arr[0])
-			}
-
-			for i, j := s, e; i <= 59; i += j {
-				if i > cur {
-					return i, false, nil
-				} else if i == cur {
-					if next {
-						continue
-					}
-					return i, false, nil
-				}
-			}
-			return s, true, nil
-		}
+		return validSplitPattern(j.Minute, cur, 59, next)
 	} else if strings.Contains(j.Minute, "-") {
-		if arr := strings.Split(j.Minute, "-"); len(arr) == 2 {
-			var i, j int
-			s := util.ParseInt(arr[0])
-			e := util.ParseInt(arr[1])
-			for i, j = s, e; i <= j; i++ {
-				if i > cur {
-					return i, false, nil
-				} else if i == cur {
-					if next {
-						continue
-					}
-					return i, false, nil
-				}
-			}
-			return s, true, nil
-		}
+		return validSerialPattern(j.Minute, cur, next)
 	} else if minute, err := strconv.Atoi(j.Minute); err == nil {
-		if minute > cur || (minute == cur && !next) {
-			return minute, false, nil
-		}
-		return minute, true, nil
+		return validNumPattern(cur, minute, next)
 	}
 
 	return 0, false, errors.New("Invalid minute parameter")
@@ -223,330 +118,84 @@ func (j *Job) parseMinute(next bool) (int, bool, error) {
 
 func (j *Job) parseHour(next bool) (int, bool, error) {
 
-	var hours []int
 	cur := int(j.now.Hour())
 
 	if j.Hour == "*" {
-		if next {
-			cur++
-		}
-		if cur > 23 {
-			return 0, true, nil
-		}
-
-		return cur, false, nil
+		return validWildcardPattern(cur, 23, 0, next)
 	} else if strings.Contains(j.Hour, ",") {
-		for _, v := range strings.Split(j.Hour, ",") {
-			hours = append(hours, util.ParseInt(v))
-		}
-		sort.Sort(sort.IntSlice(hours))
-		for _, v := range hours {
-			if v > cur {
-				return v, false, nil
-			} else if v == cur {
-				if next {
-					continue
-				}
-				return v, false, nil
-			}
-		}
-		return hours[0], true, nil
-
+		return validEnumPattern(j.Hour, cur, next)
 	} else if strings.Contains(j.Hour, "/") {
-		if s, t, err := parseSplitPattern(j.Hour); err == nil {
-			for i, j := s, t; i <= 23; i += j {
-				if i > cur {
-					return i, false, nil
-				} else if i == cur {
-					if next {
-						continue
-					}
-					return i, false, nil
-				}
-			}
-			return s, true, nil
-		}
+		return validSplitPattern(j.Hour, cur, 23, next)
 	} else if strings.Contains(j.Hour, "-") {
-		if s, t, err := parseSerialPattern(j.Hour); err == nil {
-			for i, j := s, t; i <= j; i++ {
-				if i > cur {
-					return i, false, nil
-				} else if i == cur {
-					if next {
-						continue
-					}
-					return i, false, nil
-				}
-			}
-			return s, true, nil
-		}
+		return validSerialPattern(j.Hour, cur, next)
 	} else if hour, err := strconv.Atoi(j.Hour); err == nil {
-		if hour > cur || (hour == cur && !next) {
-			return hour, false, nil
-		}
-		return hour, true, nil
+		return validNumPattern(cur, hour, next)
 	}
 	return 0, false, errors.New("Invalid hour parameter")
 }
 
 func (j *Job) parseDay(next bool) (int, bool, error) {
-
-	var days []int
 	cur := int(j.now.Day())
 	daysNumOfMonth := util.CountDaysOfMonth(time.Now().Year(), cur)
 
 	if j.Day == "*" {
-		if next {
-			cur++
-		}
-		if cur > daysNumOfMonth {
-			return 1, true, nil
-		}
-		return cur, false, nil
-
+		return validWildcardPattern(cur, daysNumOfMonth, 1, next)
 	} else if strings.Contains(j.Day, ",") {
-		for _, v := range strings.Split(j.Day, ",") {
-			days = append(days, util.ParseInt(v))
-		}
-		sort.Sort(sort.IntSlice(days))
-		for _, v := range days {
-			if v > cur {
-				return v, false, nil
-			} else if v == cur {
-				if next {
-					continue
-				}
-				return v, false, nil
-			}
-		}
-		return days[0], true, nil
-
+		return validEnumPattern(j.Day, cur, next)
 	} else if strings.Contains(j.Day, "/") {
-		if s, e, err := parseSplitPattern(j.Day); err == nil {
-			for i, j := s, e; i <= daysNumOfMonth; i += j {
-				if i > cur {
-					return i, false, nil
-				} else if i == cur {
-					if next {
-						continue
-					}
-					return i, false, nil
-				}
-			}
-			return 0, true, nil
-		}
+		return validSplitPattern(j.Day, cur, daysNumOfMonth, next)
 	} else if strings.Contains(j.Day, "-") {
-		if s, e, err := parseSerialPattern(j.Day); err == nil {
-			var i, j int
-			for i, j = s, e; i <= j; i++ {
-				if i > cur {
-					return i, false, nil
-				} else if i == cur {
-					if next {
-						continue
-					}
-					return i, false, nil
-				}
-			}
-			return s, true, nil
-		}
+		return validSerialPattern(j.Day, cur, next)
 	} else if j.Day == "L" {
-		day := daysNumOfMonth
-		if day > cur || (day == cur && !next) {
-			return day, false, nil
-		}
-		return day, true, nil
+		return validLastDay(cur, daysNumOfMonth, next)
 	} else if day, err := strconv.Atoi(j.Day); err == nil {
-		if day > cur || (day == cur && !next) {
-			return day, false, nil
-		}
-
-		return day, true, nil
+		return validNumPattern(cur, day, next)
 	}
 	return 0, false, errors.New("Invalid day parameter")
 }
 
 func (j *Job) parseWeekday(next bool) (int, bool, error) {
-	var weekdays []int
+
 	curWeekday := int(j.now.Weekday())
 	curDay := j.now.Day()
 	daysNumOfMonth := util.CountDaysOfMonth(j.now.Year(), curDay)
 
 	if j.Weekday == "*" {
-		if next {
-			curDay++
-		}
-
-		if curDay > daysNumOfMonth {
-			return 1, true, nil
-		}
-
-		return curDay, false, nil
+		return validWildcardPattern(curDay, daysNumOfMonth, 1, next)
 	} else if strings.Contains(j.Weekday, ",") {
-		for _, v := range strings.Split(j.Weekday, ",") {
-			weekdays = append(weekdays, util.ParseInt(v))
-		}
-		sort.Sort(sort.IntSlice(weekdays))
-		for _, v := range weekdays {
-			if v > curWeekday {
-				curDay += (v - curWeekday)
-				if curDay > daysNumOfMonth {
-					return weekdays[0], true, nil
-				}
-				return curDay, false, nil
-			} else if v == curWeekday {
-				if next {
-					continue
-				}
-				return curDay, false, nil
-			}
-		}
-
-		return curDay, true, nil
+		return validWeekdayEnumPattern(j.Weekday, curDay, curWeekday, daysNumOfMonth, next)
 	} else if strings.Contains(j.Weekday, "/") {
-		if s, e, err := parseSplitPattern(j.Weekday); err == nil {
-			for i, j := s, e; i <= 7; i += j {
-				if i > curWeekday {
-					curDay += (i - curWeekday)
-					if curDay > daysNumOfMonth {
-						return 1, true, nil
-					}
-					return curDay, false, nil
-				} else if i == curWeekday {
-					if next {
-						continue
-					}
-					return curDay, false, nil
-				}
-			}
-			curDay += (7 - curWeekday + weekdays[0])
-			if curDay > daysNumOfMonth {
-				return 1, true, nil
-			}
-			return curDay, true, nil
-		}
+		return validWeekdaySplitPattern(j.Weekday, curDay, curWeekday, daysNumOfMonth, next)
 	} else if strings.Contains(j.Weekday, "-") {
-		if arr := strings.Split(j.Weekday, "-"); len(arr) == 2 {
-			var i, j int
-			for i, j = util.ParseInt(arr[0]), util.ParseInt(arr[1]); i <= j; i++ {
-				if i > curWeekday {
-					curDay += (i - curWeekday)
-					if sub := curDay - daysNumOfMonth; sub > 0 {
-						return sub, true, nil
-					}
-					return curDay, false, nil
-				} else if i == curWeekday {
-					if next {
-						continue
-					}
-					return curDay, false, nil
-				}
-			}
-			curDay += (7 - curWeekday + weekdays[0])
-			if sub := curDay - daysNumOfMonth; sub > 0 {
-				return sub, true, nil
-			}
-			return curDay, true, nil
-		}
+		return validWeekdaySerialPattern(j.Weekday, curDay, curWeekday, daysNumOfMonth, next)
 	} else if weekday, err := strconv.Atoi(j.Weekday); err == nil {
-		if weekday > curWeekday {
-			curDay += (weekday - curWeekday)
-			if sub := curDay - daysNumOfMonth; sub > 0 {
-				return sub, true, nil
-			}
-			return curDay, false, nil
-		} else if weekday == curWeekday && !next {
-			return curDay, false, nil
-		}
-
-		// 跳一周
-		curDay += 7
-		if sub := curDay - daysNumOfMonth; sub > 0 {
-			return sub, true, nil
-		}
-		return curDay, false, nil
+		return validWeekdayNumPattern(curDay, curWeekday, weekday, daysNumOfMonth, next)
 	}
 	return 0, false, errors.New("Invalid weekday parameter")
 }
 
 func (j *Job) parseMonth(next bool) (int, bool, error) {
-
-	var months []int
 	cur := int(j.now.Month())
-	monthNum := 12
-
 	if j.Month == "*" {
-		if next {
-			cur++
-		}
-
-		if cur > monthNum {
-			return 1, true, nil
-		}
-
-		return cur, false, nil
-
+		return validWildcardPattern(cur, 12, 1, next)
 	} else if strings.Contains(j.Second, ",") {
-		for _, v := range strings.Split(j.Second, ",") {
-			months = append(months, util.ParseInt(v))
-		}
-		sort.Sort(sort.IntSlice(months))
-		for _, v := range months {
-			if v > cur {
-				return v, false, nil
-			} else if v == cur {
-				if next {
-					continue
-				}
-				return v, false, nil
-			}
-		}
-		return months[0], true, nil
-
+		return validEnumPattern(j.Second, cur, next)
 	} else if strings.Contains(j.Month, "/") {
-		if arr := strings.Split(j.Month, "/"); len(arr) == 2 {
-			for i, j := 0, util.ParseInt(arr[1]); i <= 12; i += j {
-				if i > cur {
-					return i, false, nil
-				} else if i == cur {
-					if next {
-						continue
-					}
-					return i, false, nil
-				}
-			}
-			return 0, true, nil
-		}
+		return validSplitPattern(j.Month, cur, 12, next)
 	} else if strings.Contains(j.Day, "-") {
-		if arr := strings.Split(j.Day, "-"); len(arr) == 2 {
-			var i, j int
-			for i, j = util.ParseInt(arr[0]), util.ParseInt(arr[1]); i <= j; i++ {
-				if i > cur {
-					return i, false, nil
-				} else if i == cur {
-					if next {
-						continue
-					}
-					return i, false, nil
-				}
-			}
-			return util.ParseInt(arr[0]), true, nil
-		}
+		return validSerialPattern(j.Month, cur, next)
 	} else if month, err := strconv.Atoi(j.Month); err == nil {
-		if month > cur || (month == cur && !next) {
-			return month, false, nil
-		}
-		return cur, true, nil
+		return validNumPattern(cur, month, next)
 	}
 	return 0, false, errors.New("Invalid month parameter")
 }
 
-func parseSplitPattern(str string) (start int, end int, err error) {
+func parseSplitPattern(str string, defaultStart int) (start int, step int, err error) {
 	arr := strings.Split(str, "/")
 	if len(arr) != 2 {
 		return 0, 0, errors.New("Invalid month parameter")
 	}
-	s := 0
+	s := defaultStart
 	e := util.ParseInt(arr[1])
 
 	if arr[0] != "*" {
@@ -564,4 +213,198 @@ func parseSerialPattern(str string) (start int, end int, err error) {
 	e := util.ParseInt(arr[1])
 
 	return s, e, nil
+}
+
+func validWildcardPattern(cur, num, start int, next bool) (int, bool, error) {
+	if next {
+		cur++
+	}
+
+	if cur > num {
+		return start, true, nil
+	}
+
+	return cur, false, nil
+}
+
+func validSplitPattern(pattern string, cur int, num int, next bool) (int, bool, error) {
+
+	var defaultStart int
+	switch num {
+	case 59, 23:
+		defaultStart = 0
+	default:
+		defaultStart = 1
+	}
+
+	if s, e, err := parseSplitPattern(pattern, defaultStart); err == nil {
+		for i, j := s, e; i <= num; i += j {
+			if i > cur {
+				return i, false, nil
+			} else if i == cur {
+				if next {
+					continue
+				}
+				return i, false, nil
+			}
+		}
+		return s, true, nil
+	}
+	return 0, false, errors.New("Invalid month parameter")
+}
+
+func validSerialPattern(pattern string, cur int, next bool) (int, bool, error) {
+	if s, e, err := parseSerialPattern(pattern); err == nil {
+		for i, j := s, e; i <= j; i++ {
+			if i > cur {
+				return i, false, nil
+			} else if i == cur {
+				if next {
+					continue
+				}
+				return i, false, nil
+			}
+		}
+		return s, true, nil
+	}
+	return 0, false, errors.New("Invalid month parameter")
+}
+
+func validEnumPattern(pattern string, cur int, next bool) (int, bool, error) {
+	var nums []int
+	for _, v := range strings.Split(pattern, ",") {
+		nums = append(nums, util.ParseInt(v))
+	}
+
+	if len(nums) == 0 {
+		return 0, false, errors.New("Invalid month parameter")
+	}
+
+	sort.Sort(sort.IntSlice(nums))
+	for _, v := range nums {
+		if v > cur {
+			return v, false, nil
+		} else if v == cur {
+			if next {
+				continue
+			}
+			return v, false, nil
+		}
+	}
+	return nums[0], true, nil
+}
+
+func validWeekdayEnumPattern(pattern string, curDay, curWeekday, daysNumOfMonth int, next bool) (int, bool, error) {
+	var weekdays []int
+	for _, v := range strings.Split(pattern, ",") {
+		weekdays = append(weekdays, util.ParseInt(v))
+	}
+	sort.Sort(sort.IntSlice(weekdays))
+	for _, v := range weekdays {
+		if v > curWeekday {
+			curDay += (v - curWeekday)
+			if curDay > daysNumOfMonth {
+				return curDay - daysNumOfMonth, true, nil
+			}
+			return curDay, false, nil
+		} else if v == curWeekday {
+			if next {
+				continue
+			}
+			return curDay, false, nil
+		}
+	}
+	curDay += 7
+	if curDay > daysNumOfMonth {
+		return curDay - daysNumOfMonth, true, nil
+	}
+
+	return curDay, false, nil
+}
+
+func validWeekdaySplitPattern(pattern string, curDay, curWeekday, daysNumOfMonth int, next bool) (int, bool, error) {
+	var weekdays []int
+	if s, e, err := parseSplitPattern(pattern, 1); err == nil {
+		for i, j := s, e; i <= 7; i += j {
+			weekdays = append(weekdays, i)
+			if i > curWeekday {
+				curDay += (i - curWeekday)
+				if curDay > daysNumOfMonth {
+					return curDay - daysNumOfMonth, true, nil
+				}
+				return curDay, false, nil
+			} else if i == curWeekday {
+				if next {
+					continue
+				}
+				return curDay, false, nil
+			}
+		}
+		curDay += (7 - curWeekday + weekdays[0])
+		if curDay > daysNumOfMonth {
+			return curDay - daysNumOfMonth, true, nil
+		}
+		return curDay, false, nil
+	}
+	return 0, false, errors.New("Invalid weekday parameter")
+}
+
+func validWeekdaySerialPattern(pattern string, curDay, curWeekday, daysNumOfMonth int, next bool) (int, bool, error) {
+	if arr := strings.Split(pattern, "-"); len(arr) == 2 {
+		var i, j int
+		var weekdays []int
+		for i, j = util.ParseInt(arr[0]), util.ParseInt(arr[1]); i <= j; i++ {
+			if i > curWeekday {
+				curDay += (i - curWeekday)
+				if sub := curDay - daysNumOfMonth; sub > 0 {
+					return sub, true, nil
+				}
+				return curDay, false, nil
+			} else if i == curWeekday {
+				if next {
+					continue
+				}
+				return curDay, false, nil
+			}
+		}
+		curDay += (7 - curWeekday + weekdays[0])
+		if sub := curDay - daysNumOfMonth; sub > 0 {
+			return sub, true, nil
+		}
+		return curDay, true, nil
+	}
+	return 0, false, errors.New("Invalid weekday parameter")
+}
+
+func validWeekdayNumPattern(curDay, curWeekday, weekday, daysNumOfMonth int, next bool) (int, bool, error) {
+	if weekday > curWeekday {
+		curDay += (weekday - curWeekday)
+		if sub := curDay - daysNumOfMonth; sub > 0 {
+			return sub, true, nil
+		}
+		return curDay, false, nil
+	} else if weekday == curWeekday && !next {
+		return curDay, false, nil
+	}
+
+	// 跳一周
+	curDay += 7
+	if sub := curDay - daysNumOfMonth; sub > 0 {
+		return sub, true, nil
+	}
+	return curDay, false, nil
+}
+
+func validNumPattern(cur, num int, next bool) (int, bool, error) {
+	if num > cur || (num == cur && !next) {
+		return num, false, nil
+	}
+	return num, true, nil
+}
+
+func validLastDay(cur, day int, next bool) (int, bool, error) {
+	if day > cur || (day == cur && !next) {
+		return day, false, nil
+	}
+	return day, true, nil
 }
