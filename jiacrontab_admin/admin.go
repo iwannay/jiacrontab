@@ -31,6 +31,9 @@ func (a *Admin) init() {
 	models.DB().CreateTable(&models.Event{})
 	models.DB().AutoMigrate(&models.Event{})
 
+	models.DB().CreateTable(&models.JobHistory{})
+	models.DB().AutoMigrate(&models.JobHistory{})
+
 	// mail
 	if cfg.Mailer.Enabled {
 		mailer.InitMailer(&mailer.Mailer{
