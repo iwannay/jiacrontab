@@ -93,6 +93,39 @@ func getRelationEvent(c iris.Context) {
 	})
 }
 
+func getJobHistory(c iris.Context) {
+	var (
+		ctx            = wrapCtx(c)
+		err            error
+		customerClaims CustomerClaims
+		reqBody        ReadMoreReqParams
+		events         []models.JobHistory
+	)
+
+	if err = reqBody.verify(ctx); err != nil {
+		ctx.respError(proto.Code_Error, err.Error(), nil)
+		return
+	}
+
+	if customerClaims, err = ctx.getClaimsFromToken(); err != nil {
+		ctx.respError(proto.Code_Error, "无法获得token信息", err)
+		return
+	}
+
+	err = models.DB().Where("addr=?", customerClaims.UserID).Order(fmt.Sprintf("create_at %s", reqBody.Orderby)).
+		Find(&events).Error
+
+	if err != nil {
+		ctx.respError(proto.Code_Error, "暂无数据", err)
+		return
+	}
+
+	ctx.respSucc("", map[string]interface{}{
+		"list":     events,
+		"pagesize": reqBody.Pagesize,
+	})
+}
+
 func auditJob(c iris.Context) {
 	var (
 		ctx            = wrapCtx(c)

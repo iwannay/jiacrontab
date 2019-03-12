@@ -331,6 +331,12 @@ func (j *Job) parseDay(next bool) (int, bool, error) {
 			}
 			return util.ParseInt(arr[0]), true, nil
 		}
+	} else if j.Day == "L" {
+		day := daysNumOfMonth
+		if day > cur || (day == cur && !next) {
+			return day, false, nil
+		}
+		return day, true, nil
 	} else if day, err := strconv.Atoi(j.Day); err == nil {
 		if day > cur || (day == cur && !next) {
 			return day, false, nil

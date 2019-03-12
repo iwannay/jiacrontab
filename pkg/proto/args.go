@@ -1,30 +1,5 @@
 package proto
 
-var Months = [...]string{
-	"January",
-	"February",
-	"March",
-	"April",
-	"May",
-	"June",
-	"July",
-	"August",
-	"September",
-	"October",
-	"November",
-	"December",
-}
-
-var Days = [...]string{
-	"Sunday",
-	"Monday",
-	"Tuesday",
-	"Wednesday",
-	"Thursday",
-	"Friday",
-	"Saturday",
-}
-
 type SearchLog struct {
 	JobID          uint
 	IsTail         bool

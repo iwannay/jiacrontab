@@ -69,8 +69,15 @@ type Config struct {
 	ServerStartTime time.Time `json:"-"`
 }
 
+// SetUsed 设置app已经激活
 func (c *Config) SetUsed() {
+
+	if c.App.FirstUse {
+		return
+	}
+
 	c.App.FirstUse = false
+
 	c.iniFile.Section("app").NewKey("first_use", "false")
 	c.iniFile.SaveTo(configFile)
 }

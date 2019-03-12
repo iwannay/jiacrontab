@@ -15,14 +15,17 @@ import (
 type Srv struct{}
 
 func (s *Srv) Register(args models.Node, reply *bool) error {
+
 	*reply = true
-	cfg.SetUsed()
-	ret := models.DB().Model(&models.Node{}).Where("addr=? and group_id=?", args.Addr, args.GroupID).Updates(map[string]interface{}{
+	ret := models.DB().Unscoped().Model(&models.Node{}).Where("addr=?", args.Addr).Updates(map[string]interface{}{
 		"name":             args.Name,
 		"daemon_task_num":  args.DaemonTaskNum,
 		"crontab_task_num": args.CrontabTaskNum,
 		"addr":             args.Addr,
+		"deleted_at":       nil,
+		"disabled":         false,
 	})
+
 	if ret.RowsAffected == 0 {
 		ret = models.DB().Create(&args)
 	}
@@ -61,6 +64,12 @@ func (s *Srv) SendMail(args proto.SendMail, reply *bool) error {
 	}
 	*reply = true
 	return err
+}
+
+func (s *Srv) PushJobLog(args models.JobHistory, reply *bool) error {
+	models.PushJobHistory(&args)
+	*reply = true
+	return nil
 }
 
 func (s *Srv) ApiPost(args proto.ApiPost, reply *bool) error {

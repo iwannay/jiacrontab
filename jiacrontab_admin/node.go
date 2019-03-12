@@ -3,15 +3,16 @@ package admin
 import (
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
-	"jiacrontab/pkg/rpc"
 
 	"github.com/kataras/iris"
 )
 
 // GetnodeList 获得任务节点列表
-// 超级管理员获得全部节点
-// 普通用户获得分组列表
-func getNodeList(c iris.Context) {
+// groupID为0的分组为超级管理员分组,该分组中保留所有的node节点信息
+// 当新建分组时，copy超级管理员分组中的节点到新的分组
+// 超级管理员获得所有的节点
+// 普通用户获得所属分组节点
+func GetNodeList(c iris.Context) {
 	var (
 		ctx      = wrapCtx(c)
 		err      error
@@ -51,7 +52,9 @@ func getNodeList(c iris.Context) {
 	})
 }
 
-func deleteNode(c iris.Context) {
+// DeleteNode 删除分组内节点
+// 仅超级管理员有权限
+func DeleteNode(c iris.Context) {
 	var (
 		err     error
 		ctx     = wrapCtx(c)
@@ -59,6 +62,7 @@ func deleteNode(c iris.Context) {
 		node    models.Node
 		cla     CustomerClaims
 	)
+
 	if err = reqBody.verify(ctx); err != nil {
 		ctx.respError(proto.Code_Error, err.Error(), nil)
 		return
@@ -70,30 +74,27 @@ func deleteNode(c iris.Context) {
 	}
 
 	// 普通用户不允许修改其他分组节点信息
-	if cla.GroupID != 0 && reqBody.GroupID != cla.GroupID {
-		ctx.respError(proto.Code_Error, proto.Msg_NotAllowed, nil)
-		return
-	}
-	// 普通用户不允许修改节点
-	if !cla.Root {
-		ctx.respError(proto.Code_Error, proto.Msg_NotAllowed, nil)
+	if cla.GroupID != 0 {
+		ctx.respNotAllowed()
 		return
 	}
 
-	if err = node.Delete(reqBody.GroupID, reqBody.Addr); err == nil {
-		rpc.DelNode(reqBody.Addr)
-		ctx.respError(proto.Code_Error, "删除失败", nil)
+	if err = node.Delete(reqBody.GroupID, reqBody.Addr); err != nil {
+		ctx.respError(proto.Code_Error, err.Error(), nil)
 		return
 	}
+
 	ctx.pubEvent(event_DelNodeDesc, reqBody.Addr, "")
 	ctx.respSucc("", nil)
 }
 
-func updateNode(c iris.Context) {
+// GroupNode 为node分组
+// 分组不存在时自动创建分组
+func GroupNode(c iris.Context) {
 	var (
 		err     error
 		ctx     = wrapCtx(c)
-		reqBody UpdateNodeReqParams
+		reqBody GroupNodeReqParams
 		node    models.Node
 		cla     CustomerClaims
 	)
@@ -108,21 +109,14 @@ func updateNode(c iris.Context) {
 		return
 	}
 
-	if !cla.Root {
-		ctx.respError(proto.Code_Error, proto.Msg_NotAllowed, nil)
+	if cla.GroupID != 0 {
+		ctx.respNotAllowed()
 		return
 	}
 
-	// 普通用户不允许修改其他分组节点信息
-	if cla.GroupID != 0 && reqBody.GroupID != cla.GroupID {
-		ctx.respError(proto.Code_Error, proto.Msg_NotAllowed, nil)
-		return
-	}
-
-	node.Name = reqBody.Name
-
-	if err = node.Rename(reqBody.GroupID, reqBody.Addr); err == nil {
-		ctx.respError(proto.Code_Error, "更新失败", err)
+	if err = node.GroupNode(reqBody.Addr, reqBody.TargetGroupID,
+		reqBody.TargetNodeName, reqBody.TargetGroupName); err != nil {
+		ctx.respError(proto.Code_Error, "分组失败", err)
 		return
 	}
 

@@ -174,7 +174,6 @@ func (p *GetJobListReqParams) verify(ctx iris.Context) error {
 }
 
 type GetGroupListReqParams struct {
-	GroupID uint `json:"groupID"`
 	PageReqParams
 }
 
@@ -342,14 +341,16 @@ func (p *ReadMoreReqParams) verify(ctx iris.Context) error {
 	return nil
 }
 
-type UpdateNodeReqParams struct {
-	Addr    string `json:"addr"`
-	Name    string `json:"name"`
-	GroupID uint   `json:"groupID"`
+type GroupNodeReqParams struct {
+	Addr            string `json:"addr"`
+	TargetNodeName  string `json:"targetNodeName"`
+	TargetGroupName string `json:"targetGroupName"`
+	TargetGroupID   uint   `json:"targetGroupID"`
 }
 
-func (p *UpdateNodeReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" {
+func (p *GroupNodeReqParams) verify(ctx iris.Context) error {
+	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" ||
+		(p.TargetGroupID == 0 && p.TargetGroupName == "") {
 		return paramsError
 	}
 	return nil

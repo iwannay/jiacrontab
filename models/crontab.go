@@ -152,3 +152,28 @@ func (p PipeComamnds) Value() (driver.Value, error) {
 	bts, err := json.Marshal(p)
 	return string(bts), err
 }
+
+type CrontabArgs struct {
+	Weekday string
+	Month   string
+	Day     string
+	Hour    string
+	Minute  string
+}
+
+func (c *CrontabArgs) Scan(v interface{}) error {
+	switch val := v.(type) {
+	case string:
+		return json.Unmarshal([]byte(val), c)
+	case []byte:
+		return json.Unmarshal(val, c)
+	default:
+		return errors.New("not support")
+	}
+
+}
+
+func (c CrontabArgs) Value() (driver.Value, error) {
+	bts, err := json.Marshal(c)
+	return string(bts), err
+}

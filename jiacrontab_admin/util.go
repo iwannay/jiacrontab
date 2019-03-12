@@ -14,7 +14,6 @@ func rpcCall(addr string, serviceMethod string, args interface{}, reply interfac
 		if ret.Error != nil {
 			log.Errorf("rpcCall:%v", ret.Error)
 		}
-		rpc.Del(addr)
 	}
 	return err
 }

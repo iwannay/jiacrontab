@@ -57,9 +57,9 @@ func newApp() *iris.Application {
 	{
 		adm.Use(jwtHandler.Serve)
 
-		adm.Post("/node/list", getNodeList)
-		adm.Post("/node/delete", deleteNode)
-		adm.Post("/node/update", updateNode)
+		adm.Post("/node/list", GetNodeList)
+		adm.Post("/node/delete", DeleteNode)
+		adm.Post("/node/group_node", GroupNode)
 
 		adm.Post("/crontab/job/list", getJobList)
 		adm.Post("/crontab/job/get", getJob)
@@ -77,11 +77,12 @@ func newApp() *iris.Application {
 		adm.Post("/daemon/job/get", getDaemonJob)
 		adm.Post("/daemon/job/log", getRecentDaemonLog)
 
-		adm.Post("/group/list", getGroupList)
-		adm.Post("/group/edit", editGroup)
-		adm.Post("/group/set", setGroup)
+		adm.Post("/group/list", GetGroupList)
+		adm.Post("/group/edit", EditGroup)
+		adm.Post("/group/set", SetGroup)
 
 		adm.Post("/user/activity_list", getRelationEvent)
+		// adm.Post("/user/job_history",getJobHistory)
 		adm.Post("/user/auditJob", auditJob)
 	}
 
