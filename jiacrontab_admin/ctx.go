@@ -24,6 +24,10 @@ func wrapCtx(ctx iris.Context) *myctx {
 	}
 }
 
+func (ctx *myctx) respNotAllowed() {
+	ctx.respError(proto.Code_NotAllowed, proto.Msg_NotAllowed, nil)
+}
+
 func (ctx *myctx) respError(code int, msg string, v interface{}) {
 
 	var (

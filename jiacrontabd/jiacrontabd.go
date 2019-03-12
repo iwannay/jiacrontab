@@ -57,11 +57,11 @@ func (j *Jiacrontabd) addJob(job *crontab.Job) {
 	j.mux.Lock()
 	if v, ok := j.jobs[job.ID]; ok {
 		v.job = job
-		j.mux.Unlock()
 	} else {
 		j.jobs[job.ID] = newJobEntry(job, j)
-		j.mux.Unlock()
 	}
+	j.mux.Unlock()
+
 	if t, err := job.NextExecutionTime(time.Now()); err != nil {
 		log.Error("NextExecutionTime:", err, " timeArgs:", job)
 	} else {

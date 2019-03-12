@@ -351,7 +351,7 @@ func (j *JobEntry) exec() {
 		var err error
 
 		if j.once {
-			err = models.DB().Debug().Take(&j.detail, "id=? and ", j.job.ID).Error
+			err = models.DB().Debug().Take(&j.detail, "id=?", j.job.ID).Error
 		} else {
 			err = models.DB().Debug().Take(&j.detail, "id=? and status=? and next_exec_time=?",
 				j.job.ID, models.StatusJobTiming, j.job.GetNextExecTime()).Error
@@ -373,13 +373,15 @@ func (j *JobEntry) exec() {
 		atomic.AddInt32(&j.processNum, 1)
 
 		id := j.setPc()
-
+		startTime := time.Now()
+		var endTime time.Time
 		defer func() {
+			endTime = time.Now()
 			atomic.AddInt32(&j.processNum, -1)
-			j.updateJob(models.StatusJobTiming)
+			j.updateJob(models.StatusJobTiming, startTime, endTime, err)
 		}()
 
-		j.updateJob(models.StatusJobRunning)
+		j.updateJob(models.StatusJobRunning, startTime, endTime, err)
 
 		for i := 0; i <= j.detail.RetryNum; i++ {
 
@@ -399,14 +401,14 @@ func (j *JobEntry) exec() {
 			}()
 
 			// 执行脚本
-			if p.exec() == nil || j.once {
+			if err = p.exec(); err == nil || j.once {
 				break
 			}
 		}
 	})
 }
 
-func (j *JobEntry) updateJob(status models.JobStatus) {
+func (j *JobEntry) updateJob(status models.JobStatus, startTime, endTime time.Time, err error) {
 	data := map[string]interface{}{
 		"status":         status,
 		"process_num":    atomic.LoadInt32(&j.processNum),
@@ -420,6 +422,22 @@ func (j *JobEntry) updateJob(status models.JobStatus) {
 
 	if j.once && (status == models.StatusJobTiming) {
 		data["process_num"] = gorm.Expr("process_num - ?", 1)
+		var errMsg string
+		if err != nil {
+			errMsg = err.Error()
+		}
+
+		if err = rpcCall("Srv.PushJobLog", models.JobHistory{
+			JobType:   models.JobTypeCrontab,
+			JobID:     j.detail.ID,
+			Addr:      cfg.LocalAddr,
+			JobName:   j.detail.Name,
+			StartTime: startTime,
+			EndTime:   endTime,
+			ExitMsg:   errMsg,
+		}, nil); err != nil {
+			log.Error("rpc call Srv.PushJobLog failed:", err)
+		}
 	}
 
 	models.DB().Model(&j.detail).Debug().Updates(data)

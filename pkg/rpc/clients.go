@@ -1,7 +1,10 @@
 package rpc
 
 import (
+	"net/rpc"
 	"sync"
+
+	"github.com/iwannay/log"
 )
 
 var (
@@ -46,7 +49,12 @@ func (c *clients) del(addr string) {
 }
 
 func Call(addr string, serviceMethod string, args interface{}, reply interface{}) error {
-	return defaultClients.get(addr).Call(serviceMethod, args, reply)
+	err := defaultClients.get(addr).Call(serviceMethod, args, reply)
+	if err == rpc.ErrShutdown {
+		log.Debug("rpc remove", addr)
+		Del(addr)
+	}
+	return err
 }
 
 func Del(addr string) {

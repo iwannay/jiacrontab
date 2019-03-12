@@ -7,8 +7,9 @@ import (
 	"github.com/kataras/iris"
 )
 
-// TODO:remove
-func getGroupList(c iris.Context) {
+// GetGroupList 获得所有的分组列表
+// 调用者需要为group_id=0
+func GetGroupList(c iris.Context) {
 	var (
 		ctx       = wrapCtx(c)
 		err       error
@@ -26,15 +27,11 @@ func getGroupList(c iris.Context) {
 		return
 	}
 
-	if reqBody.GroupID != 0 && groupID == 0 {
-		groupID = reqBody.GroupID
+	if groupID != 0 {
+		ctx.respError(proto.Code_NotAllowed, proto.Msg_NotAllowed, nil)
 	}
 
-	if groupID == 0 {
-		err = models.DB().Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&groupList).Error
-	} else {
-		err = models.DB().Where("group_id=?", groupID).Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&groupList).Error
-	}
+	err = models.DB().Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Group("create_at").Find(&groupList).Error
 
 	if err != nil {
 		ctx.respError(proto.Code_Error, err.Error(), nil)
@@ -45,7 +42,8 @@ func getGroupList(c iris.Context) {
 
 }
 
-func editGroup(c iris.Context) {
+// EditGroup 编辑分组，目前仅支持分组名
+func EditGroup(c iris.Context) {
 	var (
 		ctx     = wrapCtx(c)
 		reqBody EditGroupReqParams
@@ -68,7 +66,9 @@ func editGroup(c iris.Context) {
 	ctx.respSucc("", nil)
 }
 
-func setGroup(c iris.Context) {
+// SetGroup 设置分组
+// 当分组不为0
+func SetGroup(c iris.Context) {
 	var (
 		ctx     = wrapCtx(c)
 		reqBody SetGroupReqParams
