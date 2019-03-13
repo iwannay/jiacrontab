@@ -1,6 +1,7 @@
 package crontab
 
 import (
+	"jiacrontab/pkg/test"
 	"testing"
 	"time"
 )
@@ -15,14 +16,17 @@ func TestJob_NextExecutionTime(t *testing.T) {
 		Weekday: "*",
 		Month:   "1",
 	}
+
 	tt, err := j.NextExecutionTime(time.Now())
-	t.Logf("job1 1 next:%s, %v", tt.Format(timeLayout), err)
+	test.Nil(t, err)
+	test.Equal(t, "2020-01-25 12:03:48", tt.Format(timeLayout))
 
 	tt, err = j.NextExecutionTime(tt)
-	t.Logf("job1 2 next:%s, %v", tt.Format(timeLayout), err)
+	test.Nil(t, err)
+	test.Equal(t, "2021-01-25 12:03:48", tt.Format(timeLayout))
 
 	tt, err = j.NextExecutionTime(tt)
-	t.Logf("job1 3 next:%s, %v", tt.Format(timeLayout), err)
+	test.Equal(t, "2022-01-25 12:03:48", tt.Format(timeLayout))
 
 	j = &Job{
 		Second:  "58",
@@ -33,13 +37,16 @@ func TestJob_NextExecutionTime(t *testing.T) {
 		Month:   "3",
 	}
 	tt, err = j.NextExecutionTime(time.Now())
-	t.Logf("job2 1 next:%s, %v", tt.Format(timeLayout), err)
+	test.Nil(t, err)
+	test.Equal(t, "2020-03-04 12:00:58", tt.Format(timeLayout))
 
 	tt, err = j.NextExecutionTime(tt)
-	t.Logf("job2 2 next:%s, %v", tt.Format(timeLayout), err)
+	test.Nil(t, err)
+	test.Equal(t, "2020-03-04 12:04:58", tt.Format(timeLayout))
 
 	tt, err = j.NextExecutionTime(tt)
-	t.Logf("job2 3 next:%s, %v", tt.Format(timeLayout), err)
+	test.Nil(t, err)
+	test.Equal(t, "2020-03-04 12:08:58", tt.Format(timeLayout))
 
 	j = &Job{
 		Second:  "50",
@@ -50,6 +57,7 @@ func TestJob_NextExecutionTime(t *testing.T) {
 		Month:   "*",
 	}
 	tt, err = j.NextExecutionTime(time.Now())
-	t.Logf("job3 1 next:%s, %v", tt.Format(timeLayout), err)
+	test.Nil(t, err)
+	test.Equal(t, "2019-03-31 00:06:50", tt.Format(timeLayout))
 
 }

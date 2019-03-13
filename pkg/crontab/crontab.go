@@ -2,6 +2,7 @@ package crontab
 
 import (
 	"container/heap"
+	"errors"
 	"jiacrontab/pkg/pqueue"
 	"sync"
 	"time"
@@ -27,7 +28,7 @@ func New() *Crontab {
 func (c *Crontab) AddJob(j *Job) error {
 	nt, err := j.NextExecutionTime(time.Now())
 	if err != nil {
-		return err
+		return errors.New("Invalid execution time")
 	}
 
 	heap.Push(&c.pq, &Task{
