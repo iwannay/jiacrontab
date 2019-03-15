@@ -2,7 +2,9 @@ package admin
 
 import (
 	"errors"
+	"fmt"
 	"jiacrontab/models"
+	"jiacrontab/pkg/proto"
 
 	"github.com/kataras/iris"
 )
@@ -58,13 +60,24 @@ type EditJobReqParams struct {
 	Hour            string            `json:"hour"`
 	Minute          string            `json:"minute"`
 	Second          string            `json:"second"`
-	TimeoutTrigger  string            `json:"timeoutTrigger"`
+	TimeoutTrigger  []string          `json:"timeoutTrigger"`
 }
 
 // TODO:验证参数
 func (p *EditJobReqParams) verify(ctx iris.Context) error {
 	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" {
-		return paramsError
+		return err
+	}
+	ts := map[string]bool{
+		proto.TimeoutTrigger_CallApi:   true,
+		proto.TimeoutTrigger_SendEmail: true,
+		proto.TimeoutTrigger_Killed:    true,
+	}
+
+	for _, v := range p.TimeoutTrigger {
+		if !ts[v] {
+			return fmt.Errorf("%s:%v", v, paramsError)
+		}
 	}
 
 	if p.Month == "" {

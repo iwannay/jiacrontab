@@ -2,6 +2,7 @@ package admin
 
 import (
 	"errors"
+	"fmt"
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/rpc"
@@ -99,7 +100,7 @@ func editJob(c iris.Context) {
 	}
 
 	if !node.VerifyUserGroup(cla.UserID, cla.GroupID, reqBody.Addr) {
-		err = errors.New("permission not allowed")
+		err = fmt.Errorf("userID:%d groupID:%d permission not allowed", cla.UserID, cla.GroupID)
 		goto failed
 	}
 	if reqBody.ID != 0 {
