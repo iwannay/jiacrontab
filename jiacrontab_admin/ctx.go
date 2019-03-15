@@ -97,6 +97,32 @@ func (ctx *myctx) getClaimsFromToken() (CustomerClaims, error) {
 	return data, err
 }
 
+func (ctx *myctx) getGroupNodes() ([]models.Node, error) {
+	var nodes []models.Node
+	gid, err := ctx.getGroupIDFromToken()
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = models.DB().Find(&nodes, "group_id=?", gid).Error
+	return nodes, err
+}
+
+func (ctx *myctx) getGroupAddr() ([]string, error) {
+	var addrs []string
+	nodes, err := ctx.getGroupNodes()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range nodes {
+		addrs = append(addrs, v.Addr)
+	}
+	return addrs, nil
+
+}
+
 func (ctx *myctx) pubEvent(desc, nodeAddr string, v interface{}) {
 	content := ""
 	claims, err := ctx.getClaimsFromToken()

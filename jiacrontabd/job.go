@@ -283,67 +283,66 @@ func (j *JobEntry) timeoutTrigger(p *process) (ignore bool) {
 		reply bool
 	)
 
-	switch j.detail.TimeoutTrigger {
-	case "CallApi":
-		j.detail.LastExitStatus = exitTimeout
-		postData, err := json.Marshal(proto.ApiNotifyBody{
-			NodeAddr:  cfg.LocalAddr,
-			JobName:   j.detail.Name,
-			JobID:     int(j.detail.ID),
-			Commands:  j.detail.Commands,
-			CreatedAt: j.detail.CreatedAt,
-			Timeout:   int64(j.detail.Timeout),
-			Type:      "timeout",
-			RetryNum:  p.retryNum,
-		})
-		if err != nil {
-			log.Error("json.Marshal error:", err)
-			return false
-		}
-
-		for _, url := range j.detail.APITo {
-			if err = rpcCall("Srv.ErrorNotify err:", proto.ApiPost{
-				Url:  url,
-				Data: string(postData),
-			}, &reply); err != nil {
-				log.Error("Srv.ErrorNotify err:", err, "server addr:", cfg.AdminAddr)
+	for _, e := range j.detail.TimeoutTrigger {
+		switch e {
+		case "CallApi":
+			j.detail.LastExitStatus = exitTimeout
+			postData, err := json.Marshal(proto.ApiNotifyBody{
+				NodeAddr:  cfg.LocalAddr,
+				JobName:   j.detail.Name,
+				JobID:     int(j.detail.ID),
+				Commands:  j.detail.Commands,
+				CreatedAt: j.detail.CreatedAt,
+				Timeout:   int64(j.detail.Timeout),
+				Type:      "timeout",
+				RetryNum:  p.retryNum,
+			})
+			if err != nil {
+				log.Error("json.Marshal error:", err)
+				return false
 			}
-		}
 
-	case "SendEmail":
-		j.detail.LastExitStatus = exitTimeout
-		if err = rpcCall("Srv.SendMail", proto.SendMail{
-			MailTo:  j.detail.MailTo,
-			Subject: cfg.LocalAddr + "提醒脚本执行超时",
-			Content: fmt.Sprintf(
-				"任务名：%s\n详情：%v\n开始时间：%s\n超时：%ds\n重试次数：%d",
-				j.detail.Name, j.detail.Commands, p.startTime.Format(proto.DefaultTimeLayout),
-				j.detail.Timeout, p.retryNum),
-		}, &reply); err != nil {
-			log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
+			for _, url := range j.detail.APITo {
+				if err = rpcCall("Srv.ErrorNotify err:", proto.ApiPost{
+					Url:  url,
+					Data: string(postData),
+				}, &reply); err != nil {
+					log.Error("Srv.ErrorNotify err:", err, "server addr:", cfg.AdminAddr)
+				}
+			}
+
+		case "SendEmail":
+			j.detail.LastExitStatus = exitTimeout
+			if err = rpcCall("Srv.SendMail", proto.SendMail{
+				MailTo:  j.detail.MailTo,
+				Subject: cfg.LocalAddr + "提醒脚本执行超时",
+				Content: fmt.Sprintf(
+					"任务名：%s\n详情：%v\n开始时间：%s\n超时：%ds\n重试次数：%d",
+					j.detail.Name, j.detail.Commands, p.startTime.Format(proto.DefaultTimeLayout),
+					j.detail.Timeout, p.retryNum),
+			}, &reply); err != nil {
+				log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
+			}
+		case "Killed":
+			j.detail.LastExitStatus = exitTimeout
+			p.cancel()
+		case "SendEmail&killed":
+			j.detail.LastExitStatus = exitTimeout
+			p.cancel()
+			if err = rpcCall("Srv.SendMail", proto.SendMail{
+				MailTo:  j.detail.MailTo,
+				Subject: cfg.LocalAddr + "提醒脚本执行超时",
+				Content: fmt.Sprintf(
+					"任务名：%s\n详情：%v\n开始时间：%s\n超时：%ds\n重试次数：%d",
+					j.detail.Name, j.detail.Commands, p.startTime.Format(proto.DefaultTimeLayout),
+					j.detail.Timeout, p.retryNum),
+			}, &reply); err != nil {
+				log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
+			}
+		default:
 		}
-	case "Killed":
-		j.detail.LastExitStatus = exitTimeout
-		p.cancel()
-	case "SendEmail&killed":
-		j.detail.LastExitStatus = exitTimeout
-		p.cancel()
-		if err = rpcCall("Srv.SendMail", proto.SendMail{
-			MailTo:  j.detail.MailTo,
-			Subject: cfg.LocalAddr + "提醒脚本执行超时",
-			Content: fmt.Sprintf(
-				"任务名：%s\n详情：%v\n开始时间：%s\n超时：%ds\n重试次数：%d",
-				j.detail.Name, j.detail.Commands, p.startTime.Format(proto.DefaultTimeLayout),
-				j.detail.Timeout, p.retryNum),
-		}, &reply); err != nil {
-			log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
-		}
-	case "Ignore":
-		return true
-	default:
 	}
-
-	return false
+	return true
 }
 
 func (j *JobEntry) exec() {

@@ -48,8 +48,8 @@ type CrontabJob struct {
 	IsSync          bool         `json:"isSync"` // 脚本是否同步执行
 	MailTo          StringSlice  `json:"mailTo" gorm:"type:varchar(1000)"`
 	APITo           StringSlice  `json:"APITo"  gorm:"type:varchar(1000)"`
-	MaxConcurrent   uint         `json:"maxConcurrent"`  // 脚本最大并发量
-	TimeoutTrigger  string       `json:"timeoutTrigger"` // email/kill/email_and_kill/ignore/api
+	MaxConcurrent   uint         `json:"maxConcurrent"` // 脚本最大并发量
+	TimeoutTrigger  StringSlice  `json:"timeoutTrigger" gorm:"type:varchar(20)"`
 	TimeArgs        TimeArgs     `json:"timeArgs" gorm:"type:TEXT"`
 }
 
@@ -123,12 +123,11 @@ func (c TimeArgs) Value() (driver.Value, error) {
 }
 
 type DependJob struct {
-	Name     string   `json:"name"`
 	Dest     string   `json:"dest"`
 	From     string   `json:"from"`
 	JobID    uint     `json:"jobID"`
 	ID       string   `json:"id"`
-	User     string   `json:"user"`
+	WorkUser string   `json:"user"`
 	WorkDir  string   `json:"workDir"`
 	Commands []string `json:"commands"`
 	Timeout  int64    `json:"timeout"`
