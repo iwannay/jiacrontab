@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"fmt"
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/rpc"
@@ -81,11 +82,22 @@ func editDaemonJob(c iris.Context) {
 		ctx       = wrapCtx(c)
 		reqBody   EditDaemonJobReqParams
 		daemonJob models.DaemonJob
+		cla       CustomerClaims
+		node      models.Node
 	)
 
-	if err = reqBody.verify(ctx); err != nil {
-		ctx.respError(proto.Code_Error, err.Error(), nil)
+	if cla, err = ctx.getClaimsFromToken(); err != nil {
+		ctx.respJWTError(err)
 		return
+	}
+
+	if err = reqBody.verify(ctx); err != nil {
+		ctx.respBasicError(err)
+		return
+	}
+
+	if !node.VerifyUserGroup(cla.UserID, cla.GroupID, reqBody.Addr) {
+		ctx.respBasicError(fmt.Errorf("userID:%d groupID:%d permission not allowed", cla.UserID, cla.GroupID))
 	}
 
 	daemonJob = models.DaemonJob{
@@ -94,12 +106,21 @@ func editDaemonJob(c iris.Context) {
 		ErrorAPINotify:  reqBody.ErrorMailNotify,
 		MailTo:          reqBody.MailTo,
 		APITo:           reqBody.APITo,
+		UpdatedUserID:   cla.UserID,
+		UpdatedUsername: cla.Username,
 		Commands:        reqBody.Commands,
 		FailRestart:     reqBody.FailRestart,
 	}
 
+	daemonJob.ID = reqBody.JobID
+
+	if daemonJob.ID == 0 {
+		daemonJob.CreatedUserID = cla.UserID
+		daemonJob.CreatedUsername = cla.Username
+	}
+
 	if err = rpcCall(reqBody.Addr, "DaemonJob.EditDaemonJob", daemonJob, &reply); err != nil {
-		ctx.respError(proto.Code_Error, err.Error(), nil)
+		ctx.respRPCError(err)
 		return
 	}
 	ctx.pubEvent(event_EditDaemonJob, reqBody.Addr, reqBody)

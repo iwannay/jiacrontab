@@ -285,7 +285,7 @@ func (j *JobEntry) timeoutTrigger(p *process) (ignore bool) {
 
 	for _, e := range j.detail.TimeoutTrigger {
 		switch e {
-		case "CallApi":
+		case proto.TimeoutTrigger_CallApi:
 			j.detail.LastExitStatus = exitTimeout
 			postData, err := json.Marshal(proto.ApiNotifyBody{
 				NodeAddr:  cfg.LocalAddr,
@@ -311,7 +311,7 @@ func (j *JobEntry) timeoutTrigger(p *process) (ignore bool) {
 				}
 			}
 
-		case "SendEmail":
+		case proto.TimeoutTrigger_SendEmail:
 			j.detail.LastExitStatus = exitTimeout
 			if err = rpcCall("Srv.SendMail", proto.SendMail{
 				MailTo:  j.detail.MailTo,
@@ -323,23 +323,11 @@ func (j *JobEntry) timeoutTrigger(p *process) (ignore bool) {
 			}, &reply); err != nil {
 				log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
 			}
-		case "Killed":
+		case proto.TimeoutTrigger_Kill:
 			j.detail.LastExitStatus = exitTimeout
 			p.cancel()
-		case "SendEmail&killed":
-			j.detail.LastExitStatus = exitTimeout
-			p.cancel()
-			if err = rpcCall("Srv.SendMail", proto.SendMail{
-				MailTo:  j.detail.MailTo,
-				Subject: cfg.LocalAddr + "提醒脚本执行超时",
-				Content: fmt.Sprintf(
-					"任务名：%s\n详情：%v\n开始时间：%s\n超时：%ds\n重试次数：%d",
-					j.detail.Name, j.detail.Commands, p.startTime.Format(proto.DefaultTimeLayout),
-					j.detail.Timeout, p.retryNum),
-			}, &reply); err != nil {
-				log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
-			}
 		default:
+			log.Error("invalid timeoutTrigger", e)
 		}
 	}
 	return true

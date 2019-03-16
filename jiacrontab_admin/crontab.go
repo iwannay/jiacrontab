@@ -88,28 +88,23 @@ func editJob(c iris.Context) {
 		ctx     = wrapCtx(c)
 		reqBody EditJobReqParams
 		rpcArgs models.CrontabJob
-		userID  uint
 		cla     CustomerClaims
 		node    models.Node
 	)
 
-	cla, _ = ctx.getClaimsFromToken()
+	if cla, err = ctx.getClaimsFromToken(); err != nil {
+		ctx.respJWTError(err)
+		return
+	}
 
 	if err = reqBody.verify(ctx); err != nil {
-		goto failed
+		ctx.respBasicError(err)
+		return
 	}
 
 	if !node.VerifyUserGroup(cla.UserID, cla.GroupID, reqBody.Addr) {
-		err = fmt.Errorf("userID:%d groupID:%d permission not allowed", cla.UserID, cla.GroupID)
-		goto failed
-	}
-	if reqBody.ID != 0 {
-		// 修改job时要判断权限
-		if !(cla.GroupID == 0 || cla.Root) {
-			userID = cla.UserID
-		}
-	} else {
-		userID = cla.UserID
+		ctx.respBasicError(fmt.Errorf("userID:%d groupID:%d permission not allowed", cla.UserID, cla.GroupID))
+		return
 	}
 
 	rpcArgs = models.CrontabJob{
@@ -123,7 +118,9 @@ func editJob(c iris.Context) {
 			Weekday: reqBody.Weekday,
 			Second:  reqBody.Second,
 		},
-		UserID:          userID,
+
+		UpdatedUserID:   cla.UserID,
+		UpdatedUsername: cla.Username,
 		WorkDir:         reqBody.WorkDir,
 		WorkUser:        reqBody.WorkUser,
 		WorkEnv:         reqBody.WorkEnv,
@@ -139,17 +136,19 @@ func editJob(c iris.Context) {
 		IsSync:          reqBody.IsSync,
 	}
 
-	rpcArgs.ID = reqBody.ID
+	rpcArgs.ID = reqBody.JobID
+
+	if rpcArgs.ID == 0 {
+		rpcArgs.CreatedUserID = cla.UserID
+		rpcArgs.CreatedUsername = cla.Username
+	}
 
 	if err = rpcCall(reqBody.Addr, "CrontabJob.Edit", rpcArgs, &reply); err != nil {
-		goto failed
+		ctx.respRPCError(err)
+		return
 	}
 	ctx.pubEvent(event_EditCronJob, reqBody.Addr, reqBody)
 	ctx.respSucc("", reply)
-	return
-
-failed:
-	ctx.respError(proto.Code_Error, err.Error(), nil)
 }
 
 func actionTask(c iris.Context) {

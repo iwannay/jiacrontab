@@ -38,7 +38,7 @@ func (p *JobsReqParams) verify(ctx iris.Context) error {
 }
 
 type EditJobReqParams struct {
-	ID              uint              `json:"id"`
+	JobID           uint              `json:"jobID"`
 	Addr            string            `json:"addr"`
 	IsSync          bool              `json:"isSync"`
 	Name            string            `json:"name"`
@@ -71,7 +71,7 @@ func (p *EditJobReqParams) verify(ctx iris.Context) error {
 	ts := map[string]bool{
 		proto.TimeoutTrigger_CallApi:   true,
 		proto.TimeoutTrigger_SendEmail: true,
-		proto.TimeoutTrigger_Killed:    true,
+		proto.TimeoutTrigger_Kill:      true,
 	}
 
 	for _, v := range p.TimeoutTrigger {
@@ -221,10 +221,10 @@ func (p *ActionTaskReqParams) verify(ctx iris.Context) error {
 
 type EditDaemonJobReqParams struct {
 	Addr            string   `json:"addr"`
-	JobID           int      `json:"jobID"`
+	JobID           uint     `json:"jobID"`
 	Name            string   `json:"name"`
 	MailTo          string   `json:"mailTo"`
-	APITo           string   `json:"apiTo"`
+	APITo           string   `json:"APITo"`
 	Commands        []string `json:"commands"`
 	WorkUser        string   `json:"workUser"`
 	WorkEnv         []string `json:"workEnv"`

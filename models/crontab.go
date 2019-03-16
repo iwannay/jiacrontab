@@ -35,7 +35,10 @@ type CrontabJob struct {
 	LastExecTime    time.Time    `json:"lastExecTime"`
 	NextExecTime    time.Time    `json:"nextExecTime"`
 	LastExitStatus  string       `json:"lastExitStatus"`
-	UserID          uint         `json:"user_id"`
+	CreatedUserID   uint         `json:"createdUserId"`
+	CreatedUsername string       `json:"createdUsername"`
+	UpdatedUserID   uint         `json:"updatedUserID"`
+	UpdatedUsername string       `json:"updatedUsername"`
 	WorkUser        string       `json:"workUser"`
 	WorkEnv         StringSlice  `json:"workEnv" gorm:"type:varchar(1000)"`
 	WorkDir         string       `json:"workDir"`
