@@ -88,7 +88,7 @@ func DeleteNode(c iris.Context) {
 	ctx.respSucc("", nil)
 }
 
-// GroupNode 为node分组
+// GroupNode 超级管理员为node分组
 // 分组不存在时自动创建分组
 func GroupNode(c iris.Context) {
 	var (

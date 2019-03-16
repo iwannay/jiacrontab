@@ -3,8 +3,9 @@ package models
 import (
 	"crypto/md5"
 	"fmt"
-	"github.com/iwannay/log"
 	"jiacrontab/pkg/util"
+
+	"github.com/iwannay/log"
 
 	"github.com/jinzhu/gorm"
 )
@@ -60,5 +61,10 @@ func (u *User) Create() error {
 }
 
 func (u *User) SetGroup() error {
-	return DB().Model(u).Where("user_id=?", u.ID).Update("group_id", u.GroupID).Error
+
+	if err := DB().Take(&Group{}, "id=?", u.GroupID).Error; err != nil {
+		return fmt.Errorf("查询分组失败：%s", err)
+	}
+
+	return DB().Model(u).Where("id=?", u.ID).Update("group_id", u.GroupID).Error
 }

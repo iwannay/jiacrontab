@@ -8,5 +8,8 @@ type Group struct {
 }
 
 func (g *Group) Save() error {
+	if g.ID == 0 {
+		return DB().Create(g).Error
+	}
 	return DB().Save(g).Error
 }

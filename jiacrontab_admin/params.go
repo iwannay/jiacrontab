@@ -308,25 +308,25 @@ func (p *GetNodeListReqParams) verify(ctx iris.Context) error {
 }
 
 type EditGroupReqParams struct {
-	GroupID uint   `json:"groupID"`
-	Name    string `json:"name"`
+	GroupID   uint   `json:"groupID"`
+	GroupName string `json:"groupName"`
 }
 
 func (p *EditGroupReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.Name == "" {
+	if err := ctx.ReadJSON(p); err != nil || p.GroupName == "" {
 		return paramsError
 	}
 	return nil
 }
 
 type SetGroupReqParams struct {
-	TargetGroupID uint   `json:"targetGroupID"`
-	UserID        uint   `json:"userID"`
-	NodeAddr      string `json:"nodeAddr"`
+	TargetGroupID uint `json:"targetGroupID"`
+	UserID        uint `json:"userID"`
+	Root          bool `json:"root"`
 }
 
 func (p *SetGroupReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || (p.UserID == 0 && p.NodeAddr == "") {
+	if err := ctx.ReadJSON(p); err != nil || p.UserID == 0 {
 		return paramsError
 	}
 	return nil

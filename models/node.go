@@ -81,8 +81,3 @@ func (n *Node) Exists(groupID uint, addr string) bool {
 	}
 	return true
 }
-
-func (n *Node) SetGroup() error {
-	n.ID = 0
-	return DB().Where("group_id=? and addr =?", n.GroupID, n.Addr).Save(n).Error
-}
