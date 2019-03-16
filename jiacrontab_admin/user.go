@@ -19,7 +19,8 @@ type CustomerClaims struct {
 	Root     bool
 }
 
-func login(c iris.Context) {
+// Login 用户登录
+func Login(c iris.Context) {
 	var (
 		err            error
 		ctx            = wrapCtx(c)
@@ -56,7 +57,11 @@ func login(c iris.Context) {
 	}
 
 	ctx.respSucc("", map[string]interface{}{
-		"token": token,
+		"token":   token,
+		"groupID": user.GroupID,
+		"root":    user.Root,
+		"mail":    user.Mail,
+		"userID":  user.ID,
 	})
 }
 

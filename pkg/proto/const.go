@@ -5,5 +5,5 @@ const (
 
 	TimeoutTrigger_CallApi   = "CallApi"
 	TimeoutTrigger_SendEmail = "SendEmail"
-	TimeoutTrigger_Killed    = "Killed"
+	TimeoutTrigger_Kill      = "Kill"
 )

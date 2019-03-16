@@ -36,6 +36,10 @@ func (ctx *myctx) respBasicError(err error) {
 	ctx.respError(proto.Code_Error, err)
 }
 
+func (ctx *myctx) respRPCError(err error) {
+	ctx.respError(proto.Code_RPCError, err)
+}
+
 func (ctx *myctx) respError(code int, err interface{}, v ...interface{}) {
 
 	var (

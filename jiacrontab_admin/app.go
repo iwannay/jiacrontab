@@ -87,7 +87,7 @@ func newApp() *iris.Application {
 		adm.Post("/user/signup", Signup)
 	}
 
-	app.Post("/user/login", login)
+	app.Post("/user/login", Login)
 	app.Post("/user/init_admin_user", IninAdminUser)
 
 	debug := app.Party("/debug")
