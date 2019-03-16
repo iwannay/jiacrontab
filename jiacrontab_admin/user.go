@@ -180,7 +180,8 @@ func auditJob(c iris.Context) {
 
 }
 
-func signUp(c iris.Context) {
+// IninAdminUser 初始化管理员
+func IninAdminUser(c iris.Context) {
 	var (
 		err     error
 		ctx     = wrapCtx(c)
@@ -189,7 +190,46 @@ func signUp(c iris.Context) {
 	)
 
 	if err = reqBody.verify(ctx); err != nil {
+		ctx.respBasicError(err)
+		return
+	}
+
+	if !cfg.App.FirstUse || user.GroupID != 0 {
+		ctx.respNotAllowed()
+		return
+	}
+
+	user.Username = reqBody.Username
+	user.Passwd = reqBody.Passwd
+	user.Root = true
+	user.Mail = reqBody.Mail
+
+	if err = user.Create(); err != nil {
 		ctx.respError(proto.Code_Error, err.Error(), nil)
+		return
+	}
+
+	cfg.SetUsed()
+	ctx.pubEvent(event_SignUpUser, "", reqBody)
+	ctx.respSucc("", true)
+}
+
+// Signup 注册新用户
+func Signup(c iris.Context) {
+	var (
+		err     error
+		ctx     = wrapCtx(c)
+		user    models.User
+		reqBody UserReqParams
+	)
+
+	if err = reqBody.verify(ctx); err != nil {
+		ctx.respBasicError(err)
+		return
+	}
+
+	if reqBody.GroupID == 0 {
+		ctx.respNotAllowed()
 		return
 	}
 
@@ -198,10 +238,6 @@ func signUp(c iris.Context) {
 	user.GroupID = reqBody.GroupID
 	user.Root = reqBody.Root
 	user.Mail = reqBody.Mail
-
-	if user.GroupID == 0 {
-		user.Root = true
-	}
 
 	if err = user.Create(); err != nil {
 		ctx.respError(proto.Code_Error, err.Error(), nil)

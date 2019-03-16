@@ -57,10 +57,6 @@ func newApp() *iris.Application {
 	{
 		adm.Use(jwtHandler.Serve)
 
-		adm.Post("/node/list", GetNodeList)
-		adm.Post("/node/delete", DeleteNode)
-		adm.Post("/node/group_node", GroupNode)
-
 		adm.Post("/crontab/job/list", getJobList)
 		adm.Post("/crontab/job/get", getJob)
 		adm.Post("/crontab/job/log", getRecentLog)
@@ -79,15 +75,20 @@ func newApp() *iris.Application {
 
 		adm.Post("/group/list", GetGroupList)
 		adm.Post("/group/edit", EditGroup)
-		adm.Post("/group/set", SetGroup)
+		adm.Post("/group/group_user", GroupUser)
+
+		adm.Post("/node/list", GetNodeList)
+		adm.Post("/node/delete", DeleteNode)
+		adm.Post("/node/group_node", GroupNode)
 
 		adm.Post("/user/activity_list", getRelationEvent)
 		adm.Post("/user/job_history", getJobHistory)
-		adm.Post("/user/auditJob", auditJob)
+		adm.Post("/user/audit_job", auditJob)
+		adm.Post("/user/signup", Signup)
 	}
 
 	app.Post("/user/login", login)
-	app.Post("/user/signUp", signUp)
+	app.Post("/user/init_admin_user", IninAdminUser)
 
 	debug := app.Party("/debug")
 	{
