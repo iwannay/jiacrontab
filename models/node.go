@@ -18,9 +18,14 @@ type Node struct {
 
 func (n *Node) VerifyUserGroup(userID, groupID uint, addr string) bool {
 	var user User
-	if DB().Take(user, "user_id=? and group_id", userID, groupID).Error != nil {
+	if DB().Take(&user, "id=? and group_id=?", userID, groupID).Error != nil {
 		return false
 	}
+
+	if groupID == 0 {
+		return true
+	}
+
 	return n.Exists(groupID, addr)
 }
 
@@ -75,9 +80,4 @@ func (n *Node) Exists(groupID uint, addr string) bool {
 		return false
 	}
 	return true
-}
-
-func (n *Node) SetGroup() error {
-	n.ID = 0
-	return DB().Where("group_id=? and addr =?", n.GroupID, n.Addr).Save(n).Error
 }

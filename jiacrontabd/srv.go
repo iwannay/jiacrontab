@@ -66,17 +66,16 @@ func (j *CrontabJob) Edit(args models.CrontabJob, rowsAffected *int64) error {
 		return db.Error
 	}
 
-	m := models.DB().Debug().Omit(
-		"updated_at", "created_at", "deleted_at",
-		"last_cost_time", "last_exec_time",
-		"next_exec_time", "last_exit_status", "process_num",
-		"status",
-	)
-
-	if args.UserID == 0 {
-		db = m.Save(&args)
+	if args.ID == 0 {
+		db = models.DB().Save(&args)
 	} else {
-		db = m.Where("user_id=?", args.UserID).Save(&args)
+		db = models.DB().Where("id=?", args.ID).Debug().Omit(
+			"updated_at", "created_at", "deleted_at",
+			"createdUserID", "createdUsername",
+			"last_cost_time", "last_exec_time",
+			"next_exec_time", "last_exit_status", "process_num",
+			"status",
+		).Save(&args)
 	}
 
 	*rowsAffected = db.RowsAffected

@@ -25,22 +25,40 @@ func wrapCtx(ctx iris.Context) *myctx {
 }
 
 func (ctx *myctx) respNotAllowed() {
-	ctx.respError(proto.Code_NotAllowed, proto.Msg_NotAllowed, nil)
+	ctx.respError(proto.Code_NotAllowed, proto.Msg_NotAllowed)
 }
 
-func (ctx *myctx) respError(code int, msg string, v interface{}) {
+func (ctx *myctx) respJWTError(err error) {
+	ctx.respError(proto.Code_JWTError, err)
+}
+
+func (ctx *myctx) respBasicError(err error) {
+	ctx.respError(proto.Code_Error, err)
+}
+
+func (ctx *myctx) respRPCError(err error) {
+	ctx.respError(proto.Code_RPCError, err)
+}
+
+func (ctx *myctx) respError(code int, err interface{}, v ...interface{}) {
 
 	var (
-		sign string
-		bts  []byte
-		err  error
+		sign   string
+		bts    []byte
+		msgStr string
+		data   interface{}
 	)
 
-	if msg == "" {
-		msg = "error"
+	if err == nil {
+		msgStr = "error"
 	}
 
-	bts, err = json.Marshal(v)
+	msgStr = fmt.Sprintf("%s", err)
+	if len(v) >= 1 {
+		data = v[0]
+	}
+
+	bts, err = json.Marshal(data)
 	if err != nil {
 		log.Error("errorResp:", err)
 	}
@@ -49,7 +67,7 @@ func (ctx *myctx) respError(code int, msg string, v interface{}) {
 
 	ctx.JSON(proto.Resp{
 		Code: code,
-		Msg:  msg,
+		Msg:  msgStr,
 		Data: string(bts),
 		Sign: sign,
 	})
@@ -100,6 +118,32 @@ func (ctx *myctx) getClaimsFromToken() (CustomerClaims, error) {
 	}
 	json.Unmarshal(bts, &data)
 	return data, err
+}
+
+func (ctx *myctx) getGroupNodes() ([]models.Node, error) {
+	var nodes []models.Node
+	gid, err := ctx.getGroupIDFromToken()
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = models.DB().Find(&nodes, "group_id=?", gid).Error
+	return nodes, err
+}
+
+func (ctx *myctx) getGroupAddr() ([]string, error) {
+	var addrs []string
+	nodes, err := ctx.getGroupNodes()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range nodes {
+		addrs = append(addrs, v.Addr)
+	}
+	return addrs, nil
+
 }
 
 func (ctx *myctx) pubEvent(desc, nodeAddr string, v interface{}) {

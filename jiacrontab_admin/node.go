@@ -64,23 +64,23 @@ func DeleteNode(c iris.Context) {
 	)
 
 	if err = reqBody.verify(ctx); err != nil {
-		ctx.respError(proto.Code_Error, err.Error(), nil)
+		ctx.respBasicError(err)
 		return
 	}
 
 	if cla, err = ctx.getClaimsFromToken(); err != nil {
-		ctx.respError(proto.Code_Error, err.Error(), nil)
+		ctx.respBasicError(err)
 		return
 	}
 
-	// 普通用户不允许修改其他分组节点信息
+	// 普通用户不允许删除节点
 	if cla.GroupID != 0 {
 		ctx.respNotAllowed()
 		return
 	}
 
 	if err = node.Delete(reqBody.GroupID, reqBody.Addr); err != nil {
-		ctx.respError(proto.Code_Error, err.Error(), nil)
+		ctx.respBasicError(err)
 		return
 	}
 
@@ -88,7 +88,7 @@ func DeleteNode(c iris.Context) {
 	ctx.respSucc("", nil)
 }
 
-// GroupNode 为node分组
+// GroupNode 超级管理员为node分组
 // 分组不存在时自动创建分组
 func GroupNode(c iris.Context) {
 	var (

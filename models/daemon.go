@@ -21,6 +21,9 @@ type DaemonJob struct {
 	WorkUser        string      `json:"workUser"`
 	WorkEnv         StringSlice `json:"workEnv" gorm:"type:varchar(1000)"`
 	WorkDir         string      `json:"workDir"`
-
-	Commands StringSlice `json:"commands" gorm:"type:varchar(1000)"`
+	CreatedUserID   uint        `json:"createdUserId"`
+	CreatedUsername string      `json:"createdUsername"`
+	UpdatedUserID   uint        `json:"updatedUserID"`
+	UpdatedUsername string      `json:"updatedUsername"`
+	Commands        StringSlice `json:"commands" gorm:"type:varchar(1000)"`
 }
