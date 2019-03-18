@@ -79,10 +79,9 @@ func newApp() *iris.Application {
 
 		adm.Post("/group/list", GetGroupList)
 		adm.Post("/group/edit", EditGroup)
-		adm.Post("/group/set", SetGroup)
 
 		adm.Post("/user/activity_list", getRelationEvent)
-		// adm.Post("/user/job_history",getJobHistory)
+		adm.Post("/user/job_history", getJobHistory)
 		adm.Post("/user/auditJob", auditJob)
 	}
 
