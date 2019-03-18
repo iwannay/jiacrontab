@@ -197,7 +197,7 @@ func dayMatches(j *Job, t time.Time) bool {
 		domMatch bool = 1<<uint(t.Day())&j.dom > 0
 		dowMatch bool = 1<<uint(t.Weekday())&j.dow > 0
 	)
-	// why?
+
 	if j.dom&starBit > 0 || j.dow&starBit > 0 {
 		return domMatch && dowMatch
 	}

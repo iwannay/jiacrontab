@@ -19,7 +19,8 @@ type CustomerClaims struct {
 	Root     bool
 }
 
-func login(c iris.Context) {
+// Login 用户登录
+func Login(c iris.Context) {
 	var (
 		err            error
 		ctx            = wrapCtx(c)
@@ -56,7 +57,11 @@ func login(c iris.Context) {
 	}
 
 	ctx.respSucc("", map[string]interface{}{
-		"token": token,
+		"token":   token,
+		"groupID": user.GroupID,
+		"root":    user.Root,
+		"mail":    user.Mail,
+		"userID":  user.ID,
 	})
 }
 
@@ -95,11 +100,11 @@ func getRelationEvent(c iris.Context) {
 
 func getJobHistory(c iris.Context) {
 	var (
-		ctx            = wrapCtx(c)
-		err            error
-		customerClaims CustomerClaims
-		reqBody        ReadMoreReqParams
-		historys       []models.JobHistory
+		ctx      = wrapCtx(c)
+		err      error
+		reqBody  ReadMoreReqParams
+		historys []models.JobHistory
+		addrs    []string
 	)
 
 	if err = reqBody.verify(ctx); err != nil {
@@ -107,12 +112,12 @@ func getJobHistory(c iris.Context) {
 		return
 	}
 
-	if customerClaims, err = ctx.getClaimsFromToken(); err != nil {
-		ctx.respError(proto.Code_Error, "无法获得token信息", err)
+	if addrs, err = ctx.getGroupAddr(); err != nil {
+		ctx.respError(proto.Code_Error, err.Error(), err)
 		return
 	}
 
-	err = models.DB().Where("addr=?", customerClaims.UserID).Order(fmt.Sprintf("create_at %s", reqBody.Orderby)).
+	err = models.DB().Where("addr in (?)", addrs).Order(fmt.Sprintf("create_at %s", reqBody.Orderby)).
 		Find(&historys).Error
 
 	if err != nil {
@@ -180,7 +185,8 @@ func auditJob(c iris.Context) {
 
 }
 
-func signUp(c iris.Context) {
+// IninAdminUser 初始化管理员
+func IninAdminUser(c iris.Context) {
 	var (
 		err     error
 		ctx     = wrapCtx(c)
@@ -189,7 +195,46 @@ func signUp(c iris.Context) {
 	)
 
 	if err = reqBody.verify(ctx); err != nil {
+		ctx.respBasicError(err)
+		return
+	}
+
+	if !cfg.App.FirstUse || user.GroupID != 0 {
+		ctx.respNotAllowed()
+		return
+	}
+
+	user.Username = reqBody.Username
+	user.Passwd = reqBody.Passwd
+	user.Root = true
+	user.Mail = reqBody.Mail
+
+	if err = user.Create(); err != nil {
 		ctx.respError(proto.Code_Error, err.Error(), nil)
+		return
+	}
+
+	cfg.SetUsed()
+	ctx.pubEvent(event_SignUpUser, "", reqBody)
+	ctx.respSucc("", true)
+}
+
+// Signup 注册新用户
+func Signup(c iris.Context) {
+	var (
+		err     error
+		ctx     = wrapCtx(c)
+		user    models.User
+		reqBody UserReqParams
+	)
+
+	if err = reqBody.verify(ctx); err != nil {
+		ctx.respBasicError(err)
+		return
+	}
+
+	if reqBody.GroupID == 0 {
+		ctx.respNotAllowed()
 		return
 	}
 
@@ -198,10 +243,6 @@ func signUp(c iris.Context) {
 	user.GroupID = reqBody.GroupID
 	user.Root = reqBody.Root
 	user.Mail = reqBody.Mail
-
-	if user.GroupID == 0 {
-		user.Root = true
-	}
 
 	if err = user.Create(); err != nil {
 		ctx.respError(proto.Code_Error, err.Error(), nil)

@@ -2,7 +2,9 @@ package admin
 
 import (
 	"errors"
+	"fmt"
 	"jiacrontab/models"
+	"jiacrontab/pkg/proto"
 
 	"github.com/kataras/iris"
 )
@@ -36,7 +38,7 @@ func (p *JobsReqParams) verify(ctx iris.Context) error {
 }
 
 type EditJobReqParams struct {
-	ID              uint              `json:"id"`
+	JobID           uint              `json:"jobID"`
 	Addr            string            `json:"addr"`
 	IsSync          bool              `json:"isSync"`
 	Name            string            `json:"name"`
@@ -58,13 +60,24 @@ type EditJobReqParams struct {
 	Hour            string            `json:"hour"`
 	Minute          string            `json:"minute"`
 	Second          string            `json:"second"`
-	TimeoutTrigger  string            `json:"timeoutTrigger"`
+	TimeoutTrigger  []string          `json:"timeoutTrigger"`
 }
 
 // TODO:验证参数
 func (p *EditJobReqParams) verify(ctx iris.Context) error {
 	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" {
-		return paramsError
+		return err
+	}
+	ts := map[string]bool{
+		proto.TimeoutTrigger_CallApi:   true,
+		proto.TimeoutTrigger_SendEmail: true,
+		proto.TimeoutTrigger_Kill:      true,
+	}
+
+	for _, v := range p.TimeoutTrigger {
+		if !ts[v] {
+			return fmt.Errorf("%s:%v", v, paramsError)
+		}
 	}
 
 	if p.Month == "" {
@@ -208,10 +221,10 @@ func (p *ActionTaskReqParams) verify(ctx iris.Context) error {
 
 type EditDaemonJobReqParams struct {
 	Addr            string   `json:"addr"`
-	JobID           int      `json:"jobID"`
+	JobID           uint     `json:"jobID"`
 	Name            string   `json:"name"`
 	MailTo          string   `json:"mailTo"`
-	APITo           string   `json:"apiTo"`
+	APITo           string   `json:"APITo"`
 	Commands        []string `json:"commands"`
 	WorkUser        string   `json:"workUser"`
 	WorkEnv         []string `json:"workEnv"`
@@ -295,25 +308,25 @@ func (p *GetNodeListReqParams) verify(ctx iris.Context) error {
 }
 
 type EditGroupReqParams struct {
-	GroupID uint   `json:"groupID"`
-	Name    string `json:"name"`
+	GroupID   uint   `json:"groupID"`
+	GroupName string `json:"groupName"`
 }
 
 func (p *EditGroupReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.Name == "" {
+	if err := ctx.ReadJSON(p); err != nil || p.GroupName == "" {
 		return paramsError
 	}
 	return nil
 }
 
 type SetGroupReqParams struct {
-	TargetGroupID uint   `json:"targetGroupID"`
-	UserID        uint   `json:"userID"`
-	NodeAddr      string `json:"nodeAddr"`
+	TargetGroupID uint `json:"targetGroupID"`
+	UserID        uint `json:"userID"`
+	Root          bool `json:"root"`
 }
 
 func (p *SetGroupReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || (p.UserID == 0 && p.NodeAddr == "") {
+	if err := ctx.ReadJSON(p); err != nil || p.UserID == 0 {
 		return paramsError
 	}
 	return nil
