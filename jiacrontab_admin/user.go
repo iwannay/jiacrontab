@@ -99,7 +99,7 @@ func getJobHistory(c iris.Context) {
 		err            error
 		customerClaims CustomerClaims
 		reqBody        ReadMoreReqParams
-		events         []models.JobHistory
+		historys       []models.JobHistory
 	)
 
 	if err = reqBody.verify(ctx); err != nil {
@@ -113,7 +113,7 @@ func getJobHistory(c iris.Context) {
 	}
 
 	err = models.DB().Where("addr=?", customerClaims.UserID).Order(fmt.Sprintf("create_at %s", reqBody.Orderby)).
-		Find(&events).Error
+		Find(&historys).Error
 
 	if err != nil {
 		ctx.respError(proto.Code_Error, "暂无数据", err)
@@ -121,7 +121,7 @@ func getJobHistory(c iris.Context) {
 	}
 
 	ctx.respSucc("", map[string]interface{}{
-		"list":     events,
+		"list":     historys,
 		"pagesize": reqBody.Pagesize,
 	})
 }

@@ -16,8 +16,8 @@ const (
 	event_StartDaemonJob = "启动常驻任务"
 	event_StopDaemonJob  = "停止常驻任务"
 
-	event_EditGroup      = "编辑分组"
-	event_SetSrouceGroup = "设置资源分组"
+	event_EditGroup = "编辑分组"
+	event_GroupNode = "设置节点分组"
 
 	event_SignUpUser = "创建新用户"
 

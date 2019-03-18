@@ -83,6 +83,11 @@ func (ctx *myctx) getGroupIDFromToken() (uint, error) {
 	return cla.GroupID, nil
 }
 
+func (ctx *myctx) isSuper() bool {
+	ok, err := ctx.getGroupIDFromToken()
+	return ok == 0 && err == nil
+}
+
 func (ctx *myctx) getClaimsFromToken() (CustomerClaims, error) {
 	var data CustomerClaims
 	token, ok := ctx.Values().Get("jwt").(*jwt.Token)
