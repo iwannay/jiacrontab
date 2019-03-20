@@ -12,6 +12,7 @@ WORKDIR=./app
 SERVERDIR=$(WORKDIR)/jiacrontab/server
 CLIENTDIR=$(WORKDIR)/jiacrontab/client
 
+OPT?=
 
 .PHONY: all build test clean run build-linux build-windows
 all: test build
@@ -24,8 +25,8 @@ build:
 	cp -r server/template $(SERVERDIR)
 	cp -r server/static $(SERVERDIR)
 	cp client/client.ini $(CLIENTDIR)
-	$(GOBUILD) -mod=vendor -o $(BINARY_MANAGER) -v ./server
-	$(GOBUILD) -mod=vendor -o $(BINARY_CLIENT) -v ./client
+	$(GOBUILD) -mod=vendor $(OPT) -o $(BINARY_MANAGER) -v ./server	
+	$(GOBUILD) -mod=vendor $(OPT) -o $(BINARY_CLIENT) -v ./client
 	mv $(BINARY_MANAGER) $(SERVERDIR)
 	mv $(BINARY_CLIENT) $(CLIENTDIR)
 test:
@@ -52,8 +53,8 @@ build-linux:
 	cp -r server/template $(SERVERDIR)
 	cp -r server/static $(SERVERDIR)
 	cp client/client.ini $(CLIENTDIR)
-	GOOS=linux GOARCH=amd64 $(GOBUILD) -mod=vendor -o $(BINARY_MANAGER) -v ./server
-	GOOS=linux GOARCH=amd64 $(GOBUILD) -mod=vendor -o $(BINARY_CLIENT) -v ./client
+	GOOS=linux GOARCH=amd64 $(GOBUILD) $(OPT) -mod=vendor -o $(BINARY_MANAGER) -v ./server
+	GOOS=linux GOARCH=amd64 $(GOBUILD) $(OPT) -mod=vendor -o $(BINARY_CLIENT) -v ./client
 	mv $(BINARY_MANAGER) $(SERVERDIR)
 	mv $(BINARY_CLIENT) $(CLIENTDIR)
 
@@ -66,8 +67,8 @@ build-windows:
 	cp -r server/template $(SERVERDIR)
 	cp -r server/static $(SERVERDIR)
 	cp client/client.ini $(CLIENTDIR)
-	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC="x86_64-w64-mingw32-gcc -fno-stack-protector -D_FORTIFY_SOURCE=0 -lssp" $(GOBUILD) -mod=vendor -o $(BINARY_MANAGER).exe -v ./server
-	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC="x86_64-w64-mingw32-gcc -fno-stack-protector -D_FORTIFY_SOURCE=0 -lssp" $(GOBUILD) -mod=vendor -o $(BINARY_CLIENT).exe -v ./client
+	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC="x86_64-w64-mingw32-gcc -fno-stack-protector -D_FORTIFY_SOURCE=0 -lssp" $(GOBUILD) $(OPT) -mod=vendor -o $(BINARY_MANAGER).exe -v ./server
+	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC="x86_64-w64-mingw32-gcc -fno-stack-protector -D_FORTIFY_SOURCE=0 -lssp" $(GOBUILD) $(OPT) -mod=vendor -o $(BINARY_CLIENT).exe -v ./client
 
 	mv $(BINARY_MANAGER).exe $(SERVERDIR)
 	mv $(BINARY_CLIENT).exe $(CLIENTDIR)
