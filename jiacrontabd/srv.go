@@ -123,7 +123,7 @@ func (j *CrontabJob) Stop(ids []uint, ok *bool) error {
 
 func (j *CrontabJob) Delete(ids []uint, ok *bool) error {
 	*ok = true
-	return models.DB().Model(&models.CrontabJob{}).Delete("id in (?)", ids).Error
+	return models.DB().Where("id in (?)", ids).Delete(&models.CrontabJob{}).Error
 }
 
 func (j *CrontabJob) Kill(jobIDs []uint, ok *bool) error {
