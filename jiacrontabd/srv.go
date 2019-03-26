@@ -289,7 +289,7 @@ func (j *DaemonJob) ActionDaemonJob(args proto.ActionDaemonJobArgs, reply *bool)
 	return nil
 }
 
-func (j *DaemonJob) Get(jobID int, djob *models.DaemonJob) error {
+func (j *DaemonJob) Get(jobID uint, djob *models.DaemonJob) error {
 	return models.DB().Find(djob, "id=?", jobID).Error
 }
 

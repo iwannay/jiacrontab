@@ -88,11 +88,10 @@ func editJob(c iris.Context) {
 		ctx     = wrapCtx(c)
 		reqBody EditJobReqParams
 		rpcArgs models.CrontabJob
-		cla     CustomerClaims
 		node    models.Node
 	)
 
-	if cla, err = ctx.getClaimsFromToken(); err != nil {
+	if err = ctx.parseClaimsFromToken(); err != nil {
 		ctx.respJWTError(err)
 		return
 	}
@@ -102,8 +101,8 @@ func editJob(c iris.Context) {
 		return
 	}
 
-	if !node.VerifyUserGroup(cla.UserID, cla.GroupID, reqBody.Addr) {
-		ctx.respBasicError(fmt.Errorf("userID:%d groupID:%d permission not allowed", cla.UserID, cla.GroupID))
+	if !node.VerifyUserGroup(ctx.claims.UserID, ctx.claims.GroupID, reqBody.Addr) {
+		ctx.respBasicError(fmt.Errorf("userID:%d groupID:%d permission not allowed", ctx.claims.UserID, ctx.claims.GroupID))
 		return
 	}
 
@@ -119,8 +118,8 @@ func editJob(c iris.Context) {
 			Second:  reqBody.Second,
 		},
 
-		UpdatedUserID:   cla.UserID,
-		UpdatedUsername: cla.Username,
+		UpdatedUserID:   ctx.claims.UserID,
+		UpdatedUsername: ctx.claims.Username,
 		WorkDir:         reqBody.WorkDir,
 		WorkUser:        reqBody.WorkUser,
 		WorkEnv:         reqBody.WorkEnv,
@@ -139,8 +138,8 @@ func editJob(c iris.Context) {
 	rpcArgs.ID = reqBody.JobID
 
 	if rpcArgs.ID == 0 {
-		rpcArgs.CreatedUserID = cla.UserID
-		rpcArgs.CreatedUsername = cla.Username
+		rpcArgs.CreatedUserID = ctx.claims.UserID
+		rpcArgs.CreatedUsername = ctx.claims.Username
 	}
 
 	if err = rpcCall(reqBody.Addr, "CrontabJob.Edit", rpcArgs, &reply); err != nil {
