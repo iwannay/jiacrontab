@@ -63,11 +63,12 @@ func actionDaemonTask(c iris.Context) {
 		ctx.respError(proto.Code_Error, "参数错误", nil)
 		return
 	}
+
 	if err = rpcCall(reqBody.Addr, "DaemonJob.ActionDaemonTask", proto.ActionDaemonJobArgs{
 		Action: action,
 		JobIDs: reqBody.JobIDs,
 	}, &reply); err != nil {
-		ctx.respError(proto.Code_Error, err.Error(), nil)
+		ctx.respBasicError(err)
 		return
 	}
 
@@ -75,7 +76,8 @@ func actionDaemonTask(c iris.Context) {
 	ctx.respSucc("", nil)
 }
 
-func editDaemonJob(c iris.Context) {
+// EditDaemonJob 修改常驻任务，jobID为0时新增
+func EditDaemonJob(c iris.Context) {
 	var (
 		err       error
 		reply     int
@@ -98,6 +100,7 @@ func editDaemonJob(c iris.Context) {
 
 	if !node.VerifyUserGroup(cla.UserID, cla.GroupID, reqBody.Addr) {
 		ctx.respBasicError(fmt.Errorf("userID:%d groupID:%d permission not allowed", cla.UserID, cla.GroupID))
+		return
 	}
 
 	daemonJob = models.DaemonJob{
@@ -119,10 +122,11 @@ func editDaemonJob(c iris.Context) {
 		daemonJob.CreatedUsername = cla.Username
 	}
 
-	if err = rpcCall(reqBody.Addr, "DaemonJob.EditDaemonJob", daemonJob, &reply); err != nil {
+	if err = rpcCall(reqBody.Addr, "DaemonJob.Edit", daemonJob, &reply); err != nil {
 		ctx.respRPCError(err)
 		return
 	}
+
 	ctx.pubEvent(event_EditDaemonJob, reqBody.Addr, reqBody)
 	ctx.respSucc("", reply)
 }

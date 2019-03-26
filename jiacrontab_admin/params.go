@@ -223,15 +223,15 @@ type EditDaemonJobReqParams struct {
 	Addr            string   `json:"addr"`
 	JobID           uint     `json:"jobID"`
 	Name            string   `json:"name"`
-	MailTo          string   `json:"mailTo"`
-	APITo           string   `json:"APITo"`
+	MailTo          []string `json:"mailTo"`
+	APITo           []string `json:"APITo"`
 	Commands        []string `json:"commands"`
 	WorkUser        string   `json:"workUser"`
 	WorkEnv         []string `json:"workEnv"`
 	WorkDir         string   `json:"workDir"`
 	FailRestart     bool     `json:"failRestart"`
-	ErrorMailNotify bool     `json:"mailNotify"`
-	ErrorAPINotify  bool     `json:"APINotify"`
+	ErrorMailNotify bool     `json:"errorMailNotify"`
+	ErrorAPINotify  bool     `json:"errorAPINotify"`
 }
 
 func (p *EditDaemonJobReqParams) verify(ctx iris.Context) error {

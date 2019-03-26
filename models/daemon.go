@@ -14,8 +14,8 @@ type DaemonJob struct {
 	ErrorAPINotify  bool        `json:"errorAPINotify"`
 	Disabled        bool        `json:"disabled"`
 	Status          JobStatus   `json:"status"`
-	MailTo          string      `json:"mailTo"`
-	APITo           string      `json:"APITo"`
+	MailTo          StringSlice `json:"mailTo" gorm:"type:varchar(1000)"`
+	APITo           StringSlice `json:"APITo" gorm:"type:varchar(1000)"`
 	FailRestart     bool        `json:"failRestart"`
 	StartAt         time.Time   `json:"startAt"`
 	WorkUser        string      `json:"workUser"`

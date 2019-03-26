@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"jiacrontab/models"
@@ -8,6 +9,7 @@ import (
 	"jiacrontab/pkg/proto"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/iwannay/log"
 )
@@ -73,24 +75,38 @@ func (s *Srv) PushJobLog(args models.JobHistory, reply *bool) error {
 }
 
 func (s *Srv) ApiPost(args proto.ApiPost, reply *bool) error {
-	req, err := http.NewRequest("POST", args.Url, strings.NewReader(args.Data))
-	if err != nil {
-		log.Errorf("create req fail: %s", err)
-		return err
+	var (
+		err  error
+		errs []error
+	)
+
+	for _, url := range args.Urls {
+
+		client := http.Client{
+			Timeout: time.Minute,
+		}
+
+		response, err := client.Post(url, "application/json", strings.NewReader(args.Data))
+
+		if err != nil {
+			errs = append(errs, err)
+			log.Errorf("post url %s fail: %s", url, err)
+			continue
+		}
+		defer response.Body.Close()
+		io.Copy(ioutil.Discard, response.Body)
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	response, err := http.DefaultClient.Do(req)
-
-	if err != nil {
-		log.Errorf("post url %s fail: %s", args.Url, err)
-		return err
+	for _, v := range errs {
+		if err != nil {
+			err = fmt.Errorf("%s\n%s", err, v)
+		} else {
+			err = v
+		}
 	}
 
-	defer response.Body.Close()
-	io.Copy(ioutil.Discard, response.Body)
 	*reply = true
-	return nil
+	return err
 }
 
 func (s *Srv) Ping(args *proto.EmptyArgs, reply *proto.EmptyReply) error {
