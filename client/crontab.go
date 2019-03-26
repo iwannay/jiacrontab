@@ -101,6 +101,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 		TaskID      string
 		TaskCommand string
 		TaskArgs    string
+		TaskAddr    string
 		CreatedAt   time.Time
 		TimeOut     int64
 		Type        string
@@ -171,6 +172,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 						postData, err := json.Marshal(apiPost{
 							TaskName:    t.taskArgs.Name,
 							TaskID:      t.id,
+							TaskAddr:    globalConfig.addr,
 							TaskCommand: t.taskArgs.Command,
 							TaskArgs:    t.taskArgs.Args,
 							CreatedAt:   t.taskArgs.CreatedAt,
@@ -265,6 +267,7 @@ func (t *taskEntity) exec(logContent *[]byte) {
 					TaskArgs:    t.taskArgs.Args,
 					CreatedAt:   t.taskArgs.CreatedAt,
 					TimeOut:     t.taskArgs.Timeout,
+					TaskAddr:    globalConfig.addr,
 					Type:        "error",
 				})
 				if err != nil {

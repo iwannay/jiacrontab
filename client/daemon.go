@@ -32,6 +32,7 @@ func (d *daemonTask) do(ctx context.Context) {
 		TaskName    string
 		TaskID      uint
 		TaskCommand string
+		TaskAddr    string
 		TaskArgs    string
 		CreatedAt   time.Time
 		Type        string
@@ -80,6 +81,7 @@ func (d *daemonTask) do(ctx context.Context) {
 					TaskName:    d.task.Name,
 					TaskID:      d.task.ID,
 					TaskCommand: d.task.Command,
+					TaskAddr:    globalConfig.addr,
 					TaskArgs:    d.task.Args,
 					CreatedAt:   d.task.CreatedAt,
 					Type:        "error",
