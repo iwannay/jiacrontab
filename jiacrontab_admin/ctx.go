@@ -28,6 +28,10 @@ func (ctx *myctx) respNotAllowed() {
 	ctx.respError(proto.Code_NotAllowed, proto.Msg_NotAllowed)
 }
 
+func (ctx *myctx) respAuthFailed(err error) {
+	ctx.respError(proto.Code_FailedAuth, err)
+}
+
 func (ctx *myctx) respJWTError(err error) {
 	ctx.respError(proto.Code_JWTError, err)
 }

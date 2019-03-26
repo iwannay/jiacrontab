@@ -38,7 +38,7 @@ type QueryDaemonJobRet struct {
 
 type AuditJobArgs struct{ JobIDs []uint }
 
-type ApiNotifyBody struct {
+type CrontabApiNotifyBody struct {
 	NodeAddr  string
 	JobName   string
 	JobID     int

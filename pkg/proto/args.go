@@ -20,7 +20,7 @@ type SendMail struct {
 }
 
 type ApiPost struct {
-	Url  string
+	Urls []string
 	Data string
 }
 

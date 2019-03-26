@@ -251,7 +251,7 @@ func (j *JobEntry) handleNotify(p *process) {
 	}
 
 	if j.detail.ErrorAPINotify {
-		postData, err := json.Marshal(proto.ApiNotifyBody{
+		postData, err := json.Marshal(proto.CrontabApiNotifyBody{
 			NodeAddr:  cfg.LocalAddr,
 			JobName:   j.detail.Name,
 			JobID:     int(j.detail.ID),
@@ -265,14 +265,14 @@ func (j *JobEntry) handleNotify(p *process) {
 			log.Error("json.Marshal error:", err)
 			return
 		}
-		for _, url := range j.detail.APITo {
-			if err = rpcCall("Srv.ApiPost", proto.ApiPost{
-				Url:  url,
-				Data: string(postData),
-			}, &reply); err != nil {
-				log.Error("Srv.ApiPost error:", err, "server addr:", cfg.AdminAddr)
-			}
+
+		if err = rpcCall("Srv.ApiPost", proto.ApiPost{
+			Urls: j.detail.APITo,
+			Data: string(postData),
+		}, &reply); err != nil {
+			log.Error("Srv.ApiPost error:", err, "server addr:", cfg.AdminAddr)
 		}
+
 	}
 }
 
@@ -287,7 +287,7 @@ func (j *JobEntry) timeoutTrigger(p *process) (ignore bool) {
 		switch e {
 		case proto.TimeoutTrigger_CallApi:
 			j.detail.LastExitStatus = exitTimeout
-			postData, err := json.Marshal(proto.ApiNotifyBody{
+			postData, err := json.Marshal(proto.CrontabApiNotifyBody{
 				NodeAddr:  cfg.LocalAddr,
 				JobName:   j.detail.Name,
 				JobID:     int(j.detail.ID),
@@ -302,13 +302,11 @@ func (j *JobEntry) timeoutTrigger(p *process) (ignore bool) {
 				return false
 			}
 
-			for _, url := range j.detail.APITo {
-				if err = rpcCall("Srv.ErrorNotify err:", proto.ApiPost{
-					Url:  url,
-					Data: string(postData),
-				}, &reply); err != nil {
-					log.Error("Srv.ErrorNotify err:", err, "server addr:", cfg.AdminAddr)
-				}
+			if err = rpcCall("Srv.ErrorNotify err:", proto.ApiPost{
+				Urls: j.detail.APITo,
+				Data: string(postData),
+			}, &reply); err != nil {
+				log.Error("Srv.ErrorNotify err:", err, "server addr:", cfg.AdminAddr)
 			}
 
 		case proto.TimeoutTrigger_SendEmail:

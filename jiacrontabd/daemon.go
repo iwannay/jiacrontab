@@ -7,7 +7,6 @@ import (
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -32,7 +31,6 @@ type daemonJob struct {
 
 func (d *daemonJob) do(ctx context.Context) {
 
-	var reply bool
 	d.processNum = 1
 	t := time.NewTicker(1 * time.Second)
 	d.daemon.wait.Add(1)
@@ -63,41 +61,7 @@ func (d *daemonJob) do(ctx context.Context) {
 
 		err = myCmdUint.launch()
 
-		if err != nil {
-			if d.job.ErrorMailNotify && d.job.MailTo != "" {
-				err := rpcCall("Srv.SendMail", proto.SendMail{
-					MailTo:  strings.Split(d.job.MailTo, ","),
-					Subject: cfg.LocalAddr + "提醒常驻脚本异常退出",
-					Content: fmt.Sprintf(
-						"任务名：%s\n详情：%v\n开始时间：%s\n异常：%s",
-						d.job.Name, d.job.Commands, time.Now().Format(proto.DefaultTimeLayout), err.Error()),
-				}, &reply)
-				if err != nil {
-					log.Error("Logic.SendMail error:", err, "server addr:", cfg.AdminAddr)
-				}
-			}
-
-			if d.job.ErrorAPINotify && d.job.APITo != "" {
-				postData, err := json.Marshal(ApiNotifyArgs{
-					JobName:    d.job.Name,
-					JobID:      d.job.ID,
-					Commands:   d.job.Commands,
-					CreatedAt:  d.job.CreatedAt,
-					NotifyType: "error",
-				})
-				if err != nil {
-					log.Error("json.Marshal error:", err)
-				}
-				err = rpcCall("Srv.ApiPost", proto.ApiPost{
-					Url:  d.job.APITo,
-					Data: string(postData),
-				}, &reply)
-
-				if err != nil {
-					log.Error("Logic.ApiPost error:", err, "server addr:", cfg.AdminAddr)
-				}
-			}
-		}
+		d.handleNotify(err)
 
 		select {
 		case <-ctx.Done():
@@ -124,6 +88,48 @@ func (d *daemonJob) do(ctx context.Context) {
 
 	log.Info("daemon task end", d.job.Name)
 
+}
+
+func (d *daemonJob) handleNotify(err error) {
+	if err == nil {
+		return
+	}
+
+	var reply bool
+	if d.job.ErrorMailNotify && len(d.job.MailTo) > 0 {
+		var reply bool
+		err := rpcCall("Srv.SendMail", proto.SendMail{
+			MailTo:  d.job.MailTo,
+			Subject: cfg.LocalAddr + "提醒常驻脚本异常退出",
+			Content: fmt.Sprintf(
+				"任务名：%s\n详情：%v\n开始时间：%s\n异常：%s",
+				d.job.Name, d.job.Commands, time.Now().Format(proto.DefaultTimeLayout), err),
+		}, &reply)
+		if err != nil {
+			log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
+		}
+	}
+
+	if d.job.ErrorAPINotify && len(d.job.APITo) > 0 {
+		postData, err := json.Marshal(ApiNotifyArgs{
+			JobName:    d.job.Name,
+			JobID:      d.job.ID,
+			Commands:   d.job.Commands,
+			CreatedAt:  d.job.CreatedAt,
+			NotifyType: "error",
+		})
+		if err != nil {
+			log.Error("json.Marshal error:", err)
+		}
+		err = rpcCall("Srv.ApiPost", proto.ApiPost{
+			Urls: d.job.APITo,
+			Data: string(postData),
+		}, &reply)
+
+		if err != nil {
+			log.Error("Logic.ApiPost error:", err, "server addr:", cfg.AdminAddr)
+		}
+	}
 }
 
 type Daemon struct {

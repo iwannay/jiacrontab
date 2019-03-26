@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"errors"
 	"fmt"
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
@@ -30,11 +31,11 @@ func Login(c iris.Context) {
 	)
 
 	if err = reqBody.verify(ctx); err != nil {
-		ctx.respError(proto.Code_Error, err.Error(), nil)
+		ctx.respBasicError(err)
 		return
 	}
 	if !user.Verify(reqBody.Username, reqBody.Passwd) {
-		ctx.respError(proto.Code_FailedAuth, "帐号或密码不正确", nil)
+		ctx.respAuthFailed(errors.New("帐号或密码不正确"))
 		return
 	}
 
@@ -52,7 +53,7 @@ func Login(c iris.Context) {
 	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, customerClaims).SignedString([]byte(cfg.Jwt.SigningKey))
 
 	if err != nil {
-		ctx.respError(proto.Code_FailedAuth, "无法生成访问凭证", nil)
+		ctx.respAuthFailed(errors.New("无法生成访问凭证"))
 		return
 	}
 

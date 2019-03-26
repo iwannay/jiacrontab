@@ -69,7 +69,7 @@ func newApp() *iris.Application {
 
 		adm.Post("/daemon/job/list", getDaemonJobList)
 		adm.Post("/daemon/job/action", actionDaemonTask)
-		adm.Post("/daemon/job/edit", editDaemonJob)
+		adm.Post("/daemon/job/edit", EditDaemonJob)
 		adm.Post("/daemon/job/get", getDaemonJob)
 		adm.Post("/daemon/job/log", getRecentDaemonLog)
 
