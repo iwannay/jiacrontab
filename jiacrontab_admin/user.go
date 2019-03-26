@@ -68,11 +68,10 @@ func Login(c iris.Context) {
 
 func getRelationEvent(c iris.Context) {
 	var (
-		ctx            = wrapCtx(c)
-		err            error
-		customerClaims CustomerClaims
-		reqBody        ReadMoreReqParams
-		events         []models.Event
+		ctx     = wrapCtx(c)
+		err     error
+		reqBody ReadMoreReqParams
+		events  []models.Event
 	)
 
 	if err = reqBody.verify(ctx); err != nil {
@@ -80,12 +79,12 @@ func getRelationEvent(c iris.Context) {
 		return
 	}
 
-	if customerClaims, err = ctx.getClaimsFromToken(); err != nil {
+	if err = ctx.parseClaimsFromToken(); err != nil {
 		ctx.respError(proto.Code_Error, "无法获得token信息", err)
 		return
 	}
 
-	err = models.DB().Where("user_id=?", customerClaims.UserID).Order(fmt.Sprintf("create_at %s", reqBody.Orderby)).
+	err = models.DB().Where("user_id=?", ctx.claims.UserID).Order(fmt.Sprintf("create_at %s", reqBody.Orderby)).
 		Find(&events).Error
 
 	if err != nil {
@@ -134,12 +133,11 @@ func getJobHistory(c iris.Context) {
 
 func auditJob(c iris.Context) {
 	var (
-		ctx            = wrapCtx(c)
-		err            error
-		customerClaims CustomerClaims
-		reqBody        AuditJobReqParams
-		node           models.Node
-		reply          bool
+		ctx     = wrapCtx(c)
+		err     error
+		reqBody AuditJobReqParams
+		node    models.Node
+		reply   bool
 	)
 
 	if err = reqBody.verify(ctx); err != nil {
@@ -147,19 +145,19 @@ func auditJob(c iris.Context) {
 		return
 	}
 
-	if customerClaims, err = ctx.getClaimsFromToken(); err != nil {
+	if err = ctx.parseClaimsFromToken(); err != nil {
 		ctx.respError(proto.Code_Error, "无法获得token信息", err)
 		return
 	}
 
-	if customerClaims.GroupID != 0 {
-		if customerClaims.Root == false {
-			ctx.respError(proto.Code_Error, proto.Msg_NotAllowed, nil)
+	if ctx.claims.GroupID != 0 {
+		if ctx.claims.Root == false {
+			ctx.respNotAllowed()
 			return
 		}
 
-		if node.Exists(customerClaims.GroupID, reqBody.Addr) == false {
-			ctx.respError(proto.Code_Error, proto.Msg_NotAllowed, nil)
+		if node.Exists(ctx.claims.GroupID, reqBody.Addr) == false {
+			ctx.respNotAllowed()
 			return
 		}
 	}

@@ -1,7 +1,6 @@
 package admin
 
 import (
-	"fmt"
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/rpc"
@@ -10,7 +9,7 @@ import (
 	"github.com/kataras/iris"
 )
 
-func getDaemonJobList(c iris.Context) {
+func GetDaemonJobList(c iris.Context) {
 	var (
 		ctx     = wrapCtx(c)
 		reqBody GetJobListReqParams
@@ -84,11 +83,9 @@ func EditDaemonJob(c iris.Context) {
 		ctx       = wrapCtx(c)
 		reqBody   EditDaemonJobReqParams
 		daemonJob models.DaemonJob
-		cla       CustomerClaims
-		node      models.Node
 	)
 
-	if cla, err = ctx.getClaimsFromToken(); err != nil {
+	if err = ctx.parseClaimsFromToken(); err != nil {
 		ctx.respJWTError(err)
 		return
 	}
@@ -98,8 +95,8 @@ func EditDaemonJob(c iris.Context) {
 		return
 	}
 
-	if !node.VerifyUserGroup(cla.UserID, cla.GroupID, reqBody.Addr) {
-		ctx.respBasicError(fmt.Errorf("userID:%d groupID:%d permission not allowed", cla.UserID, cla.GroupID))
+	if !ctx.verifyNodePermission(reqBody.Addr) {
+		ctx.respNotAllowed()
 		return
 	}
 
@@ -109,8 +106,8 @@ func EditDaemonJob(c iris.Context) {
 		ErrorAPINotify:  reqBody.ErrorMailNotify,
 		MailTo:          reqBody.MailTo,
 		APITo:           reqBody.APITo,
-		UpdatedUserID:   cla.UserID,
-		UpdatedUsername: cla.Username,
+		UpdatedUserID:   ctx.claims.UserID,
+		UpdatedUsername: ctx.claims.Username,
 		Commands:        reqBody.Commands,
 		FailRestart:     reqBody.FailRestart,
 	}
@@ -118,8 +115,8 @@ func EditDaemonJob(c iris.Context) {
 	daemonJob.ID = reqBody.JobID
 
 	if daemonJob.ID == 0 {
-		daemonJob.CreatedUserID = cla.UserID
-		daemonJob.CreatedUsername = cla.Username
+		daemonJob.CreatedUserID = ctx.claims.UserID
+		daemonJob.CreatedUsername = ctx.claims.Username
 	}
 
 	if err = rpcCall(reqBody.Addr, "DaemonJob.Edit", daemonJob, &reply); err != nil {
@@ -131,19 +128,30 @@ func EditDaemonJob(c iris.Context) {
 	ctx.respSucc("", reply)
 }
 
-func getDaemonJob(c iris.Context) {
+func GetDaemonJob(c iris.Context) {
 	var (
 		ctx       = wrapCtx(c)
 		reqBody   GetJobReqParams
 		daemonJob models.DaemonJob
 		err       error
 	)
+
+	if err = ctx.parseClaimsFromToken(); err != nil {
+		ctx.respJWTError(err)
+		return
+	}
+
 	if err = reqBody.verify(ctx); err != nil {
 		ctx.respError(proto.Code_Error, err.Error(), nil)
 		return
 	}
 
-	if err = rpcCall(reqBody.Addr, "daemonJob.GetDaemonJob", reqBody.JobID, &daemonJob); err != nil {
+	if !ctx.verifyNodePermission(reqBody.Addr) {
+		ctx.respNotAllowed()
+		return
+	}
+
+	if err = rpcCall(reqBody.Addr, "DaemonJob.Get", reqBody.JobID, &daemonJob); err != nil {
 		ctx.respError(proto.Code_Error, err.Error(), nil)
 		return
 	}

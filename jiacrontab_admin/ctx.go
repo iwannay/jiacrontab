@@ -16,11 +16,12 @@ import (
 
 type myctx struct {
 	iris.Context
+	claims CustomerClaims
 }
 
 func wrapCtx(ctx iris.Context) *myctx {
 	return &myctx{
-		ctx,
+		Context: ctx,
 	}
 }
 
@@ -98,11 +99,11 @@ func (ctx *myctx) respSucc(msg string, v interface{}) {
 }
 
 func (ctx *myctx) getGroupIDFromToken() (uint, error) {
-	cla, err := ctx.getClaimsFromToken()
+	err := ctx.parseClaimsFromToken()
 	if err != nil {
 		return 0, err
 	}
-	return cla.GroupID, nil
+	return ctx.claims.GroupID, nil
 }
 
 func (ctx *myctx) isSuper() bool {
@@ -110,18 +111,23 @@ func (ctx *myctx) isSuper() bool {
 	return ok == 0 && err == nil
 }
 
-func (ctx *myctx) getClaimsFromToken() (CustomerClaims, error) {
-	var data CustomerClaims
+func (ctx *myctx) parseClaimsFromToken() error {
+
+	if (ctx.claims != CustomerClaims{}) {
+		return nil
+	}
+
+	var ok bool
 	token, ok := ctx.Values().Get("jwt").(*jwt.Token)
 	if !ok {
-		return data, errors.New("claims is nil")
+		return errors.New("claims is nil")
 	}
 	bts, err := json.Marshal(token.Claims)
 	if err != nil {
-		return data, err
+		return err
 	}
-	json.Unmarshal(bts, &data)
-	return data, err
+	json.Unmarshal(bts, &ctx.claims)
+	return err
 }
 
 func (ctx *myctx) getGroupNodes() ([]models.Node, error) {
@@ -134,6 +140,14 @@ func (ctx *myctx) getGroupNodes() ([]models.Node, error) {
 
 	err = models.DB().Find(&nodes, "group_id=?", gid).Error
 	return nodes, err
+}
+
+func (ctx *myctx) verifyNodePermission(addr string) bool {
+	var node models.Node
+	if err := ctx.parseClaimsFromToken(); err != nil {
+		return false
+	}
+	return node.VerifyUserGroup(ctx.claims.UserID, ctx.claims.GroupID, addr)
 }
 
 func (ctx *myctx) getGroupAddr() ([]string, error) {
@@ -151,10 +165,12 @@ func (ctx *myctx) getGroupAddr() ([]string, error) {
 }
 
 func (ctx *myctx) pubEvent(desc, nodeAddr string, v interface{}) {
-	content := ""
-	claims, err := ctx.getClaimsFromToken()
-	if err != nil {
-		return
+	var content string
+	if (ctx.claims == CustomerClaims{}) {
+		err := ctx.parseClaimsFromToken()
+		if err != nil {
+			return
+		}
 	}
 
 	if v != nil {
@@ -166,9 +182,9 @@ func (ctx *myctx) pubEvent(desc, nodeAddr string, v interface{}) {
 	}
 
 	e := models.Event{
-		GroupID:   claims.GroupID,
-		UserID:    claims.UserID,
-		Username:  claims.Username,
+		GroupID:   ctx.claims.GroupID,
+		UserID:    ctx.claims.UserID,
+		Username:  ctx.claims.Username,
 		EventDesc: desc,
 		NodeAddr:  nodeAddr,
 		Content:   content,

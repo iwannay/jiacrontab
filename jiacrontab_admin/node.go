@@ -60,7 +60,6 @@ func DeleteNode(c iris.Context) {
 		ctx     = wrapCtx(c)
 		reqBody DeleteNodeReqParams
 		node    models.Node
-		cla     CustomerClaims
 	)
 
 	if err = reqBody.verify(ctx); err != nil {
@@ -68,13 +67,13 @@ func DeleteNode(c iris.Context) {
 		return
 	}
 
-	if cla, err = ctx.getClaimsFromToken(); err != nil {
+	if err = ctx.parseClaimsFromToken(); err != nil {
 		ctx.respBasicError(err)
 		return
 	}
 
 	// 普通用户不允许删除节点
-	if cla.GroupID != 0 {
+	if ctx.claims.GroupID != 0 {
 		ctx.respNotAllowed()
 		return
 	}
@@ -96,7 +95,6 @@ func GroupNode(c iris.Context) {
 		ctx     = wrapCtx(c)
 		reqBody GroupNodeReqParams
 		node    models.Node
-		cla     CustomerClaims
 	)
 
 	if err = reqBody.verify(ctx); err != nil {
@@ -104,12 +102,12 @@ func GroupNode(c iris.Context) {
 		return
 	}
 
-	if cla, err = ctx.getClaimsFromToken(); err != nil {
+	if err = ctx.parseClaimsFromToken(); err != nil {
 		ctx.respError(proto.Code_Error, err.Error(), nil)
 		return
 	}
 
-	if cla.GroupID != 0 {
+	if ctx.claims.GroupID != 0 {
 		ctx.respNotAllowed()
 		return
 	}
