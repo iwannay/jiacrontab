@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"errors"
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/rpc"
@@ -45,29 +46,31 @@ func actionDaemonTask(c iris.Context) {
 		reply   bool
 		ok      bool
 		reqBody ActionTaskReqParams
-		methods = map[string]int{
-			"start":  proto.ActionStartDaemonJob,
-			"stop":   proto.ActionStopDaemonJob,
-			"delete": proto.ActionDeleteDaemonJob,
+		methods = map[string]string{
+			"start":  "DaemonJob.Start",
+			"delete": "DaemonJob.Delete",
+			"stop":   "DaemonJob.Stop",
 		}
+
 		eDesc = map[string]string{
 			"start":  event_StartDaemonJob,
-			"stop":   event_StopDaemonJob,
 			"delete": event_DelDaemonJob,
+			"stop":   event_StopDaemonJob,
 		}
-		action int
+		method string
 	)
 
-	if action, ok = methods[reqBody.Action]; !ok {
-		ctx.respError(proto.Code_Error, "参数错误", nil)
+	if err = reqBody.verify(ctx); err != nil {
+		ctx.respBasicError(err)
+	}
+
+	if method, ok = methods[reqBody.Action]; !ok {
+		ctx.respBasicError(errors.New("参数错误"))
 		return
 	}
 
-	if err = rpcCall(reqBody.Addr, "DaemonJob.ActionDaemonTask", proto.ActionDaemonJobArgs{
-		Action: action,
-		JobIDs: reqBody.JobIDs,
-	}, &reply); err != nil {
-		ctx.respBasicError(err)
+	if err = rpcCall(reqBody.Addr, method, reqBody.JobIDs, &reply); err != nil {
+		ctx.respRPCError(err)
 		return
 	}
 
@@ -110,6 +113,7 @@ func EditDaemonJob(c iris.Context) {
 		UpdatedUsername: ctx.claims.Username,
 		Commands:        reqBody.Commands,
 		FailRestart:     reqBody.FailRestart,
+		Status:          models.StatusJobUnaudited,
 	}
 
 	daemonJob.ID = reqBody.JobID

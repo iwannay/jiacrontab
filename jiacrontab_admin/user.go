@@ -131,32 +131,26 @@ func getJobHistory(c iris.Context) {
 	})
 }
 
-func auditJob(c iris.Context) {
+func AuditJob(c iris.Context) {
 	var (
 		ctx     = wrapCtx(c)
 		err     error
 		reqBody AuditJobReqParams
-		node    models.Node
 		reply   bool
 	)
 
 	if err = reqBody.verify(ctx); err != nil {
-		ctx.respError(proto.Code_Error, err.Error(), nil)
+		ctx.respBasicError(err)
 		return
 	}
 
-	if err = ctx.parseClaimsFromToken(); err != nil {
-		ctx.respError(proto.Code_Error, "无法获得token信息", err)
+	if !ctx.verifyNodePermission(reqBody.Addr) {
+		ctx.respNotAllowed()
 		return
 	}
 
 	if ctx.claims.GroupID != 0 {
 		if ctx.claims.Root == false {
-			ctx.respNotAllowed()
-			return
-		}
-
-		if node.Exists(ctx.claims.GroupID, reqBody.Addr) == false {
 			ctx.respNotAllowed()
 			return
 		}
@@ -166,7 +160,7 @@ func auditJob(c iris.Context) {
 		if err = rpcCall(reqBody.Addr, "CrontabJob.Audit", proto.AuditJobArgs{
 			JobIDs: reqBody.JobIDs,
 		}, &reply); err != nil {
-			ctx.respError(proto.Code_Error, err.Error(), nil)
+			ctx.respRPCError(err)
 			return
 		}
 		ctx.pubEvent(event_AuditCrontabJob, reqBody.Addr, reqBody)
@@ -174,7 +168,7 @@ func auditJob(c iris.Context) {
 		if err = rpcCall(reqBody.Addr, "DaemonJob.Audit", proto.AuditJobArgs{
 			JobIDs: reqBody.JobIDs,
 		}, &reply); err != nil {
-			ctx.respError(proto.Code_Error, err.Error(), nil)
+			ctx.respRPCError(err)
 			return
 		}
 		ctx.pubEvent(event_AuditDaemonJob, reqBody.Addr, reqBody)

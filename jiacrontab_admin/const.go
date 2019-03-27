@@ -8,8 +8,8 @@ const (
 	event_DelCronJob   = "删除计划任务"
 	event_StopCronJob  = "停止计划任务"
 	event_StartCronJob = "启动计划任务"
-	event_ExecCronJob  = "执行了计划任务"
-	event_KillCronJob  = "强杀计划任务进程"
+	event_ExecCronJob  = "执行计划任务"
+	event_KillCronJob  = "kill计划任务进程"
 
 	event_EditDaemonJob  = "编辑常驻任务"
 	event_DelDaemonJob   = "删除常驻任务"
@@ -20,7 +20,7 @@ const (
 	event_GroupNode = "配置节点分组"
 
 	event_SignUpUser      = "创建新用户"
-	event_GroupUser       = "卑职用户分组"
+	event_GroupUser       = "为用户分组"
 	event_AuditCrontabJob = "审核计划任务"
 	event_AuditDaemonJob  = "审核常驻任务"
 )

@@ -101,7 +101,9 @@ func (j *Jiacrontabd) killTask(jobID uint) {
 
 func (j *Jiacrontabd) run() {
 	j.dep.run()
+	j.daemon.run()
 	j.wg.Wrap(j.crontab.QueueScanWorker)
+
 	for v := range j.crontab.Ready() {
 		v := v.Value.(*crontab.Job)
 		log.Info("job queue:", v)

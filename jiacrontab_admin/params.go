@@ -6,6 +6,8 @@ import (
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
 
+	"github.com/iwannay/log"
+
 	"github.com/kataras/iris"
 )
 
@@ -31,7 +33,13 @@ type JobsReqParams struct {
 }
 
 func (p *JobsReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || len(p.JobIDs) == 0 || p.Addr == "" {
+	if ctx != nil {
+		if err := ctx.ReadJSON(p); err != nil {
+			return paramsError
+		}
+	}
+
+	if len(p.JobIDs) == 0 || p.Addr == "" {
 		return paramsError
 	}
 	return nil
@@ -376,12 +384,18 @@ type AuditJobReqParams struct {
 
 func (p *AuditJobReqParams) verify(ctx iris.Context) error {
 
+	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" {
+		return paramsError
+	}
+
+	log.Debugf("%+v", p)
+
 	jobTypeMap := map[string]bool{
 		"crontab": true,
 		"daemon":  true,
 	}
 
-	if err := p.JobsReqParams.verify(ctx); err != nil {
+	if err := p.JobsReqParams.verify(nil); err != nil {
 		return err
 	}
 

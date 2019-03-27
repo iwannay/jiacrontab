@@ -83,7 +83,7 @@ func newApp() *iris.Application {
 
 		adm.Post("/user/activity_list", getRelationEvent)
 		adm.Post("/user/job_history", getJobHistory)
-		adm.Post("/user/audit_job", auditJob)
+		adm.Post("/user/audit_job", AuditJob)
 		adm.Post("/user/signup", Signup)
 	}
 
