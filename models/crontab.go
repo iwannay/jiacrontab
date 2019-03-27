@@ -15,7 +15,7 @@ type JobStatus int
 
 const (
 	// StatusJobUnaudited 未审核
-	StatusJobUnaudited uint = 0
+	StatusJobUnaudited JobStatus = 0
 	// StatusJobOk 等待调度
 	StatusJobOk JobStatus = 1
 	// StatusJobTiming 定时中
@@ -23,7 +23,7 @@ const (
 	// StatusJobRunning 执行中
 	StatusJobRunning JobStatus = 3
 	// StatusJobStop 已停止
-	StatusJobStop = 4
+	StatusJobStop JobStatus = 4
 )
 
 type CrontabJob struct {

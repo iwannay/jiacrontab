@@ -17,6 +17,7 @@ type ApiNotifyArgs struct {
 	JobName    string
 	JobID      uint
 	Commands   []string
+	NodeAddr   string
 	CreatedAt  time.Time
 	NotifyType string
 }
@@ -24,7 +25,6 @@ type ApiNotifyArgs struct {
 type daemonJob struct {
 	job        *models.DaemonJob
 	daemon     *Daemon
-	action     int
 	cancel     context.CancelFunc
 	processNum int
 }
@@ -39,9 +39,18 @@ func (d *daemonJob) do(ctx context.Context) {
 		if err := recover(); err != nil {
 			log.Errorf("%s exec panic %s \n", d.job.Name, err)
 		}
+		d.processNum = 0
+		if err := models.DB().Model(d.job).Update("status", models.StatusJobStop).Error; err != nil {
+			log.Error(err)
+		}
 
 		d.daemon.wait.Done()
+
 	}()
+
+	if err := models.DB().Model(d.job).Update("status", models.StatusJobRunning).Error; err != nil {
+		log.Error(err)
+	}
 
 	for {
 
@@ -51,13 +60,14 @@ func (d *daemonJob) do(ctx context.Context) {
 		)
 		myCmdUint := cmdUint{
 			ctx:     ctx,
+			args:    [][]string{d.job.Commands},
 			env:     d.job.WorkEnv,
 			dir:     d.job.WorkDir,
 			user:    d.job.WorkUser,
 			logPath: filepath.Join(cfg.LogPath, "daemon_job", time.Now().Format("2006/01/02"), fmt.Sprintf("%d.log", d.job.ID)),
 		}
 
-		log.Info("daemon exec job, jobName:", d.job.Name, " jobID", d.job.ID)
+		log.Info("exec daemon job, jobName:", d.job.Name, " jobID", d.job.ID)
 
 		err = myCmdUint.launch()
 
@@ -73,21 +83,20 @@ func (d *daemonJob) do(ctx context.Context) {
 			break
 		}
 
+		if err = d.syncJob(); err != nil {
+			break
+		}
+
 	}
 	t.Stop()
 
-	if d.action == proto.ActionDeleteDaemonJob {
-		models.DB().Delete(d.job, "id=?", d.job.ID)
-	}
-
-	d.daemon.lock.Lock()
-	delete(d.daemon.taskMap, d.job.ID)
-	d.daemon.lock.Unlock()
-
-	d.processNum = 0
+	d.daemon.PopJob(d.job.ID)
 
 	log.Info("daemon task end", d.job.Name)
+}
 
+func (d *daemonJob) syncJob() error {
+	return models.DB().Take(d.job, "id=? and status=?", d.job.ID, models.StatusJobRunning).Error
 }
 
 func (d *daemonJob) handleNotify(err error) {
@@ -116,6 +125,7 @@ func (d *daemonJob) handleNotify(err error) {
 			JobID:      d.job.ID,
 			Commands:   d.job.Commands,
 			CreatedAt:  d.job.CreatedAt,
+			NodeAddr:   cfg.LocalAddr,
 			NotifyType: "error",
 		})
 		if err != nil {
@@ -154,70 +164,45 @@ func (d *Daemon) add(t *daemonJob) {
 	}
 }
 
+// PopJob 删除调度列表中的任务
+func (d *Daemon) PopJob(jobID uint) {
+	d.lock.Lock()
+	t := d.taskMap[jobID]
+	if t != nil {
+		delete(d.taskMap, jobID)
+		d.lock.Unlock()
+		t.cancel()
+	}
+}
+
 func (d *Daemon) run() {
 
 	var jobList []models.DaemonJob
-	err := models.DB().Find(&jobList).Error
+	err := models.DB().Where("status=?", models.StatusJobRunning).Find(&jobList).Error
 	if err != nil {
 		log.Error("init daemon task error:", err)
 	}
 
 	for _, v := range jobList {
-		var action int
-		log.Info("init daemon task_name:", v.Name, "task_id:", v.ID, "status:", v.Status)
 		job := v
-
-		switch v.Status {
-		case models.StatusJobOk:
-			action = proto.ActionStartDaemonJob
-		case models.StatusJobStop:
-			action = proto.ActionStopDaemonJob
-		default:
-			continue
-		}
-
 		d.add(&daemonJob{
-			job:    &job,
-			action: action,
+			job: &job,
 		})
 	}
 
-	go func() {
-		var ctx context.Context
-		for v := range d.taskChannel {
-			switch v.action {
-			case proto.ActionStartDaemonJob:
-				d.lock.Lock()
-				if t := d.taskMap[v.job.ID]; t == nil {
-					d.taskMap[v.job.ID] = v
-					d.lock.Unlock()
-					ctx, v.cancel = context.WithCancel(context.Background())
-					go v.do(ctx)
-					log.Info("start", v.job.Name)
-				} else {
-					d.lock.Unlock()
+	d.process()
+}
 
-				}
-			case proto.ActionDeleteDaemonJob:
-				d.lock.Lock()
-				if t := d.taskMap[v.job.ID]; t != nil {
-					d.lock.Unlock()
-					t.action = v.action
-					t.cancel()
-				} else {
-					models.DB().Delete(v.job, "id=?", v.job.ID)
-					d.lock.Unlock()
-				}
-			case proto.ActionStopDaemonJob:
-				d.lock.Lock()
-				if t := d.taskMap[v.job.ID]; t != nil {
-					d.lock.Unlock()
-					t.action = v.action
-					t.cancel()
-				} else {
-					d.lock.Unlock()
-					models.DB().Model(&models.DaemonJob{}).Where("id = ?", v.job.ID).Update("status", models.StatusJobStop)
-				}
+func (d *Daemon) process() {
+	go func() {
+		for v := range d.taskChannel {
+			var ctx context.Context
+			d.lock.Lock()
+			if t := d.taskMap[v.job.ID]; t == nil {
+				d.taskMap[v.job.ID] = v
+				d.lock.Unlock()
+				ctx, v.cancel = context.WithCancel(context.Background())
+				go v.do(ctx)
 			}
 		}
 	}()

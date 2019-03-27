@@ -45,7 +45,8 @@ func (j *CrontabJob) List(args proto.QueryJobArgs, reply *proto.QueryCrontabJobR
 }
 
 func (j *CrontabJob) Audit(args proto.AuditJobArgs, reply *bool) error {
-	return models.DB().Model(&models.CrontabJob{}).Where("id in(?)", args.JobIDs).Update("status", models.StatusJobOk).Error
+	*reply = true
+	return models.DB().Model(&models.CrontabJob{}).Where("id in(?) and status=?", args.JobIDs, models.StatusJobUnaudited).Update("status", models.StatusJobOk).Error
 }
 
 func (j *CrontabJob) Edit(args models.CrontabJob, rowsAffected *int64) error {
@@ -266,13 +267,13 @@ func (j *DaemonJob) ListDaemonJob(args proto.QueryJobArgs, reply *[]models.Daemo
 	return models.DB().Find(reply).Offset((args.Page - 1) * args.Pagesize).Limit(args.Pagesize).Order("update_at desc").Error
 }
 
-func (j *DaemonJob) ActionDaemonJob(args proto.ActionDaemonJobArgs, reply *bool) error {
+func (j *DaemonJob) Start(jobIDs []uint, reply *bool) error {
 
 	var jobs []models.DaemonJob
 
 	*reply = true
 
-	ret := models.DB().Find(&jobs, "id in(?)", args.JobIDs)
+	ret := models.DB().Find(&jobs, "id in(?)", jobIDs)
 
 	if ret.Error != nil {
 		return ret.Error
@@ -281,9 +282,41 @@ func (j *DaemonJob) ActionDaemonJob(args proto.ActionDaemonJobArgs, reply *bool)
 	for _, v := range jobs {
 		job := v
 		j.jd.daemon.add(&daemonJob{
-			job:    &job,
-			action: args.Action,
+			job: &job,
 		})
+	}
+
+	return nil
+}
+
+func (j *DaemonJob) Stop(jobIDs []uint, reply *bool) error {
+
+	*reply = true
+
+	for _, id := range jobIDs {
+		j.jd.daemon.PopJob(id)
+	}
+
+	ret := models.DB().Model(&models.DaemonJob{}).Where("id in(?)", jobIDs).Update("status", models.StatusJobStop)
+
+	if ret.Error != nil {
+		return ret.Error
+	}
+
+	return nil
+}
+
+func (j *DaemonJob) Delete(jobIDs []uint, reply *bool) error {
+
+	*reply = true
+
+	for _, id := range jobIDs {
+		j.jd.daemon.PopJob(id)
+	}
+	ret := models.DB().Delete(&models.DaemonJob{}, "id in (?)", jobIDs)
+
+	if ret.Error != nil {
+		return ret.Error
 	}
 
 	return nil
@@ -323,5 +356,6 @@ func (j *DaemonJob) Log(args proto.SearchLog, reply *proto.SearchLogResult) erro
 }
 
 func (j *DaemonJob) Audit(args proto.AuditJobArgs, reply *bool) error {
-	return models.DB().Model(&models.DaemonJob{}).Where("id in (?)", args.JobIDs).Update("status", models.StatusJobOk).Error
+	*reply = true
+	return models.DB().Model(&models.DaemonJob{}).Where("id in (?) and status=?", args.JobIDs, models.StatusJobUnaudited).Update("status", models.StatusJobOk).Error
 }
