@@ -97,7 +97,7 @@ func (j *CrontabJob) Start(ids []uint, ok *bool) error {
 		return errors.New("empty ids")
 	}
 
-	ret := models.DB().Find(&jobs, "id in (?)", ids)
+	ret := models.DB().Find(&jobs, "id in (?) and status in (?)", []models.JobStatus{models.StatusJobOk, models.StatusJobStop})
 	if ret.Error != nil {
 		return ret.Error
 	}
@@ -273,7 +273,7 @@ func (j *DaemonJob) Start(jobIDs []uint, reply *bool) error {
 
 	*reply = true
 
-	ret := models.DB().Find(&jobs, "id in(?)", jobIDs)
+	ret := models.DB().Find(&jobs, "id in(?) and status in (?)", jobIDs, []models.JobStatus{models.StatusJobOk, models.StatusJobStop})
 
 	if ret.Error != nil {
 		return ret.Error
