@@ -2,6 +2,7 @@ package finder
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"jiacrontab/pkg/file"
 	"log"
@@ -91,7 +92,7 @@ func (fd *Finder) find(fpath string, modifyTime time.Time) error {
 		}
 
 		if fd.patternAll || fd.regexp.Match(bts) {
-			if fd.curr >= uint64(fd.seekCurr) && fd.curr <= uint64(fd.seekEnd) {
+			if fd.curr >= uint64(fd.seekCurr) && fd.curr < uint64(fd.seekEnd) {
 				matchData = append(matchData, bts...)
 				matchData = append(matchData, []byte("\n")...)
 			}
@@ -102,7 +103,7 @@ func (fd *Finder) find(fpath string, modifyTime time.Time) error {
 	if len(matchData) > 0 {
 		fd.matchDataQueue = append(fd.matchDataQueue, matchDataChunk{
 			modifyTime: modifyTime,
-			matchData:  matchData,
+			matchData:  bytes.TrimRight(matchData, "\n"),
 		})
 	}
 	return nil

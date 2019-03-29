@@ -275,12 +275,17 @@ func (j *Jiacrontabd) heartBeat() {
 	if hostname == "" {
 		hostname = util.GetHostname()
 	}
-	err := rpcCall(rpc.RegisterService, models.Node{
+	node := models.Node{
 		Addr:           cfg.LocalAddr,
 		DaemonTaskNum:  j.daemon.count(),
 		CrontabTaskNum: j.count(),
 		Name:           hostname,
-	}, &reply)
+	}
+
+	models.DB().Model(&models.CrontabJob{}).Where("status=?", models.StatusJobUnaudited).Count(&node.CrontabJobAuditNum)
+	models.DB().Model(&models.DaemonJob{}).Where("status=?", models.StatusJobUnaudited).Count(&node.DaemonJobAuditNum)
+
+	err := rpcCall(rpc.RegisterService, node, &reply)
 
 	if err != nil {
 		log.Error("Srv.Register error:", err, ",server addr:", cfg.AdminAddr)

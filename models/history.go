@@ -21,7 +21,7 @@ type JobHistory struct {
 	JobName   string    `json:"jobName"`
 	Addr      string    `json:"addr" gorm:"index"`
 	ExitMsg   string    `json:"exitMsg"`
-	StartTime time.Time `json:"execTime"`
+	StartTime time.Time `json:"StartTime"`
 	EndTime   time.Time `json:"endTime"`
 }
 
