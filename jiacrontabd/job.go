@@ -142,10 +142,13 @@ func (p *process) exec() error {
 			dir:     p.jobEntry.detail.WorkDir,
 			user:    p.jobEntry.detail.WorkUser,
 			env:     p.jobEntry.detail.WorkEnv,
+			content: p.jobEntry.logContent,
 			logPath: p.jobEntry.logPath,
 		}
 
 		p.err = myCmdUnit.launch()
+		p.jobEntry.logContent = myCmdUnit.content
+
 		doneChan <- struct{}{}
 
 		if p.err != nil {
@@ -407,26 +410,32 @@ func (j *JobEntry) updateJob(status models.JobStatus, startTime, endTime time.Ti
 
 	if j.once && (status == models.StatusJobTiming) {
 		data["process_num"] = gorm.Expr("process_num - ?", 1)
-		var errMsg string
-		if err != nil {
-			errMsg = err.Error()
-		}
+	}
 
-		if err = rpcCall("Srv.PushJobLog", models.JobHistory{
-			JobType:   models.JobTypeCrontab,
-			JobID:     j.detail.ID,
-			Addr:      cfg.LocalAddr,
-			JobName:   j.detail.Name,
-			StartTime: startTime,
-			EndTime:   endTime,
-			ExitMsg:   errMsg,
-		}, nil); err != nil {
-			log.Error("rpc call Srv.PushJobLog failed:", err)
-		}
+	if j.once {
+		delete(data, "next_exec_time")
+		delete(data, "last_exec_time")
+		delete(data, "status")
+	}
+
+	var errMsg string
+	if err != nil {
+		errMsg = err.Error()
+	}
+
+	if err = rpcCall("Srv.PushJobLog", models.JobHistory{
+		JobType:   models.JobTypeCrontab,
+		JobID:     j.detail.ID,
+		Addr:      cfg.LocalAddr,
+		JobName:   j.detail.Name,
+		StartTime: startTime,
+		EndTime:   endTime,
+		ExitMsg:   errMsg,
+	}, nil); err != nil {
+		log.Error("rpc call Srv.PushJobLog failed:", err)
 	}
 
 	models.DB().Model(&j.detail).Debug().Updates(data)
-
 }
 
 func (j *JobEntry) kill() {

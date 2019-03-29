@@ -97,7 +97,7 @@ func (j *CrontabJob) Start(ids []uint, ok *bool) error {
 		return errors.New("empty ids")
 	}
 
-	ret := models.DB().Find(&jobs, "id in (?) and status in (?)", []models.JobStatus{models.StatusJobOk, models.StatusJobStop})
+	ret := models.DB().Find(&jobs, "id in (?) and status in (?)", ids, []models.JobStatus{models.StatusJobOk, models.StatusJobStop})
 	if ret.Error != nil {
 		return ret.Error
 	}
@@ -170,7 +170,6 @@ func (j *CrontabJob) Log(args proto.SearchLog, reply *proto.SearchLogResult) err
 		}
 
 		if arr[1] == "log" && arr[0] == fmt.Sprint(args.JobID) {
-			log.Info("here")
 			return true
 		}
 		return false
@@ -184,7 +183,6 @@ func (j *CrontabJob) Log(args proto.SearchLog, reply *proto.SearchLogResult) err
 	}
 
 	rootpath := filepath.Join(cfg.LogPath, "crontab_task", args.Date)
-	log.Debug(rootpath)
 	err := fd.Search(rootpath, args.Pattern, &reply.Content, args.Page, args.Pagesize)
 	reply.Total = int(fd.Count())
 	return err
