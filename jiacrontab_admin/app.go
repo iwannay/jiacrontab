@@ -75,6 +75,7 @@ func newApp() *iris.Application {
 
 		adm.Post("/group/list", GetGroupList)
 		adm.Post("/group/edit", EditGroup)
+		adm.Post("/group/user_list", GetUserList)
 		adm.Post("/group/group_user", GroupUser)
 
 		adm.Post("/node/list", GetNodeList)
