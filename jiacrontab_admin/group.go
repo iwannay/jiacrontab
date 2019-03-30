@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"database/sql"
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
 
@@ -35,6 +36,48 @@ func GetGroupList(c iris.Context) {
 	}
 
 	ctx.respSucc("", groupList)
+}
+
+func GetUserList(c iris.Context) {
+	var (
+		ctx      = wrapCtx(c)
+		reqBody  GetUsersParams
+		userList []models.User
+		err      error
+		total    int
+	)
+	if err = reqBody.verify(ctx); err != nil {
+		ctx.respBasicError(err)
+		return
+	}
+	if err = ctx.parseClaimsFromToken(); err != nil {
+		ctx.respJWTError(err)
+		return
+	}
+
+	if reqBody.QueryGroupID != ctx.claims.GroupID && ctx.claims.GroupID != 0 {
+		ctx.respNotAllowed()
+		return
+	}
+
+	err = models.DB().Model(&models.User{}).Where("group_id=?", reqBody.QueryGroupID).Count(&total).Error
+	if err != nil && err != sql.ErrNoRows {
+		ctx.respBasicError(err)
+		return
+	}
+
+	err = models.DB().Where("group_id=?", reqBody.QueryGroupID).Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&userList).Error
+	if err != nil && err != sql.ErrNoRows {
+		ctx.respBasicError(err)
+		return
+	}
+
+	ctx.respSucc("", map[string]interface{}{
+		"list":     userList,
+		"total":    total,
+		"page":     reqBody.Page,
+		"pagesize": reqBody.Pagesize,
+	})
 }
 
 // EditGroup 编辑分组

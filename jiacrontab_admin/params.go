@@ -406,3 +406,22 @@ func (p *AuditJobReqParams) verify(ctx iris.Context) error {
 
 	return nil
 }
+
+type GetUsersParams struct {
+	PageReqParams
+	QueryGroupID uint `json:"queryGroupID"`
+}
+
+func (p *GetUsersParams) verify(ctx iris.Context) error {
+	if err := ctx.ReadJSON(p); err != nil {
+		return paramsError
+	}
+	if p.Page <= 1 {
+		p.Page = 1
+	}
+
+	if p.Pagesize <= 0 {
+		p.Pagesize = 50
+	}
+	return nil
+}
