@@ -8,12 +8,13 @@ import (
 
 type Event struct {
 	gorm.Model
-	GroupID   uint   `json:"group_id" gorm:"index"`
-	Username  string `json:"username"`
-	UserID    uint   `json:"user_id"`
-	EventDesc string `json:"event_desc"`
-	NodeAddr  string `json:"node_addr" gorm:"index"`
-	Content   string `json:"content"`
+	GroupID    uint   `json:"groupID" gorm:"index"`
+	Username   string `json:"username"`
+	UserID     uint   `json:"userID"`
+	EventDesc  string `json:"eventDesc"`
+	TargetName string `json:"targetName"`
+	NodeAddr   string `json:"nodeAddr" gorm:"index"`
+	Content    string `json:"content"`
 }
 
 func (e *Event) Pub() {

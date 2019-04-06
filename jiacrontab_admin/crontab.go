@@ -83,7 +83,7 @@ failed:
 func EditJob(c iris.Context) {
 	var (
 		err     error
-		reply   int
+		reply   models.CrontabJob
 		ctx     = wrapCtx(c)
 		reqBody EditJobReqParams
 		rpcArgs models.CrontabJob
@@ -150,19 +150,20 @@ func EditJob(c iris.Context) {
 		ctx.respRPCError(err)
 		return
 	}
-	ctx.pubEvent(event_EditCronJob, reqBody.Addr, reqBody)
+	ctx.pubEvent(reply.Name, event_EditCronJob, reqBody.Addr, reqBody)
 	ctx.respSucc("", reply)
 }
 
 func ActionTask(c iris.Context) {
 	var (
-		ctx     = wrapCtx(c)
-		err     error
-		reply   bool
-		ok      bool
-		method  string
-		reqBody ActionTaskReqParams
-		methods = map[string]string{
+		ctx      = wrapCtx(c)
+		err      error
+		reply    bool
+		ok       bool
+		method   string
+		reqBody  ActionTaskReqParams
+		jobReply []models.CrontabJob
+		methods  = map[string]string{
 			"start":  "CrontabJob.Start",
 			"stop":   "CrontabJob.Stop",
 			"delete": "CrontabJob.Delete",
@@ -178,46 +179,46 @@ func ActionTask(c iris.Context) {
 	)
 
 	if reqBody.verify(ctx); err != nil {
-		goto failed
+		ctx.respBasicError(err)
+		return
 	}
 
 	if method, ok = methods[reqBody.Action]; !ok {
-		err = errors.New("action无法识别")
-		goto failed
+		ctx.respBasicError(errors.New("action无法识别"))
+		return
 	}
 
-	if err = rpcCall(reqBody.Addr, method, reqBody.JobIDs, &reply); err != nil {
-		goto failed
+	if err = rpcCall(reqBody.Addr, method, reqBody.JobIDs, &jobReply); err != nil {
+		ctx.respRPCError(err)
+		return
 	}
-
-	ctx.pubEvent(eDesc[reqBody.Action], reqBody.Addr, reqBody)
+	var targetNames []string
+	for _, v := range jobReply {
+		targetNames = append(targetNames, v.Name)
+	}
+	ctx.pubEvent(strings.Join(targetNames, ","), eDesc[reqBody.Action], reqBody.Addr, reqBody)
 	ctx.respSucc("", reply)
-	return
-
-failed:
-	ctx.respError(proto.Code_Error, err.Error(), nil)
-
 }
 
 func ExecTask(c iris.Context) {
 	var (
-		ctx     = wrapCtx(c)
-		err     error
-		reply   []byte
-		logList []string
-		reqBody JobReqParams
+		ctx          = wrapCtx(c)
+		err          error
+		logList      []string
+		execJobReply proto.ExecCrontabJobReply
+		reqBody      JobReqParams
 	)
 
 	if err = reqBody.verify(ctx); err != nil {
 		goto failed
 	}
 
-	if err = rpcCall(reqBody.Addr, "CrontabJob.Exec", reqBody.JobID, &reply); err != nil {
+	if err = rpcCall(reqBody.Addr, "CrontabJob.Exec", reqBody.JobID, &execJobReply); err != nil {
 		goto failed
 	}
 
-	ctx.pubEvent(event_ExecCronJob, reqBody.Addr, reqBody)
-	logList = strings.Split(string(reply), "\n")
+	ctx.pubEvent(execJobReply.Job.Name, event_ExecCronJob, reqBody.Addr, reqBody)
+	logList = strings.Split(string(execJobReply.Content), "\n")
 	ctx.respSucc("", logList)
 	return
 

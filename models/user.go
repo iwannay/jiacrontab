@@ -65,6 +65,7 @@ func (u *User) SetGroup() error {
 	if err := DB().Take(&Group{}, "id=?", u.GroupID).Error; err != nil {
 		return fmt.Errorf("查询分组失败：%s", err)
 	}
+	defer DB().Take(u, "id=?", u.ID)
 
 	return DB().Model(u).Where("id=?", u.ID).Update("group_id", u.GroupID).Error
 }

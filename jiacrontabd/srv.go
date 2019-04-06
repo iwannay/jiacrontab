@@ -57,8 +57,8 @@ func (j *CrontabJob) List(args proto.QueryJobArgs, reply *proto.QueryCrontabJobR
 	return models.DB().Offset(args.Page - 1).Limit(args.Pagesize).Find(&reply.List).Error
 }
 
-func (j *CrontabJob) Audit(args proto.AuditJobArgs, reply *bool) error {
-	*reply = true
+func (j *CrontabJob) Audit(args proto.AuditJobArgs, reply *[]models.CrontabJob) error {
+	defer models.DB().Model(&models.CrontabJob{}).Find(reply, "id in(?)", args.JobIDs)
 	return models.DB().Model(&models.CrontabJob{}).Where("id in(?) and status=?", args.JobIDs, models.StatusJobUnaudited).Update("status", models.StatusJobOk).Error
 }
 
@@ -98,23 +98,18 @@ func (j *CrontabJob) Get(args uint, reply *models.CrontabJob) error {
 	return models.DB().Find(reply, "id=?", args).Error
 }
 
-func (j *CrontabJob) Start(ids []uint, ok *bool) error {
-	var (
-		jobs []models.CrontabJob
-	)
-
-	*ok = true
+func (j *CrontabJob) Start(ids []uint, jobs *[]models.CrontabJob) error {
 
 	if len(ids) == 0 {
 		return errors.New("empty ids")
 	}
 
-	ret := models.DB().Find(&jobs, "id in (?) and status in (?)", ids, []models.JobStatus{models.StatusJobOk, models.StatusJobStop})
+	ret := models.DB().Find(jobs, "id in (?) and status in (?)", ids, []models.JobStatus{models.StatusJobOk, models.StatusJobStop})
 	if ret.Error != nil {
 		return ret.Error
 	}
 
-	for _, v := range jobs {
+	for _, v := range *jobs {
 		j.jd.addJob(&crontab.Job{
 			ID:      v.ID,
 			Second:  v.TimeArgs.Second,
@@ -129,27 +124,38 @@ func (j *CrontabJob) Start(ids []uint, ok *bool) error {
 	return nil
 }
 
-func (j *CrontabJob) Stop(ids []uint, ok *bool) error {
-	*ok = true
+func (j *CrontabJob) Stop(ids []uint, job *[]models.CrontabJob) error {
+	err := models.DB().Take(job, "id in (?)", ids).Error
+	if err != nil {
+		return err
+	}
 	return models.DB().Model(&models.CrontabJob{}).Where("id in (?)", ids).Update("status", models.StatusJobStop).Error
 }
 
-func (j *CrontabJob) Delete(ids []uint, ok *bool) error {
-	*ok = true
+func (j *CrontabJob) Delete(ids []uint, job *[]models.CrontabJob) error {
+	err := models.DB().Take(job, "id in (?)", ids).Error
+	if err != nil {
+		return err
+	}
 	return models.DB().Where("id in (?)", ids).Delete(&models.CrontabJob{}).Error
 }
 
-func (j *CrontabJob) Kill(jobIDs []uint, ok *bool) error {
+func (j *CrontabJob) Kill(jobIDs []uint, job *[]models.CrontabJob) error {
+	err := models.DB().Take(job, "id in (?)", jobIDs).Error
+	if err != nil {
+		return err
+	}
+
 	for _, jobID := range jobIDs {
 		j.jd.killTask(jobID)
 	}
 	return nil
 }
 
-func (j *CrontabJob) Exec(jobID uint, reply *[]byte) error {
+func (j *CrontabJob) Exec(jobID uint, reply *proto.ExecCrontabJobReply) error {
 
 	var job models.CrontabJob
-	ret := models.DB().Debug().Find(&job, "id=?", jobID)
+	ret := models.DB().Debug().Find(&reply.Job, "id=?", jobID)
 
 	if ret.Error == nil {
 		jobInstance := newJobEntry(&crontab.Job{
@@ -163,10 +169,11 @@ func (j *CrontabJob) Exec(jobID uint, reply *[]byte) error {
 		jobInstance.once = true
 		jobInstance.exec()
 
-		*reply = jobInstance.waitDone()
+		reply.Content = jobInstance.waitDone()
 
 	} else {
-		*reply = []byte("failed to start")
+		reply.Content = []byte("failed to start")
+		return errors.New("failed to exec")
 	}
 	return nil
 
@@ -259,11 +266,10 @@ func (j *DaemonJob) List(args proto.QueryJobArgs, reply *proto.QueryDaemonJobRet
 	return models.DB().Offset(args.Page - 1).Limit(args.Pagesize).Find(&reply.List).Error
 }
 
-func (j *DaemonJob) Edit(args models.DaemonJob, reply *int64) error {
+func (j *DaemonJob) Edit(args models.DaemonJob, job *models.DaemonJob) error {
 
 	if args.ID == 0 {
 		ret := models.DB().Create(&args)
-		*reply = ret.RowsAffected
 		return ret.Error
 	}
 
@@ -271,7 +277,8 @@ func (j *DaemonJob) Edit(args models.DaemonJob, reply *int64) error {
 		"updated_at", "created_at", "deleted_at",
 		"createdUserID", "createdUsername",
 	).Save(&args)
-	*reply = ret.RowsAffected
+
+	*job = args
 
 	return ret.Error
 }
@@ -280,11 +287,7 @@ func (j *DaemonJob) ListDaemonJob(args proto.QueryJobArgs, reply *[]models.Daemo
 	return models.DB().Find(reply).Offset((args.Page - 1) * args.Pagesize).Limit(args.Pagesize).Order("update_at desc").Error
 }
 
-func (j *DaemonJob) Start(jobIDs []uint, reply *bool) error {
-
-	var jobs []models.DaemonJob
-
-	*reply = true
+func (j *DaemonJob) Start(jobIDs []uint, jobs *[]models.DaemonJob) error {
 
 	ret := models.DB().Find(&jobs, "id in(?) and status in (?)", jobIDs, []models.JobStatus{models.StatusJobOk, models.StatusJobStop})
 
@@ -292,7 +295,7 @@ func (j *DaemonJob) Start(jobIDs []uint, reply *bool) error {
 		return ret.Error
 	}
 
-	for _, v := range jobs {
+	for _, v := range *jobs {
 		job := v
 		j.jd.daemon.add(&daemonJob{
 			job: &job,
@@ -302,9 +305,11 @@ func (j *DaemonJob) Start(jobIDs []uint, reply *bool) error {
 	return nil
 }
 
-func (j *DaemonJob) Stop(jobIDs []uint, reply *bool) error {
+func (j *DaemonJob) Stop(jobIDs []uint, jobs *[]models.DaemonJob) error {
 
-	*reply = true
+	if err := models.DB().Find(jobs, "id in(?)", jobIDs).Error; err != nil {
+		return err
+	}
 
 	for _, id := range jobIDs {
 		j.jd.daemon.PopJob(id)
@@ -319,9 +324,11 @@ func (j *DaemonJob) Stop(jobIDs []uint, reply *bool) error {
 	return nil
 }
 
-func (j *DaemonJob) Delete(jobIDs []uint, reply *bool) error {
+func (j *DaemonJob) Delete(jobIDs []uint, jobs *[]models.DaemonJob) error {
 
-	*reply = true
+	if err := models.DB().Find(jobs, "id in(?)", jobIDs).Error; err != nil {
+		return err
+	}
 
 	for _, id := range jobIDs {
 		j.jd.daemon.PopJob(id)
@@ -335,8 +342,8 @@ func (j *DaemonJob) Delete(jobIDs []uint, reply *bool) error {
 	return nil
 }
 
-func (j *DaemonJob) Get(jobID uint, djob *models.DaemonJob) error {
-	return models.DB().Find(djob, "id=?", jobID).Error
+func (j *DaemonJob) Get(jobID uint, job *models.DaemonJob) error {
+	return models.DB().Take(job, "id=?", jobID).Error
 }
 
 func (j *DaemonJob) Log(args proto.SearchLog, reply *proto.SearchLogResult) error {
@@ -368,7 +375,7 @@ func (j *DaemonJob) Log(args proto.SearchLog, reply *proto.SearchLogResult) erro
 
 }
 
-func (j *DaemonJob) Audit(args proto.AuditJobArgs, reply *bool) error {
-	*reply = true
+func (j *DaemonJob) Audit(args proto.AuditJobArgs, jobs *[]models.DaemonJob) error {
+	defer models.DB().Find(jobs, "id in (?)", args.JobIDs)
 	return models.DB().Model(&models.DaemonJob{}).Where("id in (?) and status=?", args.JobIDs, models.StatusJobUnaudited).Update("status", models.StatusJobOk).Error
 }
