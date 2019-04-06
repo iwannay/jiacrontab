@@ -82,9 +82,10 @@ func newApp() *iris.Application {
 		adm.Post("/node/delete", DeleteNode)
 		adm.Post("/node/group_node", GroupNode)
 
-		adm.Post("/user/activity_list", getActivityList)
-		adm.Post("/user/job_history", getJobHistory)
+		adm.Post("/user/activity_list", GetActivityList)
+		adm.Post("/user/job_history", GetJobHistory)
 		adm.Post("/user/audit_job", AuditJob)
+		adm.Post("/user/stat", UserStat)
 		adm.Post("/user/signup", Signup)
 	}
 
