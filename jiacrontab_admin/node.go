@@ -59,6 +59,7 @@ func DeleteNode(c iris.Context) {
 		err     error
 		ctx     = wrapCtx(c)
 		reqBody DeleteNodeReqParams
+		group   models.Group
 		node    models.Node
 	)
 
@@ -78,12 +79,17 @@ func DeleteNode(c iris.Context) {
 		return
 	}
 
-	if err = node.Delete(reqBody.GroupID, reqBody.Addr); err != nil {
-		ctx.respBasicError(err)
+	if err := models.DB().Take(&group, "id=?", reqBody.GroupID).Error; err != nil {
+		ctx.respDBError(err)
 		return
 	}
 
-	ctx.pubEvent(event_DelNodeDesc, reqBody.Addr, "")
+	if err = node.Delete(reqBody.GroupID, reqBody.Addr); err != nil {
+		ctx.respDBError(err)
+		return
+	}
+
+	ctx.pubEvent(node.Name, event_DelNodeDesc, reqBody.Addr, group.Name)
 	ctx.respSucc("", nil)
 }
 
@@ -118,6 +124,6 @@ func GroupNode(c iris.Context) {
 		return
 	}
 
-	ctx.pubEvent(event_RenameNode, reqBody.Addr, reqBody)
+	ctx.pubEvent(reqBody.TargetNodeName, event_GroupNode, reqBody.Addr, reqBody)
 	ctx.respSucc("", nil)
 }

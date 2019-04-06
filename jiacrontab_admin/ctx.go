@@ -168,7 +168,7 @@ func (ctx *myctx) getGroupAddr() ([]string, error) {
 
 }
 
-func (ctx *myctx) pubEvent(desc, nodeAddr string, v interface{}) {
+func (ctx *myctx) pubEvent(targetName, desc, nodeAddr string, v interface{}) {
 	var content string
 	if (ctx.claims == CustomerClaims{}) {
 		err := ctx.parseClaimsFromToken()
@@ -186,12 +186,13 @@ func (ctx *myctx) pubEvent(desc, nodeAddr string, v interface{}) {
 	}
 
 	e := models.Event{
-		GroupID:   ctx.claims.GroupID,
-		UserID:    ctx.claims.UserID,
-		Username:  ctx.claims.Username,
-		EventDesc: desc,
-		NodeAddr:  nodeAddr,
-		Content:   content,
+		GroupID:    ctx.claims.GroupID,
+		UserID:     ctx.claims.UserID,
+		Username:   ctx.claims.Username,
+		EventDesc:  desc,
+		TargetName: targetName,
+		NodeAddr:   nodeAddr,
+		Content:    content,
 	}
 	e.Pub()
 }

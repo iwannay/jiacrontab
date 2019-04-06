@@ -32,6 +32,11 @@ func (n *Node) VerifyUserGroup(userID, groupID uint, addr string) bool {
 }
 
 func (n *Node) Delete(groupID uint, addr string) error {
+
+	if err := DB().Take(n, "group_id=? and addr=?", groupID, addr).Error; err != nil {
+		return err
+	}
+
 	ret := DB().Debug().Delete(n, "group_id=? and addr=?", groupID, addr)
 
 	if ret.Error != nil {

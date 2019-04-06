@@ -102,7 +102,7 @@ func EditGroup(c iris.Context) {
 		ctx.respError(proto.Code_Error, err.Error(), nil)
 		return
 	}
-	ctx.pubEvent(event_EditGroup, "", reqBody)
+	ctx.pubEvent(group.Name, event_EditGroup, "", reqBody)
 	ctx.respSucc("", nil)
 }
 
@@ -142,7 +142,7 @@ func GroupUser(c iris.Context) {
 		}
 	}
 
-	ctx.pubEvent(event_GroupUser, "", reqBody)
+	ctx.pubEvent(user.Username, event_GroupUser, "", reqBody)
 	ctx.respSucc("", nil)
 
 }

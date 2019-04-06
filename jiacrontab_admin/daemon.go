@@ -43,9 +43,10 @@ func ActionDaemonTask(c iris.Context) {
 	var (
 		ctx     = wrapCtx(c)
 		err     error
-		reply   bool
+		reply   []models.DaemonJob
 		ok      bool
 		reqBody ActionTaskReqParams
+
 		methods = map[string]string{
 			"start":  "DaemonJob.Start",
 			"delete": "DaemonJob.Delete",
@@ -74,7 +75,12 @@ func ActionDaemonTask(c iris.Context) {
 		return
 	}
 
-	ctx.pubEvent(eDesc[reqBody.Action], reqBody.Addr, reqBody)
+	var targetNames []string
+	for _, v := range reply {
+		targetNames = append(targetNames, v.Name)
+	}
+
+	ctx.pubEvent(strings.Join(targetNames, ","), eDesc[reqBody.Action], reqBody.Addr, reqBody)
 	ctx.respSucc("", nil)
 }
 
@@ -82,7 +88,7 @@ func ActionDaemonTask(c iris.Context) {
 func EditDaemonJob(c iris.Context) {
 	var (
 		err       error
-		reply     int
+		reply     models.DaemonJob
 		ctx       = wrapCtx(c)
 		reqBody   EditDaemonJobReqParams
 		daemonJob models.DaemonJob
@@ -133,7 +139,7 @@ func EditDaemonJob(c iris.Context) {
 		return
 	}
 
-	ctx.pubEvent(event_EditDaemonJob, reqBody.Addr, reqBody)
+	ctx.pubEvent(reply.Name, event_EditDaemonJob, reqBody.Addr, reqBody)
 	ctx.respSucc("", reply)
 }
 

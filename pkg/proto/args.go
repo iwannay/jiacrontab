@@ -1,5 +1,9 @@
 package proto
 
+import (
+	"jiacrontab/models"
+)
+
 type SearchLog struct {
 	JobID          uint
 	IsTail         bool
@@ -22,6 +26,11 @@ type SendMail struct {
 type ApiPost struct {
 	Urls []string
 	Data string
+}
+
+type ExecCrontabJobReply struct {
+	Job     *models.CrontabJob
+	Content []byte
 }
 
 type EmptyArgs struct{}

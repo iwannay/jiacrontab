@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
+	"strings"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -141,7 +142,6 @@ func AuditJob(c iris.Context) {
 		ctx     = wrapCtx(c)
 		err     error
 		reqBody AuditJobReqParams
-		reply   bool
 	)
 
 	if err = reqBody.verify(ctx); err != nil {
@@ -162,25 +162,34 @@ func AuditJob(c iris.Context) {
 	}
 
 	if reqBody.JobType == "crontab" {
+		var reply []models.CrontabJob
 		if err = rpcCall(reqBody.Addr, "CrontabJob.Audit", proto.AuditJobArgs{
 			JobIDs: reqBody.JobIDs,
 		}, &reply); err != nil {
 			ctx.respRPCError(err)
 			return
 		}
-		ctx.pubEvent(event_AuditCrontabJob, reqBody.Addr, reqBody)
+		var targetNames []string
+		for _, v := range reply {
+			targetNames = append(targetNames, v.Name)
+		}
+		ctx.pubEvent(strings.Join(targetNames, ","), event_AuditCrontabJob, reqBody.Addr, reqBody)
 	} else {
+		var reply []models.DaemonJob
 		if err = rpcCall(reqBody.Addr, "DaemonJob.Audit", proto.AuditJobArgs{
 			JobIDs: reqBody.JobIDs,
 		}, &reply); err != nil {
 			ctx.respRPCError(err)
 			return
 		}
-		ctx.pubEvent(event_AuditDaemonJob, reqBody.Addr, reqBody)
+		var targetNames []string
+		for _, v := range reply {
+			targetNames = append(targetNames, v.Name)
+		}
+		ctx.pubEvent(strings.Join(targetNames, ","), event_AuditDaemonJob, reqBody.Addr, reqBody)
 	}
 
-	ctx.respSucc("", reply)
-
+	ctx.respSucc("", nil)
 }
 
 // IninAdminUser 初始化管理员
@@ -213,7 +222,7 @@ func IninAdminUser(c iris.Context) {
 	}
 
 	cfg.SetUsed()
-	ctx.pubEvent(event_SignUpUser, "", reqBody)
+	ctx.pubEvent(user.Username, event_SignUpUser, "", reqBody)
 	ctx.respSucc("", true)
 }
 
@@ -247,7 +256,7 @@ func Signup(c iris.Context) {
 		return
 	}
 
-	ctx.pubEvent(event_SignUpUser, "", reqBody)
+	ctx.pubEvent(user.Username, event_SignUpUser, "", reqBody)
 	ctx.respSucc("", true)
 }
 
