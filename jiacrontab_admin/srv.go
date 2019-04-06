@@ -20,12 +20,14 @@ func (s *Srv) Register(args models.Node, reply *bool) error {
 
 	*reply = true
 	ret := models.DB().Unscoped().Model(&models.Node{}).Where("addr=?", args.Addr).Updates(map[string]interface{}{
-		"name":             args.Name,
-		"daemon_task_num":  args.DaemonTaskNum,
-		"crontab_task_num": args.CrontabTaskNum,
-		"addr":             args.Addr,
-		"deleted_at":       nil,
-		"disabled":         false,
+		"name":                  args.Name,
+		"daemon_task_num":       args.DaemonTaskNum,
+		"crontab_task_num":      args.CrontabTaskNum,
+		"addr":                  args.Addr,
+		"crontab_job_audit_num": args.CrontabJobAuditNum,
+		"DaemonJobAuditNum":     args.DaemonJobAuditNum,
+		"deleted_at":            nil,
+		"disabled":              false,
 	})
 
 	if ret.RowsAffected == 0 {

@@ -13,8 +13,8 @@ import (
 type User struct {
 	gorm.Model
 	Username string `json:"username" gorm:"not null; unique"`
-	Passwd   string `json:"passwd"`
-	Salt     string `json:"salt"`
+	Passwd   string `json:"-"`
+	Salt     string `json:"-"`
 	GroupID  uint   `json:"groupID"`
 	Root     bool   `json:"root"`
 	Mail     string `json:"mail"`

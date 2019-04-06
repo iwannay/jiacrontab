@@ -67,7 +67,7 @@ func Login(c iris.Context) {
 	})
 }
 
-func getActivityList(c iris.Context) {
+func GetActivityList(c iris.Context) {
 	var (
 		ctx     = wrapCtx(c)
 		err     error
@@ -86,7 +86,7 @@ func getActivityList(c iris.Context) {
 	}
 
 	err = models.DB().Where("user_id=? and id>?", ctx.claims.UserID, reqBody.LastID).
-		Order(fmt.Sprintf("create_at %s", reqBody.Orderby)).
+		Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
 		Limit(reqBody.Pagesize).
 		Find(&events).Error
 
@@ -101,7 +101,7 @@ func getActivityList(c iris.Context) {
 	})
 }
 
-func getJobHistory(c iris.Context) {
+func GetJobHistory(c iris.Context) {
 	var (
 		ctx      = wrapCtx(c)
 		err      error
@@ -120,7 +120,9 @@ func getJobHistory(c iris.Context) {
 		return
 	}
 
-	err = models.DB().Where("addr in (?)", addrs).Order(fmt.Sprintf("create_at %s", reqBody.Orderby)).
+	err = models.DB().Where("addr in (?) and id>?", addrs, reqBody.LastID).
+		Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
+		Limit(reqBody.Pagesize).
 		Find(&historys).Error
 
 	if err != nil {
@@ -229,8 +231,8 @@ func Signup(c iris.Context) {
 		return
 	}
 
-	if reqBody.GroupID == 0 {
-		ctx.respNotAllowed()
+	if err = ctx.parseClaimsFromToken(); err != nil {
+		ctx.respJWTError(err)
 		return
 	}
 
@@ -241,10 +243,42 @@ func Signup(c iris.Context) {
 	user.Mail = reqBody.Mail
 
 	if err = user.Create(); err != nil {
-		ctx.respError(proto.Code_Error, err.Error(), nil)
+		ctx.respDBError(err)
 		return
 	}
 
 	ctx.pubEvent(event_SignUpUser, "", reqBody)
 	ctx.respSucc("", true)
+}
+
+// UserStat 统计信息
+func UserStat(c iris.Context) {
+	var (
+		err          error
+		ctx          = wrapCtx(c)
+		auditNumStat struct {
+			CrontabJobAuditNum uint
+			DaemonJobAuditNum  uint
+		}
+	)
+
+	if err = ctx.parseClaimsFromToken(); err != nil {
+		ctx.respJWTError(err)
+		return
+	}
+
+	err = models.DB().Raw(
+		`select 
+			sum(crontab_job_audit_num) as crontab_job_audit_num, 
+			sum(daemon_job_audit_num) as daemon_job_audit_num
+		from nodes 
+		where group_id=?`, ctx.claims.GroupID).Scan(&auditNumStat).Error
+	if err != nil {
+		ctx.respDBError(err)
+		return
+	}
+
+	ctx.respSucc("", map[string]interface{}{
+		"auditStat": auditNumStat,
+	})
 }
