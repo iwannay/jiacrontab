@@ -24,6 +24,7 @@ type Jiacrontabd struct {
 	daemon          *Daemon
 	heartbeatPeriod time.Duration
 	mux             sync.RWMutex
+	startTime       time.Time
 	wg              util.WaitGroupWrapper
 }
 
@@ -298,6 +299,7 @@ func (j *Jiacrontabd) init() {
 	models.CreateDB(cfg.DriverName, cfg.DSN)
 	models.DB().CreateTable(&models.CrontabJob{}, &models.DaemonJob{})
 	models.DB().AutoMigrate(&models.CrontabJob{}, &models.DaemonJob{})
+	j.startTime = time.Now()
 	if cfg.AutoCleanTaskLog {
 		go finder.SearchAndDeleteFileOnDisk(cfg.LogPath, 24*time.Hour*30, 1<<30)
 	}
@@ -308,5 +310,5 @@ func (j *Jiacrontabd) Main() {
 	j.init()
 	j.heartBeat()
 	go j.run()
-	rpc.ListenAndServe(cfg.ListenAddr, newCrontabJobSrv(j), newDaemonJobSrv(j), &Srv{})
+	rpc.ListenAndServe(cfg.ListenAddr, newCrontabJobSrv(j), newDaemonJobSrv(j), newSrv(j))
 }

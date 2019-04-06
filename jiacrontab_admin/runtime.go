@@ -6,25 +6,23 @@ import (
 	"github.com/kataras/iris"
 )
 
-func runtimeInfo(c iris.Context) {
+func SystemInfo(c iris.Context) {
 	var (
 		err     error
 		ctx     = wrapCtx(c)
 		info    map[string]interface{}
-		reqBody RuntimeInfoReqParams
+		reqBody SystemInfoReqParams
 	)
 
 	if err = reqBody.verify(ctx); err != nil {
-		goto failed
+		ctx.respBasicError(err)
+		return
 	}
 
-	if err = rpcCall(reqBody.Addr, "Admin.SystemInfo", "", &info); err != nil {
-		goto failed
+	if err = rpcCall(reqBody.Addr, "Srv.SystemInfo", proto.EmptyArgs{}, &info); err != nil {
+		ctx.respRPCError(err)
+		return
 	}
 
 	ctx.respSucc("", info)
-	return
-
-failed:
-	ctx.respError(proto.Code_Error, err.Error(), nil)
 }

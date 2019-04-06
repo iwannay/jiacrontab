@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"jiacrontab/models"
@@ -66,7 +67,7 @@ func Login(c iris.Context) {
 	})
 }
 
-func getRelationEvent(c iris.Context) {
+func getActivityList(c iris.Context) {
 	var (
 		ctx     = wrapCtx(c)
 		err     error
@@ -80,15 +81,17 @@ func getRelationEvent(c iris.Context) {
 	}
 
 	if err = ctx.parseClaimsFromToken(); err != nil {
-		ctx.respError(proto.Code_Error, "无法获得token信息", err)
+		ctx.respBasicError(err)
 		return
 	}
 
-	err = models.DB().Where("user_id=?", ctx.claims.UserID).Order(fmt.Sprintf("create_at %s", reqBody.Orderby)).
+	err = models.DB().Where("user_id=? and id>?", ctx.claims.UserID, reqBody.LastID).
+		Order(fmt.Sprintf("create_at %s", reqBody.Orderby)).
+		Limit(reqBody.Pagesize).
 		Find(&events).Error
 
-	if err != nil {
-		ctx.respError(proto.Code_Error, "暂无数据", err)
+	if err != nil && err != sql.ErrNoRows {
+		ctx.respDBError(err)
 		return
 	}
 

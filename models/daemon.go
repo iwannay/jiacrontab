@@ -12,7 +12,6 @@ type DaemonJob struct {
 	UserID          uint        `json:"user_id"`
 	ErrorMailNotify bool        `json:"errorMailNotify"`
 	ErrorAPINotify  bool        `json:"errorAPINotify"`
-	Disabled        bool        `json:"disabled"`
 	Status          JobStatus   `json:"status"`
 	MailTo          StringSlice `json:"mailTo" gorm:"type:varchar(1000)"`
 	APITo           StringSlice `json:"APITo" gorm:"type:varchar(1000)"`

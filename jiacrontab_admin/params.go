@@ -164,11 +164,11 @@ func (p *SendTestMailReqParams) verify(ctx iris.Context) error {
 	return nil
 }
 
-type RuntimeInfoReqParams struct {
+type SystemInfoReqParams struct {
 	Addr string `json:"addr"`
 }
 
-func (p *RuntimeInfoReqParams) verify(ctx iris.Context) error {
+func (p *SystemInfoReqParams) verify(ctx iris.Context) error {
 	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" {
 		return paramsError
 	}
@@ -353,7 +353,7 @@ func (p *ReadMoreReqParams) verify(ctx iris.Context) error {
 	}
 
 	if p.Pagesize == 0 {
-		p.Pagesize = 20
+		p.Pagesize = 50
 	}
 
 	if p.Orderby == "" {
