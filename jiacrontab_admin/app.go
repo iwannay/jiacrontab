@@ -57,21 +57,21 @@ func newApp() *iris.Application {
 	{
 		adm.Use(jwtHandler.Serve)
 
-		adm.Post("/crontab/job/list", getJobList)
-		adm.Post("/crontab/job/get", getJob)
-		adm.Post("/crontab/job/log", getRecentLog)
-		adm.Post("/crontab/job/edit", editJob)
-		adm.Post("/crontab/job/action", actionTask)
-		adm.Post("/crontab/job/exec", execTask)
+		adm.Post("/crontab/job/list", GetJobList)
+		adm.Post("/crontab/job/get", GetJob)
+		adm.Post("/crontab/job/log", GetRecentLog)
+		adm.Post("/crontab/job/edit", EditJob)
+		adm.Post("/crontab/job/action", ActionTask)
+		adm.Post("/crontab/job/exec", ExecTask)
 
-		adm.Post("/config/get", getConfig)
-		adm.Post("/runtime/info", runtimeInfo)
+		adm.Post("/config/get", GetConfig)
+		adm.Post("/system/info", SystemInfo)
 
 		adm.Post("/daemon/job/list", GetDaemonJobList)
-		adm.Post("/daemon/job/action", actionDaemonTask)
+		adm.Post("/daemon/job/action", ActionDaemonTask)
 		adm.Post("/daemon/job/edit", EditDaemonJob)
 		adm.Post("/daemon/job/get", GetDaemonJob)
-		adm.Post("/daemon/job/log", getRecentDaemonLog)
+		adm.Post("/daemon/job/log", GetRecentDaemonLog)
 
 		adm.Post("/group/list", GetGroupList)
 		adm.Post("/group/edit", EditGroup)
@@ -82,7 +82,7 @@ func newApp() *iris.Application {
 		adm.Post("/node/delete", DeleteNode)
 		adm.Post("/node/group_node", GroupNode)
 
-		adm.Post("/user/activity_list", getRelationEvent)
+		adm.Post("/user/activity_list", getActivityList)
 		adm.Post("/user/job_history", getJobHistory)
 		adm.Post("/user/audit_job", AuditJob)
 		adm.Post("/user/signup", Signup)

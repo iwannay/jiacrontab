@@ -146,8 +146,7 @@ func loadConfig() *ini.File {
 	return f
 }
 
-func getConfig(c iris.Context) {
-
+func GetConfig(c iris.Context) {
 	ctx := wrapCtx(c)
 	gid, err := ctx.getGroupIDFromToken()
 	if err != nil || gid != 0 {

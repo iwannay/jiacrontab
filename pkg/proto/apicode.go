@@ -9,6 +9,7 @@ const (
 	Code_JWTError    = 5006
 	Code_RPCError    = 5007
 	Code_ParamsError = 5008
+	Code_DBError     = 5009
 )
 
 const (

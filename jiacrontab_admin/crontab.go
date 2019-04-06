@@ -2,7 +2,6 @@ package admin
 
 import (
 	"errors"
-	"fmt"
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/rpc"
@@ -11,7 +10,7 @@ import (
 	"github.com/kataras/iris"
 )
 
-func getJobList(c iris.Context) {
+func GetJobList(c iris.Context) {
 
 	var (
 		jobRet       proto.QueryCrontabJobRet
@@ -42,7 +41,7 @@ func getJobList(c iris.Context) {
 	})
 }
 
-func getRecentLog(c iris.Context) {
+func GetRecentLog(c iris.Context) {
 	var (
 		err       error
 		ctx       = wrapCtx(c)
@@ -81,14 +80,13 @@ failed:
 	ctx.respError(proto.Code_Error, "", err.Error())
 }
 
-func editJob(c iris.Context) {
+func EditJob(c iris.Context) {
 	var (
 		err     error
 		reply   int
 		ctx     = wrapCtx(c)
 		reqBody EditJobReqParams
 		rpcArgs models.CrontabJob
-		node    models.Node
 	)
 
 	if err = ctx.parseClaimsFromToken(); err != nil {
@@ -101,8 +99,8 @@ func editJob(c iris.Context) {
 		return
 	}
 
-	if !node.VerifyUserGroup(ctx.claims.UserID, ctx.claims.GroupID, reqBody.Addr) {
-		ctx.respBasicError(fmt.Errorf("userID:%d groupID:%d permission not allowed", ctx.claims.UserID, ctx.claims.GroupID))
+	if !ctx.verifyNodePermission(reqBody.Addr) {
+		ctx.respNotAllowed()
 		return
 	}
 
@@ -142,6 +140,12 @@ func editJob(c iris.Context) {
 		rpcArgs.CreatedUsername = ctx.claims.Username
 	}
 
+	if ctx.claims.Root || ctx.claims.GroupID == 0 {
+		rpcArgs.Status = models.StatusJobOk
+	} else {
+		rpcArgs.Status = models.StatusJobUnaudited
+	}
+
 	if err = rpcCall(reqBody.Addr, "CrontabJob.Edit", rpcArgs, &reply); err != nil {
 		ctx.respRPCError(err)
 		return
@@ -150,7 +154,7 @@ func editJob(c iris.Context) {
 	ctx.respSucc("", reply)
 }
 
-func actionTask(c iris.Context) {
+func ActionTask(c iris.Context) {
 	var (
 		ctx     = wrapCtx(c)
 		err     error
@@ -195,7 +199,7 @@ failed:
 
 }
 
-func execTask(c iris.Context) {
+func ExecTask(c iris.Context) {
 	var (
 		ctx     = wrapCtx(c)
 		err     error
@@ -221,7 +225,7 @@ failed:
 	ctx.respError(proto.Code_Error, err.Error(), nil)
 }
 
-func getJob(c iris.Context) {
+func GetJob(c iris.Context) {
 	var (
 		ctx        = wrapCtx(c)
 		reqBody    GetJobReqParams

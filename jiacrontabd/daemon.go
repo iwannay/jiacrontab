@@ -172,11 +172,12 @@ func (d *Daemon) PopJob(jobID uint) {
 		delete(d.taskMap, jobID)
 		d.lock.Unlock()
 		t.cancel()
+	} else {
+		d.lock.Unlock()
 	}
 }
 
 func (d *Daemon) run() {
-
 	var jobList []models.DaemonJob
 	err := models.DB().Where("status=?", models.StatusJobRunning).Find(&jobList).Error
 	if err != nil {

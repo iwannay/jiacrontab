@@ -39,7 +39,7 @@ func GetDaemonJobList(c iris.Context) {
 	})
 }
 
-func actionDaemonTask(c iris.Context) {
+func ActionDaemonTask(c iris.Context) {
 	var (
 		ctx     = wrapCtx(c)
 		err     error
@@ -122,6 +122,11 @@ func EditDaemonJob(c iris.Context) {
 		daemonJob.CreatedUserID = ctx.claims.UserID
 		daemonJob.CreatedUsername = ctx.claims.Username
 	}
+	if ctx.claims.Root || ctx.claims.GroupID == 0 {
+		daemonJob.Status = models.StatusJobOk
+	} else {
+		daemonJob.Status = models.StatusJobUnaudited
+	}
 
 	if err = rpcCall(reqBody.Addr, "DaemonJob.Edit", daemonJob, &reply); err != nil {
 		ctx.respRPCError(err)
@@ -163,7 +168,7 @@ func GetDaemonJob(c iris.Context) {
 	ctx.respSucc("", daemonJob)
 }
 
-func getRecentDaemonLog(c iris.Context) {
+func GetRecentDaemonLog(c iris.Context) {
 	var (
 		err       error
 		ctx       = wrapCtx(c)

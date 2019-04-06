@@ -33,6 +33,10 @@ func (ctx *myctx) respAuthFailed(err error) {
 	ctx.respError(proto.Code_FailedAuth, err)
 }
 
+func (ctx *myctx) respDBError(err error) {
+	ctx.respError(proto.Code_DBError, err)
+}
+
 func (ctx *myctx) respJWTError(err error) {
 	ctx.respError(proto.Code_JWTError, err)
 }

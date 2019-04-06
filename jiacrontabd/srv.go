@@ -7,6 +7,7 @@ import (
 	"jiacrontab/pkg/crontab"
 	"jiacrontab/pkg/finder"
 	"jiacrontab/pkg/proto"
+	"jiacrontab/pkg/util"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,9 +17,21 @@ import (
 )
 
 type Srv struct {
+	jd *Jiacrontabd
 }
 
-func (s *Srv) Ping(args *proto.EmptyArgs, reply *proto.EmptyReply) error {
+func newSrv(jd *Jiacrontabd) *Srv {
+	return &Srv{
+		jd: jd,
+	}
+}
+
+func (s *Srv) Ping(args proto.EmptyArgs, reply *proto.EmptyReply) error {
+	return nil
+}
+
+func (s *Srv) SystemInfo(args proto.EmptyArgs, reply *map[string]interface{}) error {
+	*reply = util.SystemInfo(s.jd.startTime)
 	return nil
 }
 
@@ -26,9 +39,9 @@ type CrontabJob struct {
 	jd *Jiacrontabd
 }
 
-func newCrontabJobSrv(d *Jiacrontabd) *CrontabJob {
+func newCrontabJobSrv(jd *Jiacrontabd) *CrontabJob {
 	return &CrontabJob{
-		jd: d,
+		jd: jd,
 	}
 }
 
@@ -75,7 +88,6 @@ func (j *CrontabJob) Edit(args models.CrontabJob, rowsAffected *int64) error {
 			"createdUserID", "createdUsername",
 			"last_cost_time", "last_exec_time",
 			"next_exec_time", "last_exit_status", "process_num",
-			"status",
 		).Save(&args)
 	}
 
@@ -255,7 +267,10 @@ func (j *DaemonJob) Edit(args models.DaemonJob, reply *int64) error {
 		return ret.Error
 	}
 
-	ret := models.DB().Where("id=?", args.ID).Save(&args)
+	ret := models.DB().Where("id=?", args.ID).Omit(
+		"updated_at", "created_at", "deleted_at",
+		"createdUserID", "createdUsername",
+	).Save(&args)
 	*reply = ret.RowsAffected
 
 	return ret.Error
