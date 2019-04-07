@@ -342,8 +342,8 @@ func (p *SetGroupReqParams) verify(ctx iris.Context) error {
 }
 
 type ReadMoreReqParams struct {
-	LastID   uint   `json:"lastID"`
-	Pagesize int    `json:"pagesize"`
+	LastID   int    `json:"lastID"`
+	Pagesize uint   `json:"pagesize"`
 	Orderby  string `json:"orderby"`
 }
 

@@ -86,10 +86,17 @@ func GetActivityList(c iris.Context) {
 		return
 	}
 
-	err = models.DB().Where("user_id=? and id>?", ctx.claims.UserID, reqBody.LastID).
-		Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
-		Limit(reqBody.Pagesize).
-		Find(&events).Error
+	if reqBody.LastID == 0 {
+		err = models.DB().Debug().Where("user_id=?", ctx.claims.UserID).
+			Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
+			Limit(reqBody.Pagesize).
+			Find(&events).Error
+	} else {
+		err = models.DB().Debug().Where("user_id=? and id<?", ctx.claims.UserID, reqBody.LastID).
+			Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
+			Limit(reqBody.Pagesize).
+			Find(&events).Error
+	}
 
 	if err != nil && err != sql.ErrNoRows {
 		ctx.respDBError(err)
@@ -121,10 +128,17 @@ func GetJobHistory(c iris.Context) {
 		return
 	}
 
-	err = models.DB().Where("addr in (?) and id>?", addrs, reqBody.LastID).
-		Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
-		Limit(reqBody.Pagesize).
-		Find(&historys).Error
+	if reqBody.LastID == 0 {
+		err = models.DB().Debug().Where("addr in (?)", addrs, reqBody.LastID).
+			Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
+			Limit(reqBody.Pagesize).
+			Find(&historys).Error
+	} else {
+		err = models.DB().Debug().Where("addr in (?) and id<?", addrs, reqBody.LastID).
+			Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
+			Limit(reqBody.Pagesize).
+			Find(&historys).Error
+	}
 
 	if err != nil {
 		ctx.respError(proto.Code_Error, "暂无数据", err)

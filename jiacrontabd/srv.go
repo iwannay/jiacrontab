@@ -62,7 +62,7 @@ func (j *CrontabJob) Audit(args proto.AuditJobArgs, reply *[]models.CrontabJob) 
 	return models.DB().Model(&models.CrontabJob{}).Where("id in(?) and status=?", args.JobIDs, models.StatusJobUnaudited).Update("status", models.StatusJobOk).Error
 }
 
-func (j *CrontabJob) Edit(args models.CrontabJob, rowsAffected *int64) error {
+func (j *CrontabJob) Edit(args models.CrontabJob, reply *models.CrontabJob) error {
 
 	var (
 		db *models.D
@@ -76,7 +76,6 @@ func (j *CrontabJob) Edit(args models.CrontabJob, rowsAffected *int64) error {
 
 	if args.ID == 0 {
 		db = models.DB().Create(&args)
-		*rowsAffected = db.RowsAffected
 		return db.Error
 	}
 
@@ -90,8 +89,7 @@ func (j *CrontabJob) Edit(args models.CrontabJob, rowsAffected *int64) error {
 			"next_exec_time", "last_exit_status", "process_num",
 		).Save(&args)
 	}
-
-	*rowsAffected = db.RowsAffected
+	*reply = args
 	return db.Error
 }
 func (j *CrontabJob) Get(args uint, reply *models.CrontabJob) error {
