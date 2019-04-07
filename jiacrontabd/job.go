@@ -131,6 +131,7 @@ func (p *process) exec() error {
 							if p.jobEntry.timeoutTrigger(p) {
 								ignoreChan <- struct{}{}
 							}
+							return
 						}
 					}
 				})
@@ -401,7 +402,6 @@ func (j *JobEntry) updateJob(status models.JobStatus, startTime, endTime time.Ti
 		"status":         status,
 		"process_num":    atomic.LoadInt32(&j.processNum),
 		"last_exec_time": j.job.GetLastExecTime(),
-		"next_exec_time": j.job.GetNextExecTime(),
 	}
 
 	if j.once && (status == models.StatusJobRunning) {
