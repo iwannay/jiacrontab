@@ -422,17 +422,18 @@ func (j *JobEntry) updateJob(status models.JobStatus, startTime, endTime time.Ti
 	if err != nil {
 		errMsg = err.Error()
 	}
-
-	if err = rpcCall("Srv.PushJobLog", models.JobHistory{
-		JobType:   models.JobTypeCrontab,
-		JobID:     j.detail.ID,
-		Addr:      cfg.LocalAddr,
-		JobName:   j.detail.Name,
-		StartTime: startTime,
-		EndTime:   endTime,
-		ExitMsg:   errMsg,
-	}, nil); err != nil {
-		log.Error("rpc call Srv.PushJobLog failed:", err)
+	if status == models.StatusJobTiming {
+		if err = rpcCall("Srv.PushJobLog", models.JobHistory{
+			JobType:   models.JobTypeCrontab,
+			JobID:     j.detail.ID,
+			Addr:      cfg.LocalAddr,
+			JobName:   j.detail.Name,
+			StartTime: startTime,
+			EndTime:   endTime,
+			ExitMsg:   errMsg,
+		}, nil); err != nil {
+			log.Error("rpc call Srv.PushJobLog failed:", err)
+		}
 	}
 
 	models.DB().Model(&j.detail).Debug().Updates(data)

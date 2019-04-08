@@ -69,6 +69,9 @@ type Job struct {
 }
 
 func (j *Job) GetNextExecTime() time.Time {
+	if j.nextExecutionTime.Before(time.Now()) {
+		return time.Now()
+	}
 	return j.nextExecutionTime
 }
 
@@ -111,8 +114,7 @@ func (j *Job) NextExecutionTime(t time.Time) (time.Time, error) {
 	t = t.Add(1*time.Second - time.Duration(t.Nanosecond())*time.Nanosecond)
 	added := false
 	defer func() {
-		j.lastExecutionTime = j.nextExecutionTime
-		j.nextExecutionTime = t
+		j.lastExecutionTime, j.nextExecutionTime = j.nextExecutionTime, t
 	}()
 
 	// 设置最大调度周期为5年
