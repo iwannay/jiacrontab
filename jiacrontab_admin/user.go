@@ -129,7 +129,7 @@ func GetJobHistory(c iris.Context) {
 	}
 
 	if reqBody.LastID == 0 {
-		err = models.DB().Debug().Where("addr in (?)", addrs, reqBody.LastID).
+		err = models.DB().Debug().Where("addr in (?)", addrs).
 			Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
 			Limit(reqBody.Pagesize).
 			Find(&historys).Error
@@ -140,8 +140,8 @@ func GetJobHistory(c iris.Context) {
 			Find(&historys).Error
 	}
 
-	if err != nil {
-		ctx.respError(proto.Code_Error, "暂无数据", err)
+	if err != nil && err != sql.ErrNoRows {
+		ctx.respDBError(err)
 		return
 	}
 

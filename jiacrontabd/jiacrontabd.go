@@ -63,7 +63,7 @@ func (j *Jiacrontabd) addJob(job *crontab.Job) {
 	}
 	j.mux.Unlock()
 
-	if t, err := job.NextExecutionTime(time.Now()); err != nil {
+	if t, err := job.NextExecutionTime(job.GetNextExecTime()); err != nil {
 		log.Error("NextExecutionTime:", err, " timeArgs:", job)
 	} else {
 		if err := models.DB().Model(&models.CrontabJob{}).Where("id=?", job.ID).Debug().
