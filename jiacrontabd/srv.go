@@ -152,13 +152,12 @@ func (j *CrontabJob) Kill(jobIDs []uint, job *[]models.CrontabJob) error {
 
 func (j *CrontabJob) Exec(jobID uint, reply *proto.ExecCrontabJobReply) error {
 
-	var job models.CrontabJob
 	ret := models.DB().Debug().Find(&reply.Job, "id=?", jobID)
 
 	if ret.Error == nil {
 		jobInstance := newJobEntry(&crontab.Job{
-			ID:    job.ID,
-			Value: job,
+			ID:    reply.Job.ID,
+			Value: reply.Job,
 		}, j.jd)
 
 		j.jd.addTmpJob(jobInstance)

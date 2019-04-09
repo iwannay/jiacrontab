@@ -109,10 +109,9 @@ func (p *process) waitDepExecDone() bool {
 
 func (p *process) exec() error {
 	var (
-		ok         bool
-		err        error
-		doneChan   = make(chan struct{}, 1)
-		ignoreChan = make(chan struct{}, 1)
+		ok       bool
+		err      error
+		doneChan = make(chan struct{}, 1)
 	)
 
 	if ok = p.waitDepExecDone(); !ok {
@@ -121,18 +120,12 @@ func (p *process) exec() error {
 		if p.jobEntry.detail.Timeout != 0 {
 			time.AfterFunc(
 				time.Duration(p.jobEntry.detail.Timeout)*time.Second, func() {
-					for {
-						log.Debug("timeout loop", "jobID:", p.jobEntry.detail.ID)
-						select {
-						case <-doneChan:
-							close(doneChan)
-							return
-						default:
-							if p.jobEntry.timeoutTrigger(p) {
-								ignoreChan <- struct{}{}
-							}
-							return
-						}
+					log.Debug("timeout callback:", "jobID:", p.jobEntry.detail.ID)
+					select {
+					case <-doneChan:
+						close(doneChan)
+					default:
+						p.jobEntry.timeoutTrigger(p)
 					}
 				})
 		}
@@ -153,12 +146,6 @@ func (p *process) exec() error {
 		doneChan <- struct{}{}
 
 		if p.err != nil {
-			select {
-			case <-ignoreChan:
-				p.jobEntry.detail.LastExitStatus = exitError
-				close(ignoreChan)
-			default:
-			}
 			p.jobEntry.handleNotify(p)
 		}
 	}
@@ -280,7 +267,7 @@ func (j *JobEntry) handleNotify(p *process) {
 	}
 }
 
-func (j *JobEntry) timeoutTrigger(p *process) (ignore bool) {
+func (j *JobEntry) timeoutTrigger(p *process) {
 
 	var (
 		err   error
@@ -303,7 +290,6 @@ func (j *JobEntry) timeoutTrigger(p *process) (ignore bool) {
 			})
 			if err != nil {
 				log.Error("json.Marshal error:", err)
-				return false
 			}
 
 			if err = rpcCall("Srv.ErrorNotify err:", proto.ApiPost{
@@ -332,7 +318,6 @@ func (j *JobEntry) timeoutTrigger(p *process) (ignore bool) {
 			log.Error("invalid timeoutTrigger", e)
 		}
 	}
-	return true
 }
 
 func (j *JobEntry) exec() {
@@ -352,13 +337,12 @@ func (j *JobEntry) exec() {
 		}
 
 		if !j.once {
-			if j.detail.NextExecTime != j.job.GetNextExecTime() {
-				log.Error("JobEntry.exec time error ")
+			if !j.detail.NextExecTime.Truncate(time.Second).Equal(j.job.GetNextExecTime().Truncate(time.Second)) {
+				log.Error("JobEntry.exec time error:", j.detail.NextExecTime, "not equal", j.job.GetNextExecTime())
 				return
 			}
 			j.jd.addJob(j.job)
 		}
-
 		if atomic.LoadInt32(&j.processNum) > int32(j.detail.MaxConcurrent) {
 			return
 		}
@@ -373,7 +357,7 @@ func (j *JobEntry) exec() {
 			atomic.AddInt32(&j.processNum, -1)
 			j.updateJob(models.StatusJobTiming, startTime, endTime, err)
 		}()
-
+		log.Error("JobEntry.exec ------", j.job.GetLastExecTime(), "not equal", j.job.GetNextExecTime())
 		j.updateJob(models.StatusJobRunning, startTime, endTime, err)
 
 		for i := 0; i <= j.detail.RetryNum; i++ {
@@ -417,7 +401,6 @@ func (j *JobEntry) updateJob(status models.JobStatus, startTime, endTime time.Ti
 	}
 
 	if j.once {
-		delete(data, "next_exec_time")
 		delete(data, "last_exec_time")
 		delete(data, "status")
 	}
