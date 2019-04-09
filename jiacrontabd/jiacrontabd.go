@@ -295,6 +295,42 @@ func (j *Jiacrontabd) heartBeat() {
 	time.AfterFunc(heartbeatPeriod, j.heartBeat)
 }
 
+func (j *Jiacrontabd) recovery() {
+	var crontabJobs []models.CrontabJob
+	var daemonJobs []models.DaemonJob
+
+	err := models.DB().Debug().Find(&crontabJobs, "status in (?)", []models.JobStatus{models.StatusJobTiming, models.StatusJobRunning}).Error
+	if err != nil {
+		log.Debug("crontab recovery:", err)
+	}
+
+	for _, v := range crontabJobs {
+		j.addJob(&crontab.Job{
+			ID:      v.ID,
+			Second:  v.TimeArgs.Second,
+			Minute:  v.TimeArgs.Minute,
+			Hour:    v.TimeArgs.Hour,
+			Day:     v.TimeArgs.Day,
+			Month:   v.TimeArgs.Month,
+			Weekday: v.TimeArgs.Weekday,
+		})
+	}
+
+	err = models.DB().Find(&daemonJobs, "status in (?)", []models.JobStatus{models.StatusJobOk, models.StatusJobStop}).Error
+
+	if err != nil {
+		log.Debug("daemon recovery:", err)
+	}
+
+	for _, v := range daemonJobs {
+		job := v
+		j.daemon.add(&daemonJob{
+			job: &job,
+		})
+	}
+
+}
+
 func (j *Jiacrontabd) init() {
 	models.CreateDB(cfg.DriverName, cfg.DSN)
 	models.DB().CreateTable(&models.CrontabJob{}, &models.DaemonJob{})
