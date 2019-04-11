@@ -13,9 +13,13 @@ type Node struct {
 	Disabled           bool   `json:"disabled"` // 通信失败时Disabled会被设置为true
 	CrontabTaskNum     int    `json:"crontabTaskNum"`
 	GroupID            uint   `json:"groupID" gorm:"not null;unique_index:uni_group_addr" `
-	CrontabJobAuditNum uint   `json:"crontab_job_audit_num"`
-	DaemonJobAuditNum  uint   `json:"daemon_job_audit_num"`
-	Addr               string `json:"addr"gorm:"not null;unique_index:uni_group_addr"`
+	CrontabJobAuditNum uint   `json:"crontabJobAuditNum"`
+	DaemonJobAuditNum  uint   `json:"daemonJobAuditNum"`
+
+	CrontabJobFailNum uint `json:"crontabJobFailNum"`
+	DaemonJobRunNum   uint `json:"daemonJobFailNum"`
+
+	Addr string `json:"addr"gorm:"not null;unique_index:uni_group_addr"`
 }
 
 func (n *Node) VerifyUserGroup(userID, groupID uint, addr string) bool {
