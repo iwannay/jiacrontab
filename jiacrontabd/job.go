@@ -416,16 +416,19 @@ func (j *JobEntry) updateJob(status models.JobStatus, startTime, endTime time.Ti
 		data["process_num"] = gorm.Expr("process_num - ?", 1)
 	}
 
+	var errMsg string
+	if err != nil {
+		errMsg = err.Error()
+		data["last_exit_status"] = errMsg
+	}
+
 	if j.once {
 		delete(data, "next_exec_time")
 		delete(data, "last_exec_time")
 		delete(data, "status")
+		delete(data, "last_exit_status")
 	}
 
-	var errMsg string
-	if err != nil {
-		errMsg = err.Error()
-	}
 	if status == models.StatusJobTiming {
 		if err = rpcCall("Srv.PushJobLog", models.JobHistory{
 			JobType:   models.JobTypeCrontab,
