@@ -29,7 +29,7 @@ type ApiPost struct {
 }
 
 type ExecCrontabJobReply struct {
-	Job     *models.CrontabJob
+	Job     models.CrontabJob
 	Content []byte
 }
 

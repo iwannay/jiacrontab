@@ -63,18 +63,16 @@ func (j *Jiacrontabd) addJob(job *crontab.Job) {
 	}
 	j.mux.Unlock()
 
-	if t, err := job.NextExecutionTime(job.GetNextExecTime()); err != nil {
+	if err := j.crontab.AddJob(job); err != nil {
 		log.Error("NextExecutionTime:", err, " timeArgs:", job)
 	} else {
 		if err := models.DB().Model(&models.CrontabJob{}).Where("id=?", job.ID).Debug().
 			Updates(map[string]interface{}{
-				"next_exec_time": t,
+				"next_exec_time": job.GetNextExecTime().Truncate(time.Second),
 				"status":         models.StatusJobTiming,
 			}).Error; err != nil {
 			log.Error(err)
 		}
-
-		j.crontab.AddJob(job)
 	}
 }
 
@@ -339,6 +337,7 @@ func (j *Jiacrontabd) init() {
 	if cfg.AutoCleanTaskLog {
 		go finder.SearchAndDeleteFileOnDisk(cfg.LogPath, 24*time.Hour*30, 1<<30)
 	}
+	j.recovery()
 }
 
 // Main main function
