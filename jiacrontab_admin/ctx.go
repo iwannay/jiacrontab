@@ -168,6 +168,20 @@ func (ctx *myctx) getGroupAddr() ([]string, error) {
 
 }
 
+func (ctx *myctx) Valid(i Parameter) error {
+	if err := ctx.ReadJSON(i); err != nil {
+		return err
+	}
+
+	if err := i.Verify(ctx); err != nil {
+		return err
+	}
+
+	if err := validStructRule(i); err != nil {
+		return err
+	}
+}
+
 func (ctx *myctx) pubEvent(targetName, desc, nodeAddr string, v interface{}) {
 	var content string
 	if (ctx.claims == CustomerClaims{}) {

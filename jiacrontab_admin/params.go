@@ -15,6 +15,10 @@ var (
 	paramsError = errors.New("参数错误")
 )
 
+type Parameter interface {
+	Verify(iris.Context) error
+}
+
 type JobReqParams struct {
 	JobID uint   `json:"jobID"`
 	Addr  string `json:"addr"`
