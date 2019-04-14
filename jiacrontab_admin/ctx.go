@@ -45,6 +45,10 @@ func (ctx *myctx) respBasicError(err error) {
 	ctx.respError(proto.Code_Error, err)
 }
 
+func (ctx *myctx) respParamError(err error) {
+	ctx.respError(proto.Code_ParamsError, err)
+}
+
 func (ctx *myctx) respRPCError(err error) {
 	ctx.respError(proto.Code_RPCError, err)
 }
@@ -180,6 +184,7 @@ func (ctx *myctx) Valid(i Parameter) error {
 	if err := validStructRule(i); err != nil {
 		return err
 	}
+	return nil
 }
 
 func (ctx *myctx) pubEvent(targetName, desc, nodeAddr string, v interface{}) {

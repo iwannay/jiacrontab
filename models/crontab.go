@@ -34,7 +34,7 @@ type CrontabJob struct {
 	LastCostTime    float64      `json:"lastCostTime"`
 	LastExecTime    time.Time    `json:"lastExecTime"`
 	NextExecTime    time.Time    `json:"nextExecTime"`
-	LastExitStatus  string       `json:"lastExitStatus"`
+	LastExitStatus  string       `json:"lastExitStatus" grom:"index"`
 	CreatedUserID   uint         `json:"createdUserId"`
 	CreatedUsername string       `json:"createdUsername"`
 	UpdatedUserID   uint         `json:"updatedUserID"`

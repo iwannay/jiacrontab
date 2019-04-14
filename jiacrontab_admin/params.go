@@ -333,15 +333,13 @@ func (p *EditGroupReqParams) verify(ctx iris.Context) error {
 }
 
 type SetGroupReqParams struct {
-	TargetGroupID uint `json:"targetGroupID"`
-	UserID        uint `json:"userID"`
-	Root          bool `json:"root"`
+	TargetGroupID   uint   `json:"targetGroupID"`
+	TargetGroupName string `json:"targetGroupName"`
+	UserID          uint   `json:"userID" rule:"required,请填写用户ID"`
+	Root            bool   `json:"root"`
 }
 
-func (p *SetGroupReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.UserID == 0 {
-		return paramsError
-	}
+func (p *SetGroupReqParams) Verify(ctx iris.Context) error {
 	return nil
 }
 
@@ -374,7 +372,7 @@ type GroupNodeReqParams struct {
 	TargetGroupID   uint   `json:"targetGroupID"`
 }
 
-func (p *GroupNodeReqParams) verify(ctx iris.Context) error {
+func (p *GroupNodeReqParams) Verify(ctx iris.Context) error {
 	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" ||
 		(p.TargetGroupID == 0 && p.TargetGroupName == "") {
 		return paramsError
@@ -413,13 +411,12 @@ func (p *AuditJobReqParams) verify(ctx iris.Context) error {
 
 type GetUsersParams struct {
 	PageReqParams
+	IsAll        bool `json:"isAll"`
 	QueryGroupID uint `json:"queryGroupID"`
 }
 
-func (p *GetUsersParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil {
-		return paramsError
-	}
+func (p *GetUsersParams) Verify(ctx iris.Context) error {
+
 	if p.Page <= 1 {
 		p.Page = 1
 	}
