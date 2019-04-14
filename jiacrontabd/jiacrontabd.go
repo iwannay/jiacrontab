@@ -283,6 +283,10 @@ func (j *Jiacrontabd) heartBeat() {
 
 	models.DB().Model(&models.CrontabJob{}).Where("status=?", models.StatusJobUnaudited).Count(&node.CrontabJobAuditNum)
 	models.DB().Model(&models.DaemonJob{}).Where("status=?", models.StatusJobUnaudited).Count(&node.DaemonJobAuditNum)
+	models.DB().Model(&models.CrontabJob{}).Where("status in (?) and last_exit_status != ''", []models.JobStatus{
+		models.StatusJobTiming, models.StatusJobRunning,
+	}).Count(&node.CrontabJobFailNum)
+	models.DB().Model(&models.DaemonJob{}).Where("status=?", models.StatusJobRunning).Count(&node.DaemonJobRunningNum)
 
 	err := rpcCall(rpc.RegisterService, node, &reply)
 
@@ -297,7 +301,7 @@ func (j *Jiacrontabd) recovery() {
 	var crontabJobs []models.CrontabJob
 	var daemonJobs []models.DaemonJob
 
-	err := models.DB().Debug().Find(&crontabJobs, "status in (?)", []models.JobStatus{models.StatusJobTiming, models.StatusJobRunning}).Error
+	err := models.DB().Debug().Find(&crontabJobs, "status IN (?)", []models.JobStatus{models.StatusJobTiming, models.StatusJobRunning}).Error
 	if err != nil {
 		log.Debug("crontab recovery:", err)
 	}

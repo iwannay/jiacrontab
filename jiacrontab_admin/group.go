@@ -27,6 +27,7 @@ func GetGroupList(c iris.Context) {
 		ctx.respNotAllowed()
 		return
 	}
+	// 手动加入超级管理员
 
 	err = models.DB().Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&groupList).Error
 
@@ -35,6 +36,7 @@ func GetGroupList(c iris.Context) {
 		return
 	}
 
+	groupList = append([]models.Group{models.SuperGroup}, groupList...)
 	ctx.respSucc("", groupList)
 }
 
@@ -46,29 +48,46 @@ func GetUserList(c iris.Context) {
 		err      error
 		total    int
 	)
-	if err = reqBody.verify(ctx); err != nil {
-		ctx.respBasicError(err)
-		return
+
+	if err = ctx.Valid(&reqBody); err != nil {
+		ctx.respParamError(err)
 	}
+
 	if err = ctx.parseClaimsFromToken(); err != nil {
 		ctx.respJWTError(err)
 		return
 	}
 
-	if reqBody.QueryGroupID != ctx.claims.GroupID && ctx.claims.GroupID != 0 {
+	if reqBody.IsAll && ctx.claims.GroupID != 0 {
 		ctx.respNotAllowed()
 		return
 	}
 
-	err = models.DB().Model(&models.User{}).Where("group_id=?", reqBody.QueryGroupID).Count(&total).Error
+	if !reqBody.IsAll && reqBody.QueryGroupID != ctx.claims.GroupID && ctx.claims.GroupID != 0 {
+		ctx.respNotAllowed()
+		return
+	}
+
+	m := models.DB().Model(&models.User{})
+	if reqBody.IsAll {
+		err = m.Count(&total).Error
+	} else {
+		err = m.Where("group_id=?", reqBody.QueryGroupID).Count(&total).Error
+	}
+
 	if err != nil && err != sql.ErrNoRows {
 		ctx.respBasicError(err)
 		return
 	}
 
-	err = models.DB().Where("group_id=?", reqBody.QueryGroupID).Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&userList).Error
+	if reqBody.IsAll {
+		err = models.DB().Limit(reqBody.Pagesize).Find(&userList).Error
+	} else {
+		err = models.DB().Where("group_id=?", reqBody.QueryGroupID).Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&userList).Error
+	}
+
 	if err != nil && err != sql.ErrNoRows {
-		ctx.respBasicError(err)
+		ctx.respDBError(err)
 		return
 	}
 
@@ -81,7 +100,6 @@ func GetUserList(c iris.Context) {
 }
 
 // EditGroup 编辑分组
-// 当groupID=0时创建新的分组
 func EditGroup(c iris.Context) {
 	var (
 		ctx     = wrapCtx(c)
@@ -107,39 +125,40 @@ func EditGroup(c iris.Context) {
 }
 
 // GroupUser 超级管理员设置普通用户分组
-// 超级管理员
 func GroupUser(c iris.Context) {
 	var (
 		ctx     = wrapCtx(c)
 		reqBody SetGroupReqParams
 		err     error
 		user    models.User
-		groupID uint
+		group   models.Group
 	)
 
-	if err = reqBody.verify(c); err != nil {
+	if err = ctx.Valid(&reqBody); err != nil {
 		ctx.respBasicError(err)
 		return
 	}
 
-	if groupID, err = ctx.getGroupIDFromToken(); err != nil {
-		ctx.respJWTError(err)
-		return
-	}
-
-	if groupID != 0 {
+	if !ctx.isSuper() {
 		ctx.respNotAllowed()
 		return
 	}
 
-	if reqBody.UserID != 0 {
-		user.ID = reqBody.UserID
-		user.GroupID = reqBody.TargetGroupID
-		user.Root = reqBody.Root
-		if err = user.SetGroup(); err != nil {
-			ctx.respBasicError(err)
+	if reqBody.TargetGroupName != "" && reqBody.TargetGroupID == 0 {
+		group.Name = reqBody.TargetGroupName
+		if err = models.DB().Save(&group).Error; err != nil {
+			ctx.respDBError(err)
 			return
 		}
+		reqBody.TargetGroupID = group.ID
+	}
+
+	user.ID = reqBody.UserID
+	user.GroupID = reqBody.TargetGroupID
+	user.Root = reqBody.Root
+	if err = user.SetGroup(); err != nil {
+		ctx.respDBError(err)
+		return
 	}
 
 	ctx.pubEvent(user.Username, event_GroupUser, "", reqBody)

@@ -103,18 +103,13 @@ func GroupNode(c iris.Context) {
 		node    models.Node
 	)
 
-	if err = reqBody.verify(ctx); err != nil {
-		ctx.respError(proto.Code_Error, err.Error(), nil)
-		return
-	}
-
-	if err = ctx.parseClaimsFromToken(); err != nil {
-		ctx.respError(proto.Code_Error, err.Error(), nil)
-		return
-	}
-
-	if ctx.claims.GroupID != 0 {
+	if !ctx.isSuper() {
 		ctx.respNotAllowed()
+		return
+	}
+
+	if err = ctx.Valid(&reqBody); err != nil {
+		ctx.respParamError(err)
 		return
 	}
 

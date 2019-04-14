@@ -16,8 +16,8 @@ type Node struct {
 	CrontabJobAuditNum uint   `json:"crontabJobAuditNum"`
 	DaemonJobAuditNum  uint   `json:"daemonJobAuditNum"`
 
-	CrontabJobFailNum uint `json:"crontabJobFailNum"`
-	DaemonJobRunNum   uint `json:"daemonJobFailNum"`
+	CrontabJobFailNum   uint `json:"crontabJobFailNum"`
+	DaemonJobRunningNum uint `json:"daemonJobRunningNum"`
 
 	Addr string `json:"addr"gorm:"not null;unique_index:uni_group_addr"`
 }
