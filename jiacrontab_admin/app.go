@@ -73,8 +73,6 @@ func newApp() *iris.Application {
 
 		adm.Post("/group/list", GetGroupList)
 		adm.Post("/group/edit", EditGroup)
-		adm.Post("/group/user_list", GetUserList)
-		adm.Post("/group/group_user", GroupUser)
 
 		adm.Post("/node/list", GetNodeList)
 		adm.Post("/node/delete", DeleteNode)
@@ -85,6 +83,8 @@ func newApp() *iris.Application {
 		adm.Post("/user/audit_job", AuditJob)
 		adm.Post("/user/stat", UserStat)
 		adm.Post("/user/signup", Signup)
+		adm.Post("/user/group_user", GroupUser)
+		adm.Post("/user/list", GetUserList)
 	}
 
 	app.Post("/user/login", Login)

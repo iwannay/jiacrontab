@@ -99,9 +99,8 @@ func EditDaemonJob(c iris.Context) {
 		return
 	}
 
-	if err = reqBody.verify(ctx); err != nil {
-		ctx.respBasicError(err)
-		return
+	if err = ctx.Valid(&reqBody); err != nil {
+		ctx.respParamError(err)
 	}
 
 	if !ctx.verifyNodePermission(reqBody.Addr) {
@@ -156,8 +155,8 @@ func GetDaemonJob(c iris.Context) {
 		return
 	}
 
-	if err = reqBody.verify(ctx); err != nil {
-		ctx.respError(proto.Code_Error, err.Error(), nil)
+	if err = ctx.Valid(&reqBody); err != nil {
+		ctx.respParamError(err)
 		return
 	}
 
@@ -167,7 +166,7 @@ func GetDaemonJob(c iris.Context) {
 	}
 
 	if err = rpcCall(reqBody.Addr, "DaemonJob.Get", reqBody.JobID, &daemonJob); err != nil {
-		ctx.respError(proto.Code_Error, err.Error(), nil)
+		ctx.respRPCError(err)
 		return
 	}
 

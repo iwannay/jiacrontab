@@ -83,6 +83,7 @@ func (c *Config) SetUsed() {
 }
 
 func (c *Config) init() {
+	c.ServerStartTime = time.Now()
 	c.iniFile = loadConfig()
 	val := reflect.ValueOf(c).Elem()
 	typ := val.Type()

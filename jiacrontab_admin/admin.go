@@ -62,7 +62,7 @@ func (a *Admin) Main() {
 
 	a.init()
 	app := newApp()
-	go rpc.ListenAndServe(cfg.App.RPCListenAddr, &Srv{})
+	go rpc.ListenAndServe(cfg.App.RPCListenAddr, NewSrv(a))
 	defer models.DB().Close()
 	app.Run(iris.Addr(cfg.App.HTTPListenAddr))
 }

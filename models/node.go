@@ -19,7 +19,8 @@ type Node struct {
 	CrontabJobFailNum   uint `json:"crontabJobFailNum"`
 	DaemonJobRunningNum uint `json:"daemonJobRunningNum"`
 
-	Addr string `json:"addr"gorm:"not null;unique_index:uni_group_addr"`
+	Addr  string `json:"addr"gorm:"not null;unique_index:uni_group_addr"`
+	Group Group  `json:"group"`
 }
 
 func (n *Node) VerifyUserGroup(userID, groupID uint, addr string) bool {
@@ -60,6 +61,7 @@ func (n *Node) Rename(groupID uint, addr string) error {
 // GroupNode 为节点分组，复制groupID=0分组中node至目标分组
 func (n *Node) GroupNode(addr string, targetGroupID uint, targetNodeName, targetGroupName string) error {
 
+	// 新建分组
 	if targetGroupID == 0 {
 		group := &Group{
 			Name: targetGroupName,
@@ -70,7 +72,7 @@ func (n *Node) GroupNode(addr string, targetGroupID uint, targetNodeName, target
 		targetGroupID = group.ID
 	}
 
-	err := DB().Model(n).Debug().Where("group_id=? and addr=?", 0, addr).Take(n).Error
+	err := DB().Model(n).Debug().Where("group_id=? and addr=?", SuperGroup.ID, addr).Take(n).Error
 	if err != nil {
 		return err
 	}

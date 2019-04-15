@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
+	"jiacrontab/pkg/util"
 	"strings"
 	"time"
 
@@ -168,11 +169,9 @@ func AuditJob(c iris.Context) {
 		return
 	}
 
-	if ctx.claims.GroupID != 0 {
-		if ctx.claims.Root == false {
-			ctx.respNotAllowed()
-			return
-		}
+	if ctx.claims.GroupID != models.SuperGroup.ID && !ctx.claims.Root {
+		ctx.respNotAllowed()
+		return
 	}
 
 	if reqBody.JobType == "crontab" {
@@ -280,8 +279,11 @@ func UserStat(c iris.Context) {
 		err          error
 		ctx          = wrapCtx(c)
 		auditNumStat struct {
-			CrontabJobAuditNum uint
-			DaemonJobAuditNum  uint
+			CrontabJobAuditNum  uint
+			DaemonJobAuditNum   uint
+			CrontabJobFailNum   uint
+			DaemonJobRunningNum uint
+			NodeNum             uint
 		}
 	)
 
@@ -293,15 +295,125 @@ func UserStat(c iris.Context) {
 	err = models.DB().Raw(
 		`select 
 			sum(crontab_job_audit_num) as crontab_job_audit_num, 
-			sum(daemon_job_audit_num) as daemon_job_audit_num
+			sum(daemon_job_audit_num) as daemon_job_audit_num,
+			sum(crontab_job_fail_num) as crontab_job_fail_num,
+			sum(daemon_job_running_num) as daemon_job_running_num,
+			count(*) as node_num
 		from nodes 
-		where group_id=?`, ctx.claims.GroupID).Scan(&auditNumStat).Error
+		where group_id=?`, ctx.claims.GroupID).Debug().Scan(&auditNumStat).Error
 	if err != nil {
 		ctx.respDBError(err)
 		return
 	}
 
 	ctx.respSucc("", map[string]interface{}{
-		"auditStat": auditNumStat,
+		"systemInfo": util.SystemInfo(cfg.ServerStartTime),
+		"auditStat":  auditNumStat,
+	})
+}
+
+// GroupUser 超级管理员设置普通用户分组
+func GroupUser(c iris.Context) {
+	var (
+		ctx     = wrapCtx(c)
+		reqBody SetGroupReqParams
+		err     error
+		user    models.User
+		group   models.Group
+	)
+
+	if err = ctx.Valid(&reqBody); err != nil {
+		ctx.respBasicError(err)
+		return
+	}
+
+	if !ctx.isSuper() {
+		ctx.respNotAllowed()
+		return
+	}
+
+	if reqBody.TargetGroupName != "" {
+		group.Name = reqBody.TargetGroupName
+		if err = models.DB().Save(&group).Error; err != nil {
+			ctx.respDBError(err)
+			return
+		}
+		reqBody.TargetGroupID = group.ID
+	}
+
+	user.ID = reqBody.UserID
+	user.GroupID = reqBody.TargetGroupID
+	user.Root = reqBody.Root
+	if err = user.SetGroup(); err != nil {
+		ctx.respDBError(err)
+		return
+	}
+
+	ctx.pubEvent(user.Username, event_GroupUser, "", reqBody)
+	ctx.respSucc("", nil)
+}
+
+// GetUserList 获得用户列表
+// 支持获得全部用户，所属分组用户，指定分组用户（超级管理员）
+func GetUserList(c iris.Context) {
+	var (
+		ctx      = wrapCtx(c)
+		reqBody  GetUsersParams
+		userList []models.User
+		err      error
+		total    int
+	)
+
+	if err = ctx.Valid(&reqBody); err != nil {
+		ctx.respParamError(err)
+	}
+
+	if err = ctx.parseClaimsFromToken(); err != nil {
+		ctx.respJWTError(err)
+		return
+	}
+
+	if reqBody.IsAll && ctx.claims.GroupID != models.SuperGroup.ID {
+		ctx.respNotAllowed()
+		return
+	}
+
+	if !reqBody.IsAll && reqBody.QueryGroupID != ctx.claims.GroupID && ctx.claims.GroupID != models.SuperGroup.ID {
+		ctx.respNotAllowed()
+		return
+	}
+
+	if reqBody.QueryGroupID == 0 {
+		reqBody.QueryGroupID = ctx.claims.GroupID
+	}
+
+	m := models.DB().Model(&models.User{})
+	if reqBody.IsAll {
+		err = m.Count(&total).Error
+	} else {
+		err = m.Where("group_id=?", reqBody.QueryGroupID).Count(&total).Error
+	}
+
+	if err != nil && err != sql.ErrNoRows {
+		ctx.respBasicError(err)
+		return
+	}
+
+	if reqBody.IsAll {
+		err = models.DB().Debug().Preload("Group").Limit(reqBody.Pagesize).Find(&userList).Error
+	} else {
+		err = models.DB().Debug().Preload("Group").Where("group_id=?", reqBody.QueryGroupID).Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&userList).Error
+	}
+
+	if err != nil && err != sql.ErrNoRows {
+		ctx.respDBError(err)
+		return
+	}
+
+	ctx.respSucc("", map[string]interface{}{
+		"list":     userList,
+		"total":    total,
+		"page":     reqBody.Page,
+		"pagesize": reqBody.Pagesize,
 	})
 }

@@ -1,46 +1,42 @@
 package admin
 
 import (
-	"jiacrontab/models"
-	"jiacrontab/pkg/proto"
-
+	"errors"
 	"github.com/kataras/iris"
+	"jiacrontab/models"
 )
 
-// GetnodeList 获得任务节点列表
-// groupID为0的分组为超级管理员分组,该分组中保留所有的node节点信息
-// 当新建分组时，copy超级管理员分组中的节点到新的分组
-// 超级管理员获得所有的节点
-// 普通用户获得所属分组节点
+// GetNodeList 获得任务节点列表
+// 支持获得所属分组节点，指定分组节点（超级管理员）
 func GetNodeList(c iris.Context) {
 	var (
 		ctx      = wrapCtx(c)
 		err      error
 		nodeList []models.Node
 		reqBody  GetNodeListReqParams
-		groupID  uint
 		count    int
 	)
-	if groupID, err = ctx.getGroupIDFromToken(); err != nil {
-		ctx.respError(proto.Code_Error, err.Error(), nil)
+
+	if err = ctx.parseClaimsFromToken(); err != nil {
+		ctx.respJWTError(err)
 		return
 	}
 
-	if err = reqBody.verify(ctx); err != nil {
-		ctx.respError(proto.Code_Error, err.Error(), nil)
+	if err = ctx.Valid(&reqBody); err != nil {
+		ctx.respParamError(err)
 		return
 	}
 
-	if groupID == models.SuperGroup.ID {
-		err = models.DB().Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&nodeList).Error
-		models.DB().Model(&models.Node{}).Count(&count)
-	} else {
-		err = models.DB().Where("group_id=?", groupID).Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&nodeList).Error
-		models.DB().Model(&models.Node{}).Where("group_id=?", groupID).Count(&count)
+	if reqBody.QueryGroupID != ctx.claims.GroupID && !ctx.isSuper() {
+		ctx.respNotAllowed()
+		return
 	}
+
+	err = models.DB().Preload("Group").Where("group_id=?", ctx.claims.GroupID).Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&nodeList).Error
+	models.DB().Model(&models.Node{}).Where("group_id=?", ctx.claims.GroupID).Count(&count)
 
 	if err != nil {
-		ctx.respError(proto.Code_Error, err.Error(), nil)
+		ctx.respBasicError(err)
 		return
 	}
 
@@ -63,18 +59,12 @@ func DeleteNode(c iris.Context) {
 		node    models.Node
 	)
 
-	if err = reqBody.verify(ctx); err != nil {
-		ctx.respBasicError(err)
-		return
-	}
-
-	if err = ctx.parseClaimsFromToken(); err != nil {
-		ctx.respBasicError(err)
-		return
+	if err = ctx.Valid(&reqBody); err != nil {
+		ctx.respParamError(err)
 	}
 
 	// 普通用户不允许删除节点
-	if ctx.claims.GroupID != 0 {
+	if !ctx.isSuper() {
 		ctx.respNotAllowed()
 		return
 	}
@@ -95,6 +85,7 @@ func DeleteNode(c iris.Context) {
 
 // GroupNode 超级管理员为node分组
 // 分组不存在时自动创建分组
+// copy超级管理员分组中的节点到新的分组
 func GroupNode(c iris.Context) {
 	var (
 		err     error
@@ -115,7 +106,7 @@ func GroupNode(c iris.Context) {
 
 	if err = node.GroupNode(reqBody.Addr, reqBody.TargetGroupID,
 		reqBody.TargetNodeName, reqBody.TargetGroupName); err != nil {
-		ctx.respError(proto.Code_Error, "分组失败", err)
+		ctx.respBasicError(errors.New("分组失败"))
 		return
 	}
 

@@ -14,20 +14,29 @@ import (
 	"github.com/iwannay/log"
 )
 
-type Srv struct{}
+type Srv struct {
+	adm *Admin
+}
+
+func NewSrv(adm *Admin) *Srv {
+	return &Srv{
+		adm: adm,
+	}
+}
 
 func (s *Srv) Register(args models.Node, reply *bool) error {
 
 	*reply = true
 	ret := models.DB().Unscoped().Model(&models.Node{}).Where("addr=?", args.Addr).Updates(map[string]interface{}{
-		"name":                  args.Name,
-		"daemon_task_num":       args.DaemonTaskNum,
-		"crontab_task_num":      args.CrontabTaskNum,
-		"addr":                  args.Addr,
-		"crontab_job_audit_num": args.CrontabJobAuditNum,
-		"DaemonJobAuditNum":     args.DaemonJobAuditNum,
-		"deleted_at":            nil,
-		"disabled":              false,
+		"daemon_task_num":        args.DaemonTaskNum,
+		"crontab_task_num":       args.CrontabTaskNum,
+		"addr":                   args.Addr,
+		"crontab_job_audit_num":  args.CrontabJobAuditNum,
+		"daemon_job_audit_Num":   args.DaemonJobAuditNum,
+		"crontab_job_fail_num":   args.CrontabJobFailNum,
+		"daemon_job_running_num": args.DaemonJobRunningNum,
+		"deleted_at":             nil,
+		"disabled":               false,
 	})
 
 	if ret.RowsAffected == 0 {
