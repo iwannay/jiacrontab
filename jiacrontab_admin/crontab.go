@@ -233,16 +233,26 @@ func GetJob(c iris.Context) {
 		crontabJob models.CrontabJob
 		err        error
 	)
-	if err = reqBody.verify(ctx); err != nil {
-		goto failed
+
+	if err = ctx.parseClaimsFromToken(); err != nil {
+		ctx.respJWTError(err)
+		return
+	}
+
+	if err = ctx.Valid(&reqBody); err != nil {
+		ctx.respParamError(err)
+		return
+	}
+
+	if !ctx.verifyNodePermission(reqBody.Addr) {
+		ctx.respNotAllowed()
+		return
 	}
 
 	if err = rpcCall(reqBody.Addr, "CrontabJob.Get", reqBody.JobID, &crontabJob); err != nil {
-		goto failed
+		ctx.respRPCError(err)
+		return
 	}
 
 	ctx.respSucc("", crontabJob)
-	return
-failed:
-	ctx.respError(proto.Code_Error, err.Error(), nil)
 }

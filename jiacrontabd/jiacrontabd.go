@@ -278,6 +278,7 @@ func (j *Jiacrontabd) heartBeat() {
 		Addr:           cfg.LocalAddr,
 		DaemonTaskNum:  j.daemon.count(),
 		CrontabTaskNum: j.count(),
+		GroupID:        models.SuperGroup.ID,
 		Name:           hostname,
 	}
 

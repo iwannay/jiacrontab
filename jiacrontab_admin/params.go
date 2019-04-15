@@ -146,14 +146,11 @@ func (p *GetLogReqParams) verify(ctx iris.Context) error {
 }
 
 type DeleteNodeReqParams struct {
-	Addr    string `json:"addr"`
+	Addr    string `json:"addr" rule:"required,请填写addr"`
 	GroupID uint   `json:"groupID"`
 }
 
-func (p *DeleteNodeReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" {
-		return paramsError
-	}
+func (p *DeleteNodeReqParams) Verify(ctx iris.Context) error {
 	return nil
 }
 
@@ -203,7 +200,7 @@ type GetGroupListReqParams struct {
 	PageReqParams
 }
 
-func (p *GetGroupListReqParams) verify(ctx iris.Context) error {
+func (p *GetGroupListReqParams) Verify(ctx iris.Context) error {
 	if err := ctx.ReadJSON(p); err != nil {
 		return paramsError
 	}
@@ -233,12 +230,12 @@ func (p *ActionTaskReqParams) verify(ctx iris.Context) error {
 }
 
 type EditDaemonJobReqParams struct {
-	Addr            string   `json:"addr"`
+	Addr            string   `json:"addr" rule:"required,请填写addr"`
 	JobID           uint     `json:"jobID"`
-	Name            string   `json:"name"`
+	Name            string   `json:"name" rule:"required,请填写name"`
 	MailTo          []string `json:"mailTo"`
 	APITo           []string `json:"APITo"`
-	Commands        []string `json:"commands"`
+	Commands        []string `json:"commands"  rule:"required,请填写commands"`
 	WorkUser        string   `json:"workUser"`
 	WorkEnv         []string `json:"workEnv"`
 	WorkDir         string   `json:"workDir"`
@@ -247,23 +244,16 @@ type EditDaemonJobReqParams struct {
 	ErrorAPINotify  bool     `json:"errorAPINotify"`
 }
 
-func (p *EditDaemonJobReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" || p.Name == "" ||
-		len(p.Commands) == 0 {
-		return paramsError
-	}
+func (p *EditDaemonJobReqParams) Verify(ctx iris.Context) error {
 	return nil
 }
 
 type GetJobReqParams struct {
-	JobID uint   `json:"jobID"`
-	Addr  string `json:"addr"`
+	JobID uint   `json:"jobID" rule:"required,请填写jobID"`
+	Addr  string `json:"addr" rule:"required,请填写addr"`
 }
 
-func (p *GetJobReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.JobID == 0 || p.Addr == "" {
-		return paramsError
-	}
+func (p *GetJobReqParams) Verify(ctx iris.Context) error {
 	return nil
 }
 
@@ -296,12 +286,10 @@ type PageReqParams struct {
 
 type GetNodeListReqParams struct {
 	PageReqParams
+	QueryGroupID uint `json:"queryGroupID"`
 }
 
-func (p *GetNodeListReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil {
-		return paramsError
-	}
+func (p *GetNodeListReqParams) Verify(ctx iris.Context) error {
 
 	if p.Page == 0 {
 		p.Page = 1
