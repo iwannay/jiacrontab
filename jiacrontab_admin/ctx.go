@@ -116,7 +116,7 @@ func (ctx *myctx) getGroupIDFromToken() (uint, error) {
 
 func (ctx *myctx) isSuper() bool {
 	ok, err := ctx.getGroupIDFromToken()
-	return ok == 0 && err == nil
+	return ok == models.SuperGroup.ID && err == nil
 }
 
 func (ctx *myctx) parseClaimsFromToken() error {

@@ -140,7 +140,7 @@ func EditJob(c iris.Context) {
 		rpcArgs.CreatedUsername = ctx.claims.Username
 	}
 
-	if ctx.claims.Root || ctx.claims.GroupID == 0 {
+	if ctx.claims.Root || ctx.claims.GroupID == models.SuperGroup.ID {
 		rpcArgs.Status = models.StatusJobOk
 	} else {
 		rpcArgs.Status = models.StatusJobUnaudited

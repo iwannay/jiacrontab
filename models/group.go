@@ -19,6 +19,6 @@ func (g *Group) Save() error {
 }
 
 func init() {
-	SuperGroup.ID = 0
+	SuperGroup.ID = 1
 	SuperGroup.Name = "超级管理员"
 }

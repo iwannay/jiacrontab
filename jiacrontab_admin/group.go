@@ -36,7 +36,6 @@ func GetGroupList(c iris.Context) {
 		return
 	}
 
-	groupList = append([]models.Group{models.SuperGroup}, groupList...)
 	ctx.respSucc("", groupList)
 }
 
@@ -58,14 +57,18 @@ func GetUserList(c iris.Context) {
 		return
 	}
 
-	if reqBody.IsAll && ctx.claims.GroupID != 0 {
+	if reqBody.IsAll && ctx.claims.GroupID != models.SuperGroup.ID {
 		ctx.respNotAllowed()
 		return
 	}
 
-	if !reqBody.IsAll && reqBody.QueryGroupID != ctx.claims.GroupID && ctx.claims.GroupID != 0 {
+	if !reqBody.IsAll && reqBody.QueryGroupID != ctx.claims.GroupID && ctx.claims.GroupID != models.SuperGroup.ID {
 		ctx.respNotAllowed()
 		return
+	}
+
+	if reqBody.QueryGroupID == 0 {
+		reqBody.QueryGroupID = ctx.claims.GroupID
 	}
 
 	m := models.DB().Model(&models.User{})
@@ -81,9 +84,9 @@ func GetUserList(c iris.Context) {
 	}
 
 	if reqBody.IsAll {
-		err = models.DB().Limit(reqBody.Pagesize).Find(&userList).Error
+		err = models.DB().Debug().Preload("Group").Limit(reqBody.Pagesize).Find(&userList).Error
 	} else {
-		err = models.DB().Where("group_id=?", reqBody.QueryGroupID).Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&userList).Error
+		err = models.DB().Debug().Preload("Group").Where("group_id=?", reqBody.QueryGroupID).Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&userList).Error
 	}
 
 	if err != nil && err != sql.ErrNoRows {
@@ -144,7 +147,7 @@ func GroupUser(c iris.Context) {
 		return
 	}
 
-	if reqBody.TargetGroupName != "" && reqBody.TargetGroupID == 0 {
+	if reqBody.TargetGroupName != "" {
 		group.Name = reqBody.TargetGroupName
 		if err = models.DB().Save(&group).Error; err != nil {
 			ctx.respDBError(err)

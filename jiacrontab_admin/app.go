@@ -1,11 +1,10 @@
 package admin
 
 import (
-	"jiacrontab/pkg/proto"
-	"net/url"
-
+	"errors"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/middleware/logger"
+	"net/url"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
@@ -42,9 +41,8 @@ func newApp() *iris.Application {
 		ErrorHandler: func(c iris.Context, data string) {
 			ctx := wrapCtx(c)
 			app.Logger().Error("jwt 认证失败:", data)
-
 			if ctx.RequestPath(true) != "/user/login" && ctx.RequestPath(true) != "/user/signUp" {
-				ctx.respError(proto.Code_FailedAuth, "认证失败", nil)
+				ctx.respAuthFailed(errors.New("认证失败"))
 				return
 			}
 			ctx.Next()

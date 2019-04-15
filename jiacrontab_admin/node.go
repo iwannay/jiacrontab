@@ -31,7 +31,7 @@ func GetNodeList(c iris.Context) {
 		return
 	}
 
-	if groupID == 0 {
+	if groupID == models.SuperGroup.ID {
 		err = models.DB().Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&nodeList).Error
 		models.DB().Model(&models.Node{}).Count(&count)
 	} else {

@@ -32,8 +32,8 @@ func Login(c iris.Context) {
 		customerClaims CustomerClaims
 	)
 
-	if err = reqBody.verify(ctx); err != nil {
-		ctx.respBasicError(err)
+	if err = ctx.Valid(&reqBody); err != nil {
+		ctx.respParamError(err)
 		return
 	}
 	if !user.Verify(reqBody.Username, reqBody.Passwd) {
@@ -215,12 +215,12 @@ func IninAdminUser(c iris.Context) {
 		reqBody UserReqParams
 	)
 
-	if err = reqBody.verify(ctx); err != nil {
-		ctx.respBasicError(err)
+	if err = ctx.Valid(&reqBody); err != nil {
+		ctx.respParamError(err)
 		return
 	}
 
-	if !cfg.App.FirstUse || user.GroupID != 0 {
+	if ret := models.DB().Debug().Take(&user, "group_id=?", 1); ret.Error == nil && ret.RowsAffected > 0 {
 		ctx.respNotAllowed()
 		return
 	}
@@ -228,6 +228,7 @@ func IninAdminUser(c iris.Context) {
 	user.Username = reqBody.Username
 	user.Passwd = reqBody.Passwd
 	user.Root = true
+	user.GroupID = models.SuperGroup.ID
 	user.Mail = reqBody.Mail
 
 	if err = user.Create(); err != nil {
@@ -236,7 +237,6 @@ func IninAdminUser(c iris.Context) {
 	}
 
 	cfg.SetUsed()
-	ctx.pubEvent(user.Username, event_SignUpUser, "", reqBody)
 	ctx.respSucc("", true)
 }
 
@@ -249,13 +249,13 @@ func Signup(c iris.Context) {
 		reqBody UserReqParams
 	)
 
-	if err = reqBody.verify(ctx); err != nil {
-		ctx.respBasicError(err)
+	if err = ctx.Valid(&reqBody); err != nil {
+		ctx.respParamError(err)
 		return
 	}
 
-	if err = ctx.parseClaimsFromToken(); err != nil {
-		ctx.respJWTError(err)
+	if !ctx.isSuper() {
+		ctx.respNotAllowed()
 		return
 	}
 

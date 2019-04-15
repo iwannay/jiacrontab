@@ -128,7 +128,7 @@ func EditDaemonJob(c iris.Context) {
 		daemonJob.CreatedUserID = ctx.claims.UserID
 		daemonJob.CreatedUsername = ctx.claims.Username
 	}
-	if ctx.claims.Root || ctx.claims.GroupID == 0 {
+	if ctx.claims.Root || ctx.claims.GroupID == models.SuperGroup.ID {
 		daemonJob.Status = models.StatusJobOk
 	} else {
 		daemonJob.Status = models.StatusJobUnaudited
