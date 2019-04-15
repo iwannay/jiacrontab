@@ -46,9 +46,9 @@ func SystemInfo(startTime time.Time) map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"服务运行时间":    fmt.Sprintf("%d天%d小时%d分%d秒", costTime/(3600*24), costTime%(3600*24)/3600, costTime%3600/60, costTime%(60)),
-		"goroute数量": goNum,
-		"cpu核心数":    cpuNum,
+		"服务运行时间":      fmt.Sprintf("%d天%d小时%d分%d秒", costTime/(3600*24), costTime%(3600*24)/3600, costTime%3600/60, costTime%(60)),
+		"goroutine数量": goNum,
+		"cpu核心数":      cpuNum,
 
 		"当前内存使用量":  file.FileSize(int64(mstat.Alloc)),
 		"所有被分配的内存": file.FileSize(int64(mstat.TotalAlloc)),
