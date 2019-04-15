@@ -48,7 +48,9 @@ func (d *daemonJob) do(ctx context.Context) {
 
 	}()
 
-	if err := models.DB().Model(d.job).Update("status", models.StatusJobRunning).Error; err != nil {
+	if err := models.DB().Model(d.job).Updates(map[string]interface{}{
+		"start_at": time.Now(),
+		"status":   models.StatusJobRunning}).Error; err != nil {
 		log.Error(err)
 	}
 
