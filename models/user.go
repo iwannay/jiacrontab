@@ -18,6 +18,7 @@ type User struct {
 	GroupID  uint   `json:"groupID"`
 	Root     bool   `json:"root"`
 	Mail     string `json:"mail"`
+	Group    Group  `json:"group"`
 }
 
 func (u *User) getSalt() string {

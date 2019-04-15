@@ -55,6 +55,7 @@ func (a *Admin) init() {
 		})
 	}
 
+	models.DB().Create(&models.SuperGroup)
 }
 
 func (a *Admin) Main() {

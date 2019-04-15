@@ -268,32 +268,24 @@ func (p *GetJobReqParams) verify(ctx iris.Context) error {
 }
 
 type UserReqParams struct {
-	Username string `json:"username"`
-	Passwd   string `json:"passwd"`
+	Username string `json:"username" rule:"required,请输入用户名"`
+	Passwd   string `json:"passwd" rule:"required,请输入密码"`
 	GroupID  uint   `json:"groupID"`
 	Root     bool   `json:"root"`
 	Mail     string `json:"mail"`
 }
 
-func (p *UserReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.Username == "" || p.Passwd == "" {
-		return paramsError
-	}
-
+func (p *UserReqParams) Verify(ctx iris.Context) error {
 	return nil
 }
 
 type LoginReqParams struct {
-	Username string `json:"username"`
-	Passwd   string `json:"passwd"`
+	Username string `json:"username" rule:"required,请输入用户名"`
+	Passwd   string `json:"passwd" rule:"required,请输入密码"`
 	Remember bool   `json:"remember"`
 }
 
-func (p *LoginReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.Username == "" || p.Passwd == "" {
-		return paramsError
-	}
-
+func (p *LoginReqParams) Verify(ctx iris.Context) error {
 	return nil
 }
 
