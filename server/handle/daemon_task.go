@@ -111,6 +111,7 @@ func EditDaemonTask(ctx iris.Context) {
 		}
 
 		ctx.Redirect("/daemon/task/list?addr=" + addr)
+		return
 	}
 
 	if taskId != "" {
