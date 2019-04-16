@@ -8,7 +8,6 @@ import (
 	"jiacrontab/libs/rpc"
 	"jiacrontab/model"
 	"jiacrontab/server/conf"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -71,7 +70,6 @@ func ListTask(ctx iris.Context) {
 			})
 			return
 		}
-		log.Println(err)
 		ctx.Redirect("/", http.StatusFound)
 		return
 	}

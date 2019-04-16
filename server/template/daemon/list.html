@@ -116,7 +116,8 @@
                     table.render({
                         elem: '#taskTableId',
                         data: taskDatas,
-                        cols: tableCols
+                        cols: tableCols,
+                        limit: taskDatas.length
                     });
                 } else {
                     $('#no-data').addClass('layui-show').removeClass('layui-hide');

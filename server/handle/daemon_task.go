@@ -15,8 +15,6 @@ import (
 
 func ListDaemonTask(ctx iris.Context) {
 
-	page := ctx.FormValueDefault("page", "1")
-	pagesize := ctx.FormValueDefault("pagesize", "200")
 	addr := ctx.FormValue("addr")
 
 	var clientList []model.Client
@@ -31,23 +29,9 @@ func ListDaemonTask(ctx iris.Context) {
 			return
 		}
 
-		pageInt, err1 := strconv.Atoi(page)
-		pagesizeInt, err2 := strconv.Atoi(pagesize)
-
-		if err1 != nil || err2 != nil {
-			ctx.JSON(map[string]interface{}{
-				"code": -1,
-				"msg":  "分页参数错误",
-			})
-			return
-		}
-
 		var daemonTaskList []model.DaemonTask
 
-		err := rpcCall(addr, "DaemonTask.ListDaemonTask", struct{ Page, Pagesize int }{
-			Page:     pageInt,
-			Pagesize: pagesizeInt,
-		}, &daemonTaskList)
+		err := rpcCall(addr, "DaemonTask.All", "", &daemonTaskList)
 
 		if err != nil {
 
