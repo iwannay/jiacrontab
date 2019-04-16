@@ -49,6 +49,10 @@ func (t *DaemonTask) ListDaemonTask(args struct{ Page, Pagesize int }, reply *[]
 	return ret.Error
 }
 
+func (t *DaemonTask) All(args string, reply *[]model.DaemonTask) error {
+	return model.DB().Find(reply).Error
+}
+
 func (t *DaemonTask) ActionDaemonTask(args proto.ActionDaemonTaskArgs, reply *bool) error {
 
 	var tasks []model.DaemonTask
