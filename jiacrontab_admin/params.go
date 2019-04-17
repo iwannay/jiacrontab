@@ -201,9 +201,6 @@ type GetGroupListReqParams struct {
 }
 
 func (p *GetGroupListReqParams) Verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil {
-		return paramsError
-	}
 
 	if p.Page <= 1 {
 		p.Page = 1

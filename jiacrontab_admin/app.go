@@ -7,6 +7,7 @@ import (
 	"net/url"
 
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/iris-contrib/middleware/cors"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
 )
 
@@ -51,10 +52,19 @@ func newApp() *iris.Application {
 		SigningMethod: jwt.SigningMethodHS256,
 	})
 
+	crs := cors.New(cors.Options{
+		Debug:            true,
+		AllowedHeaders:   []string{"Content-Type", "Token"},
+		AllowedOrigins:   []string{"*"}, // allows everything, use that to change the hosts.
+		AllowCredentials: true,
+	})
+
+	app.Use(crs)
+	app.AllowMethods(iris.MethodOptions)
+
 	adm := app.Party("/adm")
 	{
 		adm.Use(jwtHandler.Serve)
-
 		adm.Post("/crontab/job/list", GetJobList)
 		adm.Post("/crontab/job/get", GetJob)
 		adm.Post("/crontab/job/log", GetRecentLog)
