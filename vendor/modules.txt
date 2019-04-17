@@ -29,6 +29,7 @@ github.com/iris-contrib/formBinder
 # github.com/iris-contrib/go.uuid v2.0.0+incompatible
 github.com/iris-contrib/go.uuid
 # github.com/iris-contrib/middleware v0.0.0-20181021162728-8bd5d51b3c2e
+github.com/iris-contrib/middleware/cors
 github.com/iris-contrib/middleware/jwt
 # github.com/iwannay/log v0.0.0-20190222094645-1eae5453dbcd
 github.com/iwannay/log
@@ -48,13 +49,13 @@ github.com/kataras/golog
 # github.com/kataras/iris v11.1.0+incompatible
 github.com/kataras/iris
 github.com/kataras/iris/context
+github.com/kataras/iris/middleware/logger
 github.com/kataras/iris/cache
 github.com/kataras/iris/core/errors
 github.com/kataras/iris/core/handlerconv
 github.com/kataras/iris/core/host
 github.com/kataras/iris/core/netutil
 github.com/kataras/iris/core/router
-github.com/kataras/iris/middleware/logger
 github.com/kataras/iris/middleware/recover
 github.com/kataras/iris/view
 github.com/kataras/iris/core/memstore
