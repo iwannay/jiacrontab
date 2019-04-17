@@ -353,10 +353,6 @@ type GroupNodeReqParams struct {
 }
 
 func (p *GroupNodeReqParams) Verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" ||
-		(p.TargetGroupID == 0 && p.TargetGroupName == "") {
-		return paramsError
-	}
 	return nil
 }
 
