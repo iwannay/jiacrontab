@@ -17,6 +17,8 @@ func newApp() *iris.Application {
 	app.Logger().SetLevel("debug")
 	app.Use(logger.New())
 
+
+
 	app.RegisterView(iris.HTML("./public", ".html"))
 
 	app.Get("/", func(ctx iris.Context) {
@@ -51,10 +53,16 @@ func newApp() *iris.Application {
 		SigningMethod: jwt.SigningMethodHS256,
 	})
 
-	adm := app.Party("/adm")
+	crs := func(ctx iris.Context) {
+		ctx.Header("Access-Control-Allow-Origin", "*")
+		ctx.Header("Access-Control-Allow-Credentials", "true")
+		ctx.Header("Access-Control-Allow-Headers", "Access-Control-Allow-Origin,Content-Type")
+		ctx.Next()
+	}
+
+	adm := app.Party("/adm",crs).AllowMethods(iris.MethodOptions)
 	{
 		adm.Use(jwtHandler.Serve)
-
 		adm.Post("/crontab/job/list", GetJobList)
 		adm.Post("/crontab/job/get", GetJob)
 		adm.Post("/crontab/job/log", GetRecentLog)
