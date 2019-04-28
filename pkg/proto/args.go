@@ -5,16 +5,18 @@ import (
 )
 
 type SearchLog struct {
-	JobID          uint
-	IsTail         bool
-	Page, Pagesize int
-	Date           string
-	Pattern        string
+	JobID    uint
+	IsTail   bool
+	Offset   int64
+	Pagesize int
+	Date     string
+	Pattern  string
 }
 
 type SearchLogResult struct {
-	Content []byte
-	Total   int
+	Content  []byte
+	Offset   int64
+	FileSize int64
 }
 
 type SendMail struct {

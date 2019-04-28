@@ -188,7 +188,7 @@ func GetRecentDaemonLog(c iris.Context) {
 
 	if err := rpc.Call(reqBody.Addr, "DaemonJob.Log", proto.SearchLog{
 		JobID:    reqBody.JobID,
-		Page:     reqBody.Page,
+		Offset:   reqBody.Offset,
 		Pagesize: reqBody.Pagesize,
 		Date:     reqBody.Date,
 		Pattern:  reqBody.Pattern,
@@ -202,8 +202,7 @@ func GetRecentDaemonLog(c iris.Context) {
 	ctx.respSucc("", map[string]interface{}{
 		"logList":  logList,
 		"curAddr":  reqBody.Addr,
-		"total":    searchRet.Total,
-		"page":     reqBody.Page,
+		"offset":   searchRet.Offset,
 		"pagesize": reqBody.Pagesize,
 	})
 	return

@@ -125,17 +125,13 @@ type GetLogReqParams struct {
 	Date     string `json:"date"`
 	Pattern  string `json:"pattern"`
 	IsTail   bool   `json:"isTail"`
-	Page     int    `json:"page"`
+	Offset   int64  `json:"page"`
 	Pagesize int    `json:"pagesize"`
 }
 
 func (p *GetLogReqParams) verify(ctx iris.Context) error {
 	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" {
 		return paramsError
-	}
-
-	if p.Page == 0 {
-		p.Page = 1
 	}
 
 	if p.Pagesize <= 0 {

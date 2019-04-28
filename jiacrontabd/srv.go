@@ -178,7 +178,7 @@ func (j *CrontabJob) Exec(jobID uint, reply *proto.ExecCrontabJobReply) error {
 
 func (j *CrontabJob) Log(args proto.SearchLog, reply *proto.SearchLogResult) error {
 
-	fd := finder.NewFinder(1000000, func(info os.FileInfo) bool {
+	fd := finder.NewFinder(func(info os.FileInfo) bool {
 		basename := filepath.Base(info.Name())
 		arr := strings.Split(basename, ".")
 		if len(arr) != 2 {
@@ -199,8 +199,9 @@ func (j *CrontabJob) Log(args proto.SearchLog, reply *proto.SearchLogResult) err
 	}
 
 	rootpath := filepath.Join(cfg.LogPath, "crontab_task", args.Date)
-	err := fd.Search(rootpath, args.Pattern, &reply.Content, args.Page, args.Pagesize)
-	reply.Total = int(fd.Count())
+	err := fd.Search(rootpath, args.Pattern, &reply.Content, args.Offset, args.Pagesize)
+	reply.Offset = fd.Offset()
+	reply.FileSize = fd.FileSize()
 	return err
 
 }
@@ -345,7 +346,7 @@ func (j *DaemonJob) Get(jobID uint, job *models.DaemonJob) error {
 
 func (j *DaemonJob) Log(args proto.SearchLog, reply *proto.SearchLogResult) error {
 
-	fd := finder.NewFinder(1000000, func(info os.FileInfo) bool {
+	fd := finder.NewFinder(func(info os.FileInfo) bool {
 		basename := filepath.Base(info.Name())
 		arr := strings.Split(basename, ".")
 		if len(arr) != 2 {
@@ -366,8 +367,9 @@ func (j *DaemonJob) Log(args proto.SearchLog, reply *proto.SearchLogResult) erro
 	}
 
 	rootpath := filepath.Join(cfg.LogPath, "daemon_job", args.Date)
-	err := fd.Search(rootpath, args.Pattern, &reply.Content, args.Page, args.Pagesize)
-	reply.Total = int(fd.Count())
+	err := fd.Search(rootpath, args.Pattern, &reply.Content, args.Offset, args.Pagesize)
+	reply.Offset = fd.Offset()
+	reply.FileSize = fd.FileSize()
 	return err
 
 }
