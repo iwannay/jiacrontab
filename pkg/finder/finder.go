@@ -33,22 +33,22 @@ func (d DataQueue) Len() int {
 }
 
 type Finder struct {
-	matchDataQueue    DataQueue
-	curr              uint64
-	regexp            *regexp.Regexp
-	seekCurr, seekEnd int
-	maxRows           uint64
-	errors            []error
-	patternAll        bool
-	filter            func(os.FileInfo) bool
-	isTail            bool
-	group             sync.WaitGroup
+	matchDataQueue DataQueue
+	curr           int32
+	regexp         *regexp.Regexp
+	pagesize       int
+	errors         []error
+	patternAll     bool
+	filter         func(os.FileInfo) bool
+	isTail         bool
+	offset         int64
+	group          sync.WaitGroup
+	fileSize       int64
 }
 
-func NewFinder(maxRows uint64, filter func(os.FileInfo) bool) *Finder {
+func NewFinder(filter func(os.FileInfo) bool) *Finder {
 	return &Finder{
-		maxRows: maxRows,
-		filter:  filter,
+		filter: filter,
 	}
 }
 
@@ -56,8 +56,16 @@ func (fd *Finder) SetTail(flag bool) {
 	fd.isTail = flag
 }
 
-func (fd *Finder) Count() uint64 {
-	return fd.curr
+func (fd *Finder) Offset() int64 {
+	return fd.offset
+}
+
+func (fd *Finder) HumanateFileSize() string {
+	return file.FileSize(fd.fileSize)
+}
+
+func (fd *Finder) FileSize() int64 {
+	return fd.fileSize
 }
 
 func (fd *Finder) find(fpath string, modifyTime time.Time) error {
@@ -71,6 +79,21 @@ func (fd *Finder) find(fpath string, modifyTime time.Time) error {
 	}
 	defer f.Close()
 
+	if fd.offset != 0 {
+		info, err := f.Stat()
+		if err != nil {
+			return err
+		}
+
+		fd.fileSize = info.Size()
+
+		if fd.fileSize < fd.offset {
+			return errors.New("out of file")
+		}
+
+		f.Seek(fd.offset, 0)
+	}
+
 	if fd.isTail {
 		reader = bufio.NewReader(NewTailReader(f))
 	} else {
@@ -78,25 +101,26 @@ func (fd *Finder) find(fpath string, modifyTime time.Time) error {
 	}
 
 	for {
-		if atomic.LoadUint64(&fd.curr) >= fd.maxRows {
-			break
-		}
 
 		bts, _, err := reader.ReadLine()
 		if err != nil {
 			break
 		}
 
+		fd.offset += int64(len(bts))
+
 		if fd.isTail {
 			invert(bts)
 		}
 
 		if fd.patternAll || fd.regexp.Match(bts) {
-			if fd.curr >= uint64(fd.seekCurr) && fd.curr < uint64(fd.seekEnd) {
-				matchData = append(matchData, bts...)
-				matchData = append(matchData, []byte("\n")...)
-			}
-			atomic.AddUint64(&fd.curr, 1)
+			matchData = append(matchData, bts...)
+			matchData = append(matchData, []byte("\n")...)
+			atomic.AddInt32(&fd.curr, 1)
+		}
+
+		if fd.curr >= int32(fd.pagesize) {
+			break
 		}
 
 	}
@@ -127,10 +151,11 @@ func (fd *Finder) walkFunc(fpath string, info os.FileInfo, err error) error {
 	return nil
 }
 
-func (fd *Finder) Search(root string, expr string, data *[]byte, page, pagesize int) error {
+func (fd *Finder) Search(root string, expr string, data *[]byte, offset int64, pagesize int) error {
 	var err error
-	fd.seekCurr = (page - 1) * pagesize
-	fd.seekEnd = fd.seekCurr + pagesize
+	fd.pagesize = pagesize
+	fd.offset = offset
+
 	if expr == "" {
 		fd.patternAll = true
 	}
