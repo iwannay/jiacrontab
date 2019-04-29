@@ -57,8 +57,7 @@ func router(app *iris.Application) {
 		},
 
 		ErrorHandler: func(ctx iris.Context, data string) {
-			app.Logger().Error("jwt 认证失败", data)
-
+			// app.Logger().Error("jwt 认证失败", data)
 			if ctx.RequestPath(true) != "/login" {
 				ctx.Redirect("/login", http.StatusFound)
 				return

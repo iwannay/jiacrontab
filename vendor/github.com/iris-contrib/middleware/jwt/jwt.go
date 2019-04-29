@@ -10,6 +10,7 @@ import (
 
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/context"
+	"time"
 )
 
 // iris provides some basic middleware, most for your learning courve.
@@ -200,6 +201,14 @@ func (m *Middleware) CheckJWT(ctx context.Context) error {
 		m.logf("Token is invalid")
 		m.Config.ErrorHandler(ctx, "The token isn't valid")
 		return fmt.Errorf("Token is invalid")
+	}
+
+	if m.Config.Expiration {
+		if claims, ok := parsedToken.Claims.(jwt.MapClaims); ok {
+			if expired := claims.VerifyExpiresAt(time.Now().Unix(), true); !expired {
+				return fmt.Errorf("Token is expired")
+			}
+		}
 	}
 
 	m.logf("JWT: %v", parsedToken)

@@ -420,7 +420,9 @@ func wrapExecScript(ctx context.Context, logname string, cmdList [][]string, log
 			errMsg = err.Error() + "\n"
 			f.WriteString(errMsg)
 		}
-		*content = append(*content, []byte(errMsg)...)
+		if content != nil {
+			*content = append(*content, []byte(errMsg)...)
+		}
 	}
 
 	return err
@@ -459,7 +461,9 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 	reader := bufio.NewReader(stdout)
 	readerErr := bufio.NewReader(stderr)
 	// 如果已经存在日志则直接写入
-	f.Write(*content)
+	if content != nil {
+		f.Write(*content)
+	}
 
 	go func() {
 		for {
@@ -470,8 +474,9 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 			if globalConfig.debugScript {
 				prefix := fmt.Sprintf("[%s %s %s %s] ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, bin, strings.Join(args, " "))
 				line = prefix + line
-				*content = append(*content, []byte(line)...)
-			} else {
+			}
+
+			if content != nil {
 				*content = append(*content, []byte(line)...)
 			}
 
@@ -487,8 +492,9 @@ func execScript(ctx context.Context, logname string, bin string, logpath string,
 			if globalConfig.debugScript {
 				prefix := fmt.Sprintf("[%s %s %s %s] ", time.Now().Format("2006-01-02 15:04:05"), globalConfig.addr, bin, strings.Join(args, " "))
 				line = prefix + line
-				*content = append(*content, []byte(line)...)
-			} else {
+			}
+
+			if content != nil {
 				*content = append(*content, []byte(line)...)
 			}
 
