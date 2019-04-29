@@ -42,7 +42,7 @@ func (n *Node) Delete(groupID uint, addr string) error {
 		return err
 	}
 
-	ret := DB().Debug().Delete(n, "group_id=? and addr=?", groupID, addr)
+	ret := DB().Debug().Unscoped().Delete(n, "group_id=? and addr=?", groupID, addr)
 
 	if ret.Error != nil {
 		return ret.Error
