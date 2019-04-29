@@ -125,7 +125,7 @@ type GetLogReqParams struct {
 	Date     string `json:"date"`
 	Pattern  string `json:"pattern"`
 	IsTail   bool   `json:"isTail"`
-	Offset   int64  `json:"page"`
+	Offset   int64  `json:"offset"`
 	Pagesize int    `json:"pagesize"`
 }
 

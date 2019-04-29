@@ -97,21 +97,19 @@ func (fd *Finder) find(fpath string, modifyTime time.Time) error {
 
 	for {
 
-		bts, _, err := reader.ReadLine()
+		bts, err := reader.ReadBytes('\n')
 		if err != nil {
 			break
 		}
 
 		fd.offset += int64(len(bts))
-
 		if fd.isTail {
 			invert(bts)
 		}
 
 		if fd.patternAll || fd.regexp.Match(bts) {
 			matchData = append(matchData, bts...)
-			matchData = append(matchData, []byte("\n")...)
-			fd.curr += 1
+			fd.curr++
 		}
 
 		if fd.curr >= int32(fd.pagesize) {
