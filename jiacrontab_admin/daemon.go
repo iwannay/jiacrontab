@@ -18,8 +18,8 @@ func GetDaemonJobList(c iris.Context) {
 		err     error
 	)
 
-	if err = reqBody.verify(ctx); err != nil {
-		ctx.respError(proto.Code_Error, err.Error(), nil)
+	if err = ctx.Valid(&reqBody); err != nil {
+		ctx.respParamError(err)
 		return
 	}
 
@@ -27,7 +27,7 @@ func GetDaemonJobList(c iris.Context) {
 		Page:     reqBody.Page,
 		Pagesize: reqBody.Pagesize,
 	}, &jobRet); err != nil {
-		ctx.respError(proto.Code_Error, err.Error(), nil)
+		ctx.respRPCError(err)
 		return
 	}
 
@@ -61,7 +61,7 @@ func ActionDaemonTask(c iris.Context) {
 		method string
 	)
 
-	if err = reqBody.verify(ctx); err != nil {
+	if err = ctx.Valid(&reqBody); err != nil {
 		ctx.respBasicError(err)
 	}
 

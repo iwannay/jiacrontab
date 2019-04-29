@@ -77,7 +77,7 @@ func GetActivityList(c iris.Context) {
 		events  []models.Event
 	)
 
-	if err = reqBody.verify(ctx); err != nil {
+	if err = ctx.Valid(&reqBody); err != nil {
 		ctx.respError(proto.Code_Error, err.Error(), nil)
 		return
 	}
@@ -119,7 +119,7 @@ func GetJobHistory(c iris.Context) {
 		addrs    []string
 	)
 
-	if err = reqBody.verify(ctx); err != nil {
+	if err = ctx.Valid(&reqBody); err != nil {
 		ctx.respError(proto.Code_Error, err.Error(), nil)
 		return
 	}
@@ -159,7 +159,7 @@ func AuditJob(c iris.Context) {
 		reqBody AuditJobReqParams
 	)
 
-	if err = reqBody.verify(ctx); err != nil {
+	if err = ctx.Valid(&reqBody); err != nil {
 		ctx.respBasicError(err)
 		return
 	}
