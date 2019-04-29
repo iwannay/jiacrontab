@@ -3,12 +3,9 @@ package admin
 import (
 	"errors"
 	"fmt"
+	"github.com/kataras/iris"
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
-
-	"github.com/iwannay/log"
-
-	"github.com/kataras/iris"
 )
 
 var (
@@ -20,40 +17,36 @@ type Parameter interface {
 }
 
 type JobReqParams struct {
-	JobID uint   `json:"jobID"`
-	Addr  string `json:"addr"`
+	JobID uint   `json:"jobID" rule:"required,请填写jobID"`
+	Addr  string `json:"addr"  rule:"required,请填写addr"`
 }
 
-func (p *JobReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.JobID == 0 || p.Addr == "" {
+func (p *JobReqParams) Verify(ctx iris.Context) error {
+	if p.JobID == 0 || p.Addr == "" {
 		return paramsError
 	}
 	return nil
 }
 
 type JobsReqParams struct {
-	JobIDs []uint `json:"jobIDs"`
+	JobIDs []uint `json:"jobIDs" `
 	Addr   string `json:"addr"`
 }
 
-func (p *JobsReqParams) verify(ctx iris.Context) error {
-	if ctx != nil {
-		if err := ctx.ReadJSON(p); err != nil {
-			return paramsError
-		}
-	}
+func (p *JobsReqParams) Verify(ctx iris.Context) error {
 
 	if len(p.JobIDs) == 0 || p.Addr == "" {
 		return paramsError
 	}
+
 	return nil
 }
 
 type EditJobReqParams struct {
 	JobID           uint              `json:"jobID"`
-	Addr            string            `json:"addr"`
+	Addr            string            `json:"addr" rule:"required,请填写addr"`
 	IsSync          bool              `json:"isSync"`
-	Name            string            `json:"name"`
+	Name            string            `json:"name" rule:"required,请填写name"`
 	Commands        [][]string        `json:"commands"`
 	Timeout         int               `json:"timeout"`
 	MaxConcurrent   uint              `json:"maxConcurrent"`
@@ -76,10 +69,7 @@ type EditJobReqParams struct {
 }
 
 // TODO:验证参数
-func (p *EditJobReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" {
-		return err
-	}
+func (p *EditJobReqParams) Verify(ctx iris.Context) error {
 	ts := map[string]bool{
 		proto.TimeoutTrigger_CallApi:   true,
 		proto.TimeoutTrigger_SendEmail: true,
@@ -148,36 +138,27 @@ func (p *DeleteNodeReqParams) Verify(ctx iris.Context) error {
 }
 
 type SendTestMailReqParams struct {
-	MailTo string `json:"mailTo"`
+	MailTo string `json:"mailTo" rule:"required,请填写mailTo"`
 }
 
-func (p *SendTestMailReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.MailTo == "" {
-		return paramsError
-	}
+func (p *SendTestMailReqParams) Verify(ctx iris.Context) error {
 	return nil
 }
 
 type SystemInfoReqParams struct {
-	Addr string `json:"addr"`
+	Addr string `json:"addr" rule:"required,请填写addr"`
 }
 
-func (p *SystemInfoReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" {
-		return paramsError
-	}
+func (p *SystemInfoReqParams) Verify(ctx iris.Context) error {
 	return nil
 }
 
 type GetJobListReqParams struct {
-	Addr string `json:"addr"`
+	Addr string `json:"addr" rule:"required,请填写addr"`
 	PageReqParams
 }
 
-func (p *GetJobListReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" {
-		return paramsError
-	}
+func (p *GetJobListReqParams) Verify(ctx iris.Context) error {
 
 	if p.Page <= 1 {
 		p.Page = 1
@@ -206,14 +187,13 @@ func (p *GetGroupListReqParams) Verify(ctx iris.Context) error {
 }
 
 type ActionTaskReqParams struct {
-	Action string `json:"action"`
-	Addr   string `json:"addr"`
-	JobIDs []uint `json:"jobIDs"`
+	Action string `json:"action" rule:"required,请填写action"`
+	Addr   string `json:"addr" rule:"required,请填写addr"`
+	JobIDs []uint `json:"jobIDs" rule:"required,请填写jobIDs"`
 }
 
-func (p *ActionTaskReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" ||
-		p.Action == "" || len(p.JobIDs) == 0 {
+func (p *ActionTaskReqParams) Verify(ctx iris.Context) error {
+	if len(p.JobIDs) == 0 {
 		return paramsError
 	}
 	return nil
@@ -291,14 +271,11 @@ func (p *GetNodeListReqParams) Verify(ctx iris.Context) error {
 }
 
 type EditGroupReqParams struct {
-	GroupID   uint   `json:"groupID"`
-	GroupName string `json:"groupName"`
+	GroupID   uint   `json:"groupID" rule:"required,请填写groupID"`
+	GroupName string `json:"groupName"  rule:"required,请填写groupName"`
 }
 
-func (p *EditGroupReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.GroupName == "" {
-		return paramsError
-	}
+func (p *EditGroupReqParams) Verify(ctx iris.Context) error {
 	return nil
 }
 
@@ -319,11 +296,7 @@ type ReadMoreReqParams struct {
 	Orderby  string `json:"orderby"`
 }
 
-func (p *ReadMoreReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil {
-		return paramsError
-	}
-
+func (p *ReadMoreReqParams) Verify(ctx iris.Context) error {
 	if p.Pagesize == 0 {
 		p.Pagesize = 50
 	}
@@ -336,7 +309,7 @@ func (p *ReadMoreReqParams) verify(ctx iris.Context) error {
 }
 
 type GroupNodeReqParams struct {
-	Addr            string `json:"addr"`
+	Addr            string `json:"addr" rule:"required,请填写addr"`
 	TargetNodeName  string `json:"targetNodeName"`
 	TargetGroupName string `json:"targetGroupName"`
 	TargetGroupID   uint   `json:"targetGroupID"`
@@ -351,20 +324,18 @@ type AuditJobReqParams struct {
 	JobType string `json:"jobType"`
 }
 
-func (p *AuditJobReqParams) verify(ctx iris.Context) error {
+func (p *AuditJobReqParams) Verify(ctx iris.Context) error {
 
-	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" {
+	if p.Addr == "" {
 		return paramsError
 	}
-
-	log.Debugf("%+v", p)
 
 	jobTypeMap := map[string]bool{
 		"crontab": true,
 		"daemon":  true,
 	}
 
-	if err := p.JobsReqParams.verify(nil); err != nil {
+	if err := p.JobsReqParams.Verify(nil); err != nil {
 		return err
 	}
 

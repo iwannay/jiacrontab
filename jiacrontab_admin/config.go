@@ -164,23 +164,22 @@ func sendTestMail(c iris.Context) {
 		reqBody SendTestMailReqParams
 	)
 
-	if err = reqBody.verify(ctx); err != nil {
-		goto failed
+	if err = ctx.Valid(&reqBody); err != nil {
+		ctx.respParamError(err)
+		return
 	}
 
 	if cfg.Mailer.Enabled {
 		err = mailer.SendMail([]string{reqBody.MailTo}, "测试邮件", "测试邮件请勿回复！")
 		if err != nil {
-			goto failed
+			ctx.respBasicError(err)
+			return
 		}
 		ctx.respSucc("", nil)
 		return
 	}
 
-	err = errors.New("邮箱服务未开启")
-
-failed:
-	ctx.respError(proto.Code_Error, err.Error(), nil)
+	ctx.respBasicError(errors.New("邮箱服务未开启"))
 }
 
 func init() {

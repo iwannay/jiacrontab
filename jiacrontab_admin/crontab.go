@@ -20,7 +20,7 @@ func GetJobList(c iris.Context) {
 		rpcReqParams proto.QueryJobArgs
 	)
 
-	if err = reqBody.verify(ctx); err != nil {
+	if err = ctx.Valid(&reqBody); err != nil {
 		ctx.respParamError(err)
 		return
 	}
@@ -92,7 +92,7 @@ func EditJob(c iris.Context) {
 		return
 	}
 
-	if err = reqBody.verify(ctx); err != nil {
+	if err = ctx.Valid(&reqBody); err != nil {
 		ctx.respBasicError(err)
 		return
 	}
@@ -176,7 +176,7 @@ func ActionTask(c iris.Context) {
 		}
 	)
 
-	if reqBody.verify(ctx); err != nil {
+	if err = ctx.Valid(&reqBody); err != nil {
 		ctx.respBasicError(err)
 		return
 	}
@@ -207,21 +207,19 @@ func ExecTask(c iris.Context) {
 		reqBody      JobReqParams
 	)
 
-	if err = reqBody.verify(ctx); err != nil {
-		goto failed
+	if err = ctx.Valid(&reqBody); err != nil {
+		ctx.respParamError(err)
+		return
 	}
 
 	if err = rpcCall(reqBody.Addr, "CrontabJob.Exec", reqBody.JobID, &execJobReply); err != nil {
-		goto failed
+		ctx.respRPCError(err)
+		return
 	}
 
 	ctx.pubEvent(execJobReply.Job.Name, event_ExecCronJob, reqBody.Addr, reqBody)
 	logList = strings.Split(string(execJobReply.Content), "\n")
 	ctx.respSucc("", logList)
-	return
-
-failed:
-	ctx.respError(proto.Code_Error, err.Error(), nil)
 }
 
 func GetJob(c iris.Context) {
