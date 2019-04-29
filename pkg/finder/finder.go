@@ -10,8 +10,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
-	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -42,7 +40,6 @@ type Finder struct {
 	filter         func(os.FileInfo) bool
 	isTail         bool
 	offset         int64
-	group          sync.WaitGroup
 	fileSize       int64
 }
 
@@ -79,20 +76,18 @@ func (fd *Finder) find(fpath string, modifyTime time.Time) error {
 	}
 	defer f.Close()
 
-	if fd.offset != 0 {
-		info, err := f.Stat()
-		if err != nil {
-			return err
-		}
-
-		fd.fileSize = info.Size()
-
-		if fd.fileSize < fd.offset {
-			return errors.New("out of file")
-		}
-
-		f.Seek(fd.offset, 0)
+	info, err := f.Stat()
+	if err != nil {
+		return err
 	}
+
+	fd.fileSize = info.Size()
+
+	if fd.fileSize < fd.offset {
+		return errors.New("out of file")
+	}
+
+	f.Seek(fd.offset, 0)
 
 	if fd.isTail {
 		reader = bufio.NewReader(NewTailReader(f))
@@ -116,7 +111,7 @@ func (fd *Finder) find(fpath string, modifyTime time.Time) error {
 		if fd.patternAll || fd.regexp.Match(bts) {
 			matchData = append(matchData, bts...)
 			matchData = append(matchData, []byte("\n")...)
-			atomic.AddInt32(&fd.curr, 1)
+			fd.curr += 1
 		}
 
 		if fd.curr >= int32(fd.pagesize) {
@@ -136,14 +131,10 @@ func (fd *Finder) find(fpath string, modifyTime time.Time) error {
 func (fd *Finder) walkFunc(fpath string, info os.FileInfo, err error) error {
 	if !info.IsDir() {
 		if fd.filter != nil && fd.filter(info) {
-			fd.group.Add(1)
-			go func() {
-				defer fd.group.Done()
-				err := fd.find(fpath, info.ModTime())
-				if err != nil {
-					fd.errors = append(fd.errors, err)
-				}
-			}()
+			err := fd.find(fpath, info.ModTime())
+			if err != nil {
+				fd.errors = append(fd.errors, err)
+			}
 		}
 
 	}
@@ -169,7 +160,7 @@ func (fd *Finder) Search(root string, expr string, data *[]byte, offset int64, p
 		return err
 	}
 	filepath.Walk(root, fd.walkFunc)
-	fd.group.Wait()
+
 	sort.Stable(fd.matchDataQueue)
 	for _, v := range fd.matchDataQueue {
 		*data = append(*data, v.matchData...)
