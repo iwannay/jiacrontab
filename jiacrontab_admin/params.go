@@ -129,10 +129,7 @@ type GetLogReqParams struct {
 	Pagesize int    `json:"pagesize"`
 }
 
-func (p *GetLogReqParams) verify(ctx iris.Context) error {
-	if err := ctx.ReadJSON(p); err != nil || p.Addr == "" {
-		return paramsError
-	}
+func (p *GetLogReqParams) Verify(ctx iris.Context) error {
 
 	if p.Pagesize <= 0 {
 		p.Pagesize = 50

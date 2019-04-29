@@ -182,8 +182,9 @@ func GetRecentDaemonLog(c iris.Context) {
 		logList   []string
 	)
 
-	if err = reqBody.verify(ctx); err != nil {
-		goto failed
+	if err = ctx.Valid(&reqBody); err != nil {
+		ctx.respParamError(err)
+		return
 	}
 
 	if err := rpc.Call(reqBody.Addr, "DaemonJob.Log", proto.SearchLog{
@@ -194,7 +195,8 @@ func GetRecentDaemonLog(c iris.Context) {
 		Pattern:  reqBody.Pattern,
 		IsTail:   reqBody.IsTail,
 	}, &searchRet); err != nil {
-		goto failed
+		ctx.respRPCError(err)
+		return
 	}
 
 	logList = strings.Split(string(searchRet.Content), "\n")
@@ -203,10 +205,7 @@ func GetRecentDaemonLog(c iris.Context) {
 		"logList":  logList,
 		"curAddr":  reqBody.Addr,
 		"offset":   searchRet.Offset,
+		"fileSize": searchRet.FileSize,
 		"pagesize": reqBody.Pagesize,
 	})
-	return
-
-failed:
-	ctx.respError(proto.Code_Error, "", err.Error())
 }
