@@ -120,11 +120,11 @@ func (p *process) exec() error {
 		if p.jobEntry.detail.Timeout != 0 {
 			time.AfterFunc(
 				time.Duration(p.jobEntry.detail.Timeout)*time.Second, func() {
-					log.Debug("timeout callback:", "jobID:", p.jobEntry.detail.ID)
 					select {
 					case <-doneChan:
 						close(doneChan)
 					default:
+						log.Debug("timeout callback:", "jobID:", p.jobEntry.detail.ID)
 						p.jobEntry.timeoutTrigger(p)
 					}
 				})
