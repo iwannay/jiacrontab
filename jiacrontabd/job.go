@@ -140,6 +140,10 @@ func (p *process) exec() error {
 			logPath: p.jobEntry.logPath,
 		}
 
+		if p.jobEntry.once {
+			myCmdUnit.exportLog = true
+		}
+
 		p.err = myCmdUnit.launch()
 		p.jobEntry.logContent = myCmdUnit.content
 

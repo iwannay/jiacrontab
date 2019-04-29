@@ -84,7 +84,7 @@ func (j *CrontabJob) Edit(args models.CrontabJob, reply *models.CrontabJob) erro
 	} else {
 		db = models.DB().Where("id=?", args.ID).Debug().Omit(
 			"updated_at", "created_at", "deleted_at",
-			"createdUserID", "createdUsername",
+			"created_user_id", "created_username",
 			"last_cost_time", "last_exec_time",
 			"next_exec_time", "last_exit_status", "process_num",
 		).Save(&args)
