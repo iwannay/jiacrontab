@@ -349,7 +349,7 @@ func GroupUser(c iris.Context) {
 		return
 	}
 
-	ctx.pubEvent(user.Username, event_GroupUser, "", reqBody)
+	ctx.pubEvent(reqBody.TargetGroupName, event_GroupUser, user.Username, reqBody)
 	ctx.respSucc("", nil)
 }
 

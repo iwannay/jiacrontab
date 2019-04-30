@@ -10,10 +10,10 @@ type Event struct {
 	gorm.Model
 	GroupID    uint   `json:"groupID" gorm:"index"`
 	Username   string `json:"username"`
-	UserID     uint   `json:"userID"`
+	UserID     uint   `json:"userID" gorm:"index"`
 	EventDesc  string `json:"eventDesc"`
 	TargetName string `json:"targetName"`
-	NodeAddr   string `json:"nodeAddr" gorm:"index"`
+	SourceName string `json:"sourceName" gorm:"index"`
 	Content    string `json:"content"`
 }
 

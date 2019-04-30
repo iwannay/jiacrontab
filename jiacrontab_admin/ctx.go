@@ -187,7 +187,7 @@ func (ctx *myctx) Valid(i Parameter) error {
 	return nil
 }
 
-func (ctx *myctx) pubEvent(targetName, desc, nodeAddr string, v interface{}) {
+func (ctx *myctx) pubEvent(targetName, desc, sourceName string, v interface{}) {
 	var content string
 	if (ctx.claims == CustomerClaims{}) {
 		err := ctx.parseClaimsFromToken()
@@ -210,7 +210,7 @@ func (ctx *myctx) pubEvent(targetName, desc, nodeAddr string, v interface{}) {
 		Username:   ctx.claims.Username,
 		EventDesc:  desc,
 		TargetName: targetName,
-		NodeAddr:   nodeAddr,
+		SourceName: sourceName,
 		Content:    content,
 	}
 	e.Pub()
