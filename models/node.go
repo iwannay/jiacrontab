@@ -60,7 +60,7 @@ func (n *Node) Rename(groupID uint, addr string) error {
 	return DB().Model(n).Where("group_id=? and addr=?", groupID, addr).Updates(n).Error
 }
 
-// GroupNode 为节点分组，复制groupID=0分组中node至目标分组
+// GroupNode 为节点分组，复制groupID=1分组中node至目标分组
 func (n *Node) GroupNode(addr string, targetGroupID uint, targetNodeName, targetGroupName string) error {
 
 	// 新建分组

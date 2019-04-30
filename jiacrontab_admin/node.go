@@ -1,7 +1,6 @@
 package admin
 
 import (
-	"errors"
 	"github.com/kataras/iris"
 	"jiacrontab/models"
 )
@@ -32,8 +31,8 @@ func GetNodeList(c iris.Context) {
 		return
 	}
 
-	err = models.DB().Preload("Group").Where("group_id=?", ctx.claims.GroupID).Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&nodeList).Error
-	models.DB().Model(&models.Node{}).Where("group_id=?", ctx.claims.GroupID).Count(&count)
+	err = models.DB().Preload("Group").Where("group_id=?", reqBody.QueryGroupID).Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&nodeList).Error
+	models.DB().Model(&models.Node{}).Where("group_id=?", reqBody.QueryGroupID).Count(&count)
 
 	if err != nil {
 		ctx.respBasicError(err)
@@ -79,7 +78,7 @@ func DeleteNode(c iris.Context) {
 		return
 	}
 
-	ctx.pubEvent(node.Name, event_DelNodeDesc, reqBody.Addr, group.Name)
+	ctx.pubEvent(node.Name, event_DelNodeDesc, reqBody.Addr, reqBody)
 	ctx.respSucc("", nil)
 }
 
@@ -106,7 +105,7 @@ func GroupNode(c iris.Context) {
 
 	if err = node.GroupNode(reqBody.Addr, reqBody.TargetGroupID,
 		reqBody.TargetNodeName, reqBody.TargetGroupName); err != nil {
-		ctx.respBasicError(errors.New("分组失败"))
+		ctx.respBasicError(err)
 		return
 	}
 

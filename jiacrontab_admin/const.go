@@ -1,26 +1,26 @@
 package admin
 
 const (
-	event_DelNodeDesc = "删除节点"
-	event_RenameNode  = "更新节点名"
+	event_DelNodeDesc = "删除节点{sourceName}"
+	event_RenameNode  = "{username}将{sourceName}重命名为{targetName}"
 
-	event_EditCronJob  = "编辑计划任务"
-	event_DelCronJob   = "删除计划任务"
-	event_StopCronJob  = "停止计划任务"
-	event_StartCronJob = "启动计划任务"
-	event_ExecCronJob  = "执行计划任务"
-	event_KillCronJob  = "kill计划任务进程"
+	event_EditCronJob  = "{sourceName}{username}编辑计划任务{targetName}"
+	event_DelCronJob   = "{sourceName}{username}删除计划任务{targetName}"
+	event_StopCronJob  = "{sourceName}{username}停止计划任务{targetName}"
+	event_StartCronJob = "{sourceName}{username}启动计划任务{targetName}"
+	event_ExecCronJob  = "{sourceName}{username}执行计划任务{targetName}"
+	event_KillCronJob  = "{sourceName}{username}kill计划任务进程{targetName}"
 
-	event_EditDaemonJob  = "编辑常驻任务"
-	event_DelDaemonJob   = "删除常驻任务"
-	event_StartDaemonJob = "启动常驻任务"
-	event_StopDaemonJob  = "停止常驻任务"
+	event_EditDaemonJob  = "{sourceName}{username}编辑常驻任务{targetName}"
+	event_DelDaemonJob   = "{sourceName}{username}删除常驻任务{targetName}"
+	event_StartDaemonJob = "{sourceName}{username}启动常驻任务{targetName}"
+	event_StopDaemonJob  = "{sourceName}{username}停止常驻任务{targetName}"
 
-	event_EditGroup = "编辑分组"
-	event_GroupNode = "分组节点"
+	event_EditGroup = "{username}编辑了{targetName}组"
+	event_GroupNode = "{username}将{sourceName}添加到{targetName}组"
 
-	event_SignUpUser      = "创建新用户"
-	event_GroupUser       = "分组用户"
-	event_AuditCrontabJob = "审核计划任务"
-	event_AuditDaemonJob  = "审核常驻任务"
+	event_SignUpUser      = "{username}创建新用户{targetName}"
+	event_GroupUser       = "{username}将用户{sourceName}设置为{targetName}组"
+	event_AuditCrontabJob = "{sourceName}{username}审核计划任务{targetName}"
+	event_AuditDaemonJob  = "{sourceName}{username}审核常驻任务{targetName}"
 )
