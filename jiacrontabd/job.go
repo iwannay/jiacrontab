@@ -336,7 +336,7 @@ func (j *JobEntry) exec() {
 		}
 
 		if err != nil {
-			log.Error("JobEntry.exec:", err)
+			log.Info("JobEntry.exec:", err)
 			return
 		}
 
@@ -361,7 +361,7 @@ func (j *JobEntry) exec() {
 			atomic.AddInt32(&j.processNum, -1)
 			j.updateJob(models.StatusJobTiming, startTime, endTime, err)
 		}()
-		log.Error("JobEntry.exec ------", j.job.GetLastExecTime(), "not equal", j.job.GetNextExecTime())
+
 		j.updateJob(models.StatusJobRunning, startTime, endTime, err)
 
 		for i := 0; i <= j.detail.RetryNum; i++ {
