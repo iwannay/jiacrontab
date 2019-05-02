@@ -102,7 +102,12 @@ func (fd *Finder) find(fpath string, modifyTime time.Time) error {
 			break
 		}
 
-		fd.offset += int64(len(bts))
+		if fd.isTail {
+			fd.offset -= int64(len(bts))
+		} else {
+			fd.offset += int64(len(bts))
+		}
+
 		if fd.isTail {
 			invert(bts)
 		}
@@ -113,6 +118,10 @@ func (fd *Finder) find(fpath string, modifyTime time.Time) error {
 		}
 
 		if fd.curr >= int32(fd.pagesize) {
+			break
+		}
+
+		if fd.offset == 0 {
 			break
 		}
 

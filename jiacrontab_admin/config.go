@@ -3,7 +3,6 @@ package admin
 import (
 	"errors"
 	"jiacrontab/pkg/mailer"
-	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/util"
 	"reflect"
 	"time"
@@ -149,9 +148,8 @@ func loadConfig() *ini.File {
 
 func GetConfig(c iris.Context) {
 	ctx := wrapCtx(c)
-	gid, err := ctx.getGroupIDFromToken()
-	if err != nil || gid != 0 {
-		ctx.respError(proto.Code_Error, "无权访问", nil)
+	if !ctx.isSuper() {
+		ctx.respNotAllowed()
 		return
 	}
 	ctx.respSucc("", map[string]interface{}{

@@ -274,6 +274,7 @@ func Signup(c iris.Context) {
 	user.Passwd = reqBody.Passwd
 	user.GroupID = reqBody.GroupID
 	user.Root = reqBody.Root
+	user.Avatar = reqBody.Avatar
 	user.Mail = reqBody.Mail
 
 	if err = user.Create(); err != nil {
