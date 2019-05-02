@@ -41,7 +41,6 @@ func newApp() *iris.Application {
 
 		ErrorHandler: func(c iris.Context, data string) {
 			ctx := wrapCtx(c)
-			app.Logger().Error("jwt 认证失败:", data)
 			if ctx.RequestPath(true) != "/user/login" && ctx.RequestPath(true) != "/user/signUp" {
 				ctx.respAuthFailed(errors.New("认证失败"))
 				return

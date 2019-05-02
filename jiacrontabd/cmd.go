@@ -23,6 +23,7 @@ type cmdUint struct {
 	content   []byte
 	logFile   *os.File
 	user      string
+	exportLog bool
 	env       []string
 	dir       string
 	startTime time.Time
@@ -63,12 +64,15 @@ func (cu *cmdUint) launch() error {
 		if cfg.VerboseJobLog {
 			prefix := fmt.Sprintf("[%s %s %v] ", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, cu.args)
 			errMsg = prefix + err.Error() + "\n"
-			cu.logFile.WriteString(errMsg)
 		} else {
 			errMsg = err.Error() + "\n"
-			cu.logFile.WriteString(errMsg)
 		}
-		cu.content = append(cu.content, []byte(errMsg)...)
+
+		cu.logFile.WriteString(errMsg)
+
+		if cu.exportLog {
+			cu.content = append(cu.content, []byte(errMsg)...)
+		}
 
 		return err
 	}
@@ -136,8 +140,9 @@ func (cu *cmdUint) exec() error {
 			if cfg.VerboseJobLog {
 				prefix := fmt.Sprintf("[%s %s %s %v] ", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, cmdName, args)
 				line = append([]byte(prefix), line...)
-				cu.content = append(cu.content, line...)
-			} else {
+			}
+
+			if cu.exportLog {
 				cu.content = append(cu.content, line...)
 			}
 
@@ -153,8 +158,9 @@ func (cu *cmdUint) exec() error {
 			if cfg.VerboseJobLog {
 				prefix := fmt.Sprintf("[%s %s %s %s] ", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, cmdName, args)
 				line = append([]byte(prefix), line...)
-				cu.content = append(cu.content, line...)
-			} else {
+
+			}
+			if cu.exportLog {
 				cu.content = append(cu.content, line...)
 			}
 			cu.logFile.Write(line)
@@ -206,11 +212,9 @@ func (cu *cmdUint) pipeExec() error {
 		if cfg.VerboseJobLog {
 			prefix := fmt.Sprintf("[%s %s %v] ", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, cu.args)
 			line = append([]byte(prefix), line...)
-			cu.content = append(cu.content, line...)
-		} else {
-			cu.content = append(cu.content, line...)
 		}
 
+		cu.content = append(cu.content, line...)
 		cu.logFile.Write(line)
 	}
 
@@ -223,17 +227,14 @@ func (cu *cmdUint) pipeExec() error {
 		if cfg.VerboseJobLog {
 			prefix := fmt.Sprintf("[%s %s %v] ", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, cu.args)
 			line = append([]byte(prefix), line...)
-			cu.content = append(cu.content, line...)
-		} else {
-			cu.content = append(cu.content, line...)
 		}
 
+		if cu.exportLog {
+			cu.content = append(cu.content, line...)
+		}
 		cu.logFile.Write(line)
-
 	}
-
 	return exitError
-
 }
 
 func call(stack []*pipeCmd, pipes []*io.PipeWriter) (err error) {
