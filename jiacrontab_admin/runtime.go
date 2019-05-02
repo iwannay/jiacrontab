@@ -14,7 +14,7 @@ func SystemInfo(c iris.Context) {
 		reqBody SystemInfoReqParams
 	)
 
-	if err = reqBody.verify(ctx); err != nil {
+	if err = ctx.Valid(&reqBody); err != nil {
 		ctx.respBasicError(err)
 		return
 	}

@@ -44,8 +44,8 @@ func EditGroup(c iris.Context) {
 		group   models.Group
 	)
 
-	if err = reqBody.verify(ctx); err != nil {
-		ctx.respError(proto.Code_Error, err.Error(), nil)
+	if err = ctx.Valid(&reqBody); err != nil {
+		ctx.respParamError(err)
 		return
 	}
 
@@ -53,7 +53,7 @@ func EditGroup(c iris.Context) {
 	group.Name = reqBody.GroupName
 
 	if err = group.Save(); err != nil {
-		ctx.respError(proto.Code_Error, err.Error(), nil)
+		ctx.respBasicError(err)
 		return
 	}
 	ctx.pubEvent(group.Name, event_EditGroup, "", reqBody)

@@ -120,11 +120,11 @@ func (p *process) exec() error {
 		if p.jobEntry.detail.Timeout != 0 {
 			time.AfterFunc(
 				time.Duration(p.jobEntry.detail.Timeout)*time.Second, func() {
-					log.Debug("timeout callback:", "jobID:", p.jobEntry.detail.ID)
 					select {
 					case <-doneChan:
 						close(doneChan)
 					default:
+						log.Debug("timeout callback:", "jobID:", p.jobEntry.detail.ID)
 						p.jobEntry.timeoutTrigger(p)
 					}
 				})
@@ -138,6 +138,10 @@ func (p *process) exec() error {
 			env:     p.jobEntry.detail.WorkEnv,
 			content: p.jobEntry.logContent,
 			logPath: p.jobEntry.logPath,
+		}
+
+		if p.jobEntry.once {
+			myCmdUnit.exportLog = true
 		}
 
 		p.err = myCmdUnit.launch()
@@ -332,7 +336,7 @@ func (j *JobEntry) exec() {
 		}
 
 		if err != nil {
-			log.Error("JobEntry.exec:", err)
+			log.Info("JobEntry.exec:", err)
 			return
 		}
 
@@ -357,7 +361,7 @@ func (j *JobEntry) exec() {
 			atomic.AddInt32(&j.processNum, -1)
 			j.updateJob(models.StatusJobTiming, startTime, endTime, err)
 		}()
-		log.Error("JobEntry.exec ------", j.job.GetLastExecTime(), "not equal", j.job.GetNextExecTime())
+
 		j.updateJob(models.StatusJobRunning, startTime, endTime, err)
 
 		for i := 0; i <= j.detail.RetryNum; i++ {
