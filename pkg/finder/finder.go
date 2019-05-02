@@ -87,11 +87,14 @@ func (fd *Finder) find(fpath string, modifyTime time.Time) error {
 		return errors.New("out of file")
 	}
 
-	f.Seek(fd.offset, 0)
-
 	if fd.isTail {
-		reader = bufio.NewReader(NewTailReader(f))
+		if fd.offset == 0 {
+			fd.offset = fd.fileSize
+		}
+		f.Seek(fd.offset, 0)
+		reader = bufio.NewReader(NewTailReader(f, fd.offset))
 	} else {
+		f.Seek(fd.offset, 0)
 		reader = bufio.NewReader(f)
 	}
 
@@ -129,7 +132,7 @@ func (fd *Finder) find(fpath string, modifyTime time.Time) error {
 	if len(matchData) > 0 {
 		fd.matchDataQueue = append(fd.matchDataQueue, matchDataChunk{
 			modifyTime: modifyTime,
-			matchData:  bytes.TrimRight(matchData, "\n"),
+			matchData:  bytes.TrimLeft(bytes.TrimRight(matchData, "\n"), "\n"),
 		})
 	}
 	return nil
