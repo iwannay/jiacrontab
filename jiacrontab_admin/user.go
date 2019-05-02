@@ -61,11 +61,12 @@ func Login(c iris.Context) {
 	}
 
 	ctx.respSucc("", map[string]interface{}{
-		"token":   token,
-		"groupID": user.GroupID,
-		"root":    user.Root,
-		"mail":    user.Mail,
-		"userID":  user.ID,
+		"token":    token,
+		"groupID":  user.GroupID,
+		"root":     user.Root,
+		"mail":     user.Mail,
+		"username": user.Username,
+		"userID":   user.ID,
 	})
 }
 
