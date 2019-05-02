@@ -154,7 +154,16 @@ func GetConfig(c iris.Context) {
 		ctx.respError(proto.Code_Error, "无权访问", nil)
 		return
 	}
-	ctx.respSucc("", cfg)
+	ctx.respSucc("", map[string]interface{}{
+		"mail": map[string]interface{}{
+			"host":            cfg.Mailer.Host,
+			"user":            cfg.Mailer.User,
+			"use_certificate": cfg.Mailer.UseCertificate,
+			"skip_verify":     cfg.Mailer.SkipVerify,
+			"cert_file":       cfg.Mailer.CertFile,
+			"key_file":        cfg.Mailer.KeyFile,
+		},
+	})
 }
 
 func sendTestMail(c iris.Context) {

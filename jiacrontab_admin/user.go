@@ -259,6 +259,17 @@ func Signup(c iris.Context) {
 		return
 	}
 
+	if reqBody.GroupName != "" {
+		group := models.Group{
+			Name: reqBody.GroupName,
+		}
+		if err = models.DB().Save(&group).Error; err != nil {
+			ctx.respDBError(err)
+			return
+		}
+		reqBody.GroupID = group.ID
+	}
+
 	user.Username = reqBody.Username
 	user.Passwd = reqBody.Passwd
 	user.GroupID = reqBody.GroupID

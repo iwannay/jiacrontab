@@ -228,11 +228,12 @@ func (p *GetJobReqParams) Verify(ctx iris.Context) error {
 }
 
 type UserReqParams struct {
-	Username string `json:"username" rule:"required,请输入用户名"`
-	Passwd   string `json:"passwd" rule:"required,请输入密码"`
-	GroupID  uint   `json:"groupID"`
-	Root     bool   `json:"root"`
-	Mail     string `json:"mail"`
+	Username  string `json:"username" rule:"required,请输入用户名"`
+	Passwd    string `json:"passwd" rule:"required,请输入密码"`
+	GroupID   uint   `json:"groupID"`
+	GroupName string `json:"groupName"`
+	Root      bool   `json:"root"`
+	Mail      string `json:"mail"`
 }
 
 func (p *UserReqParams) Verify(ctx iris.Context) error {
