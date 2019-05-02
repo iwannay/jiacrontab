@@ -166,7 +166,7 @@ func GetConfig(c iris.Context) {
 	})
 }
 
-func sendTestMail(c iris.Context) {
+func SendTestMail(c iris.Context) {
 	var (
 		ctx     = wrapCtx(c)
 		err     error

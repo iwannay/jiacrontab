@@ -72,7 +72,7 @@ func newApp() *iris.Application {
 		adm.Post("/crontab/job/exec", ExecTask)
 
 		adm.Post("/config/get", GetConfig)
-		adm.Post("/config/mail/send", SendTestMailReqParams)
+		adm.Post("/config/mail/send", SendTestMail)
 		adm.Post("/system/info", SystemInfo)
 
 		adm.Post("/daemon/job/list", GetDaemonJobList)
