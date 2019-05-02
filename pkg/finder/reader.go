@@ -8,22 +8,10 @@ import (
 type TailReader struct {
 	f     *os.File
 	curr  int64
-	size  int64
 	isEOF bool
 }
 
 func (t *TailReader) Read(b []byte) (n int, err error) {
-
-	var fi os.FileInfo
-	if t.size == 0 {
-		fi, err = t.f.Stat()
-		if err != nil {
-			return
-		}
-		t.size = fi.Size()
-		t.curr = t.size
-	}
-
 	if t.isEOF {
 		return 0, io.EOF
 	}
@@ -50,9 +38,10 @@ func (t *TailReader) Read(b []byte) (n int, err error) {
 	return
 }
 
-func NewTailReader(f *os.File) io.Reader {
+func NewTailReader(f *os.File, offset int64) io.Reader {
 	return &TailReader{
-		f: f,
+		f:    f,
+		curr: offset,
 	}
 
 }
