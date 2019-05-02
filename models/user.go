@@ -15,7 +15,8 @@ type User struct {
 	Username string `json:"username" gorm:"not null; unique"`
 	Passwd   string `json:"-"`
 	Salt     string `json:"-"`
-	GroupID  uint   `json:"groupID"`
+	Avatar   string `json:"avatar"`
+	GroupID  uint   `json:"groupID" grom:"index"`
 	Root     bool   `json:"root"`
 	Mail     string `json:"mail"`
 	Group    Group  `json:"group"`

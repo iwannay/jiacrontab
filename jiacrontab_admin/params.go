@@ -231,7 +231,8 @@ type UserReqParams struct {
 	Username  string `json:"username" rule:"required,请输入用户名"`
 	Passwd    string `json:"passwd" rule:"required,请输入密码"`
 	GroupID   uint   `json:"groupID"`
-	GroupName string `json:"groupName"`
+	GroupName string `json:"groupName" rule:"required,请选择头像"`
+	Avatar    string `json:"avatar"`
 	Root      bool   `json:"root"`
 	Mail      string `json:"mail"`
 }
