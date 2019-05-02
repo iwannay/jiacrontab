@@ -73,7 +73,7 @@ func GetRecentLog(c iris.Context) {
 		"logList":  logList,
 		"curAddr":  reqBody.Addr,
 		"offset":   searchRet.Offset,
-		"fileSize": searchRet.FileSize,
+		"filesize": searchRet.FileSize,
 		"pagesize": reqBody.Pagesize,
 	})
 }
