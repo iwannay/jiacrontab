@@ -4,7 +4,6 @@ import (
 	"errors"
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
-	"jiacrontab/pkg/rpc"
 	"strings"
 
 	"github.com/kataras/iris"
@@ -28,7 +27,7 @@ func GetJobList(c iris.Context) {
 	rpcReqParams.Page = reqBody.Page
 	rpcReqParams.Pagesize = reqBody.Pagesize
 
-	if err := rpc.Call(reqBody.Addr, "CrontabJob.List", rpcReqParams, &jobRet); err != nil {
+	if err := rpcCall(reqBody.Addr, "CrontabJob.List", rpcReqParams, &jobRet); err != nil {
 		ctx.respRPCError(err)
 		return
 	}
@@ -55,7 +54,7 @@ func GetRecentLog(c iris.Context) {
 		return
 	}
 
-	if err = rpc.Call(reqBody.Addr, "CrontabJob.Log", proto.SearchLog{
+	if err = rpcCall(reqBody.Addr, "CrontabJob.Log", proto.SearchLog{
 		JobID:    reqBody.JobID,
 		Offset:   reqBody.Offset,
 		Pagesize: reqBody.Pagesize,

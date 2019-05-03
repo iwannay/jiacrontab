@@ -287,7 +287,6 @@ func (j *Jiacrontabd) heartBeat() {
 	models.DB().Model(&models.CrontabJob{}).Where("status in (?) and last_exit_status != ''", []models.JobStatus{
 		models.StatusJobTiming, models.StatusJobRunning,
 	}).Count(&node.CrontabJobFailNum)
-	models.DB().Model(&models.DaemonJob{}).Where("status=?", models.StatusJobRunning).Count(&node.DaemonJobRunningNum)
 
 	err := rpcCall(rpc.RegisterService, node, &reply)
 
