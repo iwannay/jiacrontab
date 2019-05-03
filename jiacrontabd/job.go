@@ -393,9 +393,10 @@ func (j *JobEntry) exec() {
 
 func (j *JobEntry) updateJob(status models.JobStatus, startTime, endTime time.Time, err error) {
 	data := map[string]interface{}{
-		"status":         status,
-		"process_num":    atomic.LoadInt32(&j.processNum),
-		"last_exec_time": j.job.GetLastExecTime(),
+		"status":           status,
+		"process_num":      atomic.LoadInt32(&j.processNum),
+		"last_exec_time":   j.job.GetLastExecTime(),
+		"last_exit_status": "",
 	}
 
 	if j.once && (status == models.StatusJobRunning) {

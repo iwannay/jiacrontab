@@ -76,25 +76,33 @@ func GetActivityList(c iris.Context) {
 		err     error
 		reqBody ReadMoreReqParams
 		events  []models.Event
+		isSuper bool
+		model   = models.DB().Debug()
 	)
 
 	if err = ctx.Valid(&reqBody); err != nil {
-		ctx.respError(proto.Code_Error, err.Error(), nil)
+		ctx.respParamError(err)
 		return
 	}
 
-	if err = ctx.parseClaimsFromToken(); err != nil {
-		ctx.respBasicError(err)
-		return
+	if ctx.isSuper() {
+		isSuper = true
 	}
 
 	if reqBody.LastID == 0 {
-		err = models.DB().Debug().Where("user_id=?", ctx.claims.UserID).
-			Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
+		if !isSuper {
+			model.Where("user_id=?", ctx.claims.UserID)
+		}
+		err = model.Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
 			Limit(reqBody.Pagesize).
 			Find(&events).Error
 	} else {
-		err = models.DB().Debug().Where("user_id=? and id<?", ctx.claims.UserID, reqBody.LastID).
+		if !isSuper {
+			model.Where("user_id=? and id<?", ctx.claims.UserID, reqBody.LastID)
+		} else {
+			model.Where("id<?", ctx.claims.UserID, reqBody.LastID)
+		}
+		err = model.
 			Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
 			Limit(reqBody.Pagesize).
 			Find(&events).Error
@@ -118,11 +126,17 @@ func GetJobHistory(c iris.Context) {
 		reqBody  ReadMoreReqParams
 		historys []models.JobHistory
 		addrs    []string
+		isSuper  bool
+		model    = models.DB()
 	)
 
 	if err = ctx.Valid(&reqBody); err != nil {
 		ctx.respError(proto.Code_Error, err.Error(), nil)
 		return
+	}
+
+	if ctx.isSuper() {
+		isSuper = true
 	}
 
 	if addrs, err = ctx.getGroupAddr(); err != nil {
@@ -131,12 +145,19 @@ func GetJobHistory(c iris.Context) {
 	}
 
 	if reqBody.LastID == 0 {
-		err = models.DB().Debug().Where("addr in (?)", addrs).
-			Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
+		if !isSuper {
+			model.Where("addr in (?)", addrs)
+		}
+		err = model.Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
 			Limit(reqBody.Pagesize).
 			Find(&historys).Error
 	} else {
-		err = models.DB().Debug().Where("addr in (?) and id<?", addrs, reqBody.LastID).
+		if !isSuper {
+			model.Where("addr in (?) and id<?", addrs, reqBody.LastID)
+		} else {
+			model.Where("id<?", reqBody.LastID)
+		}
+		err = model.Where("addr in (?) and id<?", addrs, reqBody.LastID).
 			Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
 			Limit(reqBody.Pagesize).
 			Find(&historys).Error
