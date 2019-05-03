@@ -13,10 +13,10 @@ import (
 func rpcCall(addr string, serviceMethod string, args interface{}, reply interface{}) error {
 	err := rpc.Call(addr, serviceMethod, args, reply)
 	if err != nil {
-		ret := models.DB().Unscoped().Model(&models.Node{}).Where("addr=?", addr).Update("disabled", true)
-		if ret.Error != nil {
-			log.Errorf("rpcCall:%v", ret.Error)
-		}
+		log.Errorf("rpcCall:%v", err)
+	}
+	if err == rpc.ErrRpc || err == rpc.ErrShutdown {
+		models.DB().Unscoped().Model(&models.Node{}).Where("addr=?", addr).Update("disabled", true)
 	}
 	return err
 }

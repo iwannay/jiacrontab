@@ -16,11 +16,9 @@ type Node struct {
 	CrontabJobAuditNum uint   `json:"crontabJobAuditNum"`
 	DaemonJobAuditNum  uint   `json:"daemonJobAuditNum"`
 
-	CrontabJobFailNum   uint `json:"crontabJobFailNum"`
-	DaemonJobRunningNum uint `json:"daemonJobRunningNum"`
-
-	Addr  string `json:"addr"gorm:"not null;unique_index:uni_group_addr"`
-	Group Group  `json:"group"`
+	CrontabJobFailNum uint   `json:"crontabJobFailNum"`
+	Addr              string `json:"addr"gorm:"not null;unique_index:uni_group_addr"`
+	Group             Group  `json:"group"`
 }
 
 func (n *Node) VerifyUserGroup(userID, groupID uint, addr string) bool {

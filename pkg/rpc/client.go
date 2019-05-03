@@ -19,6 +19,7 @@ const (
 var (
 	ErrRpc        = errors.New("rpc is not available")
 	ErrRpcTimeout = errors.New("rpc call timeout")
+	ErrShutdown   = rpc.ErrShutdown
 )
 
 type ClientOptions struct {
