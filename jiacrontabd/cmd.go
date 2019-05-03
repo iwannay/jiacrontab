@@ -22,6 +22,7 @@ type cmdUint struct {
 	logPath          string
 	content          []byte
 	logFile          *os.File
+	label            string
 	user             string
 	exportLog        bool
 	env              []string
@@ -63,7 +64,7 @@ func (cu *cmdUint) launch() error {
 	if err != nil {
 		var errMsg string
 		if cfg.VerboseJobLog {
-			prefix := fmt.Sprintf("[%s %s %v] ", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, cu.args)
+			prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, cu.label)
 			errMsg = prefix + err.Error() + "\n"
 		} else {
 			errMsg = err.Error() + "\n"
@@ -140,7 +141,7 @@ func (cu *cmdUint) exec() error {
 			}
 
 			if cfg.VerboseJobLog {
-				prefix := fmt.Sprintf("[%s %s %s %v] ", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, cmdName, args)
+				prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, cu.label)
 				line = append([]byte(prefix), line...)
 			}
 
@@ -158,9 +159,8 @@ func (cu *cmdUint) exec() error {
 			}
 			// 默认给err信息加上日期标志
 			if cfg.VerboseJobLog {
-				prefix := fmt.Sprintf("[%s %s %s %s] ", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, cmdName, args)
+				prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, cu.label)
 				line = append([]byte(prefix), line...)
-
 			}
 			if cu.exportLog {
 				cu.content = append(cu.content, line...)
@@ -213,7 +213,7 @@ func (cu *cmdUint) pipeExec() error {
 			break
 		}
 		if cfg.VerboseJobLog {
-			prefix := fmt.Sprintf("[%s %s %v] ", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, cu.args)
+			prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, cu.label)
 			line = append([]byte(prefix), line...)
 		}
 
@@ -228,7 +228,7 @@ func (cu *cmdUint) pipeExec() error {
 		}
 
 		if cfg.VerboseJobLog {
-			prefix := fmt.Sprintf("[%s %s %v] ", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, cu.args)
+			prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, cu.label)
 			line = append([]byte(prefix), line...)
 		}
 
