@@ -66,6 +66,7 @@ func (d *daemonJob) do(ctx context.Context) {
 			env:     d.job.WorkEnv,
 			dir:     d.job.WorkDir,
 			user:    d.job.WorkUser,
+			label:   d.job.Name,
 			logPath: filepath.Join(cfg.LogPath, "daemon_job", time.Now().Format("2006/01/02"), fmt.Sprintf("%d.log", d.job.ID)),
 		}
 

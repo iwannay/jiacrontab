@@ -138,6 +138,7 @@ func (p *process) exec() error {
 			env:              p.jobEntry.detail.WorkEnv,
 			content:          p.jobEntry.logContent,
 			logPath:          p.jobEntry.logPath,
+			label:            p.jobEntry.detail.Name,
 			killChildProcess: p.jobEntry.detail.KillChildProcess,
 		}
 
