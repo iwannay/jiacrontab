@@ -131,13 +131,14 @@ func (p *process) exec() error {
 		}
 
 		myCmdUnit := cmdUint{
-			args:    p.jobEntry.detail.Commands,
-			ctx:     p.ctx,
-			dir:     p.jobEntry.detail.WorkDir,
-			user:    p.jobEntry.detail.WorkUser,
-			env:     p.jobEntry.detail.WorkEnv,
-			content: p.jobEntry.logContent,
-			logPath: p.jobEntry.logPath,
+			args:             p.jobEntry.detail.Commands,
+			ctx:              p.ctx,
+			dir:              p.jobEntry.detail.WorkDir,
+			user:             p.jobEntry.detail.WorkUser,
+			env:              p.jobEntry.detail.WorkEnv,
+			content:          p.jobEntry.logContent,
+			logPath:          p.jobEntry.logPath,
+			killChildProcess: p.jobEntry.detail.KillChildProcess,
 		}
 
 		if p.jobEntry.once {
