@@ -31,7 +31,7 @@ func GetNodeList(c iris.Context) {
 		return
 	}
 
-	err = models.DB().Preload("Group").Where("group_id=?", reqBody.QueryGroupID).Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&nodeList).Error
+	err = models.DB().Preload("Group").Where("group_id=?", reqBody.QueryGroupID).Offset(reqBody.Page - 1).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
 	models.DB().Model(&models.Node{}).Where("group_id=?", reqBody.QueryGroupID).Count(&count)
 
 	if err != nil {
