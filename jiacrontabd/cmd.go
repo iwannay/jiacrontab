@@ -17,17 +17,18 @@ import (
 )
 
 type cmdUint struct {
-	ctx       context.Context
-	args      [][]string
-	logPath   string
-	content   []byte
-	logFile   *os.File
-	user      string
-	exportLog bool
-	env       []string
-	dir       string
-	startTime time.Time
-	costTime  time.Duration
+	ctx              context.Context
+	args             [][]string
+	logPath          string
+	content          []byte
+	logFile          *os.File
+	user             string
+	exportLog        bool
+	env              []string
+	killChildProcess bool
+	dir              string
+	startTime        time.Time
+	costTime         time.Duration
 }
 
 func (cu *cmdUint) release() {
@@ -99,6 +100,7 @@ func (cu *cmdUint) exec() error {
 	cmd.SetDir(cu.dir)
 	cmd.SetEnv(cu.env)
 	cmd.SetUser(cu.user)
+	cmd.SetExitKillChildProcess(cu.killChildProcess)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -192,6 +194,7 @@ func (cu *cmdUint) pipeExec() error {
 		cmd.SetDir(cu.dir)
 		cmd.SetEnv(cu.env)
 		cmd.SetUser(cu.user)
+		cmd.SetExitKillChildProcess(cu.killChildProcess)
 
 		cmdEntryList = append(cmdEntryList, &pipeCmd{cmd})
 	}

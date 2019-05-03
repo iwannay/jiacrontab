@@ -43,29 +43,30 @@ func (p *JobsReqParams) Verify(ctx iris.Context) error {
 }
 
 type EditJobReqParams struct {
-	JobID           uint              `json:"jobID"`
-	Addr            string            `json:"addr" rule:"required,请填写addr"`
-	IsSync          bool              `json:"isSync"`
-	Name            string            `json:"name" rule:"required,请填写name"`
-	Commands        [][]string        `json:"commands"`
-	Timeout         int               `json:"timeout"`
-	MaxConcurrent   uint              `json:"maxConcurrent"`
-	ErrorMailNotify bool              `json:"errorMailNotify"`
-	ErrorAPINotify  bool              `json:"errorAPINotify"`
-	MailTo          []string          `json:"mailTo"`
-	APITo           []string          `json:"APITo"`
-	RetryNum        int               `json:"retryNum"`
-	WorkDir         string            `json:"workDir"`
-	WorkUser        string            `json:"workUser"`
-	WorkEnv         []string          `json:"workEnv"`
-	DependJobs      models.DependJobs `json:"dependJobs"`
-	Month           string            `json:"month"`
-	Weekday         string            `json:"weekday"`
-	Day             string            `json:"day"`
-	Hour            string            `json:"hour"`
-	Minute          string            `json:"minute"`
-	Second          string            `json:"second"`
-	TimeoutTrigger  []string          `json:"timeoutTrigger"`
+	JobID            uint              `json:"jobID"`
+	Addr             string            `json:"addr" rule:"required,请填写addr"`
+	IsSync           bool              `json:"isSync"`
+	Name             string            `json:"name" rule:"required,请填写name"`
+	Commands         [][]string        `json:"commands"`
+	Timeout          int               `json:"timeout"`
+	MaxConcurrent    uint              `json:"maxConcurrent"`
+	ErrorMailNotify  bool              `json:"errorMailNotify"`
+	ErrorAPINotify   bool              `json:"errorAPINotify"`
+	MailTo           []string          `json:"mailTo"`
+	APITo            []string          `json:"APITo"`
+	RetryNum         int               `json:"retryNum"`
+	WorkDir          string            `json:"workDir"`
+	WorkUser         string            `json:"workUser"`
+	WorkEnv          []string          `json:"workEnv"`
+	KillChildProcess bool              `json:"killChildProcess"`
+	DependJobs       models.DependJobs `json:"dependJobs"`
+	Month            string            `json:"month"`
+	Weekday          string            `json:"weekday"`
+	Day              string            `json:"day"`
+	Hour             string            `json:"hour"`
+	Minute           string            `json:"minute"`
+	Second           string            `json:"second"`
+	TimeoutTrigger   []string          `json:"timeoutTrigger"`
 }
 
 // TODO:验证参数
