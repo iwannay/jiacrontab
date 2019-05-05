@@ -9,6 +9,7 @@ import (
 	"jiacrontab/pkg/proto"
 
 	"github.com/iwannay/log"
+	"jiacrontab/pkg/version"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
@@ -79,10 +80,11 @@ func (ctx *myctx) respError(code int, err interface{}, v ...interface{}) {
 	sign = fmt.Sprintf("%x", md5.Sum(append(bts, []byte(cfg.App.SigningKey)...)))
 
 	ctx.JSON(proto.Resp{
-		Code: code,
-		Msg:  msgStr,
-		Data: string(bts),
-		Sign: sign,
+		Code:    code,
+		Msg:     msgStr,
+		Data:    string(bts),
+		Sign:    sign,
+		Version: version.String(),
 	})
 }
 
@@ -99,10 +101,11 @@ func (ctx *myctx) respSucc(msg string, v interface{}) {
 	sign := fmt.Sprintf("%x", md5.Sum(append(bts, []byte(cfg.App.SigningKey)...)))
 
 	ctx.JSON(proto.Resp{
-		Code: proto.SuccessRespCode,
-		Msg:  msg,
-		Data: string(bts),
-		Sign: sign,
+		Code:    proto.SuccessRespCode,
+		Msg:     msg,
+		Data:    string(bts),
+		Sign:    sign,
+		Version: version.String(),
 	})
 }
 
