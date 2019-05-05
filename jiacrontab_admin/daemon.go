@@ -26,6 +26,8 @@ func GetDaemonJobList(c iris.Context) {
 	if err = rpcCall(reqBody.Addr, "DaemonJob.List", &proto.QueryJobArgs{
 		Page:     reqBody.Page,
 		Pagesize: reqBody.Pagesize,
+		Root:     ctx.claims.Root,
+		UserID:   ctx.claims.UserID,
 	}, &jobRet); err != nil {
 		ctx.respRPCError(err)
 		return
@@ -70,7 +72,11 @@ func ActionDaemonTask(c iris.Context) {
 		return
 	}
 
-	if err = rpcCall(reqBody.Addr, method, reqBody.JobIDs, &reply); err != nil {
+	if err = rpcCall(reqBody.Addr, method, proto.ActionJobsArgs{
+		UserID: ctx.claims.UserID,
+		JobIDs: reqBody.JobIDs,
+		Root:   ctx.claims.Root,
+	}, &reply); err != nil {
 		ctx.respRPCError(err)
 		return
 	}
@@ -133,7 +139,10 @@ func EditDaemonJob(c iris.Context) {
 		daemonJob.Status = models.StatusJobUnaudited
 	}
 
-	if err = rpcCall(reqBody.Addr, "DaemonJob.Edit", daemonJob, &reply); err != nil {
+	if err = rpcCall(reqBody.Addr, "DaemonJob.Edit", proto.EditDaemonJobArgs{
+		Job:  daemonJob,
+		Root: ctx.claims.Root,
+	}, &reply); err != nil {
 		ctx.respRPCError(err)
 		return
 	}
@@ -165,7 +174,11 @@ func GetDaemonJob(c iris.Context) {
 		return
 	}
 
-	if err = rpcCall(reqBody.Addr, "DaemonJob.Get", reqBody.JobID, &daemonJob); err != nil {
+	if err = rpcCall(reqBody.Addr, "DaemonJob.Get", proto.GetJobArgs{
+		UserID: ctx.claims.UserID,
+		Root:   ctx.claims.Root,
+		JobID:  reqBody.JobID,
+	}, &daemonJob); err != nil {
 		ctx.respRPCError(err)
 		return
 	}
