@@ -188,7 +188,7 @@ func (j *CrontabJob) Exec(args proto.GetJobArgs, reply *proto.ExecCrontabJobRepl
 		model = model.Where("created_user_id = ? and id=?", args.UserID, args.JobID)
 	}
 
-	ret := model.Take(&reply.Job)
+	ret := model.Debug().Take(&reply.Job)
 
 	if ret.Error == nil {
 		jobInstance := newJobEntry(&crontab.Job{
@@ -205,8 +205,8 @@ func (j *CrontabJob) Exec(args proto.GetJobArgs, reply *proto.ExecCrontabJobRepl
 		reply.Content = jobInstance.waitDone()
 
 	} else {
-		reply.Content = []byte("failed to start")
-		return errors.New("failed to exec")
+		reply.Content = []byte(ret.Error.Error())
+		return ret.Error
 	}
 	return nil
 
