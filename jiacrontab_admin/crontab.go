@@ -186,6 +186,11 @@ func ActionTask(c iris.Context) {
 		return
 	}
 
+	if err = ctx.parseClaimsFromToken(); err != nil {
+		ctx.respJWTError(err)
+		return
+	}
+
 	if method, ok = methods[reqBody.Action]; !ok {
 		ctx.respBasicError(errors.New("action无法识别"))
 		return
@@ -218,6 +223,11 @@ func ExecTask(c iris.Context) {
 
 	if err = ctx.Valid(&reqBody); err != nil {
 		ctx.respParamError(err)
+		return
+	}
+
+	if err = ctx.parseClaimsFromToken(); err != nil {
+		ctx.respJWTError(err)
 		return
 	}
 

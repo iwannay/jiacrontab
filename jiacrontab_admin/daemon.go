@@ -22,6 +22,10 @@ func GetDaemonJobList(c iris.Context) {
 		ctx.respParamError(err)
 		return
 	}
+	if err = ctx.parseClaimsFromToken(); err != nil {
+		ctx.respJWTError(err)
+		return
+	}
 
 	if err = rpcCall(reqBody.Addr, "DaemonJob.List", &proto.QueryJobArgs{
 		Page:     reqBody.Page,
@@ -65,6 +69,10 @@ func ActionDaemonTask(c iris.Context) {
 
 	if err = ctx.Valid(&reqBody); err != nil {
 		ctx.respBasicError(err)
+	}
+	if err = ctx.parseClaimsFromToken(); err != nil {
+		ctx.respJWTError(err)
+		return
 	}
 
 	if method, ok = methods[reqBody.Action]; !ok {
@@ -197,6 +205,10 @@ func GetRecentDaemonLog(c iris.Context) {
 
 	if err = ctx.Valid(&reqBody); err != nil {
 		ctx.respParamError(err)
+		return
+	}
+	if err = ctx.parseClaimsFromToken(); err != nil {
+		ctx.respJWTError(err)
 		return
 	}
 
