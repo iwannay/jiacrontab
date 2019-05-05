@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
-	"strconv"
 	"syscall"
 
 	"github.com/iwannay/log"
@@ -25,18 +24,23 @@ func CommandContext(ctx context.Context, name string, arg ...string) *KCmd {
 	}
 }
 
+// SetUser 设置执行用户要保证root权限
 func (k *KCmd) SetUser(username string) {
 	if username == "" {
 		return
 	}
 	u, err := user.Lookup(username)
 	if err == nil {
-		log.Infof("KCmd set uid=%s,gid=%s", u.Uid, u.Gid)
-		uid, _ := strconv.Atoi(u.Uid)
-		gid, _ := strconv.Atoi(u.Gid)
 
-		k.SysProcAttr = &syscall.SysProcAttr{}
-		k.SysProcAttr.Credential = &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)}
+		log.Infof("KCmd set uid=%s,gid=%s", u.Uid, u.Gid)
+		k.SysProcAttr = &syscall.SysProcAttr{
+			Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWIPC | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS |
+				syscall.CLONE_NEWUSER,
+		}
+		// 以下代码不能切换用户
+		// uid, _ := strconv.Atoi(u.Uid)
+		// gid, _ := strconv.Atoi(u.Gid)
+		// k.SysProcAttr.Credential = &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)}
 	}
 }
 
