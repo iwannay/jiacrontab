@@ -93,6 +93,7 @@ func newApp() *iris.Application {
 		adm.Post("/user/audit_job", AuditJob)
 		adm.Post("/user/stat", UserStat)
 		adm.Post("/user/signup", Signup)
+		adm.Post("/user/edit", EditUser)
 		adm.Post("/user/group_user", GroupUser)
 		adm.Post("/user/list", GetUserList)
 	}

@@ -62,6 +62,11 @@ func (u *User) Create() error {
 	return DB().Create(u).Error
 }
 
+func (u *User) Update() error {
+	u.setPasswd()
+	return DB().Updates(u).Error
+}
+
 func (u *User) SetGroup() error {
 
 	if u.GroupID != 0 {

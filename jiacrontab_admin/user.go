@@ -307,6 +307,35 @@ func Signup(c iris.Context) {
 	ctx.respSucc("", true)
 }
 
+func EditUser(c iris.Context) {
+	var (
+		err     error
+		ctx     = wrapCtx(c)
+		user    models.User
+		reqBody EditUserReqParams
+	)
+
+	if err = ctx.Valid(&reqBody); err != nil {
+		ctx.respParamError(err)
+		return
+	}
+
+	user.ID = reqBody.UserID
+	user.Username = reqBody.Username
+	user.Passwd = reqBody.Passwd
+	user.GroupID = reqBody.GroupID
+	user.Avatar = reqBody.Avatar
+	user.Mail = reqBody.Mail
+
+	if err = user.Create(); err != nil {
+		ctx.respDBError(err)
+		return
+	}
+
+	ctx.pubEvent(user.Username, event_EditUser, "", reqBody)
+	ctx.respSucc("", true)
+}
+
 // UserStat 统计信息
 func UserStat(c iris.Context) {
 	var (
