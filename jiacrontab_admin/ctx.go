@@ -84,7 +84,7 @@ func (ctx *myctx) respError(code int, err interface{}, v ...interface{}) {
 		Msg:     msgStr,
 		Data:    string(bts),
 		Sign:    sign,
-		Version: version.String(),
+		Version: version.String("jiacrontab"),
 	})
 }
 
@@ -105,7 +105,7 @@ func (ctx *myctx) respSucc(msg string, v interface{}) {
 		Msg:     msg,
 		Data:    string(bts),
 		Sign:    sign,
-		Version: version.String(),
+		Version: version.String("jiacrontab"),
 	})
 }
 
