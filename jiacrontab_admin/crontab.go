@@ -26,6 +26,8 @@ func GetJobList(c iris.Context) {
 
 	rpcReqParams.Page = reqBody.Page
 	rpcReqParams.Pagesize = reqBody.Pagesize
+	rpcReqParams.UserID = ctx.claims.UserID
+	rpcReqParams.Root = ctx.claims.Root
 
 	if err := rpcCall(reqBody.Addr, "CrontabJob.List", rpcReqParams, &jobRet); err != nil {
 		ctx.respRPCError(err)
@@ -83,7 +85,7 @@ func EditJob(c iris.Context) {
 		reply   models.CrontabJob
 		ctx     = wrapCtx(c)
 		reqBody EditJobReqParams
-		rpcArgs models.CrontabJob
+		job     models.CrontabJob
 	)
 
 	if err = ctx.parseClaimsFromToken(); err != nil {
@@ -101,7 +103,7 @@ func EditJob(c iris.Context) {
 		return
 	}
 
-	rpcArgs = models.CrontabJob{
+	job = models.CrontabJob{
 		Name:     reqBody.Name,
 		Commands: reqBody.Commands,
 		TimeArgs: models.TimeArgs{
@@ -131,20 +133,23 @@ func EditJob(c iris.Context) {
 		IsSync:           reqBody.IsSync,
 	}
 
-	rpcArgs.ID = reqBody.JobID
+	job.ID = reqBody.JobID
 
-	if rpcArgs.ID == 0 {
-		rpcArgs.CreatedUserID = ctx.claims.UserID
-		rpcArgs.CreatedUsername = ctx.claims.Username
+	if job.ID == 0 {
+		job.CreatedUserID = ctx.claims.UserID
+		job.CreatedUsername = ctx.claims.Username
 	}
 
 	if ctx.claims.Root || ctx.claims.GroupID == models.SuperGroup.ID {
-		rpcArgs.Status = models.StatusJobOk
+		job.Status = models.StatusJobOk
 	} else {
-		rpcArgs.Status = models.StatusJobUnaudited
+		job.Status = models.StatusJobUnaudited
 	}
 
-	if err = rpcCall(reqBody.Addr, "CrontabJob.Edit", rpcArgs, &reply); err != nil {
+	if err = rpcCall(reqBody.Addr, "CrontabJob.Edit", proto.EditCrontabJobArgs{
+		Job:  job,
+		Root: ctx.claims.Root,
+	}, &reply); err != nil {
 		ctx.respRPCError(err)
 		return
 	}
@@ -186,7 +191,11 @@ func ActionTask(c iris.Context) {
 		return
 	}
 
-	if err = rpcCall(reqBody.Addr, method, reqBody.JobIDs, &jobReply); err != nil {
+	if err = rpcCall(reqBody.Addr, method, proto.ActionJobsArgs{
+		UserID: ctx.claims.UserID,
+		Root:   ctx.claims.Root,
+		JobIDs: reqBody.JobIDs,
+	}, &jobReply); err != nil {
 		ctx.respRPCError(err)
 		return
 	}
@@ -212,7 +221,11 @@ func ExecTask(c iris.Context) {
 		return
 	}
 
-	if err = rpcCall(reqBody.Addr, "CrontabJob.Exec", reqBody.JobID, &execJobReply); err != nil {
+	if err = rpcCall(reqBody.Addr, "CrontabJob.Exec", proto.GetJobArgs{
+		UserID: ctx.claims.UserID,
+		Root:   ctx.claims.Root,
+		JobID:  reqBody.JobID,
+	}, &execJobReply); err != nil {
 		ctx.respRPCError(err)
 		return
 	}
@@ -245,7 +258,11 @@ func GetJob(c iris.Context) {
 		return
 	}
 
-	if err = rpcCall(reqBody.Addr, "CrontabJob.Get", reqBody.JobID, &crontabJob); err != nil {
+	if err = rpcCall(reqBody.Addr, "CrontabJob.Get", proto.GetJobArgs{
+		UserID: ctx.claims.UserID,
+		Root:   ctx.claims.Root,
+		JobID:  reqBody.JobID,
+	}, &crontabJob); err != nil {
 		ctx.respRPCError(err)
 		return
 	}

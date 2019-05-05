@@ -20,7 +20,11 @@ type DepJob struct {
 	LogContent  []byte
 }
 
-type QueryJobArgs struct{ Page, Pagesize int }
+type QueryJobArgs struct {
+	Root           bool
+	UserID         uint
+	Page, Pagesize int
+}
 
 type QueryCrontabJobRet struct {
 	Total    int
@@ -47,4 +51,9 @@ type CrontabApiNotifyBody struct {
 	Timeout   int64
 	Type      string
 	RetryNum  int
+}
+
+type EditCrontabJobArgs struct {
+	Job  models.CrontabJob
+	Root bool
 }

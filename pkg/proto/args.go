@@ -35,6 +35,17 @@ type ExecCrontabJobReply struct {
 	Content []byte
 }
 
+type ActionJobsArgs struct {
+	UserID uint
+	Root   bool
+	JobIDs []uint
+}
+
+type GetJobArgs struct {
+	UserID uint
+	Root   bool
+	JobID  uint
+}
 type EmptyArgs struct{}
 
 type EmptyReply struct{}
