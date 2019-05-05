@@ -91,19 +91,18 @@ func GetActivityList(c iris.Context) {
 
 	if reqBody.LastID == 0 {
 		if !isSuper {
-			model.Where("user_id=?", ctx.claims.UserID)
+			model = model.Where("group_id=?", ctx.claims.GroupID)
 		}
 		err = model.Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
 			Limit(reqBody.Pagesize).
 			Find(&events).Error
 	} else {
 		if !isSuper {
-			model.Where("user_id=? and id<?", ctx.claims.UserID, reqBody.LastID)
+			model = model.Where("group_id=? and id<?", ctx.claims.GroupID, reqBody.LastID)
 		} else {
-			model.Where("id<?", ctx.claims.UserID, reqBody.LastID)
+			model = model.Where("id<?", ctx.claims.UserID, reqBody.LastID)
 		}
-		err = model.
-			Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
+		err = model.Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
 			Limit(reqBody.Pagesize).
 			Find(&events).Error
 	}
@@ -146,16 +145,16 @@ func GetJobHistory(c iris.Context) {
 
 	if reqBody.LastID == 0 {
 		if !isSuper {
-			model.Where("addr in (?)", addrs)
+			model = model.Where("addr in (?)", addrs)
 		}
 		err = model.Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
 			Limit(reqBody.Pagesize).
 			Find(&historys).Error
 	} else {
 		if !isSuper {
-			model.Where("addr in (?) and id<?", addrs, reqBody.LastID)
+			model = model.Where("addr in (?) and id<?", addrs, reqBody.LastID)
 		} else {
-			model.Where("id<?", reqBody.LastID)
+			model = model.Where("id<?", reqBody.LastID)
 		}
 		err = model.Where("addr in (?) and id<?", addrs, reqBody.LastID).
 			Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
