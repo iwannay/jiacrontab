@@ -232,13 +232,26 @@ type UserReqParams struct {
 	Username  string `json:"username" rule:"required,请输入用户名"`
 	Passwd    string `json:"passwd" rule:"required,请输入密码"`
 	GroupID   uint   `json:"groupID"`
-	GroupName string `json:"groupName" rule:"required,请选择头像"`
+	GroupName string `json:"groupName"`
 	Avatar    string `json:"avatar"`
 	Root      bool   `json:"root"`
 	Mail      string `json:"mail"`
 }
 
 func (p *UserReqParams) Verify(ctx iris.Context) error {
+	return nil
+}
+
+type EditUserReqParams struct {
+	UserID   uint   `json:"userID" rule:"required,缺少userID"`
+	Username string `json:"username" rule:"required,请输入用户名"`
+	Passwd   string `json:"passwd" rule:"required,请输入密码"`
+	GroupID  uint   `json:"groupID" rule:"required,请输入密码"`
+	Avatar   string `json:"avatar"`
+	Mail     string `json:"mail"`
+}
+
+func (p *EditUserReqParams) Verify(ctx iris.Context) error {
 	return nil
 }
 
