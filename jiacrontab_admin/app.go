@@ -56,9 +56,9 @@ func newApp(initModel bool) *iris.Application {
 	app.AllowMethods(iris.MethodOptions)
 	app.Get("/", func(ctx iris.Context) {
 		if initModel {
-			ctx.Header("ready", "true")
+			ctx.SetCookieKV("ready", "true")
 		} else {
-			ctx.Header("ready", "false")
+			ctx.SetCookieKV("ready", "false")
 		}
 		ctx.Header("Content-Type", "text/html")
 		ctx.Header("Content-Encoding", "gzip")
