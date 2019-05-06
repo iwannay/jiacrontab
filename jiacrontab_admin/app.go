@@ -9,9 +9,13 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/iris-contrib/middleware/cors"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
+	"jiacrontab/models"
+	"os"
+	"time"
+	"github.com/iwannay/log"
 )
 
-func newApp() *iris.Application {
+func newApp(initModel bool) *iris.Application {
 
 	app := iris.New()
 	app.UseGlobal(newRecover())
@@ -51,47 +55,62 @@ func newApp() *iris.Application {
 	app.Use(crs)
 	app.AllowMethods(iris.MethodOptions)
 	app.Get("/", func(ctx iris.Context) {
-		asset, _ := GzipAsset("index.html")
-		ctx.HTML(string(asset))
+		if initModel {
+			ctx.Header("ready", "true")
+		} else {
+			ctx.Header("ready", "false")
+		}
+		ctx.Header("Content-Type", "text/html")
+		ctx.Header("Content-Encoding", "gzip")
+		ctx.Header("Vary", "Accept-Encoding")
+		asset, err := GzipAsset("assets/index.html")
+		if err != nil {
+			log.Error(err)
+		}
+		ctx.WriteGzip(asset)
 	})
-	adm := app.Party("/adm")
-	{
-		adm.Use(jwtHandler.Serve)
-		adm.Post("/crontab/job/list", GetJobList)
-		adm.Post("/crontab/job/get", GetJob)
-		adm.Post("/crontab/job/log", GetRecentLog)
-		adm.Post("/crontab/job/edit", EditJob)
-		adm.Post("/crontab/job/action", ActionTask)
-		adm.Post("/crontab/job/exec", ExecTask)
 
-		adm.Post("/config/get", GetConfig)
-		adm.Post("/config/mail/send", SendTestMail)
-		adm.Post("/system/info", SystemInfo)
+	if initModel {
+		adm := app.Party("/adm")
+		{
+			adm.Use(jwtHandler.Serve)
+			adm.Post("/crontab/job/list", GetJobList)
+			adm.Post("/crontab/job/get", GetJob)
+			adm.Post("/crontab/job/log", GetRecentLog)
+			adm.Post("/crontab/job/edit", EditJob)
+			adm.Post("/crontab/job/action", ActionTask)
+			adm.Post("/crontab/job/exec", ExecTask)
 
-		adm.Post("/daemon/job/list", GetDaemonJobList)
-		adm.Post("/daemon/job/action", ActionDaemonTask)
-		adm.Post("/daemon/job/edit", EditDaemonJob)
-		adm.Post("/daemon/job/get", GetDaemonJob)
-		adm.Post("/daemon/job/log", GetRecentDaemonLog)
+			adm.Post("/config/get", GetConfig)
+			adm.Post("/config/mail/send", SendTestMail)
+			adm.Post("/system/info", SystemInfo)
 
-		adm.Post("/group/list", GetGroupList)
-		adm.Post("/group/edit", EditGroup)
+			adm.Post("/daemon/job/list", GetDaemonJobList)
+			adm.Post("/daemon/job/action", ActionDaemonTask)
+			adm.Post("/daemon/job/edit", EditDaemonJob)
+			adm.Post("/daemon/job/get", GetDaemonJob)
+			adm.Post("/daemon/job/log", GetRecentDaemonLog)
 
-		adm.Post("/node/list", GetNodeList)
-		adm.Post("/node/delete", DeleteNode)
-		adm.Post("/node/group_node", GroupNode)
+			adm.Post("/group/list", GetGroupList)
+			adm.Post("/group/edit", EditGroup)
 
-		adm.Post("/user/activity_list", GetActivityList)
-		adm.Post("/user/job_history", GetJobHistory)
-		adm.Post("/user/audit_job", AuditJob)
-		adm.Post("/user/stat", UserStat)
-		adm.Post("/user/signup", Signup)
-		adm.Post("/user/edit", EditUser)
-		adm.Post("/user/group_user", GroupUser)
-		adm.Post("/user/list", GetUserList)
+			adm.Post("/node/list", GetNodeList)
+			adm.Post("/node/delete", DeleteNode)
+			adm.Post("/node/group_node", GroupNode)
+
+			adm.Post("/user/activity_list", GetActivityList)
+			adm.Post("/user/job_history", GetJobHistory)
+			adm.Post("/user/audit_job", AuditJob)
+			adm.Post("/user/stat", UserStat)
+			adm.Post("/user/signup", Signup)
+			adm.Post("/user/edit", EditUser)
+			adm.Post("/user/group_user", GroupUser)
+			adm.Post("/user/list", GetUserList)
+		}
+
+		app.Post("/user/login", Login)
 	}
 
-	app.Post("/user/login", Login)
 	app.Post("/app/init", InitApp)
 
 	debug := app.Party("/debug")
@@ -102,4 +121,48 @@ func newApp() *iris.Application {
 	}
 
 	return app
+}
+
+// InitApp 初始化应用
+func InitApp(c iris.Context) {
+	var (
+		err     error
+		ctx     = wrapCtx(c)
+		user    models.User
+		reqBody InitAppReqParams
+	)
+
+	if err = ctx.Valid(&reqBody); err != nil {
+		ctx.respParamError(err)
+		return
+	}
+
+	if err = cfg.Activate(&databaseOpt{
+		DriverName: reqBody.Database,
+		DSN:        reqBody.Dsn,
+	}); err != nil {
+		ctx.respDBError(err)
+		return
+	}
+
+	if ret := models.DB().Debug().Take(&user, "group_id=?", 1); ret.Error == nil && ret.RowsAffected > 0 {
+		ctx.respNotAllowed()
+		return
+	}
+
+	user.Username = reqBody.Username
+	user.Passwd = reqBody.Passwd
+	user.Root = true
+	user.GroupID = models.SuperGroup.ID
+	user.Mail = reqBody.Mail
+
+	if err = user.Create(); err != nil {
+		ctx.respBasicError(err)
+		return
+	}
+
+	time.AfterFunc(2*time.Second, func() {
+		os.Exit(0)
+	})
+	ctx.respSucc("", true)
 }

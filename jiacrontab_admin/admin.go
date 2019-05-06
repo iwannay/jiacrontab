@@ -16,24 +16,9 @@ func New() *Admin {
 }
 
 func (a *Admin) init() {
-
-	models.CreateDB(cfg.Database.DriverName, cfg.Database.DSN)
-
-	models.DB().CreateTable(&models.Node{})
-	models.DB().AutoMigrate(&models.Node{})
-
-	models.DB().CreateTable(&models.Group{})
-	models.DB().AutoMigrate(&models.Group{})
-
-	models.DB().CreateTable(&models.User{})
-	models.DB().AutoMigrate(&models.User{})
-
-	models.DB().CreateTable(&models.Event{})
-	models.DB().AutoMigrate(&models.Event{})
-
-	models.DB().CreateTable(&models.JobHistory{})
-	models.DB().AutoMigrate(&models.JobHistory{})
-
+	if err := models.InitModel(cfg.Database.DriverName, cfg.Database.DSN); err != nil {
+		panic(err)
+	}
 	// mail
 	if cfg.Mailer.Enabled {
 		mailer.InitMailer(&mailer.Mailer{
@@ -54,15 +39,21 @@ func (a *Admin) init() {
 			HookMode:       false,
 		})
 	}
-
-	models.DB().Create(&models.SuperGroup)
 }
 
 func (a *Admin) Main() {
 
-	a.init()
-	app := newApp()
-	go rpc.ListenAndServe(cfg.App.RPCListenAddr, NewSrv(a))
-	defer models.DB().Close()
+	var initModel bool
+	if cfg.Database.DriverName != "" && cfg.Database.DSN != "" {
+		initModel = true
+	}
+
+	if initModel {
+		a.init()
+		defer models.DB().Close()
+		go rpc.ListenAndServe(cfg.App.RPCListenAddr, NewSrv(a))
+	}
+	
+	app := newApp(initModel)
 	app.Run(iris.Addr(cfg.App.HTTPListenAddr))
 }
