@@ -14,36 +14,32 @@ type D = gorm.DB
 
 var db *D
 
-func CreateDB(dialect string, args ...interface{}) {
+func CreateDB(dialect string, args ...interface{}) error {
 	switch dialect {
 	case "sqlite3":
-		createSqlite3(dialect, args...)
+		return createSqlite3(dialect, args...)
 	case "postgres", "mysql":
 		var err error
 		db, err = gorm.Open(dialect, args...)
-		if err != nil {
-			panic(err)
-		}
+		return err
 	}
+	return nil
 }
 
-func createSqlite3(dialect string, args ...interface{}) {
+func createSqlite3(dialect string, args ...interface{}) error {
 	var err error
 	if args[0] == nil {
-		panic("sqlite3:db file cannot empty")
+		errors.New("sqlite3:db file cannot empty")
 	}
 
 	dbDir := filepath.Dir(filepath.Clean(fmt.Sprint(args[0])))
 	err = os.MkdirAll(dbDir, 0755)
 	if err != nil {
-		panic(fmt.Errorf("sqlite3:%s", err))
+		return fmt.Errorf("sqlite3:%s", err)
 	}
 
 	db, err = gorm.Open(dialect, args...)
-	if err != nil {
-		panic(err)
-	}
-
+	return err
 }
 
 func DB() *D {
@@ -68,4 +64,31 @@ func Transactions(fn func(tx *gorm.DB) error) error {
 		tx.Rollback()
 	}
 	return tx.Commit().Error
+}
+
+func InitModel(driverName string, dsn string) error {
+	if driverName == "" || dsn == "" {
+		return errors.New("driverName and dsn cannot empty")
+	}
+
+	if err := CreateDB(driverName, dsn); err != nil {
+		return err
+	}
+
+	DB().CreateTable(&Node{})
+	DB().AutoMigrate(&Node{})
+
+	DB().CreateTable(&Group{})
+	DB().AutoMigrate(&Group{})
+
+	DB().CreateTable(&User{})
+	DB().AutoMigrate(&User{})
+
+	DB().CreateTable(&Event{})
+	DB().AutoMigrate(&Event{})
+
+	DB().CreateTable(&JobHistory{})
+	DB().AutoMigrate(&JobHistory{})
+	DB().Create(&SuperGroup)
+	return nil
 }
