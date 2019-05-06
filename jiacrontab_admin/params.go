@@ -69,7 +69,6 @@ type EditJobReqParams struct {
 	TimeoutTrigger   []string          `json:"timeoutTrigger"`
 }
 
-// TODO:验证参数
 func (p *EditJobReqParams) Verify(ctx iris.Context) error {
 	ts := map[string]bool{
 		proto.TimeoutTrigger_CallApi:   true,
@@ -230,7 +229,7 @@ func (p *GetJobReqParams) Verify(ctx iris.Context) error {
 
 type UserReqParams struct {
 	Username  string `json:"username" rule:"required,请输入用户名"`
-	Passwd    string `json:"passwd" rule:"required,请输入密码"`
+	Passwd    string `json:"passwd,omitempty" rule:"required,请输入密码"`
 	GroupID   uint   `json:"groupID"`
 	GroupName string `json:"groupName"`
 	Avatar    string `json:"avatar"`
