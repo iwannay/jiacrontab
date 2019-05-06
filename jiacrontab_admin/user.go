@@ -226,8 +226,8 @@ func AuditJob(c iris.Context) {
 	ctx.respSucc("", nil)
 }
 
-// IninAdminUser 初始化管理员
-func IninAdminUser(c iris.Context) {
+// InitApp 初始化应用
+func InitApp(c iris.Context) {
 	var (
 		err     error
 		ctx     = wrapCtx(c)
