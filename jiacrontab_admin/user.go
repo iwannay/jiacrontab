@@ -262,6 +262,7 @@ func Signup(c iris.Context) {
 	user.Root = reqBody.Root
 	user.Avatar = reqBody.Avatar
 	user.Mail = reqBody.Mail
+	reqBody.Passwd = ""
 
 	if err = user.Create(); err != nil {
 		ctx.respDBError(err)
