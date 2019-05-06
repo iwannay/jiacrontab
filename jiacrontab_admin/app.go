@@ -18,16 +18,7 @@ func newApp() *iris.Application {
 	app.Logger().SetLevel("debug")
 	app.Use(logger.New())
 
-	app.RegisterView(iris.HTML("./public", ".html"))
-
-	app.Get("/", func(ctx iris.Context) {
-		ctx.View("index.html")
-	})
-
-	assetHandler := app.StaticHandler("./public", true, true)
-
-	app.SPA(assetHandler).AddIndexName("index.html")
-
+	app.StaticEmbeddedGzip("/", "./assets/", GzipAsset, GzipAssetNames)
 	jwtHandler := jwtmiddleware.New(jwtmiddleware.Config{
 		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
 			return []byte(cfg.Jwt.SigningKey), nil
@@ -57,10 +48,12 @@ func newApp() *iris.Application {
 		AllowedOrigins:   []string{"*"}, // allows everything, use that to change the hosts.
 		AllowCredentials: true,
 	})
-
 	app.Use(crs)
 	app.AllowMethods(iris.MethodOptions)
-
+	app.Get("/", func(ctx iris.Context) {
+		asset, _ := GzipAsset("index.html")
+		ctx.HTML(string(asset))
+	})
 	adm := app.Party("/adm")
 	{
 		adm.Use(jwtHandler.Serve)
@@ -99,7 +92,7 @@ func newApp() *iris.Application {
 	}
 
 	app.Post("/user/login", Login)
-	app.Post("/user/init_admin_user", IninAdminUser)
+	app.Post("/app/init", InitApp)
 
 	debug := app.Party("/debug")
 	{
