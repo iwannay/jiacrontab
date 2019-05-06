@@ -100,7 +100,7 @@ func GetActivityList(c iris.Context) {
 		if !isSuper {
 			model = model.Where("group_id=? and id<?", ctx.claims.GroupID, reqBody.LastID)
 		} else {
-			model = model.Where("id<?", ctx.claims.UserID, reqBody.LastID)
+			model = model.Where("id<?", reqBody.LastID)
 		}
 		err = model.Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
 			Limit(reqBody.Pagesize).
