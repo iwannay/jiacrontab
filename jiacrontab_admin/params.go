@@ -242,6 +242,19 @@ func (p *UserReqParams) Verify(ctx iris.Context) error {
 	return nil
 }
 
+type InitAppReqParams struct {
+	Username string `json:"username" rule:"required,请输入用户名"`
+	Passwd   string `json:"passwd" rule:"required,请输入密码"`
+	Avatar   string `json:"avatar"`
+	Dsn      string `json:"dsn"`
+	Database string `json:"database"`
+	Mail     string `json:"mail"`
+}
+
+func (p *InitAppReqParams) Verify(ctx iris.Context) error {
+	return nil
+}
+
 type EditUserReqParams struct {
 	UserID   uint   `json:"userID" rule:"required,缺少userID"`
 	Username string `json:"username" rule:"required,请输入用户名"`

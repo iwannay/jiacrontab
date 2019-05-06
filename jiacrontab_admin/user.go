@@ -226,40 +226,6 @@ func AuditJob(c iris.Context) {
 	ctx.respSucc("", nil)
 }
 
-// InitApp 初始化应用
-func InitApp(c iris.Context) {
-	var (
-		err     error
-		ctx     = wrapCtx(c)
-		user    models.User
-		reqBody UserReqParams
-	)
-
-	if err = ctx.Valid(&reqBody); err != nil {
-		ctx.respParamError(err)
-		return
-	}
-
-	if ret := models.DB().Debug().Take(&user, "group_id=?", 1); ret.Error == nil && ret.RowsAffected > 0 {
-		ctx.respNotAllowed()
-		return
-	}
-
-	user.Username = reqBody.Username
-	user.Passwd = reqBody.Passwd
-	user.Root = true
-	user.GroupID = models.SuperGroup.ID
-	user.Mail = reqBody.Mail
-
-	if err = user.Create(); err != nil {
-		ctx.respError(proto.Code_Error, err.Error(), nil)
-		return
-	}
-
-	cfg.SetUsed()
-	ctx.respSucc("", true)
-}
-
 // Signup 注册新用户
 func Signup(c iris.Context) {
 	var (

@@ -2,12 +2,12 @@ package admin
 
 import (
 	"errors"
+	"github.com/kataras/iris"
+	"jiacrontab/models"
 	"jiacrontab/pkg/mailer"
 	"jiacrontab/pkg/util"
 	"reflect"
 	"time"
-
-	"github.com/kataras/iris"
 
 	ini "gopkg.in/ini.v1"
 )
@@ -26,7 +26,6 @@ type appOpt struct {
 	TplExt         string `opt:"tpl_ext" default:".html"`
 	RPCListenAddr  string `opt:"rpc_listen_addr" default:":20003"`
 	AppName        string `opt:"app_name" default:"jiacrontab"`
-	FirstUse       bool   `opt:"first_use" default:"true"`
 	SigningKey     string `opt:"signing_key" default:"WERRTT1234$@#@@$"`
 }
 
@@ -55,8 +54,8 @@ type mailerOpt struct {
 }
 
 type databaseOpt struct {
-	DriverName string `opt:"driver_name" default:"sqlite3"`
-	DSN        string `opt:"dsn" default:"data/jiacrontab_admin.db"`
+	DriverName string `opt:"driver_name"`
+	DSN        string `opt:"dsn"`
 }
 
 type Config struct {
@@ -69,16 +68,21 @@ type Config struct {
 }
 
 // SetUsed 设置app已经激活
-func (c *Config) SetUsed() {
-
-	if c.App.FirstUse {
-		return
+func (c *Config) Activate(opt *databaseOpt) error {
+	if opt.DriverName == "sqlite3" || opt.DriverName == "sqlite" {
+		opt.DriverName = "sqlite3"
+		opt.DSN = "data/jiacrontab_admin.db"
 	}
 
-	c.App.FirstUse = false
+	c.Database = opt
 
-	c.iniFile.Section("app").NewKey("first_use", "false")
-	c.iniFile.SaveTo(configFile)
+	err := models.InitModel(cfg.Database.DriverName, cfg.Database.DSN)
+	if err != nil {
+		return err
+	}
+	c.iniFile.Section("database").Key("driver_name").SetValue(opt.DriverName)
+	c.iniFile.Section("database").Key("dsn").SetValue(opt.DSN)
+	return c.iniFile.SaveTo(configFile)
 }
 
 func (c *Config) init() {
