@@ -2,14 +2,11 @@ package admin
 
 import (
 	"jiacrontab/pkg/proto"
-
-	"github.com/kataras/iris"
 )
 
-func SystemInfo(c iris.Context) {
+func SystemInfo(ctx *myctx) {
 	var (
 		err     error
-		ctx     = wrapCtx(c)
 		info    map[string]interface{}
 		reqBody SystemInfoReqParams
 	)
