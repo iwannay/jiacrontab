@@ -19,19 +19,20 @@ import (
 	"github.com/kataras/iris/context"
 )
 
-func wrapHandler(h func(ctx *myctx)) context.Handler {
-	return func(c iris.Context) {
-		h(wrapCtx(c))
-	}
-}
-
-func newApp(initModel bool) *iris.Application {
+func newApp(adm *Admin) *iris.Application {
 
 	app := iris.New()
-	app.UseGlobal(newRecover())
+	app.UseGlobal(newRecover(adm))
 	app.Logger().SetLevel("debug")
 	app.Use(logger.New())
 	app.StaticEmbeddedGzip("/", "./assets/", GzipAsset, GzipAssetNames)
+	cfg := adm.getOpts()
+
+	wrapHandler := func(h func(ctx *myctx)) context.Handler {
+		return func(c iris.Context) {
+			h(wrapCtx(c, adm))
+		}
+	}
 
 	jwtHandler := jwtmiddleware.New(jwtmiddleware.Config{
 		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
@@ -45,7 +46,7 @@ func newApp(initModel bool) *iris.Application {
 		Expiration: true,
 
 		ErrorHandler: func(c iris.Context, data string) {
-			ctx := wrapCtx(c)
+			ctx := wrapCtx(c, adm)
 			if ctx.RequestPath(true) != "/user/login" && ctx.RequestPath(true) != "/user/signUp" {
 				ctx.respAuthFailed(errors.New("认证失败"))
 				return
@@ -66,7 +67,7 @@ func newApp(initModel bool) *iris.Application {
 	app.Use(crs)
 	app.AllowMethods(iris.MethodOptions)
 	app.Get("/", func(ctx iris.Context) {
-		if initModel {
+		if adm.initModel {
 			ctx.SetCookieKV("ready", "true", func(c *http.Cookie) {
 				c.HttpOnly = false
 			})
@@ -84,7 +85,7 @@ func newApp(initModel bool) *iris.Application {
 		ctx.WriteGzip(asset)
 	})
 
-	if initModel {
+	if adm.initModel {
 		adm := app.Party("/adm")
 		{
 			adm.Use(jwtHandler.Serve)
@@ -143,6 +144,7 @@ func InitApp(ctx *myctx) {
 		err     error
 		user    models.User
 		reqBody InitAppReqParams
+		cfg     = ctx.adm.getOpts()
 	)
 
 	if err = ctx.Valid(&reqBody); err != nil {

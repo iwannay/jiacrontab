@@ -22,7 +22,7 @@ type myctx struct {
 	claims CustomerClaims
 }
 
-func wrapCtx(ctx iris.Context) *myctx {
+func wrapCtx(ctx iris.Context, adm *Admin) *myctx {
 	return &myctx{
 		Context: ctx,
 	}
@@ -63,6 +63,7 @@ func (ctx *myctx) respError(code int, err interface{}, v ...interface{}) {
 		bts    []byte
 		msgStr string
 		data   interface{}
+		cfg    = ctx.adm.getOpts()
 	)
 
 	if err == nil {
@@ -91,6 +92,8 @@ func (ctx *myctx) respError(code int, err interface{}, v ...interface{}) {
 }
 
 func (ctx *myctx) respSucc(msg string, v interface{}) {
+
+	cfg := ctx.adm.getOpts()
 	if msg == "" {
 		msg = "success"
 	}

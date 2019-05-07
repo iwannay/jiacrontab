@@ -11,7 +11,8 @@ import (
 )
 
 type Admin struct {
-	cfg atomic.Value
+	cfg       atomic.Value
+	initModel bool
 }
 
 func (n *Admin) getOpts() *Config {
@@ -57,18 +58,17 @@ func (a *Admin) init() {
 
 func (a *Admin) Main() {
 
-	var initModel bool
 	cfg := a.getOpts()
 	if cfg.Database.DriverName != "" && cfg.Database.DSN != "" {
-		initModel = true
+		a.initModel = true
 	}
 
-	if initModel {
+	if a.initModel {
 		a.init()
 		defer models.DB().Close()
 		go rpc.ListenAndServe(cfg.App.RPCListenAddr, NewSrv(a))
 	}
 
-	app := newApp(initModel)
+	app := newApp(a)
 	app.Run(iris.Addr(cfg.App.HTTPListenAddr))
 }

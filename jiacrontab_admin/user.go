@@ -29,6 +29,7 @@ func Login(ctx *myctx) {
 		reqBody        LoginReqParams
 		user           models.User
 		customerClaims CustomerClaims
+		cfg            = ctx.adm.getOpts()
 	)
 
 	if err = ctx.Valid(&reqBody); err != nil {
@@ -306,6 +307,7 @@ func UserStat(ctx *myctx) {
 			DaemonJobRunningNum uint
 			NodeNum             uint
 		}
+		cfg = ctx.adm.getOpts()
 	)
 
 	if err = ctx.parseClaimsFromToken(); err != nil {
