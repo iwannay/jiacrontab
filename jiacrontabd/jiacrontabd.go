@@ -6,6 +6,7 @@ import (
 	"jiacrontab/pkg/finder"
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/rpc"
+	"sync/atomic"
 
 	"github.com/iwannay/log"
 
@@ -25,21 +26,32 @@ type Jiacrontabd struct {
 	heartbeatPeriod time.Duration
 	mux             sync.RWMutex
 	startTime       time.Time
+	cfg             atomic.Value
 	wg              util.WaitGroupWrapper
 }
 
 // New return a Jiacrontabd instance
-func New() *Jiacrontabd {
+func New(opt *Config) *Jiacrontabd {
 	j := &Jiacrontabd{
-		jobs:            make(map[uint]*JobEntry),
-		tmpJobs:         make(map[string]*JobEntry),
-		daemon:          newDaemon(100),
+		jobs:    make(map[uint]*JobEntry),
+		tmpJobs: make(map[string]*JobEntry),
+
 		heartbeatPeriod: 5 * time.Second,
 		crontab:         crontab.New(),
 	}
+	j.swapOpts(opt)
 	j.dep = newDependencies(j)
+	j.daemon = newDaemon(100, j)
 
 	return j
+}
+
+func (j *Jiacrontabd) getOpts() *Config {
+	return j.cfg.Load().(*Config)
+}
+
+func (j *Jiacrontabd) swapOpts(opts *Config) {
+	j.cfg.Store(opts)
 }
 
 func (j *Jiacrontabd) addTmpJob(job *JobEntry) {
@@ -114,7 +126,7 @@ func (j *Jiacrontabd) run() {
 // 目标网络不是本机时返回false
 func (j *Jiacrontabd) SetDependDone(task *depEntry) bool {
 
-	if task.dest != cfg.LocalAddr {
+	if task.dest != j.getOpts().LocalAddr {
 		return false
 	}
 
@@ -188,6 +200,7 @@ func (j *Jiacrontabd) SetDependDone(task *depEntry) bool {
 // 同步模式根据depEntryID确定位置实现任务的依次调度
 func (j *Jiacrontabd) dispatchDependSync(deps []*depEntry, depEntryID string) bool {
 	flag := true
+	cfg := j.getOpts()
 	if len(deps) > 0 {
 		flag = false
 		l := len(deps) - 1
@@ -199,7 +212,7 @@ func (j *Jiacrontabd) dispatchDependSync(deps []*depEntry, depEntryID string) bo
 					j.dep.add(v)
 				} else {
 					var reply bool
-					err := rpcCall("Srv.ExecDepend", []proto.DepJob{{
+					err := j.rpcCall("Srv.ExecDepend", []proto.DepJob{{
 						ID:          v.id,
 						Name:        v.name,
 						Dest:        v.dest,
@@ -231,6 +244,7 @@ func (j *Jiacrontabd) dispatchDependSync(deps []*depEntry, depEntryID string) bo
 
 func (j *Jiacrontabd) dispatchDependAsync(deps []*depEntry) bool {
 	var depJobs proto.DepJobs
+	cfg := j.getOpts()
 	for _, v := range deps {
 		// 检测目标服务器是本机直接执行脚本
 		if v.dest == cfg.LocalAddr {
@@ -252,7 +266,7 @@ func (j *Jiacrontabd) dispatchDependAsync(deps []*depEntry) bool {
 
 	if len(depJobs) > 0 {
 		var reply bool
-		if err := rpcCall("Srv.ExecDepend", depJobs, &reply); err != nil {
+		if err := j.rpcCall("Srv.ExecDepend", depJobs, &reply); err != nil {
 			log.Error("Srv.ExecDepend error:", err, "server addr:", cfg.AdminAddr)
 			return false
 		}
@@ -270,6 +284,7 @@ func (j *Jiacrontabd) count() int {
 
 func (j *Jiacrontabd) heartBeat() {
 	var reply bool
+	cfg := j.getOpts()
 	hostname := cfg.Hostname
 	if hostname == "" {
 		hostname = util.GetHostname()
@@ -288,7 +303,7 @@ func (j *Jiacrontabd) heartBeat() {
 		models.StatusJobTiming, models.StatusJobRunning,
 	}).Count(&node.CrontabJobFailNum)
 
-	err := rpcCall(rpc.RegisterService, node, &reply)
+	err := j.rpcCall(rpc.RegisterService, node, &reply)
 
 	if err != nil {
 		log.Error("Srv.Register error:", err, ",server addr:", cfg.AdminAddr)
@@ -334,6 +349,7 @@ func (j *Jiacrontabd) recovery() {
 }
 
 func (j *Jiacrontabd) init() {
+	cfg := j.getOpts()
 	models.CreateDB(cfg.DriverName, cfg.DSN)
 	models.DB().CreateTable(&models.CrontabJob{}, &models.DaemonJob{})
 	models.DB().AutoMigrate(&models.CrontabJob{}, &models.DaemonJob{})
@@ -344,10 +360,14 @@ func (j *Jiacrontabd) init() {
 	j.recovery()
 }
 
+func (j *Jiacrontabd) rpcCall(serviceMethod string, args, reply interface{}) error {
+	return rpc.Call(j.getOpts().AdminAddr, serviceMethod, args, reply)
+}
+
 // Main main function
 func (j *Jiacrontabd) Main() {
 	j.init()
 	j.heartBeat()
 	go j.run()
-	rpc.ListenAndServe(cfg.ListenAddr, newCrontabJobSrv(j), newDaemonJobSrv(j), newSrv(j))
+	rpc.ListenAndServe(j.getOpts().ListenAddr, newCrontabJobSrv(j), newDaemonJobSrv(j), newSrv(j))
 }

@@ -34,6 +34,7 @@ func (d *daemonJob) do(ctx context.Context) {
 	d.processNum = 1
 	t := time.NewTicker(1 * time.Second)
 	d.daemon.wait.Add(1)
+	cfg := d.daemon.jd.getOpts()
 
 	defer func() {
 		if err := recover(); err != nil {
@@ -67,6 +68,7 @@ func (d *daemonJob) do(ctx context.Context) {
 			dir:     d.job.WorkDir,
 			user:    d.job.WorkUser,
 			label:   d.job.Name,
+			jd:      d.daemon.jd,
 			logPath: filepath.Join(cfg.LogPath, "daemon_job", time.Now().Format("2006/01/02"), fmt.Sprintf("%d.log", d.job.ID)),
 		}
 
@@ -108,9 +110,10 @@ func (d *daemonJob) handleNotify(err error) {
 	}
 
 	var reply bool
+	cfg := d.daemon.jd.getOpts()
 	if d.job.ErrorMailNotify && len(d.job.MailTo) > 0 {
 		var reply bool
-		err := rpcCall("Srv.SendMail", proto.SendMail{
+		err := d.daemon.jd.rpcCall("Srv.SendMail", proto.SendMail{
 			MailTo:  d.job.MailTo,
 			Subject: cfg.LocalAddr + "提醒常驻脚本异常退出",
 			Content: fmt.Sprintf(
@@ -134,7 +137,7 @@ func (d *daemonJob) handleNotify(err error) {
 		if err != nil {
 			log.Error("json.Marshal error:", err)
 		}
-		err = rpcCall("Srv.ApiPost", proto.ApiPost{
+		err = d.daemon.jd.rpcCall("Srv.ApiPost", proto.ApiPost{
 			Urls: d.job.APITo,
 			Data: string(postData),
 		}, &reply)
@@ -148,14 +151,16 @@ func (d *daemonJob) handleNotify(err error) {
 type Daemon struct {
 	taskChannel chan *daemonJob
 	taskMap     map[uint]*daemonJob
+	jd          *Jiacrontabd
 	lock        sync.Mutex
 	wait        sync.WaitGroup
 }
 
-func newDaemon(taskChannelLength int) *Daemon {
+func newDaemon(taskChannelLength int, jd *Jiacrontabd) *Daemon {
 	return &Daemon{
 		taskMap:     make(map[uint]*daemonJob),
 		taskChannel: make(chan *daemonJob, taskChannelLength),
+		jd:          jd,
 	}
 }
 
