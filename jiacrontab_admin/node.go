@@ -1,15 +1,13 @@
 package admin
 
 import (
-	"github.com/kataras/iris"
 	"jiacrontab/models"
 )
 
 // GetNodeList 获得任务节点列表
 // 支持获得所属分组节点，指定分组节点（超级管理员）
-func GetNodeList(c iris.Context) {
+func GetNodeList(ctx *myctx) {
 	var (
-		ctx      = wrapCtx(c)
 		err      error
 		nodeList []models.Node
 		reqBody  GetNodeListReqParams
@@ -49,10 +47,9 @@ func GetNodeList(c iris.Context) {
 
 // DeleteNode 删除分组内节点
 // 仅超级管理员有权限
-func DeleteNode(c iris.Context) {
+func DeleteNode(ctx *myctx) {
 	var (
 		err     error
-		ctx     = wrapCtx(c)
 		reqBody DeleteNodeReqParams
 		group   models.Group
 		node    models.Node
@@ -85,10 +82,9 @@ func DeleteNode(c iris.Context) {
 // GroupNode 超级管理员为node分组
 // 分组不存在时自动创建分组
 // copy超级管理员分组中的节点到新的分组
-func GroupNode(c iris.Context) {
+func GroupNode(ctx *myctx) {
 	var (
 		err     error
-		ctx     = wrapCtx(c)
 		reqBody GroupNodeReqParams
 		node    models.Node
 	)

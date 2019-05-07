@@ -6,13 +6,10 @@ import (
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/rpc"
 	"strings"
-
-	"github.com/kataras/iris"
 )
 
-func GetDaemonJobList(c iris.Context) {
+func GetDaemonJobList(ctx *myctx) {
 	var (
-		ctx     = wrapCtx(c)
 		reqBody GetJobListReqParams
 		jobRet  proto.QueryDaemonJobRet
 		err     error
@@ -45,9 +42,8 @@ func GetDaemonJobList(c iris.Context) {
 	})
 }
 
-func ActionDaemonTask(c iris.Context) {
+func ActionDaemonTask(ctx *myctx) {
 	var (
-		ctx     = wrapCtx(c)
 		err     error
 		reply   []models.DaemonJob
 		ok      bool
@@ -99,11 +95,10 @@ func ActionDaemonTask(c iris.Context) {
 }
 
 // EditDaemonJob 修改常驻任务，jobID为0时新增
-func EditDaemonJob(c iris.Context) {
+func EditDaemonJob(ctx *myctx) {
 	var (
 		err       error
 		reply     models.DaemonJob
-		ctx       = wrapCtx(c)
 		reqBody   EditDaemonJobReqParams
 		daemonJob models.DaemonJob
 	)
@@ -159,9 +154,8 @@ func EditDaemonJob(c iris.Context) {
 	ctx.respSucc("", reply)
 }
 
-func GetDaemonJob(c iris.Context) {
+func GetDaemonJob(ctx *myctx) {
 	var (
-		ctx       = wrapCtx(c)
 		reqBody   GetJobReqParams
 		daemonJob models.DaemonJob
 		err       error
@@ -194,10 +188,9 @@ func GetDaemonJob(c iris.Context) {
 	ctx.respSucc("", daemonJob)
 }
 
-func GetRecentDaemonLog(c iris.Context) {
+func GetRecentDaemonLog(ctx *myctx) {
 	var (
 		err       error
-		ctx       = wrapCtx(c)
 		searchRet proto.SearchLogResult
 		reqBody   GetLogReqParams
 		logList   []string

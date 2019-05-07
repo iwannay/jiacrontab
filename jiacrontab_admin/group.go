@@ -3,14 +3,11 @@ package admin
 import (
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
-
-	"github.com/kataras/iris"
 )
 
 // GetGroupList 获得所有的分组列表
-func GetGroupList(c iris.Context) {
+func GetGroupList(ctx *myctx) {
 	var (
-		ctx       = wrapCtx(c)
 		err       error
 		groupList []models.Group
 		reqBody   GetGroupListReqParams
@@ -36,9 +33,8 @@ func GetGroupList(c iris.Context) {
 }
 
 // EditGroup 编辑分组
-func EditGroup(c iris.Context) {
+func EditGroup(ctx *myctx) {
 	var (
-		ctx     = wrapCtx(c)
 		reqBody EditGroupReqParams
 		err     error
 		group   models.Group
