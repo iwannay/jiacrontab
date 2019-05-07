@@ -3,21 +3,19 @@ package admin
 import (
 	"jiacrontab/pkg/base"
 	"net/http/pprof"
-
-	"github.com/kataras/iris"
 )
 
-func stat(ctx iris.Context) {
+func stat(ctx *myctx) {
 	data := base.Stat.Collect()
 	ctx.JSON(data)
 }
 
-func pprofHandler(ctx iris.Context) {
+func pprofHandler(ctx *myctx) {
 	if h := pprof.Handler(ctx.Params().Get("key")); h != nil {
 		h.ServeHTTP(ctx.ResponseWriter(), ctx.Request())
 	}
 }
 
-func indexDebug(ctx iris.Context) {
+func indexDebug(ctx *myctx) {
 	pprof.Index(ctx.ResponseWriter(), ctx.Request())
 }

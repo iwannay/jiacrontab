@@ -11,7 +11,6 @@ import (
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
-	"github.com/kataras/iris"
 )
 
 type CustomerClaims struct {
@@ -24,10 +23,9 @@ type CustomerClaims struct {
 }
 
 // Login 用户登录
-func Login(c iris.Context) {
+func Login(ctx *myctx) {
 	var (
 		err            error
-		ctx            = wrapCtx(c)
 		reqBody        LoginReqParams
 		user           models.User
 		customerClaims CustomerClaims
@@ -70,9 +68,8 @@ func Login(c iris.Context) {
 	})
 }
 
-func GetActivityList(c iris.Context) {
+func GetActivityList(ctx *myctx) {
 	var (
-		ctx     = wrapCtx(c)
 		err     error
 		reqBody ReadMoreReqParams
 		events  []models.Event
@@ -118,9 +115,8 @@ func GetActivityList(c iris.Context) {
 	})
 }
 
-func GetJobHistory(c iris.Context) {
+func GetJobHistory(ctx *myctx) {
 	var (
-		ctx      = wrapCtx(c)
 		err      error
 		reqBody  ReadMoreReqParams
 		historys []models.JobHistory
@@ -173,9 +169,8 @@ func GetJobHistory(c iris.Context) {
 	})
 }
 
-func AuditJob(c iris.Context) {
+func AuditJob(ctx *myctx) {
 	var (
-		ctx     = wrapCtx(c)
 		err     error
 		reqBody AuditJobReqParams
 	)
@@ -227,10 +222,9 @@ func AuditJob(c iris.Context) {
 }
 
 // Signup 注册新用户
-func Signup(c iris.Context) {
+func Signup(ctx *myctx) {
 	var (
 		err     error
-		ctx     = wrapCtx(c)
 		user    models.User
 		reqBody UserReqParams
 	)
@@ -273,10 +267,9 @@ func Signup(c iris.Context) {
 	ctx.respSucc("", true)
 }
 
-func EditUser(c iris.Context) {
+func EditUser(ctx *myctx) {
 	var (
 		err     error
-		ctx     = wrapCtx(c)
 		user    models.User
 		reqBody EditUserReqParams
 	)
@@ -303,10 +296,9 @@ func EditUser(c iris.Context) {
 }
 
 // UserStat 统计信息
-func UserStat(c iris.Context) {
+func UserStat(ctx *myctx) {
 	var (
 		err          error
-		ctx          = wrapCtx(c)
 		auditNumStat struct {
 			CrontabJobAuditNum  uint
 			DaemonJobAuditNum   uint
@@ -342,9 +334,8 @@ func UserStat(c iris.Context) {
 }
 
 // GroupUser 超级管理员设置普通用户分组
-func GroupUser(c iris.Context) {
+func GroupUser(ctx *myctx) {
 	var (
-		ctx     = wrapCtx(c)
 		reqBody SetGroupReqParams
 		err     error
 		user    models.User
@@ -384,9 +375,8 @@ func GroupUser(c iris.Context) {
 
 // GetUserList 获得用户列表
 // 支持获得全部用户，所属分组用户，指定分组用户（超级管理员）
-func GetUserList(c iris.Context) {
+func GetUserList(ctx *myctx) {
 	var (
-		ctx      = wrapCtx(c)
 		reqBody  GetUsersParams
 		userList []models.User
 		err      error

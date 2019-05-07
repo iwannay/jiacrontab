@@ -8,8 +8,9 @@ import (
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
 
-	"github.com/iwannay/log"
 	"jiacrontab/pkg/version"
+
+	"github.com/iwannay/log"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
@@ -17,6 +18,7 @@ import (
 
 type myctx struct {
 	iris.Context
+	adm    *Admin
 	claims CustomerClaims
 }
 

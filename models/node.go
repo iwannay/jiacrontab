@@ -8,17 +8,17 @@ import (
 
 type Node struct {
 	gorm.Model
-	Name               string `json:"name" gorm:"not null"`
-	DaemonTaskNum      int    `json:"daemonTaskNum"`
-	Disabled           bool   `json:"disabled"` // 通信失败时Disabled会被设置为true
-	CrontabTaskNum     int    `json:"crontabTaskNum"`
-	GroupID            uint   `json:"groupID" gorm:"not null;unique_index:uni_group_addr" `
-	CrontabJobAuditNum uint   `json:"crontabJobAuditNum"`
-	DaemonJobAuditNum  uint   `json:"daemonJobAuditNum"`
-
-	CrontabJobFailNum uint   `json:"crontabJobFailNum"`
-	Addr              string `json:"addr"gorm:"not null;unique_index:uni_group_addr"`
-	Group             Group  `json:"group"`
+	Name                string `json:"name" gorm:"not null"`
+	DaemonTaskNum       int    `json:"daemonTaskNum"`
+	Disabled            bool   `json:"disabled"` // 通信失败时Disabled会被设置为true
+	CrontabTaskNum      int    `json:"crontabTaskNum"`
+	GroupID             uint   `json:"groupID" gorm:"not null;unique_index:uni_group_addr" `
+	CrontabJobAuditNum  uint   `json:"crontabJobAuditNum"`
+	DaemonJobAuditNum   uint   `json:"daemonJobAuditNum"`
+	DaemonJobRunningNum uint   `json:"daemonJobRunningNum"`
+	CrontabJobFailNum   uint   `json:"crontabJobFailNum"`
+	Addr                string `json:"addr"gorm:"not null;unique_index:uni_group_addr"`
+	Group               Group  `json:"group"`
 }
 
 func (n *Node) VerifyUserGroup(userID, groupID uint, addr string) bool {

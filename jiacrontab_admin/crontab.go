@@ -5,15 +5,12 @@ import (
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
 	"strings"
-
-	"github.com/kataras/iris"
 )
 
-func GetJobList(c iris.Context) {
+func GetJobList(ctx *myctx) {
 
 	var (
 		jobRet       proto.QueryCrontabJobRet
-		ctx          = wrapCtx(c)
 		err          error
 		reqBody      GetJobListReqParams
 		rpcReqParams proto.QueryJobArgs
@@ -42,10 +39,9 @@ func GetJobList(c iris.Context) {
 	})
 }
 
-func GetRecentLog(c iris.Context) {
+func GetRecentLog(ctx *myctx) {
 	var (
 		err       error
-		ctx       = wrapCtx(c)
 		searchRet proto.SearchLogResult
 		reqBody   GetLogReqParams
 		logList   []string
@@ -79,11 +75,10 @@ func GetRecentLog(c iris.Context) {
 	})
 }
 
-func EditJob(c iris.Context) {
+func EditJob(ctx *myctx) {
 	var (
 		err     error
 		reply   models.CrontabJob
-		ctx     = wrapCtx(c)
 		reqBody EditJobReqParams
 		job     models.CrontabJob
 	)
@@ -157,9 +152,8 @@ func EditJob(c iris.Context) {
 	ctx.respSucc("", reply)
 }
 
-func ActionTask(c iris.Context) {
+func ActionTask(ctx *myctx) {
 	var (
-		ctx      = wrapCtx(c)
 		err      error
 		reply    bool
 		ok       bool
@@ -212,9 +206,8 @@ func ActionTask(c iris.Context) {
 	ctx.respSucc("", reply)
 }
 
-func ExecTask(c iris.Context) {
+func ExecTask(ctx *myctx) {
 	var (
-		ctx          = wrapCtx(c)
 		err          error
 		logList      []string
 		execJobReply proto.ExecCrontabJobReply
@@ -245,9 +238,8 @@ func ExecTask(c iris.Context) {
 	ctx.respSucc("", logList)
 }
 
-func GetJob(c iris.Context) {
+func GetJob(ctx *myctx) {
 	var (
-		ctx        = wrapCtx(c)
 		reqBody    GetJobReqParams
 		crontabJob models.CrontabJob
 		err        error

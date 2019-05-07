@@ -5,17 +5,31 @@ import (
 	"jiacrontab/pkg/mailer"
 	"jiacrontab/pkg/rpc"
 
+	"sync/atomic"
+
 	"github.com/kataras/iris"
 )
 
 type Admin struct {
+	cfg atomic.Value
 }
 
-func New() *Admin {
-	return &Admin{}
+func (n *Admin) getOpts() *Config {
+	return n.cfg.Load().(*Config)
+}
+
+func (n *Admin) swapOpts(opts *Config) {
+	n.cfg.Store(opts)
+}
+
+func New(opt *Config) *Admin {
+	adm := &Admin{}
+	adm.swapOpts(opt)
+	return adm
 }
 
 func (a *Admin) init() {
+	cfg := a.getOpts()
 	if err := models.InitModel(cfg.Database.DriverName, cfg.Database.DSN); err != nil {
 		panic(err)
 	}
@@ -44,6 +58,7 @@ func (a *Admin) init() {
 func (a *Admin) Main() {
 
 	var initModel bool
+	cfg := a.getOpts()
 	if cfg.Database.DriverName != "" && cfg.Database.DSN != "" {
 		initModel = true
 	}

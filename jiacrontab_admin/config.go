@@ -2,7 +2,6 @@ package admin
 
 import (
 	"errors"
-	"github.com/kataras/iris"
 	"jiacrontab/models"
 	"jiacrontab/pkg/mailer"
 	"jiacrontab/pkg/util"
@@ -13,29 +12,25 @@ import (
 )
 
 const (
-	configFile = "jiacrontab_admin.ini"
-	appname    = "jiacrontab"
+	appname = "jiacrontab"
 )
 
 var cfg *Config
 
-type appOpt struct {
+type AppOpt struct {
 	HTTPListenAddr string `opt:"http_listen_addr" default:":20000"`
-	StaticDir      string `opt:"static_dir" default:"./dist"`
-	TplDir         string `opt:"tpl_dir" default:"./dist/"`
-	TplExt         string `opt:"tpl_ext" default:".html"`
 	RPCListenAddr  string `opt:"rpc_listen_addr" default:":20003"`
 	AppName        string `opt:"app_name" default:"jiacrontab"`
 	SigningKey     string `opt:"signing_key" default:"WERRTT1234$@#@@$"`
 }
 
-type jwtOpt struct {
+type JwtOpt struct {
 	SigningKey string `opt:"signing_key" default:"ADSFdfs2342$@@#"`
 	Name       string `opt:"name" default:"token"`
 	Expires    int64  `opt:"expires" default:"3600"`
 }
 
-type mailerOpt struct {
+type MailerOpt struct {
 	Enabled        bool   `opt:"enabled" default:"true"`
 	QueueLength    int    `opt:"queue_length" default:"1000"`
 	SubjectPrefix  string `opt:"subject_Prefix" default:"jiacrontab"`
@@ -59,10 +54,11 @@ type databaseOpt struct {
 }
 
 type Config struct {
-	Mailer          *mailerOpt   `section:"mail"`
-	Jwt             *jwtOpt      `section:"jwt"`
-	App             *appOpt      `section:"app"`
+	Mailer          *MailerOpt   `section:"mail"`
+	Jwt             *JwtOpt      `section:"jwt"`
+	App             *AppOpt      `section:"app"`
 	Database        *databaseOpt `section:"database"`
+	CfgPath         string
 	iniFile         *ini.File
 	ServerStartTime time.Time `json:"-"`
 }
@@ -76,18 +72,18 @@ func (c *Config) Activate(opt *databaseOpt) error {
 
 	c.Database = opt
 
-	err := models.InitModel(cfg.Database.DriverName, cfg.Database.DSN)
+	err := models.InitModel(c.Database.DriverName, c.Database.DSN)
 	if err != nil {
 		return err
 	}
 	c.iniFile.Section("database").Key("driver_name").SetValue(opt.DriverName)
 	c.iniFile.Section("database").Key("dsn").SetValue(opt.DSN)
-	return c.iniFile.SaveTo(configFile)
+	return c.iniFile.SaveTo(c.CfgPath)
 }
 
-func (c *Config) init() {
+func (c *Config) Resolve() {
 	c.ServerStartTime = time.Now()
-	c.iniFile = loadConfig()
+	c.iniFile = loadConfig(c.CfgPath)
 	val := reflect.ValueOf(c).Elem()
 	typ := val.Type()
 	for i := 0; i < typ.NumField(); i++ {
@@ -106,6 +102,7 @@ func (c *Config) init() {
 			}
 			key := c.iniFile.Section(section).Key(subOpt)
 			defaultVal := key.String()
+			comment := subField.Tag.Get("comment")
 
 			if defaultVal == "" {
 				defaultVal = subField.Tag.Get("default")
@@ -120,38 +117,43 @@ func (c *Config) init() {
 				if defaultVal == "true" {
 					setVal = true
 				}
-				subVal.Field(j).SetBool(setVal)
+				if subVal.Field(j).Bool() == false {
+					subVal.Field(j).SetBool(setVal)
+				}
+
 			case reflect.String:
-				subVal.Field(j).SetString(defaultVal)
+				if subVal.Field(j).String() == "" {
+					subVal.Field(j).SetString(defaultVal)
+				}
 			case reflect.Int64:
-				subVal.Field(j).SetInt(util.ParseInt64(defaultVal))
+				if subVal.Field(j).Int() == 0 {
+					subVal.Field(j).SetInt(util.ParseInt64(defaultVal))
+				}
 			}
+			key.Comment = comment
 			key.SetValue(defaultVal)
 		}
 	}
 }
 
-func newConfig() *Config {
-	c := &Config{
-		App:      &appOpt{},
-		Mailer:   &mailerOpt{},
-		Jwt:      &jwtOpt{},
+func NewConfig() *Config {
+	return &Config{
+		App:      &AppOpt{},
+		Mailer:   &MailerOpt{},
+		Jwt:      &JwtOpt{},
 		Database: &databaseOpt{},
 	}
-	c.init()
-	return c
 }
 
-func loadConfig() *ini.File {
-	f, err := ini.Load(configFile)
+func loadConfig(path string) *ini.File {
+	f, err := ini.Load(path)
 	if err != nil {
 		panic(err)
 	}
 	return f
 }
 
-func GetConfig(c iris.Context) {
-	ctx := wrapCtx(c)
+func GetConfig(ctx *myctx) {
 	if !ctx.isSuper() {
 		ctx.respNotAllowed()
 		return
@@ -168,9 +170,8 @@ func GetConfig(c iris.Context) {
 	})
 }
 
-func SendTestMail(c iris.Context) {
+func SendTestMail(ctx *myctx) {
 	var (
-		ctx     = wrapCtx(c)
 		err     error
 		reqBody SendTestMailReqParams
 	)
@@ -191,8 +192,4 @@ func SendTestMail(c iris.Context) {
 	}
 
 	ctx.respBasicError(errors.New("邮箱服务未开启"))
-}
-
-func init() {
-	cfg = newConfig()
 }

@@ -16,7 +16,14 @@ import (
 	"github.com/iris-contrib/middleware/cors"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
 	"github.com/iwannay/log"
+	"github.com/kataras/iris/context"
 )
+
+func wrapHandler(h func(ctx *myctx)) context.Handler {
+	return func(c iris.Context) {
+		h(wrapCtx(c))
+	}
+}
 
 func newApp(initModel bool) *iris.Application {
 
@@ -24,8 +31,8 @@ func newApp(initModel bool) *iris.Application {
 	app.UseGlobal(newRecover())
 	app.Logger().SetLevel("debug")
 	app.Use(logger.New())
-
 	app.StaticEmbeddedGzip("/", "./assets/", GzipAsset, GzipAssetNames)
+
 	jwtHandler := jwtmiddleware.New(jwtmiddleware.Config{
 		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
 			return []byte(cfg.Jwt.SigningKey), nil
@@ -55,6 +62,7 @@ func newApp(initModel bool) *iris.Application {
 		AllowedOrigins:   []string{"*"}, // allows everything, use that to change the hosts.
 		AllowCredentials: true,
 	})
+
 	app.Use(crs)
 	app.AllowMethods(iris.MethodOptions)
 	app.Get("/", func(ctx iris.Context) {
@@ -80,60 +88,59 @@ func newApp(initModel bool) *iris.Application {
 		adm := app.Party("/adm")
 		{
 			adm.Use(jwtHandler.Serve)
-			adm.Post("/crontab/job/list", GetJobList)
-			adm.Post("/crontab/job/get", GetJob)
-			adm.Post("/crontab/job/log", GetRecentLog)
-			adm.Post("/crontab/job/edit", EditJob)
-			adm.Post("/crontab/job/action", ActionTask)
-			adm.Post("/crontab/job/exec", ExecTask)
+			adm.Post("/crontab/job/list", wrapHandler(GetJobList))
+			adm.Post("/crontab/job/get", wrapHandler(GetJob))
+			adm.Post("/crontab/job/log", wrapHandler(GetRecentLog))
+			adm.Post("/crontab/job/edit", wrapHandler(EditJob))
+			adm.Post("/crontab/job/action", wrapHandler(ActionTask))
+			adm.Post("/crontab/job/exec", wrapHandler(ExecTask))
 
-			adm.Post("/config/get", GetConfig)
-			adm.Post("/config/mail/send", SendTestMail)
-			adm.Post("/system/info", SystemInfo)
+			adm.Post("/config/get", wrapHandler(GetConfig))
+			adm.Post("/config/mail/send", wrapHandler(SendTestMail))
+			adm.Post("/system/info", wrapHandler(SystemInfo))
 
-			adm.Post("/daemon/job/list", GetDaemonJobList)
-			adm.Post("/daemon/job/action", ActionDaemonTask)
-			adm.Post("/daemon/job/edit", EditDaemonJob)
-			adm.Post("/daemon/job/get", GetDaemonJob)
-			adm.Post("/daemon/job/log", GetRecentDaemonLog)
+			adm.Post("/daemon/job/list", wrapHandler(GetDaemonJobList))
+			adm.Post("/daemon/job/action", wrapHandler(ActionDaemonTask))
+			adm.Post("/daemon/job/edit", wrapHandler(EditDaemonJob))
+			adm.Post("/daemon/job/get", wrapHandler(GetDaemonJob))
+			adm.Post("/daemon/job/log", wrapHandler(GetRecentDaemonLog))
 
-			adm.Post("/group/list", GetGroupList)
-			adm.Post("/group/edit", EditGroup)
+			adm.Post("/group/list", wrapHandler(GetGroupList))
+			adm.Post("/group/edit", wrapHandler(EditGroup))
 
-			adm.Post("/node/list", GetNodeList)
-			adm.Post("/node/delete", DeleteNode)
-			adm.Post("/node/group_node", GroupNode)
+			adm.Post("/node/list", wrapHandler(GetNodeList))
+			adm.Post("/node/delete", wrapHandler(DeleteNode))
+			adm.Post("/node/group_node", wrapHandler(GroupNode))
 
-			adm.Post("/user/activity_list", GetActivityList)
-			adm.Post("/user/job_history", GetJobHistory)
-			adm.Post("/user/audit_job", AuditJob)
-			adm.Post("/user/stat", UserStat)
-			adm.Post("/user/signup", Signup)
-			adm.Post("/user/edit", EditUser)
-			adm.Post("/user/group_user", GroupUser)
-			adm.Post("/user/list", GetUserList)
+			adm.Post("/user/activity_list", wrapHandler(GetActivityList))
+			adm.Post("/user/job_history", wrapHandler(GetJobHistory))
+			adm.Post("/user/audit_job", wrapHandler(AuditJob))
+			adm.Post("/user/stat", wrapHandler(UserStat))
+			adm.Post("/user/signup", wrapHandler(Signup))
+			adm.Post("/user/edit", wrapHandler(EditUser))
+			adm.Post("/user/group_user", wrapHandler(GroupUser))
+			adm.Post("/user/list", wrapHandler(GetUserList))
 		}
 
-		app.Post("/user/login", Login)
+		app.Post("/user/login", wrapHandler(Login))
 	}
 
-	app.Post("/app/init", InitApp)
+	app.Post("/app/init", wrapHandler(InitApp))
 
 	debug := app.Party("/debug")
 	{
-		debug.Get("/stat", stat)
-		debug.Get("/pprof/", indexDebug)
-		debug.Get("/pprof/{key:string}", pprofHandler)
+		debug.Get("/stat", wrapHandler(stat))
+		debug.Get("/pprof/", wrapHandler(indexDebug))
+		debug.Get("/pprof/{key:string}", wrapHandler(pprofHandler))
 	}
 
 	return app
 }
 
 // InitApp 初始化应用
-func InitApp(c iris.Context) {
+func InitApp(ctx *myctx) {
 	var (
 		err     error
-		ctx     = wrapCtx(c)
 		user    models.User
 		reqBody InitAppReqParams
 	)
