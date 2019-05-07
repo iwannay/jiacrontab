@@ -15,8 +15,6 @@ const (
 	appname = "jiacrontab"
 )
 
-var cfg *Config
-
 type AppOpt struct {
 	HTTPListenAddr string `opt:"http_listen_addr" default:":20000"`
 	RPCListenAddr  string `opt:"rpc_listen_addr" default:":20003"`
@@ -154,6 +152,7 @@ func loadConfig(path string) *ini.File {
 }
 
 func GetConfig(ctx *myctx) {
+	cfg := ctx.adm.getOpts()
 	if !ctx.isSuper() {
 		ctx.respNotAllowed()
 		return
@@ -174,6 +173,7 @@ func SendTestMail(ctx *myctx) {
 	var (
 		err     error
 		reqBody SendTestMailReqParams
+		cfg     = ctx.adm.getOpts()
 	)
 
 	if err = ctx.Valid(&reqBody); err != nil {

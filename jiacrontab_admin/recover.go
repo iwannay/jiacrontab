@@ -20,9 +20,9 @@ func getRequestLogs(ctx context.Context) string {
 	return fmt.Sprintf("%v %s %s %s", status, path, method, ip)
 }
 
-func newRecover() context.Handler {
+func newRecover(adm *Admin) context.Handler {
 	return func(c context.Context) {
-		ctx := wrapCtx(c)
+		ctx := wrapCtx(c, adm)
 		base.Stat.AddConcurrentCount()
 		defer func() {
 			if err := recover(); err != nil {

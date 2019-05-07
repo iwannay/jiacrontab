@@ -25,7 +25,6 @@ func NewSrv(adm *Admin) *Srv {
 }
 
 func (s *Srv) Register(args models.Node, reply *bool) error {
-
 	*reply = true
 	ret := models.DB().Unscoped().Model(&models.Node{}).Where("addr=?", args.Addr).Updates(map[string]interface{}{
 		"daemon_task_num":       args.DaemonTaskNum,
@@ -70,7 +69,10 @@ func (s *Srv) SetDependDone(args proto.DepJob, reply *bool) error {
 }
 
 func (s *Srv) SendMail(args proto.SendMail, reply *bool) error {
-	var err error
+	var (
+		err error
+		cfg = s.adm.getOpts()
+	)
 	if cfg.Mailer.Enabled {
 		err = mailer.SendMail(args.MailTo, args.Subject, args.Content)
 	}
