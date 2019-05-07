@@ -2,16 +2,19 @@ package admin
 
 import (
 	"errors"
+	"net/http"
+	"net/url"
+
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/middleware/logger"
-	"net/url"
+
+	"jiacrontab/models"
+	"os"
+	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/iris-contrib/middleware/cors"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
-	"jiacrontab/models"
-	"os"
-	"time"
 	"github.com/iwannay/log"
 )
 
@@ -56,13 +59,16 @@ func newApp(initModel bool) *iris.Application {
 	app.AllowMethods(iris.MethodOptions)
 	app.Get("/", func(ctx iris.Context) {
 		if initModel {
-			ctx.SetCookieKV("ready", "true")
+			ctx.SetCookieKV("ready", "true", func(c *http.Cookie) {
+				c.HttpOnly = false
+			})
 		} else {
-			ctx.SetCookieKV("ready", "false")
+			ctx.SetCookieKV("ready", "false", func(c *http.Cookie) {
+				c.HttpOnly = false
+			})
 		}
 		ctx.Header("Content-Type", "text/html")
 		ctx.Header("Content-Encoding", "gzip")
-		ctx.Header("Vary", "Accept-Encoding")
 		asset, err := GzipAsset("assets/index.html")
 		if err != nil {
 			log.Error(err)
