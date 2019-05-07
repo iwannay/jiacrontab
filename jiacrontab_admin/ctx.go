@@ -25,6 +25,7 @@ type myctx struct {
 func wrapCtx(ctx iris.Context, adm *Admin) *myctx {
 	return &myctx{
 		Context: ctx,
+		adm:     adm,
 	}
 }
 
