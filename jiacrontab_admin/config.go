@@ -3,13 +3,12 @@ package admin
 import (
 	"errors"
 	"fmt"
+	"github.com/iwannay/log"
 	"jiacrontab/models"
+	"jiacrontab/pkg/file"
 	"jiacrontab/pkg/mailer"
-	"jiacrontab/pkg/util"
 	"reflect"
 	"time"
-
-	"os"
 
 	ini "gopkg.in/ini.v1"
 )
@@ -55,13 +54,15 @@ type databaseOpt struct {
 }
 
 type Config struct {
-	Mailer          *MailerOpt   `section:"mail"`
-	Jwt             *JwtOpt      `section:"jwt"`
-	App             *AppOpt      `section:"app"`
-	Database        *databaseOpt `section:"database"`
-	CfgPath         string
-	iniFile         *ini.File
-	ServerStartTime time.Time `json:"-"`
+	Mailer   *MailerOpt   `section:"mail"`
+	Jwt      *JwtOpt      `section:"jwt"`
+	App      *AppOpt      `section:"app"`
+	Database *databaseOpt `section:"database"`
+
+	CfgPath          string
+	iniFile          *ini.File
+	createConfigFile bool
+	ServerStartTime  time.Time `json:"-"`
 }
 
 // SetUsed 设置app已经激活
@@ -85,8 +86,10 @@ func (c *Config) Activate(opt *databaseOpt) error {
 func (c *Config) Resolve() {
 
 	c.ServerStartTime = time.Now()
-	c.iniFile = loadConfig(c.CfgPath)
-	defer c.iniFile.SaveTo(c.CfgPath)
+	c.iniFile = c.loadConfig(c.CfgPath)
+	if c.createConfigFile {
+		defer c.iniFile.SaveTo(c.CfgPath)
+	}
 
 	val := reflect.ValueOf(c).Elem()
 	typ := val.Type()
@@ -104,33 +107,37 @@ func (c *Config) Resolve() {
 			if subOpt == "" {
 				continue
 			}
-			key := c.iniFile.Section(section).Key(subOpt)
-			defaultVal := key.String()
-			comment := subField.Tag.Get("comment")
-			key.Comment = comment
+			sec := c.iniFile.Section(section)
+			if c.createConfigFile {
+				key := sec.Key(subOpt)
+				key.Comment = subField.Tag.Get("comment")
+				key.SetValue(fmt.Sprint(subVal.Field(j).Interface()))
+			}
+
+			if !sec.HasKey(subOpt) {
+				continue
+			}
+
+			key := sec.Key(subOpt)
 
 			switch subField.Type.Kind() {
 			case reflect.Bool:
-				setVal := false
-				if defaultVal == "true" {
-					setVal = true
+				v, err := key.Bool()
+				if err != nil {
+					log.Error(err)
+					continue
 				}
-				if subVal.Field(j).Bool() == false {
-					subVal.Field(j).SetBool(setVal)
-				}
-				key.SetValue(fmt.Sprint(subVal.Field(j).Bool()))
+				subVal.Field(j).SetBool(v)
 			case reflect.String:
-				if subVal.Field(j).String() == "" {
-					subVal.Field(j).SetString(defaultVal)
-				}
-				key.SetValue(subVal.Field(j).String())
+				subVal.Field(j).SetString(key.String())
 			case reflect.Int64:
-				if subVal.Field(j).Int() == 0 {
-					subVal.Field(j).SetInt(util.ParseInt64(defaultVal))
+				v, err := key.Int64()
+				if err != nil {
+					log.Error(err)
+					continue
 				}
-				key.SetValue(fmt.Sprint(subVal.Field(j).Int()))
+				subVal.Field(j).SetInt(v)
 			}
-
 		}
 	}
 }
@@ -161,12 +168,15 @@ func NewConfig() *Config {
 	}
 }
 
-func loadConfig(path string) *ini.File {
-	f, err := util.TryOpen(path, os.O_CREATE)
-	if err != nil {
-		panic(err)
+func (c *Config) loadConfig(path string) *ini.File {
+	if !file.Exist(path) {
+		f, err := file.CreateFile(path)
+		if err != nil {
+			panic(err)
+		}
+		f.Close()
+		c.createConfigFile = true
 	}
-	f.Close()
 
 	iniFile, err := ini.Load(path)
 	if err != nil {
