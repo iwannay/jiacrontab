@@ -58,7 +58,7 @@ func newProcess(id int, jobEntry *JobEntry) *process {
 			from:        v.From,
 			commands:    v.Commands,
 			dest:        v.Dest,
-			logPath:     filepath.Join(cfg.LogPath, "depend_job", time.Now().Format("2006/01/02"), fmt.Sprintf("%d-%s.log", v.JobID, v.ID)),
+			logPath:     filepath.Join(p.jobEntry.jd.getOpts().LogPath, "depend_job", time.Now().Format("2006/01/02"), fmt.Sprintf("%d-%s.log", v.JobID, v.ID)),
 			done:        false,
 			timeout:     v.Timeout,
 		})
@@ -83,7 +83,7 @@ func (p *process) waitDepExecDone() bool {
 	}
 
 	if !ok {
-		prefix := fmt.Sprintf("[%s %s] ", time.Now().Format("2006-01-02 15:04:05"), cfg.LocalAddr)
+		prefix := fmt.Sprintf("[%s %s] ", time.Now().Format("2006-01-02 15:04:05"), p.jobEntry.jd.getOpts().LocalAddr)
 		p.jobEntry.logContent = append(p.jobEntry.logContent, []byte(prefix+"failed to exec depends, push depends error\n")...)
 		return ok
 	}
@@ -184,7 +184,7 @@ func newJobEntry(job *crontab.Job, jd *Jiacrontabd) *JobEntry {
 		uniqueID:  util.UUID(),
 		job:       job,
 		processes: make(map[int]*process),
-		logPath:   filepath.Join(cfg.LogPath, "crontab_task", time.Now().Format("2006/01/02"), fmt.Sprintf("%d.log", job.ID)),
+		logPath:   filepath.Join(jd.getOpts().LogPath, "crontab_task", time.Now().Format("2006/01/02"), fmt.Sprintf("%d.log", job.ID)),
 		jd:        jd,
 	}
 }
@@ -201,6 +201,7 @@ func (j *JobEntry) writeLog() {
 }
 
 func (j *JobEntry) handleDepError(startTime time.Time) {
+	cfg := j.jd.getOpts()
 	err := fmt.Errorf("%s %s execution of dependency job failed, jobID:%d", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, j.detail.ID)
 	endTime := time.Now()
 	reply := true
@@ -211,7 +212,7 @@ func (j *JobEntry) handleDepError(startTime time.Time) {
 
 	if j.detail.ErrorMailNotify && len(j.detail.MailTo) != 0 {
 
-		if err := rpcCall("Srv.SendMail", proto.SendMail{
+		if err := j.jd.rpcCall("Srv.SendMail", proto.SendMail{
 			MailTo:  j.detail.MailTo,
 			Subject: cfg.LocalAddr + "提醒脚本依赖异常退出",
 			Content: fmt.Sprintf(
@@ -228,6 +229,7 @@ func (j *JobEntry) handleNotify(p *process) {
 	var (
 		err   error
 		reply bool
+		cfg   = j.jd.getOpts()
 	)
 
 	if p.err == nil {
@@ -235,7 +237,7 @@ func (j *JobEntry) handleNotify(p *process) {
 	}
 
 	if j.detail.ErrorMailNotify {
-		if err = rpcCall("Srv.SendMail", proto.SendMail{
+		if err = j.jd.rpcCall("Srv.SendMail", proto.SendMail{
 			MailTo:  j.detail.MailTo,
 			Subject: cfg.LocalAddr + "提醒脚本异常退出",
 			Content: fmt.Sprintf(
@@ -263,7 +265,7 @@ func (j *JobEntry) handleNotify(p *process) {
 			return
 		}
 
-		if err = rpcCall("Srv.ApiPost", proto.ApiPost{
+		if err = j.jd.rpcCall("Srv.ApiPost", proto.ApiPost{
 			Urls: j.detail.APITo,
 			Data: string(postData),
 		}, &reply); err != nil {
@@ -278,6 +280,7 @@ func (j *JobEntry) timeoutTrigger(p *process) {
 	var (
 		err   error
 		reply bool
+		cfg   = j.jd.getOpts()
 	)
 
 	for _, e := range j.detail.TimeoutTrigger {
@@ -298,7 +301,7 @@ func (j *JobEntry) timeoutTrigger(p *process) {
 				log.Error("json.Marshal error:", err)
 			}
 
-			if err = rpcCall("Srv.ErrorNotify err:", proto.ApiPost{
+			if err = j.jd.rpcCall("Srv.ErrorNotify err:", proto.ApiPost{
 				Urls: j.detail.APITo,
 				Data: string(postData),
 			}, &reply); err != nil {
@@ -307,7 +310,7 @@ func (j *JobEntry) timeoutTrigger(p *process) {
 
 		case proto.TimeoutTrigger_SendEmail:
 			j.detail.LastExitStatus = exitTimeout
-			if err = rpcCall("Srv.SendMail", proto.SendMail{
+			if err = j.jd.rpcCall("Srv.SendMail", proto.SendMail{
 				MailTo:  j.detail.MailTo,
 				Subject: cfg.LocalAddr + "提醒脚本执行超时",
 				Content: fmt.Sprintf(
@@ -420,10 +423,10 @@ func (j *JobEntry) updateJob(status models.JobStatus, startTime, endTime time.Ti
 	}
 
 	if status == models.StatusJobTiming {
-		if err = rpcCall("Srv.PushJobLog", models.JobHistory{
+		if err = j.jd.rpcCall("Srv.PushJobLog", models.JobHistory{
 			JobType:   models.JobTypeCrontab,
 			JobID:     j.detail.ID,
-			Addr:      cfg.LocalAddr,
+			Addr:      j.jd.getOpts().LocalAddr,
 			JobName:   j.detail.Name,
 			StartTime: startTime,
 			EndTime:   endTime,
