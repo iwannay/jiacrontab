@@ -2,11 +2,14 @@ package admin
 
 import (
 	"errors"
+	"fmt"
 	"jiacrontab/models"
 	"jiacrontab/pkg/mailer"
 	"jiacrontab/pkg/util"
 	"reflect"
 	"time"
+
+	"os"
 
 	ini "gopkg.in/ini.v1"
 )
@@ -80,8 +83,11 @@ func (c *Config) Activate(opt *databaseOpt) error {
 }
 
 func (c *Config) Resolve() {
+
 	c.ServerStartTime = time.Now()
 	c.iniFile = loadConfig(c.CfgPath)
+	defer c.iniFile.SaveTo(c.CfgPath)
+
 	val := reflect.ValueOf(c).Elem()
 	typ := val.Type()
 	for i := 0; i < typ.NumField(); i++ {
@@ -101,13 +107,7 @@ func (c *Config) Resolve() {
 			key := c.iniFile.Section(section).Key(subOpt)
 			defaultVal := key.String()
 			comment := subField.Tag.Get("comment")
-
-			if defaultVal == "" {
-				defaultVal = subField.Tag.Get("default")
-			}
-			if defaultVal == "" {
-				continue
-			}
+			key.Comment = comment
 
 			switch subField.Type.Kind() {
 			case reflect.Bool:
@@ -118,37 +118,61 @@ func (c *Config) Resolve() {
 				if subVal.Field(j).Bool() == false {
 					subVal.Field(j).SetBool(setVal)
 				}
-
+				key.SetValue(fmt.Sprint(subVal.Field(j).Bool()))
 			case reflect.String:
 				if subVal.Field(j).String() == "" {
 					subVal.Field(j).SetString(defaultVal)
 				}
+				key.SetValue(subVal.Field(j).String())
 			case reflect.Int64:
 				if subVal.Field(j).Int() == 0 {
 					subVal.Field(j).SetInt(util.ParseInt64(defaultVal))
 				}
+				key.SetValue(fmt.Sprint(subVal.Field(j).Int()))
 			}
-			key.Comment = comment
-			key.SetValue(defaultVal)
+
 		}
 	}
 }
 
 func NewConfig() *Config {
 	return &Config{
-		App:      &AppOpt{},
-		Mailer:   &MailerOpt{},
-		Jwt:      &JwtOpt{},
+		App: &AppOpt{
+			HTTPListenAddr: ":20000",
+			RPCListenAddr:  ":20003",
+			AppName:        "jiacrontab",
+			SigningKey:     "WERRTT1234$@#@@$",
+		},
+		Mailer: &MailerOpt{
+			Enabled:        true,
+			QueueLength:    1000,
+			SubjectPrefix:  "jiacrontab",
+			From:           "jiacrontab",
+			FromEmail:      "jiacrontab",
+			SkipVerify:     true,
+			UseCertificate: false,
+		},
+		Jwt: &JwtOpt{
+			SigningKey: "ADSFdfs2342$@@#",
+			Name:       "token",
+			Expires:    3600,
+		},
 		Database: &databaseOpt{},
 	}
 }
 
 func loadConfig(path string) *ini.File {
-	f, err := ini.Load(path)
+	f, err := util.TryOpen(path, os.O_CREATE)
 	if err != nil {
 		panic(err)
 	}
-	return f
+	f.Close()
+
+	iniFile, err := ini.Load(path)
+	if err != nil {
+		panic(err)
+	}
+	return iniFile
 }
 
 func GetConfig(ctx *myctx) {

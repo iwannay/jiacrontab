@@ -24,12 +24,14 @@ type cmdUint struct {
 	logFile          *os.File
 	label            string
 	user             string
+	verboseLog       bool
 	exportLog        bool
 	env              []string
 	killChildProcess bool
 	dir              string
 	startTime        time.Time
 	costTime         time.Duration
+	jd               *Jiacrontabd
 }
 
 func (cu *cmdUint) release() {
@@ -46,7 +48,7 @@ func (cu *cmdUint) launch() error {
 		}
 		cu.release()
 	}()
-
+	cfg := cu.jd.getOpts()
 	cu.startTime = time.Now()
 
 	var err error
@@ -63,7 +65,7 @@ func (cu *cmdUint) launch() error {
 
 	if err != nil {
 		var errMsg string
-		if cfg.VerboseJobLog {
+		if cu.verboseLog {
 			prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, cu.label)
 			errMsg = prefix + err.Error() + "\n"
 		} else {
@@ -97,6 +99,7 @@ func (cu *cmdUint) exec() error {
 	cmdName := cu.args[0][0]
 	args := cu.args[0][1:]
 	cmd := kproc.CommandContext(cu.ctx, cmdName, args...)
+	cfg := cu.jd.getOpts()
 
 	cmd.SetDir(cu.dir)
 	cmd.SetEnv(cu.env)
@@ -183,6 +186,7 @@ func (cu *cmdUint) pipeExec() error {
 		cmdEntryList   []*pipeCmd
 		err, exitError error
 		line           []byte
+		cfg            = cu.jd.getOpts()
 	)
 
 	for _, v := range cu.args {

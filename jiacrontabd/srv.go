@@ -3,7 +3,6 @@ package jiacrontabd
 import (
 	"errors"
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"jiacrontab/models"
 	"jiacrontab/pkg/crontab"
 	"jiacrontab/pkg/finder"
@@ -13,6 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/jinzhu/gorm"
 
 	"github.com/iwannay/log"
 )
@@ -234,7 +235,7 @@ func (j *CrontabJob) Log(args proto.SearchLog, reply *proto.SearchLogResult) err
 		fd.SetTail(true)
 	}
 
-	rootpath := filepath.Join(cfg.LogPath, "crontab_task", args.Date)
+	rootpath := filepath.Join(j.jd.getOpts().LogPath, "crontab_task", args.Date)
 	err := fd.Search(rootpath, args.Pattern, &reply.Content, args.Offset, args.Pagesize)
 	reply.Offset = fd.Offset()
 	reply.FileSize = fd.FileSize()
@@ -430,7 +431,7 @@ func (j *DaemonJob) Log(args proto.SearchLog, reply *proto.SearchLogResult) erro
 		fd.SetTail(true)
 	}
 
-	rootpath := filepath.Join(cfg.LogPath, "daemon_job", args.Date)
+	rootpath := filepath.Join(j.jd.getOpts().LogPath, "daemon_job", args.Date)
 	err := fd.Search(rootpath, args.Pattern, &reply.Content, args.Offset, args.Pagesize)
 	reply.Offset = fd.Offset()
 	reply.FileSize = fd.FileSize()

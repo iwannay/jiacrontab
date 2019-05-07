@@ -28,16 +28,16 @@ type depEntry struct {
 	logContent  []byte
 }
 
-func newDependencies(crond *Jiacrontabd) *dependencies {
+func newDependencies(jd *Jiacrontabd) *dependencies {
 	return &dependencies{
-		crond: crond,
-		dep:   make(chan *depEntry, 100),
+		jd:  jd,
+		dep: make(chan *depEntry, 100),
 	}
 }
 
 type dependencies struct {
-	crond *Jiacrontabd
-	dep   chan *depEntry
+	jd  *Jiacrontabd
+	dep chan *depEntry
 }
 
 func (d *dependencies) add(t *depEntry) {
@@ -77,6 +77,7 @@ func (d *dependencies) exec(task *depEntry) {
 	myCmdUnit.dir = task.workDir
 	myCmdUnit.user = task.user
 	myCmdUnit.logPath = task.logPath
+	myCmdUnit.jd = d.jd
 
 	err = myCmdUnit.launch()
 
@@ -88,8 +89,8 @@ func (d *dependencies) exec(task *depEntry) {
 
 	task.dest, task.from = task.from, task.dest
 
-	if !d.crond.SetDependDone(task) {
-		err = rpcCall("Srv.SetDependDone", proto.DepJob{
+	if !d.jd.SetDependDone(task) {
+		err = d.jd.rpcCall("Srv.SetDependDone", proto.DepJob{
 			Name:        task.name,
 			Dest:        task.dest,
 			From:        task.from,
@@ -104,7 +105,7 @@ func (d *dependencies) exec(task *depEntry) {
 		}, &reply)
 
 		if err != nil {
-			log.Error("Srv.SetDependDone error:", err, "server addr:", cfg.AdminAddr)
+			log.Error("Srv.SetDependDone error:", err, "server addr:", d.jd.getOpts().AdminAddr)
 		}
 
 		if !reply {
