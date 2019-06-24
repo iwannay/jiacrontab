@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"context"
 	"net/rpc"
 	"sync"
 
@@ -49,7 +50,16 @@ func (c *clients) del(addr string) {
 }
 
 func Call(addr string, serviceMethod string, args interface{}, reply interface{}) error {
-	err := defaultClients.get(addr).Call(serviceMethod, args, reply)
+	err := defaultClients.get(addr).Call(serviceMethod, context.TODO(), args, reply)
+	if err == rpc.ErrShutdown {
+		log.Debug("rpc remove", addr)
+		Del(addr)
+	}
+	return err
+}
+
+func CallCtx(addr string, serviceMethod string, ctx context.Context, args interface{}, reply interface{}) error {
+	err := defaultClients.get(addr).Call(serviceMethod, ctx, args, reply)
 	if err == rpc.ErrShutdown {
 		log.Debug("rpc remove", addr)
 		Del(addr)

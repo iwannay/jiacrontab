@@ -94,8 +94,7 @@ func (cu *cmdUint) setLogFile() error {
 }
 
 func (cu *cmdUint) exec() error {
-	log.Debug("args:", cu.args)
-
+	log.Debug("cmd exec args:", cu.args)
 	cmdName := cu.args[0][0]
 	args := cu.args[0][1:]
 	cmd := kproc.CommandContext(cu.ctx, cmdName, args...)

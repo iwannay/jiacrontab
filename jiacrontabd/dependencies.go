@@ -23,6 +23,7 @@ type depEntry struct {
 	done        bool
 	timeout     int64
 	err         error
+	ctx         context.Context
 	name        string
 	logPath     string
 	logContent  []byte
@@ -90,7 +91,7 @@ func (d *dependencies) exec(task *depEntry) {
 	task.dest, task.from = task.from, task.dest
 
 	if !d.jd.SetDependDone(task) {
-		err = d.jd.rpcCall("Srv.SetDependDone", proto.DepJob{
+		err = d.jd.rpcCallCtx(ctx, "Srv.SetDependDone", proto.DepJob{
 			Name:        task.name,
 			Dest:        task.dest,
 			From:        task.from,

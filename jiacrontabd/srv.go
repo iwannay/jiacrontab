@@ -160,7 +160,6 @@ func (j *CrontabJob) Delete(args proto.ActionJobsArgs, job *[]models.CrontabJob)
 }
 
 func (j *CrontabJob) Kill(args proto.ActionJobsArgs, job *[]models.CrontabJob) error {
-
 	model := models.DB()
 	if args.Root {
 		model = model.Where("id in (?)", args.JobIDs)

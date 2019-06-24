@@ -155,7 +155,6 @@ func EditJob(ctx *myctx) {
 func ActionTask(ctx *myctx) {
 	var (
 		err      error
-		reply    bool
 		ok       bool
 		method   string
 		reqBody  ActionTaskReqParams
@@ -203,7 +202,7 @@ func ActionTask(ctx *myctx) {
 		targetNames = append(targetNames, v.Name)
 	}
 	ctx.pubEvent(strings.Join(targetNames, ","), eDesc[reqBody.Action], reqBody.Addr, reqBody)
-	ctx.respSucc("", reply)
+	ctx.respSucc("", jobReply)
 }
 
 func ExecTask(ctx *myctx) {
