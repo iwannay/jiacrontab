@@ -76,12 +76,11 @@ func (p *process) waitDepExecDone() bool {
 	ok := true
 	if p.jobEntry.detail.IsSync {
 		// 同步
-		ok = p.jobEntry.jd.dispatchDependSync(p.deps, "")
+		ok = p.jobEntry.jd.dispatchDependSync(p.ctx, p.deps, "")
 	} else {
 		// 并发模式
-		ok = p.jobEntry.jd.dispatchDependAsync(p.deps)
+		ok = p.jobEntry.jd.dispatchDependAsync(p.ctx, p.deps)
 	}
-
 	if !ok {
 		prefix := fmt.Sprintf("[%s %s] ", time.Now().Format("2006-01-02 15:04:05"), p.jobEntry.jd.getOpts().LocalAddr)
 		p.jobEntry.logContent = append(p.jobEntry.logContent, []byte(prefix+"failed to exec depends, push depends error\n")...)
@@ -89,19 +88,19 @@ func (p *process) waitDepExecDone() bool {
 	}
 
 	c := time.NewTimer(3600 * time.Second)
-
 	defer c.Stop()
 
 	for {
 		select {
 		case <-p.ctx.Done():
+			log.Debugf("jobID:%d exec cancel", p.jobEntry.detail.ID)
 			return false
 		case <-c.C:
 			p.cancel()
 			log.Errorf("jobID:%d exec dep timeout!", p.jobEntry.detail.ID)
 			return false
 		case <-p.ready:
-			log.Infof("jobID:%d exec all dep done.", p.jobEntry.detail.ID)
+			log.Debugf("jobID:%d exec all dep done.", p.jobEntry.detail.ID)
 			return true
 		}
 	}
@@ -140,12 +139,12 @@ func (p *process) exec() error {
 			logPath:          p.jobEntry.logPath,
 			label:            p.jobEntry.detail.Name,
 			killChildProcess: p.jobEntry.detail.KillChildProcess,
+			jd:               p.jobEntry.jd,
 		}
 
 		if p.jobEntry.once {
 			myCmdUnit.exportLog = true
 		}
-
 		p.err = myCmdUnit.launch()
 		p.jobEntry.logContent = myCmdUnit.content
 
@@ -159,7 +158,7 @@ func (p *process) exec() error {
 	p.endTime = time.Now()
 	p.jobEntry.detail.LastCostTime = p.endTime.Sub(p.startTime).Seconds()
 
-	log.Infof("%s:%v %d %.3fs %v", p.jobEntry.detail.Name, p.jobEntry.detail.Commands, p.jobEntry.detail.Timeout, p.jobEntry.detail.LastCostTime, err)
+	log.Infof("%s exec %v %d %.3fs %v", p.jobEntry.detail.Name, p.jobEntry.detail.Commands, p.jobEntry.detail.Timeout, p.jobEntry.detail.LastCostTime, err)
 	return p.err
 }
 
@@ -176,6 +175,7 @@ type JobEntry struct {
 	mux        sync.RWMutex
 	once       bool // 只执行一次
 	sync       bool
+	stop       int32 // job stop status
 	uniqueID   string
 }
 
@@ -212,7 +212,7 @@ func (j *JobEntry) handleDepError(startTime time.Time) {
 
 	if j.detail.ErrorMailNotify && len(j.detail.MailTo) != 0 {
 
-		if err := j.jd.rpcCall("Srv.SendMail", proto.SendMail{
+		if err := j.jd.rpcCallCtx(context.TODO(), "Srv.SendMail", proto.SendMail{
 			MailTo:  j.detail.MailTo,
 			Subject: cfg.LocalAddr + "提醒脚本依赖异常退出",
 			Content: fmt.Sprintf(
@@ -237,7 +237,7 @@ func (j *JobEntry) handleNotify(p *process) {
 	}
 
 	if j.detail.ErrorMailNotify {
-		if err = j.jd.rpcCall("Srv.SendMail", proto.SendMail{
+		if err = j.jd.rpcCallCtx(context.TODO(), "Srv.SendMail", proto.SendMail{
 			MailTo:  j.detail.MailTo,
 			Subject: cfg.LocalAddr + "提醒脚本异常退出",
 			Content: fmt.Sprintf(
@@ -265,7 +265,7 @@ func (j *JobEntry) handleNotify(p *process) {
 			return
 		}
 
-		if err = j.jd.rpcCall("Srv.ApiPost", proto.ApiPost{
+		if err = j.jd.rpcCallCtx(context.TODO(), "Srv.ApiPost", proto.ApiPost{
 			Urls: j.detail.APITo,
 			Data: string(postData),
 		}, &reply); err != nil {
@@ -301,7 +301,7 @@ func (j *JobEntry) timeoutTrigger(p *process) {
 				log.Error("json.Marshal error:", err)
 			}
 
-			if err = j.jd.rpcCall("Srv.ErrorNotify err:", proto.ApiPost{
+			if err = j.jd.rpcCallCtx(context.TODO(), "Srv.ErrorNotify err:", proto.ApiPost{
 				Urls: j.detail.APITo,
 				Data: string(postData),
 			}, &reply); err != nil {
@@ -310,7 +310,7 @@ func (j *JobEntry) timeoutTrigger(p *process) {
 
 		case proto.TimeoutTrigger_SendEmail:
 			j.detail.LastExitStatus = exitTimeout
-			if err = j.jd.rpcCall("Srv.SendMail", proto.SendMail{
+			if err = j.jd.rpcCallCtx(context.TODO(), "Srv.SendMail", proto.SendMail{
 				MailTo:  j.detail.MailTo,
 				Subject: cfg.LocalAddr + "提醒脚本执行超时",
 				Content: fmt.Sprintf(
@@ -330,9 +330,13 @@ func (j *JobEntry) timeoutTrigger(p *process) {
 }
 
 func (j *JobEntry) exec() {
+
+	if atomic.LoadInt32(&j.stop) == 1 {
+		return
+	}
+
 	j.wg.Wrap(func() {
 		var err error
-
 		if j.once {
 			err = models.DB().Debug().Take(&j.detail, "id=?", j.job.ID).Error
 		} else {
@@ -370,6 +374,10 @@ func (j *JobEntry) exec() {
 		j.updateJob(models.StatusJobRunning, startTime, endTime, err)
 
 		for i := 0; i <= j.detail.RetryNum; i++ {
+
+			if atomic.LoadInt32(&j.stop) == 1 {
+				return
+			}
 
 			log.Debug("jobID:", j.detail.ID, "retryNum:", i)
 
@@ -423,7 +431,7 @@ func (j *JobEntry) updateJob(status models.JobStatus, startTime, endTime time.Ti
 	}
 
 	if status == models.StatusJobTiming {
-		if err = j.jd.rpcCall("Srv.PushJobLog", models.JobHistory{
+		if err = j.jd.rpcCallCtx(context.TODO(), "Srv.PushJobLog", models.JobHistory{
 			JobType:   models.JobTypeCrontab,
 			JobID:     j.detail.ID,
 			Addr:      j.jd.getOpts().LocalAddr,
@@ -441,8 +449,7 @@ func (j *JobEntry) updateJob(status models.JobStatus, startTime, endTime time.Ti
 
 func (j *JobEntry) kill() {
 	j.exit()
-	if err := models.DB().Model(&models.CrontabJob{}).Updates(map[string]interface{}{
-		"status":      models.StatusJobStop,
+	if err := models.DB().Model(&j.detail).Updates(map[string]interface{}{
 		"process_num": 0,
 	}).Error; err != nil {
 		log.Error("JobEntry.kill", err)
@@ -451,15 +458,16 @@ func (j *JobEntry) kill() {
 
 func (j *JobEntry) waitDone() []byte {
 	j.wg.Wait()
+	atomic.StoreInt32(&j.stop, 0)
 	return j.logContent
 }
 
 func (j *JobEntry) exit() {
+	atomic.StoreInt32(&j.stop, 1)
 	j.mux.Lock()
 	for _, v := range j.processes {
 		v.cancel()
 	}
 	j.mux.Unlock()
-
 	j.waitDone()
 }

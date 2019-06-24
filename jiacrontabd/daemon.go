@@ -25,6 +25,7 @@ type ApiNotifyArgs struct {
 type daemonJob struct {
 	job        *models.DaemonJob
 	daemon     *Daemon
+	ctx        context.Context
 	cancel     context.CancelFunc
 	processNum int
 }
@@ -113,7 +114,7 @@ func (d *daemonJob) handleNotify(err error) {
 	cfg := d.daemon.jd.getOpts()
 	if d.job.ErrorMailNotify && len(d.job.MailTo) > 0 {
 		var reply bool
-		err := d.daemon.jd.rpcCall("Srv.SendMail", proto.SendMail{
+		err := d.daemon.jd.rpcCallCtx(d.ctx, "Srv.SendMail", proto.SendMail{
 			MailTo:  d.job.MailTo,
 			Subject: cfg.LocalAddr + "提醒常驻脚本异常退出",
 			Content: fmt.Sprintf(
@@ -137,7 +138,7 @@ func (d *daemonJob) handleNotify(err error) {
 		if err != nil {
 			log.Error("json.Marshal error:", err)
 		}
-		err = d.daemon.jd.rpcCall("Srv.ApiPost", proto.ApiPost{
+		err = d.daemon.jd.rpcCallCtx(d.ctx, "Srv.ApiPost", proto.ApiPost{
 			Urls: d.job.APITo,
 			Data: string(postData),
 		}, &reply)
@@ -166,7 +167,7 @@ func newDaemon(taskChannelLength int, jd *Jiacrontabd) *Daemon {
 
 func (d *Daemon) add(t *daemonJob) {
 	if t != nil {
-		log.Infof("daemon.add(%s)\n", t.job.Name)
+		log.Debugf("daemon.add(%s)\n", t.job.Name)
 		t.daemon = d
 		d.taskChannel <- t
 	}
@@ -205,13 +206,12 @@ func (d *Daemon) run() {
 func (d *Daemon) process() {
 	go func() {
 		for v := range d.taskChannel {
-			var ctx context.Context
 			d.lock.Lock()
 			if t := d.taskMap[v.job.ID]; t == nil {
 				d.taskMap[v.job.ID] = v
 				d.lock.Unlock()
-				ctx, v.cancel = context.WithCancel(context.Background())
-				go v.do(ctx)
+				v.ctx, v.cancel = context.WithCancel(context.Background())
+				go v.do(v.ctx)
 			}
 		}
 	}()
