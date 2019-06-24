@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"context"
 	"errors"
 	"jiacrontab/pkg/proto"
 	"net"
@@ -19,6 +20,7 @@ const (
 var (
 	ErrRpc        = errors.New("rpc is not available")
 	ErrRpcTimeout = errors.New("rpc call timeout")
+	ErrRpcCancel  = errors.New("rpc call cancel")
 	ErrShutdown   = rpc.ErrShutdown
 )
 
@@ -51,7 +53,7 @@ func (c *Client) dial() (err error) {
 	return nil
 }
 
-func (c *Client) Call(serviceMethod string, args interface{}, reply interface{}) error {
+func (c *Client) Call(serviceMethod string, ctx context.Context, args interface{}, reply interface{}) error {
 	if serviceMethod != PingService && serviceMethod != RegisterService {
 		log.Info("rpc call", c.options.Addr, serviceMethod)
 	}
@@ -60,6 +62,8 @@ func (c *Client) Call(serviceMethod string, args interface{}, reply interface{})
 		return ErrRpc
 	}
 	select {
+	case <-ctx.Done():
+		return ErrRpcCancel
 	case call := <-c.Client.Go(serviceMethod, args, reply, make(chan *rpc.Call, 1)).Done:
 		return call.Error
 	case <-time.After(callTimeout):
@@ -86,7 +90,7 @@ func (c *Client) Ping(serviceMethod string) {
 		default:
 		}
 		if c.Client != nil && c.err == nil {
-			if err = c.Call(serviceMethod, &proto.EmptyArgs{}, &proto.EmptyReply{}); err != nil {
+			if err = c.Call(serviceMethod, context.TODO(), &proto.EmptyArgs{}, &proto.EmptyReply{}); err != nil {
 				c.err = err
 				c.Client.Close()
 				log.Infof("client.Call(%s, args, reply) error (%v) \n", serviceMethod, err)

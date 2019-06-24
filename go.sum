@@ -93,6 +93,8 @@ github.com/iris-contrib/middleware v0.0.0-20181021162728-8bd5d51b3c2e h1:kj3vB5W
 github.com/iris-contrib/middleware v0.0.0-20181021162728-8bd5d51b3c2e/go.mod h1:lZivVjxn00uQH7vp452Wa2p9GD+2ElkVms944o+f0+Y=
 github.com/iwannay/log v0.0.0-20190222094645-1eae5453dbcd h1:ODmB/9nnvC32NaHjevwo86+aL+QLBKTH0GU3oFXGVLg=
 github.com/iwannay/log v0.0.0-20190222094645-1eae5453dbcd/go.mod h1:uZNVAfgxWNr2WSlZaPFV4nd8pLH3qDWD/A498RmicAI=
+github.com/iwannay/log v0.0.0-20190624055842-11613384051f h1:PMweRowqLY/RJS2aV/c/69xticJ7J/53uYW7vy0TFNQ=
+github.com/iwannay/log v0.0.0-20190624055842-11613384051f/go.mod h1:uZNVAfgxWNr2WSlZaPFV4nd8pLH3qDWD/A498RmicAI=
 github.com/jellevandenhooff/dkim v0.0.0-20150330215556-f50fe3d243e1/go.mod h1:E0B/fFc00Y+Rasa88328GlI/XbtyysCtTHZS8h7IrBU=
 github.com/jinzhu/gorm v1.9.2 h1:lCvgEaqe/HVE+tjAR2mt4HbbHAZsQOv3XAZiEZV37iw=
 github.com/jinzhu/gorm v1.9.2/go.mod h1:Vla75njaFJ8clLU1W44h34PjIkijhjHIYnZxMqCdxqo=

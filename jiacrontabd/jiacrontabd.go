@@ -1,6 +1,7 @@
 package jiacrontabd
 
 import (
+	"context"
 	"jiacrontab/models"
 	"jiacrontab/pkg/crontab"
 	"jiacrontab/pkg/finder"
@@ -117,7 +118,7 @@ func (j *Jiacrontabd) run() {
 
 	for v := range j.crontab.Ready() {
 		v := v.Value.(*crontab.Job)
-		log.Info("job queue:", v)
+		log.Debugf("job queue:%+v", v)
 		j.execTask(v)
 	}
 }
@@ -163,7 +164,7 @@ func (j *Jiacrontabd) SetDependDone(task *depEntry) bool {
 					}
 
 					if dep.id == task.id && p.jobEntry.sync {
-						if ok := j.dispatchDependSync(p.deps, dep.id); ok {
+						if ok := j.dispatchDependSync(p.ctx, p.deps, dep.id); ok {
 							return true
 						}
 					}
@@ -190,7 +191,6 @@ func (j *Jiacrontabd) SetDependDone(task *depEntry) bool {
 
 	} else {
 		log.Infof("cannot find task handler %s %s", task.name, task.commands)
-		j.mux.Unlock()
 	}
 
 	return true
@@ -198,7 +198,7 @@ func (j *Jiacrontabd) SetDependDone(task *depEntry) bool {
 }
 
 // 同步模式根据depEntryID确定位置实现任务的依次调度
-func (j *Jiacrontabd) dispatchDependSync(deps []*depEntry, depEntryID string) bool {
+func (j *Jiacrontabd) dispatchDependSync(ctx context.Context, deps []*depEntry, depEntryID string) bool {
 	flag := true
 	cfg := j.getOpts()
 	if len(deps) > 0 {
@@ -212,7 +212,7 @@ func (j *Jiacrontabd) dispatchDependSync(deps []*depEntry, depEntryID string) bo
 					j.dep.add(v)
 				} else {
 					var reply bool
-					err := j.rpcCall("Srv.ExecDepend", []proto.DepJob{{
+					err := j.rpcCallCtx(ctx, "Srv.ExecDepend", []proto.DepJob{{
 						ID:          v.id,
 						Name:        v.name,
 						Dest:        v.dest,
@@ -242,7 +242,7 @@ func (j *Jiacrontabd) dispatchDependSync(deps []*depEntry, depEntryID string) bo
 	return flag
 }
 
-func (j *Jiacrontabd) dispatchDependAsync(deps []*depEntry) bool {
+func (j *Jiacrontabd) dispatchDependAsync(ctx context.Context, deps []*depEntry) bool {
 	var depJobs proto.DepJobs
 	cfg := j.getOpts()
 	for _, v := range deps {
@@ -266,7 +266,7 @@ func (j *Jiacrontabd) dispatchDependAsync(deps []*depEntry) bool {
 
 	if len(depJobs) > 0 {
 		var reply bool
-		if err := j.rpcCall("Srv.ExecDepend", depJobs, &reply); err != nil {
+		if err := j.rpcCallCtx(ctx, "Srv.ExecDepend", depJobs, &reply); err != nil {
 			log.Error("Srv.ExecDepend error:", err, "server addr:", cfg.AdminAddr)
 			return false
 		}
@@ -303,7 +303,7 @@ func (j *Jiacrontabd) heartBeat() {
 		models.StatusJobTiming, models.StatusJobRunning,
 	}).Count(&node.CrontabJobFailNum)
 
-	err := j.rpcCall(rpc.RegisterService, node, &reply)
+	err := j.rpcCallCtx(context.TODO(), rpc.RegisterService, node, &reply)
 
 	if err != nil {
 		log.Error("Srv.Register error:", err, ",server addr:", cfg.AdminAddr)
@@ -333,7 +333,7 @@ func (j *Jiacrontabd) recovery() {
 		})
 	}
 
-	err = models.DB().Find(&daemonJobs, "status in (?)", []models.JobStatus{models.StatusJobOk, models.StatusJobStop}).Error
+	err = models.DB().Find(&daemonJobs, "status in (?)", []models.JobStatus{models.StatusJobOk}).Error
 
 	if err != nil {
 		log.Debug("daemon recovery:", err)
@@ -360,8 +360,8 @@ func (j *Jiacrontabd) init() {
 	j.recovery()
 }
 
-func (j *Jiacrontabd) rpcCall(serviceMethod string, args, reply interface{}) error {
-	return rpc.Call(j.getOpts().AdminAddr, serviceMethod, args, reply)
+func (j *Jiacrontabd) rpcCallCtx(ctx context.Context, serviceMethod string, args, reply interface{}) error {
+	return rpc.CallCtx(j.getOpts().AdminAddr, serviceMethod, ctx, args, reply)
 }
 
 // Main main function

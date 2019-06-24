@@ -8,8 +8,6 @@ import (
 	"errors"
 	"jiacrontab/pkg/util"
 	"time"
-
-	"github.com/iwannay/log"
 )
 
 const (
@@ -116,9 +114,7 @@ func (j *Job) NextExecutionTime(t time.Time) (time.Time, error) {
 	t = t.Add(1*time.Second - time.Duration(t.Nanosecond())*time.Nanosecond)
 	added := false
 	defer func() {
-		log.Debug("++++++++++++1", j.lastExecutionTime, j.nextExecutionTime, t)
 		j.lastExecutionTime, j.nextExecutionTime = j.nextExecutionTime, t
-		log.Debug("++++++++++++2", j.lastExecutionTime, j.nextExecutionTime, t)
 	}()
 
 	// 设置最大调度周期为5年

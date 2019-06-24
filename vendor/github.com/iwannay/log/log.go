@@ -29,7 +29,7 @@ type logContent struct {
 func output(log *logContent) {
 	content := fmt.Sprintln(logLevels[log.level], log.content)
 	switch log.level {
-	case LevelDebug, LevelInfo, LevelError:
+	case LevelDebug, LevelInfo, LevelWarn, LevelError:
 		if log.level >= logLevel {
 			DefaultLogger.Output(3, content)
 		}
