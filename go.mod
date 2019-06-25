@@ -1,5 +1,7 @@
 module jiacrontab
 
+go 1.12
+
 require (
 	cloud.google.com/go v0.36.0 // indirect
 	github.com/Joker/jade v1.0.0 // indirect
