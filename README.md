@@ -118,7 +118,7 @@ clean_task_log = true
 ### 错误日志
 错误日志存放在配置文件设置的目录下  
 定时任务为logs/crontab_task  
-计划任务为daemon_task
+定时任务为daemon_task
 日志文件准确为日期目录下的ID.log  （eg: logs/crontab_task/2018/01/01/1.log）  
 #### 错误日志信息
 1. 正常错误日志  
