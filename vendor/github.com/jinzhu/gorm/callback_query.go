@@ -24,11 +24,6 @@ func queryCallback(scope *Scope) {
 		return
 	}
 
-	//we are only preloading relations, dont touch base model
-	if _, skip := scope.InstanceGet("gorm:only_preload"); skip {
-		return
-	}
-
 	defer scope.trace(NowFunc())
 
 	var (
