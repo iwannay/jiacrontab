@@ -21,6 +21,7 @@ type DepJob struct {
 }
 
 type QueryJobArgs struct {
+	SearchTxt      string
 	Root           bool
 	UserID         uint
 	Page, Pagesize int

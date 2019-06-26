@@ -48,7 +48,7 @@ func newCrontabJobSrv(jd *Jiacrontabd) *CrontabJob {
 }
 
 func (j *CrontabJob) List(args proto.QueryJobArgs, reply *proto.QueryCrontabJobRet) error {
-	err := models.DB().Model(&models.CrontabJob{}).Count(&reply.Total).Error
+	err := models.DB().Model(&models.CrontabJob{}).Where("name like ?", "%"+args.SearchTxt+"%").Count(&reply.Total).Error
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func (j *CrontabJob) List(args proto.QueryJobArgs, reply *proto.QueryCrontabJobR
 	reply.Page = args.Page
 	reply.Pagesize = args.Pagesize
 
-	return models.DB().Order(gorm.Expr("created_user_id=? desc, id desc", args.UserID)).Offset(args.Page - 1).Limit(args.Pagesize).Find(&reply.List).Error
+	return models.DB().Where("name like ?", "%"+args.SearchTxt+"%").Order(gorm.Expr("created_user_id=? desc, id desc", args.UserID)).Offset(args.Page - 1).Limit(args.Pagesize).Find(&reply.List).Error
 }
 
 func (j *CrontabJob) Audit(args proto.AuditJobArgs, reply *[]models.CrontabJob) error {
@@ -289,7 +289,7 @@ func newDaemonJobSrv(jd *Jiacrontabd) *DaemonJob {
 }
 
 func (j *DaemonJob) List(args proto.QueryJobArgs, reply *proto.QueryDaemonJobRet) error {
-	err := models.DB().Model(&models.DaemonJob{}).Count(&reply.Total).Error
+	err := models.DB().Model(&models.DaemonJob{}).Where("name like ?", "%"+args.SearchTxt+"%").Count(&reply.Total).Error
 	if err != nil {
 		return err
 	}
@@ -297,7 +297,7 @@ func (j *DaemonJob) List(args proto.QueryJobArgs, reply *proto.QueryDaemonJobRet
 	reply.Page = args.Page
 	reply.Pagesize = args.Pagesize
 
-	return models.DB().Order(gorm.Expr("created_user_id=? desc, id desc", args.UserID)).Offset(args.Page - 1).Limit(args.Pagesize).Find(&reply.List).Error
+	return models.DB().Where("name like ?", "%"+args.SearchTxt+"%").Order(gorm.Expr("created_user_id=? desc, id desc", args.UserID)).Offset(args.Page - 1).Limit(args.Pagesize).Find(&reply.List).Error
 }
 
 func (j *DaemonJob) Edit(args proto.EditDaemonJobArgs, job *models.DaemonJob) error {
