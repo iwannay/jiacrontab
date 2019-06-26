@@ -56,7 +56,7 @@ func newProcess(id int, jobEntry *JobEntry) *process {
 			jobUniqueID: p.jobEntry.uniqueID,
 			id:          v.ID,
 			from:        v.From,
-			commands:    v.Commands,
+			commands:    append(v.Command, v.Code),
 			dest:        v.Dest,
 			logPath:     filepath.Join(p.jobEntry.jd.getOpts().LogPath, "depend_job", time.Now().Format("2006/01/02"), fmt.Sprintf("%d-%s.log", v.JobID, v.ID)),
 			done:        false,
@@ -130,7 +130,7 @@ func (p *process) exec() error {
 		}
 
 		myCmdUnit := cmdUint{
-			args:             p.jobEntry.detail.Commands,
+			args:             [][]string{append(p.jobEntry.detail.Command, p.jobEntry.detail.Code)},
 			ctx:              p.ctx,
 			dir:              p.jobEntry.detail.WorkDir,
 			user:             p.jobEntry.detail.WorkUser,
@@ -158,7 +158,7 @@ func (p *process) exec() error {
 	p.endTime = time.Now()
 	p.jobEntry.detail.LastCostTime = p.endTime.Sub(p.startTime).Seconds()
 
-	log.Infof("%s exec %v %d %.3fs %v", p.jobEntry.detail.Name, p.jobEntry.detail.Commands, p.jobEntry.detail.Timeout, p.jobEntry.detail.LastCostTime, err)
+	log.Infof("%s exec cost %.3fs err(%v)", p.jobEntry.detail.Name, p.jobEntry.detail.LastCostTime, err)
 	return p.err
 }
 
@@ -211,13 +211,12 @@ func (j *JobEntry) handleDepError(startTime time.Time) {
 	j.writeLog()
 
 	if j.detail.ErrorMailNotify && len(j.detail.MailTo) != 0 {
-
 		if err := j.jd.rpcCallCtx(context.TODO(), "Srv.SendMail", proto.SendMail{
 			MailTo:  j.detail.MailTo,
 			Subject: cfg.LocalAddr + "提醒脚本依赖异常退出",
 			Content: fmt.Sprintf(
-				"任务名：%s\n详情：%v\n开始时间：%s\n耗时：%.4f\n异常：%s",
-				j.detail.Name, j.detail.Commands, endTime.Format(proto.DefaultTimeLayout), endTime.Sub(startTime).Seconds(), err),
+				"任务名：%s\n创建者：%s\n开始时间：%s\n耗时：%.4f\n异常：%s",
+				j.detail.Name, j.detail.CreatedUsername, endTime.Format(proto.DefaultTimeLayout), endTime.Sub(startTime).Seconds(), err),
 		}, &reply); err != nil {
 			log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
 		}
@@ -241,8 +240,8 @@ func (j *JobEntry) handleNotify(p *process) {
 			MailTo:  j.detail.MailTo,
 			Subject: cfg.LocalAddr + "提醒脚本异常退出",
 			Content: fmt.Sprintf(
-				"任务名：%s\n详情：%v\n开始时间：%s\n异常：%s\n重试次数：%d",
-				j.detail.Name, j.detail.Commands,
+				"任务名：%s\n创建者：%s\n开始时间：%s\n异常：%s\n重试次数：%d",
+				j.detail.Name, j.detail.CreatedUsername,
 				p.endTime.Format(proto.DefaultTimeLayout), p.err.Error(), p.retryNum),
 		}, &reply); err != nil {
 			log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
@@ -251,14 +250,14 @@ func (j *JobEntry) handleNotify(p *process) {
 
 	if j.detail.ErrorAPINotify {
 		postData, err := json.Marshal(proto.CrontabApiNotifyBody{
-			NodeAddr:  cfg.LocalAddr,
-			JobName:   j.detail.Name,
-			JobID:     int(j.detail.ID),
-			Commands:  j.detail.Commands,
-			CreatedAt: j.detail.CreatedAt,
-			Timeout:   int64(j.detail.Timeout),
-			Type:      "error",
-			RetryNum:  p.retryNum,
+			NodeAddr:       cfg.LocalAddr,
+			JobName:        j.detail.Name,
+			JobID:          int(j.detail.ID),
+			CreateUsername: j.detail.CreatedUsername,
+			CreatedAt:      j.detail.CreatedAt,
+			Timeout:        int64(j.detail.Timeout),
+			Type:           "error",
+			RetryNum:       p.retryNum,
 		})
 		if err != nil {
 			log.Error("json.Marshal error:", err)
@@ -288,14 +287,14 @@ func (j *JobEntry) timeoutTrigger(p *process) {
 		case proto.TimeoutTrigger_CallApi:
 			j.detail.LastExitStatus = exitTimeout
 			postData, err := json.Marshal(proto.CrontabApiNotifyBody{
-				NodeAddr:  cfg.LocalAddr,
-				JobName:   j.detail.Name,
-				JobID:     int(j.detail.ID),
-				Commands:  j.detail.Commands,
-				CreatedAt: j.detail.CreatedAt,
-				Timeout:   int64(j.detail.Timeout),
-				Type:      "timeout",
-				RetryNum:  p.retryNum,
+				NodeAddr:       cfg.LocalAddr,
+				JobName:        j.detail.Name,
+				JobID:          int(j.detail.ID),
+				CreateUsername: j.detail.CreatedUsername,
+				CreatedAt:      j.detail.CreatedAt,
+				Timeout:        int64(j.detail.Timeout),
+				Type:           "timeout",
+				RetryNum:       p.retryNum,
 			})
 			if err != nil {
 				log.Error("json.Marshal error:", err)
@@ -314,8 +313,8 @@ func (j *JobEntry) timeoutTrigger(p *process) {
 				MailTo:  j.detail.MailTo,
 				Subject: cfg.LocalAddr + "提醒脚本执行超时",
 				Content: fmt.Sprintf(
-					"任务名：%s\n详情：%v\n开始时间：%s\n超时：%ds\n重试次数：%d",
-					j.detail.Name, j.detail.Commands, p.startTime.Format(proto.DefaultTimeLayout),
+					"任务名：%s\n创建者：%v\n开始时间：%s\n超时：%ds\n重试次数：%d",
+					j.detail.Name, j.detail.CreatedUsername, p.startTime.Format(proto.DefaultTimeLayout),
 					j.detail.Timeout, p.retryNum),
 			}, &reply); err != nil {
 				log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)

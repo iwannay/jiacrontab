@@ -126,7 +126,7 @@ func EditDaemonJob(ctx *myctx) {
 		APITo:           reqBody.APITo,
 		UpdatedUserID:   ctx.claims.UserID,
 		UpdatedUsername: ctx.claims.Username,
-		Commands:        reqBody.Commands,
+		Command:         reqBody.Command,
 		FailRestart:     reqBody.FailRestart,
 		Status:          models.StatusJobUnaudited,
 	}
