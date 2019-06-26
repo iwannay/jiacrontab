@@ -14,12 +14,12 @@ import (
 )
 
 type ApiNotifyArgs struct {
-	JobName    string
-	JobID      uint
-	Commands   []string
-	NodeAddr   string
-	CreatedAt  time.Time
-	NotifyType string
+	JobName        string
+	JobID          uint
+	NodeAddr       string
+	CreateUsername string
+	CreatedAt      time.Time
+	NotifyType     string
 }
 
 type daemonJob struct {
@@ -64,7 +64,7 @@ func (d *daemonJob) do(ctx context.Context) {
 		)
 		myCmdUint := cmdUint{
 			ctx:     ctx,
-			args:    [][]string{d.job.Commands},
+			args:    [][]string{append(d.job.Command, d.job.Code)},
 			env:     d.job.WorkEnv,
 			dir:     d.job.WorkDir,
 			user:    d.job.WorkUser,
@@ -118,8 +118,8 @@ func (d *daemonJob) handleNotify(err error) {
 			MailTo:  d.job.MailTo,
 			Subject: cfg.LocalAddr + "提醒常驻脚本异常退出",
 			Content: fmt.Sprintf(
-				"任务名：%s\n详情：%v\n开始时间：%s\n异常：%s",
-				d.job.Name, d.job.Commands, time.Now().Format(proto.DefaultTimeLayout), err),
+				"任务名：%s\n创建者：%s\n开始时间：%s\n异常：%s",
+				d.job.Name, d.job.CreatedUsername, time.Now().Format(proto.DefaultTimeLayout), err),
 		}, &reply)
 		if err != nil {
 			log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
@@ -128,12 +128,12 @@ func (d *daemonJob) handleNotify(err error) {
 
 	if d.job.ErrorAPINotify && len(d.job.APITo) > 0 {
 		postData, err := json.Marshal(ApiNotifyArgs{
-			JobName:    d.job.Name,
-			JobID:      d.job.ID,
-			Commands:   d.job.Commands,
-			CreatedAt:  d.job.CreatedAt,
-			NodeAddr:   cfg.LocalAddr,
-			NotifyType: "error",
+			JobName:        d.job.Name,
+			JobID:          d.job.ID,
+			CreateUsername: d.job.CreatedUsername,
+			CreatedAt:      d.job.CreatedAt,
+			NodeAddr:       cfg.LocalAddr,
+			NotifyType:     "error",
 		})
 		if err != nil {
 			log.Error("json.Marshal error:", err)

@@ -10,6 +10,8 @@ type DaemonJob struct {
 	gorm.Model
 	Name            string      `json:"name" gorm:"unique;not null"`
 	UserID          uint        `json:"user_id"`
+	Command         StringSlice `json:"commands" gorm:"type:varchar(1000)"`
+	Code            string      `json:"code"  gorm:"type:TEXT"`
 	ErrorMailNotify bool        `json:"errorMailNotify"`
 	ErrorAPINotify  bool        `json:"errorAPINotify"`
 	Status          JobStatus   `json:"status"`
@@ -24,5 +26,4 @@ type DaemonJob struct {
 	CreatedUsername string      `json:"createdUsername"`
 	UpdatedUserID   uint        `json:"updatedUserID"`
 	UpdatedUsername string      `json:"updatedUsername"`
-	Commands        StringSlice `json:"commands" gorm:"type:varchar(1000)"`
 }
