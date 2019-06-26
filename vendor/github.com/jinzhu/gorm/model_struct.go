@@ -43,7 +43,6 @@ func (s *ModelStruct) TableName(db *DB) string {
 			if db == nil || !db.parent.singularTable {
 				tableName = inflection.Plural(tableName)
 			}
-			db.parent.RUnlock()
 			s.defaultTableName = tableName
 		}
 	}
@@ -92,24 +91,24 @@ func (s *StructField) TagSettingsDelete(key string) {
 	delete(s.TagSettings, key)
 }
 
-func (sf *StructField) clone() *StructField {
+func (structField *StructField) clone() *StructField {
 	clone := &StructField{
-		DBName:          sf.DBName,
-		Name:            sf.Name,
-		Names:           sf.Names,
-		IsPrimaryKey:    sf.IsPrimaryKey,
-		IsNormal:        sf.IsNormal,
-		IsIgnored:       sf.IsIgnored,
-		IsScanner:       sf.IsScanner,
-		HasDefaultValue: sf.HasDefaultValue,
-		Tag:             sf.Tag,
+		DBName:          structField.DBName,
+		Name:            structField.Name,
+		Names:           structField.Names,
+		IsPrimaryKey:    structField.IsPrimaryKey,
+		IsNormal:        structField.IsNormal,
+		IsIgnored:       structField.IsIgnored,
+		IsScanner:       structField.IsScanner,
+		HasDefaultValue: structField.HasDefaultValue,
+		Tag:             structField.Tag,
 		TagSettings:     map[string]string{},
-		Struct:          sf.Struct,
-		IsForeignKey:    sf.IsForeignKey,
+		Struct:          structField.Struct,
+		IsForeignKey:    structField.IsForeignKey,
 	}
 
-	if sf.Relationship != nil {
-		relationship := *sf.Relationship
+	if structField.Relationship != nil {
+		relationship := *structField.Relationship
 		clone.Relationship = &relationship
 	}
 
@@ -626,9 +625,6 @@ func (scope *Scope) GetStructFields() (fields []*StructField) {
 func parseTagSetting(tags reflect.StructTag) map[string]string {
 	setting := map[string]string{}
 	for _, str := range []string{tags.Get("sql"), tags.Get("gorm")} {
-		if str == "" {
-			continue
-		}
 		tags := strings.Split(str, ";")
 		for _, value := range tags {
 			v := strings.Split(value, ":")

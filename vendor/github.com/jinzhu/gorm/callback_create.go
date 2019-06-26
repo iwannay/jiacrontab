@@ -83,17 +83,10 @@ func createCallback(scope *Scope) {
 			quotedTableName = scope.QuotedTableName()
 			primaryField    = scope.PrimaryField()
 			extraOption     string
-			insertModifier  string
 		)
 
 		if str, ok := scope.Get("gorm:insert_option"); ok {
 			extraOption = fmt.Sprint(str)
-		}
-		if str, ok := scope.Get("gorm:insert_modifier"); ok {
-			insertModifier = strings.ToUpper(fmt.Sprint(str))
-			if insertModifier == "INTO" {
-				insertModifier = ""
-			}
 		}
 
 		if primaryField != nil {
@@ -104,8 +97,7 @@ func createCallback(scope *Scope) {
 
 		if len(columns) == 0 {
 			scope.Raw(fmt.Sprintf(
-				"INSERT %v INTO %v %v%v%v",
-				addExtraSpaceIfExist(insertModifier),
+				"INSERT INTO %v %v%v%v",
 				quotedTableName,
 				scope.Dialect().DefaultValueStr(),
 				addExtraSpaceIfExist(extraOption),
@@ -113,8 +105,7 @@ func createCallback(scope *Scope) {
 			))
 		} else {
 			scope.Raw(fmt.Sprintf(
-				"INSERT %v INTO %v (%v) VALUES (%v)%v%v",
-				addExtraSpaceIfExist(insertModifier),
+				"INSERT INTO %v (%v) VALUES (%v)%v%v",
 				scope.QuotedTableName(),
 				strings.Join(columns, ","),
 				strings.Join(placeholders, ","),
