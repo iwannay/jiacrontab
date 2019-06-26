@@ -75,10 +75,6 @@ func (j *CrontabJob) Edit(args proto.EditCrontabJobArgs, reply *models.CrontabJo
 	}
 
 	if args.Job.ID == 0 {
-		return models.DB().Create(&args.Job).Error
-	}
-
-	if args.Job.ID == 0 {
 		model = models.DB().Save(&args.Job)
 	} else {
 		if args.Root {
