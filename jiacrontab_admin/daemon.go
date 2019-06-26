@@ -25,10 +25,11 @@ func GetDaemonJobList(ctx *myctx) {
 	}
 
 	if err = rpcCall(reqBody.Addr, "DaemonJob.List", &proto.QueryJobArgs{
-		Page:     reqBody.Page,
-		Pagesize: reqBody.Pagesize,
-		Root:     ctx.claims.Root,
-		UserID:   ctx.claims.UserID,
+		Page:      reqBody.Page,
+		Pagesize:  reqBody.Pagesize,
+		SearchTxt: reqBody.SearchTxt,
+		Root:      ctx.claims.Root,
+		UserID:    ctx.claims.UserID,
 	}, &jobRet); err != nil {
 		ctx.respRPCError(err)
 		return
