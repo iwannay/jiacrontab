@@ -12,7 +12,6 @@ import (
 
 // DB contains information for current db connection
 type DB struct {
-	sync.RWMutex
 	Value        interface{}
 	Error        error
 	RowsAffected int64
@@ -20,7 +19,7 @@ type DB struct {
 	// single db
 	db                SQLCommon
 	blockGlobalUpdate bool
-	logMode           logModeValue
+	logMode           int
 	logger            logger
 	search            *search
 	values            sync.Map
@@ -31,14 +30,6 @@ type DB struct {
 	dialect       Dialect
 	singularTable bool
 }
-
-type logModeValue int
-
-const (
-	defaultLogMode logModeValue = iota
-	noLogMode
-	detailedLogMode
-)
 
 // Open initialize a new db connection, need to import driver first, e.g:
 //
@@ -150,9 +141,9 @@ func (s *DB) SetLogger(log logger) {
 // LogMode set log mode, `true` for detailed logs, `false` for no log, default, will only print error logs
 func (s *DB) LogMode(enable bool) *DB {
 	if enable {
-		s.logMode = detailedLogMode
+		s.logMode = 2
 	} else {
-		s.logMode = noLogMode
+		s.logMode = 1
 	}
 	return s
 }
@@ -179,13 +170,7 @@ func (s *DB) SingularTable(enable bool) {
 func (s *DB) NewScope(value interface{}) *Scope {
 	dbClone := s.clone()
 	dbClone.Value = value
-	scope := &Scope{db: dbClone, Value: value}
-	if s.search != nil {
-		scope.Search = s.search.clone()
-	} else {
-		scope.Search = &search{}
-	}
-	return scope
+	return &Scope{db: dbClone, Search: dbClone.search.clone(), Value: value}
 }
 
 // QueryExpr returns the query as expr object
@@ -305,7 +290,6 @@ func (s *DB) Assign(attrs ...interface{}) *DB {
 func (s *DB) First(out interface{}, where ...interface{}) *DB {
 	newScope := s.NewScope(out)
 	newScope.Search.Limit(1)
-
 	return newScope.Set("gorm:order_by_primary_key", "ASC").
 		inlineCondition(where...).callCallbacks(s.parent.callbacks.queries).db
 }
@@ -732,8 +716,8 @@ func (s *DB) SetJoinTableHandler(source interface{}, column string, handler Join
 func (s *DB) AddError(err error) error {
 	if err != nil {
 		if err != ErrRecordNotFound {
-			if s.logMode == defaultLogMode {
-				go s.print("error", fileWithLineNum(), err)
+			if s.logMode == 0 {
+				go s.print(fileWithLineNum(), err)
 			} else {
 				s.log(err)
 			}
@@ -796,13 +780,13 @@ func (s *DB) print(v ...interface{}) {
 }
 
 func (s *DB) log(v ...interface{}) {
-	if s != nil && s.logMode == detailedLogMode {
+	if s != nil && s.logMode == 2 {
 		s.print(append([]interface{}{"log", fileWithLineNum()}, v...)...)
 	}
 }
 
 func (s *DB) slog(sql string, t time.Time, vars ...interface{}) {
-	if s.logMode == detailedLogMode {
+	if s.logMode == 2 {
 		s.print("sql", fileWithLineNum(), NowFunc().Sub(t), sql, vars, s.RowsAffected)
 	}
 }

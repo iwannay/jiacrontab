@@ -1007,15 +1007,8 @@ func (scope *Scope) pluck(column string, value interface{}) *Scope {
 func (scope *Scope) count(value interface{}) *Scope {
 	if query, ok := scope.Search.selects["query"]; !ok || !countingQueryRegexp.MatchString(fmt.Sprint(query)) {
 		if len(scope.Search.group) != 0 {
-			if len(scope.Search.havingConditions) != 0 {
-				scope.prepareQuerySQL()
-				scope.Search = &search{}
-				scope.Search.Select("count(*)")
-				scope.Search.Table(fmt.Sprintf("( %s ) AS count_table", scope.SQL))
-			} else {
-				scope.Search.Select("count(*) FROM ( SELECT count(*) as name ")
-				scope.Search.group += " ) AS count_table"
-			}
+			scope.Search.Select("count(*) FROM ( SELECT count(*) as name ")
+			scope.Search.group += " ) AS count_table"
 		} else {
 			scope.Search.Select("count(*)")
 		}
@@ -1316,7 +1309,6 @@ func (scope *Scope) autoIndex() *Scope {
 }
 
 func (scope *Scope) getColumnAsArray(columns []string, values ...interface{}) (results [][]interface{}) {
-	resultMap := make(map[string][]interface{})
 	for _, value := range values {
 		indirectValue := indirect(reflect.ValueOf(value))
 
@@ -1335,10 +1327,7 @@ func (scope *Scope) getColumnAsArray(columns []string, values ...interface{}) (r
 				}
 
 				if hasValue {
-					h := fmt.Sprint(result...)
-					if _, exist := resultMap[h]; !exist {
-						resultMap[h] = result
-					}
+					results = append(results, result)
 				}
 			}
 		case reflect.Struct:
@@ -1353,16 +1342,11 @@ func (scope *Scope) getColumnAsArray(columns []string, values ...interface{}) (r
 			}
 
 			if hasValue {
-				h := fmt.Sprint(result...)
-				if _, exist := resultMap[h]; !exist {
-					resultMap[h] = result
-				}
+				results = append(results, result)
 			}
 		}
 	}
-	for _, v := range resultMap {
-		results = append(results, v)
-	}
+
 	return
 }
 
