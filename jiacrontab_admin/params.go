@@ -48,7 +48,8 @@ type EditJobReqParams struct {
 	Addr             string            `json:"addr" rule:"required,请填写addr"`
 	IsSync           bool              `json:"isSync"`
 	Name             string            `json:"name" rule:"required,请填写name"`
-	Commands         [][]string        `json:"commands"`
+	Command          []string          `json:"command" rule:"required,请填写name"`
+	Code             string            `json:"code"`
 	Timeout          int               `json:"timeout"`
 	MaxConcurrent    uint              `json:"maxConcurrent"`
 	ErrorMailNotify  bool              `json:"errorMailNotify"`
@@ -207,7 +208,8 @@ type EditDaemonJobReqParams struct {
 	Name            string   `json:"name" rule:"required,请填写name"`
 	MailTo          []string `json:"mailTo"`
 	APITo           []string `json:"APITo"`
-	Commands        []string `json:"commands"  rule:"required,请填写commands"`
+	Command         []string `json:"command"  rule:"required,请填写command"`
+	Code            string   `json:"code"`
 	WorkUser        string   `json:"workUser"`
 	WorkEnv         []string `json:"workEnv"`
 	WorkDir         string   `json:"workDir"`

@@ -44,14 +44,14 @@ type QueryDaemonJobRet struct {
 type AuditJobArgs struct{ JobIDs []uint }
 
 type CrontabApiNotifyBody struct {
-	NodeAddr  string
-	JobName   string
-	JobID     int
-	Commands  [][]string
-	CreatedAt time.Time
-	Timeout   int64
-	Type      string
-	RetryNum  int
+	NodeAddr       string
+	JobName        string
+	JobID          int
+	CreateUsername string
+	CreatedAt      time.Time
+	Timeout        int64
+	Type           string
+	RetryNum       int
 }
 
 type EditCrontabJobArgs struct {
