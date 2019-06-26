@@ -25,6 +25,7 @@ func GetJobList(ctx *myctx) {
 	rpcReqParams.Pagesize = reqBody.Pagesize
 	rpcReqParams.UserID = ctx.claims.UserID
 	rpcReqParams.Root = ctx.claims.Root
+	rpcReqParams.SearchTxt = reqBody.SearchTxt
 
 	if err := rpcCall(reqBody.Addr, "CrontabJob.List", rpcReqParams, &jobRet); err != nil {
 		ctx.respRPCError(err)

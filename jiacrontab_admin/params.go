@@ -155,7 +155,8 @@ func (p *SystemInfoReqParams) Verify(ctx iris.Context) error {
 }
 
 type GetJobListReqParams struct {
-	Addr string `json:"addr" rule:"required,请填写addr"`
+	Addr      string `json:"addr" rule:"required,请填写addr"`
+	SearchTxt string `json:"searchTxt"`
 	PageReqParams
 }
 
