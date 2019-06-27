@@ -34,8 +34,10 @@ func (d *daemonJob) do(ctx context.Context) {
 
 	d.processNum = 1
 	t := time.NewTicker(1 * time.Second)
+	defer t.Stop()
 	d.daemon.wait.Add(1)
 	cfg := d.daemon.jd.getOpts()
+	retryNum := d.job.RetryNum
 
 	defer func() {
 		if err := recover(); err != nil {
@@ -76,7 +78,7 @@ func (d *daemonJob) do(ctx context.Context) {
 		log.Info("exec daemon job, jobName:", d.job.Name, " jobID", d.job.ID)
 
 		err = myCmdUint.launch()
-
+		retryNum--
 		d.handleNotify(err)
 
 		select {
@@ -85,7 +87,7 @@ func (d *daemonJob) do(ctx context.Context) {
 		case <-t.C:
 		}
 
-		if stop || d.job.FailRestart == false {
+		if stop || d.job.FailRestart == false || (d.job.RetryNum > 0 && retryNum == 0) {
 			break
 		}
 
@@ -212,6 +214,8 @@ func (d *Daemon) process() {
 				d.lock.Unlock()
 				v.ctx, v.cancel = context.WithCancel(context.Background())
 				go v.do(v.ctx)
+			} else {
+				d.lock.Unlock()
 			}
 		}
 	}()

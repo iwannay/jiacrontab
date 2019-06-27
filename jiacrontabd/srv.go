@@ -307,12 +307,13 @@ func (j *DaemonJob) Edit(args proto.EditDaemonJobArgs, job *models.DaemonJob) er
 	if args.Root {
 		model = model.Where("id=?", args.Job.ID)
 	} else {
-		model = model.Where("id=? and created_user_id=?", args.Job.ID, args.Job.CreatedUserID).Omit(
-			"updated_at", "created_at", "deleted_at",
-			"createdUserID", "createdUsername")
+		model = model.Where("id=? and created_user_id=?", args.Job.ID, args.Job.CreatedUserID)
 	}
+	model.Omit(
+		"updated_at", "created_at", "deleted_at",
+		"created_user_id", "created_username")
 
-	ret := model.Save(&args)
+	ret := model.Save(&args.Job)
 	*job = args.Job
 	return ret.Error
 }
