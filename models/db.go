@@ -12,7 +12,10 @@ import (
 // D alias DB
 type D = gorm.DB
 
-var db *D
+var (
+	db        *D
+	debugMode bool
+)
 
 func CreateDB(dialect string, args ...interface{}) error {
 	switch dialect {
@@ -46,6 +49,9 @@ func DB() *D {
 	if db == nil {
 		panic("you must call CreateDb first")
 	}
+	if debugMode {
+		return db.Debug()
+	}
 	return db
 }
 
@@ -66,7 +72,7 @@ func Transactions(fn func(tx *gorm.DB) error) error {
 	return tx.Commit().Error
 }
 
-func InitModel(driverName string, dsn string) error {
+func InitModel(driverName string, dsn string, debug bool) error {
 	if driverName == "" || dsn == "" {
 		return errors.New("driverName and dsn cannot empty")
 	}
@@ -74,6 +80,8 @@ func InitModel(driverName string, dsn string) error {
 	if err := CreateDB(driverName, dsn); err != nil {
 		return err
 	}
+
+	debugMode = debug
 
 	DB().CreateTable(&Node{})
 	DB().AutoMigrate(&Node{})

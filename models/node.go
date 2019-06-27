@@ -39,9 +39,9 @@ func (n *Node) Delete(groupID uint, addr string) error {
 	var ret *gorm.DB
 	if groupID == SuperGroup.ID {
 		// 超级管理员分组采用软删除
-		ret = DB().Debug().Delete(n, "group_id=? and addr=?", groupID, addr)
+		ret = DB().Delete(n, "group_id=? and addr=?", groupID, addr)
 	} else {
-		ret = DB().Debug().Unscoped().Delete(n, "group_id=? and addr=?", groupID, addr)
+		ret = DB().Unscoped().Delete(n, "group_id=? and addr=?", groupID, addr)
 	}
 
 	if ret.Error != nil {

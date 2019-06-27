@@ -118,7 +118,7 @@ func (d *daemonJob) handleNotify(err error) {
 		var reply bool
 		err := d.daemon.jd.rpcCallCtx(d.ctx, "Srv.SendMail", proto.SendMail{
 			MailTo:  d.job.MailTo,
-			Subject: cfg.LocalAddr + "提醒常驻脚本异常退出",
+			Subject: cfg.BoardcastAddr + "提醒常驻脚本异常退出",
 			Content: fmt.Sprintf(
 				"任务名：%s\n创建者：%s\n开始时间：%s\n异常：%s",
 				d.job.Name, d.job.CreatedUsername, time.Now().Format(proto.DefaultTimeLayout), err),
@@ -134,7 +134,7 @@ func (d *daemonJob) handleNotify(err error) {
 			JobID:          d.job.ID,
 			CreateUsername: d.job.CreatedUsername,
 			CreatedAt:      d.job.CreatedAt,
-			NodeAddr:       cfg.LocalAddr,
+			NodeAddr:       cfg.BoardcastAddr,
 			NotifyType:     "error",
 		})
 		if err != nil {

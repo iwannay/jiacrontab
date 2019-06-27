@@ -79,7 +79,7 @@ func (j *Jiacrontabd) addJob(job *crontab.Job) {
 	if err := j.crontab.AddJob(job); err != nil {
 		log.Error("NextExecutionTime:", err, " timeArgs:", job)
 	} else {
-		if err := models.DB().Model(&models.CrontabJob{}).Where("id=?", job.ID).Debug().
+		if err := models.DB().Model(&models.CrontabJob{}).Where("id=?", job.ID).
 			Updates(map[string]interface{}{
 				"next_exec_time": job.GetNextExecTime().Truncate(time.Second),
 				"status":         models.StatusJobTiming,
@@ -127,7 +127,7 @@ func (j *Jiacrontabd) run() {
 // 目标网络不是本机时返回false
 func (j *Jiacrontabd) SetDependDone(task *depEntry) bool {
 
-	if task.dest != j.getOpts().LocalAddr {
+	if task.dest != j.getOpts().BoardcastAddr {
 		return false
 	}
 
@@ -208,7 +208,7 @@ func (j *Jiacrontabd) dispatchDependSync(ctx context.Context, deps []*depEntry, 
 			// 根据flag实现调度下一个依赖任务
 			if flag || depEntryID == "" {
 				// 检测目标服务器为本机时直接执行脚本
-				if v.dest == cfg.LocalAddr {
+				if v.dest == cfg.BoardcastAddr {
 					j.dep.add(v)
 				} else {
 					var reply bool
@@ -247,7 +247,7 @@ func (j *Jiacrontabd) dispatchDependAsync(ctx context.Context, deps []*depEntry)
 	cfg := j.getOpts()
 	for _, v := range deps {
 		// 检测目标服务器是本机直接执行脚本
-		if v.dest == cfg.LocalAddr {
+		if v.dest == cfg.BoardcastAddr {
 			j.dep.add(v)
 		} else {
 			depJobs = append(depJobs, proto.DepJob{
@@ -290,7 +290,7 @@ func (j *Jiacrontabd) heartBeat() {
 		hostname = util.GetHostname()
 	}
 	node := models.Node{
-		Addr:           cfg.LocalAddr,
+		Addr:           cfg.BoardcastAddr,
 		DaemonTaskNum:  j.daemon.count(),
 		CrontabTaskNum: j.count(),
 		GroupID:        models.SuperGroup.ID,
@@ -316,7 +316,7 @@ func (j *Jiacrontabd) recovery() {
 	var crontabJobs []models.CrontabJob
 	var daemonJobs []models.DaemonJob
 
-	err := models.DB().Debug().Find(&crontabJobs, "status IN (?)", []models.JobStatus{models.StatusJobTiming, models.StatusJobRunning}).Error
+	err := models.DB().Find(&crontabJobs, "status IN (?)", []models.JobStatus{models.StatusJobTiming, models.StatusJobRunning}).Error
 	if err != nil {
 		log.Debug("crontab recovery:", err)
 	}

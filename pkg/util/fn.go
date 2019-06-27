@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"time"
+	"flag"
 )
 
 func RandIntn(end int) int {
@@ -155,6 +156,17 @@ func GetHostname() string {
 		log.Error("GetHostname:", err)
 	}
 	return hostname
+}
+
+func HasFlagName(fs *flag.FlagSet, s string) bool {
+		var found bool
+		fs.Visit(func(flag *flag.Flag) {
+			if flag.Name == s {
+				found = true
+			}
+		})
+		return found
+	
 }
 
 func init() {
