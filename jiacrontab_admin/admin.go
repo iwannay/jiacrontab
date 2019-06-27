@@ -31,7 +31,7 @@ func New(opt *Config) *Admin {
 
 func (a *Admin) init() {
 	cfg := a.getOpts()
-	if err := models.InitModel(cfg.Database.DriverName, cfg.Database.DSN); err != nil {
+	if err := models.InitModel(cfg.Database.DriverName, cfg.Database.DSN, cfg.App.Debug); err != nil {
 		panic(err)
 	}
 	// mail
@@ -63,11 +63,9 @@ func (a *Admin) Main() {
 		a.initModel = true
 	}
 
-	if a.initModel {
-		a.init()
-		defer models.DB().Close()
-		go rpc.ListenAndServe(cfg.App.RPCListenAddr, NewSrv(a))
-	}
+	a.init()
+	defer models.DB().Close()
+	go rpc.ListenAndServe(cfg.App.RPCListenAddr, NewSrv(a))
 
 	app := newApp(a)
 	app.Run(iris.Addr(cfg.App.HTTPListenAddr))

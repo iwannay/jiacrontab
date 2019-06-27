@@ -78,9 +78,9 @@ func (j *CrontabJob) Edit(args proto.EditCrontabJobArgs, reply *models.CrontabJo
 		model = models.DB().Save(&args.Job)
 	} else {
 		if args.Root {
-			model = model.Where("id=?", args.Job.ID).Debug()
+			model = model.Where("id=?", args.Job.ID)
 		} else {
-			model = model.Where("id=? and created_user_id", args.Job.ID, args.Job.CreatedUserID).Debug()
+			model = model.Where("id=? and created_user_id", args.Job.ID, args.Job.CreatedUserID)
 		}
 		model = model.Omit(
 			"updated_at", "created_at", "deleted_at",
@@ -184,7 +184,7 @@ func (j *CrontabJob) Exec(args proto.GetJobArgs, reply *proto.ExecCrontabJobRepl
 		model = model.Where("created_user_id = ? and id=?", args.UserID, args.JobID)
 	}
 
-	ret := model.Debug().Take(&reply.Job)
+	ret := model.Take(&reply.Job)
 
 	if ret.Error == nil {
 		jobInstance := newJobEntry(&crontab.Job{
@@ -298,24 +298,22 @@ func (j *DaemonJob) List(args proto.QueryJobArgs, reply *proto.QueryDaemonJobRet
 
 func (j *DaemonJob) Edit(args proto.EditDaemonJobArgs, job *models.DaemonJob) error {
 
-	if args.Job.ID == 0 {
-		ret := models.DB().Create(&args.Job)
-		return ret.Error
-	}
-
 	model := models.DB()
-	if args.Root {
-		model = model.Where("id=?", args.Job.ID)
+	if args.Job.ID == 0 {
+		model = models.DB().Create(&args.Job)
 	} else {
-		model = model.Where("id=? and created_user_id=?", args.Job.ID, args.Job.CreatedUserID)
+		if args.Root {
+			model = model.Where("id=?", args.Job.ID)
+		} else {
+			model = model.Where("id=? and created_user_id=?", args.Job.ID, args.Job.CreatedUserID)
+		}
+		model = model.Omit(
+			"updated_at", "created_at", "deleted_at",
+			"created_user_id", "created_username")
 	}
-	model.Omit(
-		"updated_at", "created_at", "deleted_at",
-		"created_user_id", "created_username")
 
-	ret := model.Save(&args.Job)
 	*job = args.Job
-	return ret.Error
+	return model.Error
 }
 
 func (j *DaemonJob) Start(args proto.ActionJobsArgs, jobs *[]models.DaemonJob) error {
