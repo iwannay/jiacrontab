@@ -214,6 +214,7 @@ type EditDaemonJobReqParams struct {
 	WorkEnv         []string `json:"workEnv"`
 	WorkDir         string   `json:"workDir"`
 	FailRestart     bool     `json:"failRestart"`
+	RetryNum        int      `json:"retryNum"`
 	ErrorMailNotify bool     `json:"errorMailNotify"`
 	ErrorAPINotify  bool     `json:"errorAPINotify"`
 }
