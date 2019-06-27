@@ -61,6 +61,7 @@ type CrontabJob struct {
 type StringSlice []string
 
 func (s *StringSlice) Scan(v interface{}) error {
+
 	switch val := v.(type) {
 	case string:
 		return json.Unmarshal([]byte(val), s)
@@ -69,10 +70,19 @@ func (s *StringSlice) Scan(v interface{}) error {
 	default:
 		return errors.New("not support")
 	}
+}
 
+func (s StringSlice) MarshalJSON() ([]byte, error) {
+	if s == nil {
+		s = make(StringSlice, 0)
+	}
+	return json.Marshal([]string(s))
 }
 
 func (s StringSlice) Value() (driver.Value, error) {
+	if s == nil {
+		s = make(StringSlice, 0)
+	}
 	bts, err := json.Marshal(s)
 	return string(bts), err
 }
@@ -93,12 +103,24 @@ func (d *DependJobs) Scan(v interface{}) error {
 
 func (d DependJobs) Value() (driver.Value, error) {
 
+	if d == nil {
+		d = make(DependJobs, 0)
+	}
+
 	for k, _ := range d {
 		d[k].ID = util.UUID()
 	}
 
 	bts, err := json.Marshal(d)
 	return string(bts), err
+}
+
+func (d DependJobs) MarshalJSON() ([]byte, error) {
+	if d == nil {
+		d = make(DependJobs, 0)
+	}
+	type m DependJobs
+	return json.Marshal(m(d))
 }
 
 type TimeArgs struct {
@@ -154,8 +176,19 @@ func (p *PipeComamnds) Scan(v interface{}) error {
 }
 
 func (p PipeComamnds) Value() (driver.Value, error) {
+	if p == nil {
+		p = make(PipeComamnds, 0)
+	}
 	bts, err := json.Marshal(p)
 	return string(bts), err
+}
+
+func (d PipeComamnds) MarshalJSON() ([]byte, error) {
+	if d == nil {
+		d = make(PipeComamnds, 0)
+	}
+	type m PipeComamnds
+	return json.Marshal(m(d))
 }
 
 type CrontabArgs struct {
