@@ -9,8 +9,6 @@ import (
 	"github.com/kataras/iris/middleware/logger"
 
 	"jiacrontab/models"
-	"os"
-	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/iris-contrib/middleware/cors"
@@ -144,7 +142,6 @@ func InitApp(ctx *myctx) {
 		err     error
 		user    models.User
 		reqBody InitAppReqParams
-		cfg     = ctx.adm.getOpts()
 	)
 
 	if err = ctx.Valid(&reqBody); err != nil {
@@ -152,15 +149,7 @@ func InitApp(ctx *myctx) {
 		return
 	}
 
-	if err = cfg.Activate(&databaseOpt{
-		DriverName: reqBody.Database,
-		DSN:        reqBody.Dsn,
-	}); err != nil {
-		ctx.respDBError(err)
-		return
-	}
-
-	if ret := models.DB().Debug().Take(&user, "group_id=?", 1); ret.Error == nil && ret.RowsAffected > 0 {
+	if ret := models.DB().Take(&user, "group_id=?", 1); ret.Error == nil && ret.RowsAffected > 0 {
 		ctx.respNotAllowed()
 		return
 	}
@@ -176,8 +165,5 @@ func InitApp(ctx *myctx) {
 		return
 	}
 
-	time.AfterFunc(2*time.Second, func() {
-		os.Exit(0)
-	})
 	ctx.respSucc("", true)
 }

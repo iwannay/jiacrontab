@@ -1,11 +1,11 @@
 package jiacrontabd
 
 import (
-	"fmt"
-	"github.com/iwannay/log"
 	"jiacrontab/pkg/file"
 	"jiacrontab/pkg/util"
 	"reflect"
+
+	"github.com/iwannay/log"
 
 	ini "gopkg.in/ini.v1"
 )
@@ -14,30 +14,25 @@ const (
 	appname = "jiacrontabd"
 )
 
-// var cfg *Config
-
 type Config struct {
-	LogLevel         string `opt:"log_level" default:"warn" comment:"日志等级"`
-	VerboseJobLog    bool   `opt:"verbose_job_log" default:"true"`
-	ListenAddr       string `opt:"listen_addr" default:":20001"`
-	LocalAddr        string `opt:"local_addr" default:"127.0.0.1:20002"`
-	AdminAddr        string `opt:"admin_addr" default:"127.0.0.1:20003"`
-	LogPath          string `opt:"log_path" default:"./logs"`
-	PprofAddr        string `opt:"pprof_addr" default:"127.0.0.1:20004"`
-	AutoCleanTaskLog bool   `opt:"auto_clean_task_log" default:"true"`
-	Hostname         string `opt:"hostname" default:""`
+	LogLevel         string `opt:"log_level"`
+	VerboseJobLog    bool   `opt:"verbose_job_log"`
+	ListenAddr       string `opt:"listen_addr"`
+	AdminAddr        string `opt:"admin_addr"`
+	LogPath          string `opt:"log_path"`
+	PprofAddr        string `opt:"pprof_addr"`
+	AutoCleanTaskLog bool   `opt:"auto_clean_task_log"`
+	Hostname         string `opt:"hostname"`
+	BoardcastAddr    string `opt:"boardcast_addr"`
 	CfgPath          string
+	Debug            bool `opt:"debug"`
 	iniFile          *ini.File
-	createConfigFile bool
-	DriverName       string `opt:"driver_name" default:"sqlite3"`
-	DSN              string `opt:"dsn" default:"data/jiacrontabd.db"`
+	DriverName       string `opt:"driver_name"`
+	DSN              string `opt:"dsn"`
 }
 
 func (c *Config) Resolve() error {
 	c.iniFile = c.loadConfig(c.CfgPath)
-	if c.createConfigFile {
-		defer c.iniFile.SaveTo(c.CfgPath)
-	}
 
 	val := reflect.ValueOf(c).Elem()
 	typ := val.Type()
@@ -54,12 +49,6 @@ func (c *Config) Resolve() error {
 			val.Field(i).SetString(hostname)
 		}
 
-		if c.createConfigFile {
-			key := sec.Key(opt)
-			key.Comment = field.Tag.Get("comment")
-			key.SetValue(fmt.Sprint(val.Field(i).Interface()))
-		}
-
 		if !sec.HasKey(opt) {
 			continue
 		}
@@ -69,12 +58,11 @@ func (c *Config) Resolve() error {
 		case reflect.Bool:
 			v, err := key.Bool()
 			if err != nil {
-				log.Error(err)
+				log.Errorf("cannot resolve ini field %s err(%v)", opt, err)
 			}
 			val.Field(i).SetBool(v)
 		case reflect.String:
 			val.Field(i).SetString(key.String())
-
 		}
 	}
 	return nil
@@ -85,13 +73,13 @@ func NewConfig() *Config {
 		LogLevel:         "warn",
 		VerboseJobLog:    true,
 		ListenAddr:       "127.0.0.1:20001",
-		LocalAddr:        "127.0.0.1:20002",
 		AdminAddr:        "127.0.0.1:20003",
 		LogPath:          "./logs",
-		PprofAddr:        "127.0.0.1:20004",
+		PprofAddr:        "127.0.0.1:20002",
 		AutoCleanTaskLog: true,
 		CfgPath:          "./jiacrontabd.ini",
 		DriverName:       "sqlite3",
+		BoardcastAddr:    util.InternalIP() + ":20001",
 		DSN:              "data/jiacrontabd.db",
 	}
 }
@@ -103,7 +91,6 @@ func (c *Config) loadConfig(path string) *ini.File {
 			panic(err)
 		}
 		f.Close()
-		c.createConfigFile = true
 	}
 
 	iniFile, err := ini.Load(path)

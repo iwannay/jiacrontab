@@ -2,8 +2,6 @@ package admin
 
 import (
 	"errors"
-	"fmt"
-	"jiacrontab/models"
 	"jiacrontab/pkg/file"
 	"jiacrontab/pkg/mailer"
 	"reflect"
@@ -19,34 +17,36 @@ const (
 )
 
 type AppOpt struct {
-	HTTPListenAddr string `opt:"http_listen_addr" default:":20000"`
-	RPCListenAddr  string `opt:"rpc_listen_addr" default:":20003"`
-	AppName        string `opt:"app_name" default:"jiacrontab"`
-	SigningKey     string `opt:"signing_key" default:"WERRTT1234$@#@@$"`
+	HTTPListenAddr string `opt:"http_listen_addr"`
+	RPCListenAddr  string `opt:"rpc_listen_addr"`
+	AppName        string `opt:"app_name" `
+	Debug          bool   `opt:"debug" `
+	LogLevel       string `opt:"log_level"`
+	SigningKey     string `opt:"signing_key"`
 }
 
 type JwtOpt struct {
-	SigningKey string `opt:"signing_key" default:"ADSFdfs2342$@@#"`
-	Name       string `opt:"name" default:"token"`
-	Expires    int64  `opt:"expires" default:"3600"`
+	SigningKey string `opt:"signing_key"`
+	Name       string `opt:"name" `
+	Expires    int64  `opt:"expires"`
 }
 
 type MailerOpt struct {
-	Enabled        bool   `opt:"enabled" default:"true"`
-	QueueLength    int    `opt:"queue_length" default:"1000"`
-	SubjectPrefix  string `opt:"subject_Prefix" default:"jiacrontab"`
-	Host           string `opt:"host" default:""`
-	From           string `opt:"from" default:"jiacrontab"`
-	FromEmail      string `opt:"from_email" default:"jiacrontab"`
-	User           string `opt:"user" default:"user"`
-	Passwd         string `opt:"passwd" default:"passwd"`
-	DisableHelo    bool   `opt:"disable_helo" default:""`
-	HeloHostname   string `opt:"helo_hostname" default:""`
-	SkipVerify     bool   `opt:"skip_verify" default:"true"`
-	UseCertificate bool   `opt:"use_certificate" default:"false"`
-	CertFile       string `opt:"cert_file" default:""`
-	KeyFile        string `opt:"key_file" default:""`
-	UsePlainText   bool   `opt:"use_plain_text" default:""`
+	Enabled        bool   `opt:"enabled"`
+	QueueLength    int    `opt:"queue_length"`
+	SubjectPrefix  string `opt:"subject_Prefix"`
+	Host           string `opt:"host"`
+	From           string `opt:"from"`
+	FromEmail      string `opt:"from_email"`
+	User           string `opt:"user"`
+	Passwd         string `opt:"passwd"`
+	DisableHelo    bool   `opt:"disable_helo"`
+	HeloHostname   string `opt:"helo_hostname"`
+	SkipVerify     bool   `opt:"skip_verify"`
+	UseCertificate bool   `opt:"use_certificate"`
+	CertFile       string `opt:"cert_file"`
+	KeyFile        string `opt:"key_file"`
+	UsePlainText   bool   `opt:"use_plain_text"`
 }
 
 type databaseOpt struct {
@@ -60,37 +60,15 @@ type Config struct {
 	App      *AppOpt      `section:"app"`
 	Database *databaseOpt `section:"database"`
 
-	CfgPath          string
-	iniFile          *ini.File
-	createConfigFile bool
-	ServerStartTime  time.Time `json:"-"`
-}
-
-// SetUsed 设置app已经激活
-func (c *Config) Activate(opt *databaseOpt) error {
-	if opt.DriverName == "sqlite3" || opt.DriverName == "sqlite" {
-		opt.DriverName = "sqlite3"
-		opt.DSN = "data/jiacrontab_admin.db"
-	}
-
-	c.Database = opt
-
-	err := models.InitModel(c.Database.DriverName, c.Database.DSN)
-	if err != nil {
-		return err
-	}
-	c.iniFile.Section("database").Key("driver_name").SetValue(opt.DriverName)
-	c.iniFile.Section("database").Key("dsn").SetValue(opt.DSN)
-	return c.iniFile.SaveTo(c.CfgPath)
+	CfgPath         string
+	iniFile         *ini.File
+	ServerStartTime time.Time `json:"-"`
 }
 
 func (c *Config) Resolve() {
 
 	c.ServerStartTime = time.Now()
 	c.iniFile = c.loadConfig(c.CfgPath)
-	if c.createConfigFile {
-		defer c.iniFile.SaveTo(c.CfgPath)
-	}
 
 	val := reflect.ValueOf(c).Elem()
 	typ := val.Type()
@@ -109,11 +87,6 @@ func (c *Config) Resolve() {
 				continue
 			}
 			sec := c.iniFile.Section(section)
-			if c.createConfigFile {
-				key := sec.Key(subOpt)
-				key.Comment = subField.Tag.Get("comment")
-				key.SetValue(fmt.Sprint(subVal.Field(j).Interface()))
-			}
 
 			if !sec.HasKey(subOpt) {
 				continue
@@ -146,17 +119,16 @@ func (c *Config) Resolve() {
 func NewConfig() *Config {
 	return &Config{
 		App: &AppOpt{
+			Debug:          false,
 			HTTPListenAddr: ":20000",
 			RPCListenAddr:  ":20003",
 			AppName:        "jiacrontab",
 			SigningKey:     "WERRTT1234$@#@@$",
 		},
 		Mailer: &MailerOpt{
-			Enabled:        true,
+			Enabled:        false,
 			QueueLength:    1000,
 			SubjectPrefix:  "jiacrontab",
-			From:           "jiacrontab",
-			FromEmail:      "jiacrontab",
 			SkipVerify:     true,
 			UseCertificate: false,
 		},
@@ -176,7 +148,6 @@ func (c *Config) loadConfig(path string) *ini.File {
 			panic(err)
 		}
 		f.Close()
-		c.createConfigFile = true
 	}
 
 	iniFile, err := ini.Load(path)

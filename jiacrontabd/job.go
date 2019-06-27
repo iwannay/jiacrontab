@@ -82,7 +82,7 @@ func (p *process) waitDepExecDone() bool {
 		ok = p.jobEntry.jd.dispatchDependAsync(p.ctx, p.deps)
 	}
 	if !ok {
-		prefix := fmt.Sprintf("[%s %s] ", time.Now().Format("2006-01-02 15:04:05"), p.jobEntry.jd.getOpts().LocalAddr)
+		prefix := fmt.Sprintf("[%s %s] ", time.Now().Format("2006-01-02 15:04:05"), p.jobEntry.jd.getOpts().BoardcastAddr)
 		p.jobEntry.logContent = append(p.jobEntry.logContent, []byte(prefix+"failed to exec depends, push depends error\n")...)
 		return ok
 	}
@@ -202,7 +202,7 @@ func (j *JobEntry) writeLog() {
 
 func (j *JobEntry) handleDepError(startTime time.Time) {
 	cfg := j.jd.getOpts()
-	err := fmt.Errorf("%s %s execution of dependency job failed, jobID:%d", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, j.detail.ID)
+	err := fmt.Errorf("%s %s execution of dependency job failed, jobID:%d", time.Now().Format(proto.DefaultTimeLayout), cfg.BoardcastAddr, j.detail.ID)
 	endTime := time.Now()
 	reply := true
 
@@ -213,7 +213,7 @@ func (j *JobEntry) handleDepError(startTime time.Time) {
 	if j.detail.ErrorMailNotify && len(j.detail.MailTo) != 0 {
 		if err := j.jd.rpcCallCtx(context.TODO(), "Srv.SendMail", proto.SendMail{
 			MailTo:  j.detail.MailTo,
-			Subject: cfg.LocalAddr + "提醒脚本依赖异常退出",
+			Subject: cfg.BoardcastAddr + "提醒脚本依赖异常退出",
 			Content: fmt.Sprintf(
 				"任务名：%s\n创建者：%s\n开始时间：%s\n耗时：%.4f\n异常：%s",
 				j.detail.Name, j.detail.CreatedUsername, endTime.Format(proto.DefaultTimeLayout), endTime.Sub(startTime).Seconds(), err),
@@ -238,7 +238,7 @@ func (j *JobEntry) handleNotify(p *process) {
 	if j.detail.ErrorMailNotify {
 		if err = j.jd.rpcCallCtx(context.TODO(), "Srv.SendMail", proto.SendMail{
 			MailTo:  j.detail.MailTo,
-			Subject: cfg.LocalAddr + "提醒脚本异常退出",
+			Subject: cfg.BoardcastAddr + "提醒脚本异常退出",
 			Content: fmt.Sprintf(
 				"任务名：%s\n创建者：%s\n开始时间：%s\n异常：%s\n重试次数：%d",
 				j.detail.Name, j.detail.CreatedUsername,
@@ -250,7 +250,7 @@ func (j *JobEntry) handleNotify(p *process) {
 
 	if j.detail.ErrorAPINotify {
 		postData, err := json.Marshal(proto.CrontabApiNotifyBody{
-			NodeAddr:       cfg.LocalAddr,
+			NodeAddr:       cfg.BoardcastAddr,
 			JobName:        j.detail.Name,
 			JobID:          int(j.detail.ID),
 			CreateUsername: j.detail.CreatedUsername,
@@ -287,7 +287,7 @@ func (j *JobEntry) timeoutTrigger(p *process) {
 		case proto.TimeoutTrigger_CallApi:
 			j.detail.LastExitStatus = exitTimeout
 			postData, err := json.Marshal(proto.CrontabApiNotifyBody{
-				NodeAddr:       cfg.LocalAddr,
+				NodeAddr:       cfg.BoardcastAddr,
 				JobName:        j.detail.Name,
 				JobID:          int(j.detail.ID),
 				CreateUsername: j.detail.CreatedUsername,
@@ -311,7 +311,7 @@ func (j *JobEntry) timeoutTrigger(p *process) {
 			j.detail.LastExitStatus = exitTimeout
 			if err = j.jd.rpcCallCtx(context.TODO(), "Srv.SendMail", proto.SendMail{
 				MailTo:  j.detail.MailTo,
-				Subject: cfg.LocalAddr + "提醒脚本执行超时",
+				Subject: cfg.BoardcastAddr + "提醒脚本执行超时",
 				Content: fmt.Sprintf(
 					"任务名：%s\n创建者：%v\n开始时间：%s\n超时：%ds\n重试次数：%d",
 					j.detail.Name, j.detail.CreatedUsername, p.startTime.Format(proto.DefaultTimeLayout),
@@ -337,9 +337,9 @@ func (j *JobEntry) exec() {
 	j.wg.Wrap(func() {
 		var err error
 		if j.once {
-			err = models.DB().Debug().Take(&j.detail, "id=?", j.job.ID).Error
+			err = models.DB().Take(&j.detail, "id=?", j.job.ID).Error
 		} else {
-			err = models.DB().Debug().Take(&j.detail, "id=? and status in(?)",
+			err = models.DB().Take(&j.detail, "id=? and status in(?)",
 				j.job.ID, []models.JobStatus{models.StatusJobTiming, models.StatusJobRunning}).Error
 		}
 
@@ -433,7 +433,7 @@ func (j *JobEntry) updateJob(status models.JobStatus, startTime, endTime time.Ti
 		if err = j.jd.rpcCallCtx(context.TODO(), "Srv.PushJobLog", models.JobHistory{
 			JobType:   models.JobTypeCrontab,
 			JobID:     j.detail.ID,
-			Addr:      j.jd.getOpts().LocalAddr,
+			Addr:      j.jd.getOpts().BoardcastAddr,
 			JobName:   j.detail.Name,
 			StartTime: startTime,
 			EndTime:   endTime,
@@ -443,7 +443,7 @@ func (j *JobEntry) updateJob(status models.JobStatus, startTime, endTime time.Ti
 		}
 	}
 
-	models.DB().Model(&j.detail).Debug().Updates(data)
+	models.DB().Model(&j.detail).Updates(data)
 }
 
 func (j *JobEntry) kill() {

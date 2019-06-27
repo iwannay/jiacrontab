@@ -66,7 +66,7 @@ func (cu *cmdUint) launch() error {
 	if err != nil {
 		var errMsg string
 		if cu.verboseLog {
-			prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, cu.label)
+			prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format(proto.DefaultTimeLayout), cfg.BoardcastAddr, cu.label)
 			errMsg = prefix + err.Error() + "\n"
 		} else {
 			errMsg = err.Error() + "\n"
@@ -143,7 +143,7 @@ func (cu *cmdUint) exec() error {
 			}
 
 			if cfg.VerboseJobLog {
-				prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, cu.label)
+				prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format(proto.DefaultTimeLayout), cfg.BoardcastAddr, cu.label)
 				line = append([]byte(prefix), line...)
 			}
 
@@ -161,7 +161,7 @@ func (cu *cmdUint) exec() error {
 			}
 			// 默认给err信息加上日期标志
 			if cfg.VerboseJobLog {
-				prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, cu.label)
+				prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format(proto.DefaultTimeLayout), cfg.BoardcastAddr, cu.label)
 				line = append([]byte(prefix), line...)
 			}
 			if cu.exportLog {
@@ -216,7 +216,7 @@ func (cu *cmdUint) pipeExec() error {
 			break
 		}
 		if cfg.VerboseJobLog {
-			prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, cu.label)
+			prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format(proto.DefaultTimeLayout), cfg.BoardcastAddr, cu.label)
 			line = append([]byte(prefix), line...)
 		}
 
@@ -231,7 +231,7 @@ func (cu *cmdUint) pipeExec() error {
 		}
 
 		if cfg.VerboseJobLog {
-			prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format(proto.DefaultTimeLayout), cfg.LocalAddr, cu.label)
+			prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format(proto.DefaultTimeLayout), cfg.BoardcastAddr, cu.label)
 			line = append([]byte(prefix), line...)
 		}
 

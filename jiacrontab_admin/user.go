@@ -323,7 +323,7 @@ func UserStat(ctx *myctx) {
 			sum(daemon_job_running_num) as daemon_job_running_num,
 			count(*) as node_num
 		from nodes 
-		where group_id=?`, ctx.claims.GroupID).Debug().Scan(&auditNumStat).Error
+		where group_id=?`, ctx.claims.GroupID).Scan(&auditNumStat).Error
 	if err != nil {
 		ctx.respDBError(err)
 		return
@@ -421,9 +421,9 @@ func GetUserList(ctx *myctx) {
 	}
 
 	if reqBody.IsAll {
-		err = models.DB().Debug().Preload("Group").Limit(reqBody.Pagesize).Find(&userList).Error
+		err = models.DB().Preload("Group").Limit(reqBody.Pagesize).Find(&userList).Error
 	} else {
-		err = models.DB().Debug().Preload("Group").Where("group_id=?", reqBody.QueryGroupID).Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&userList).Error
+		err = models.DB().Preload("Group").Where("group_id=?", reqBody.QueryGroupID).Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&userList).Error
 	}
 
 	if err != nil && err != sql.ErrNoRows {
