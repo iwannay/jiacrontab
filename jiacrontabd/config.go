@@ -20,9 +20,8 @@ type Config struct {
 	ListenAddr       string `opt:"listen_addr"`
 	AdminAddr        string `opt:"admin_addr"`
 	LogPath          string `opt:"log_path"`
-	PprofAddr        string `opt:"pprof_addr"`
 	AutoCleanTaskLog bool   `opt:"auto_clean_task_log"`
-	Hostname         string `opt:"hostname"`
+	NodeName         string `opt:"node_name"`
 	BoardcastAddr    string `opt:"boardcast_addr"`
 	CfgPath          string
 	Debug            bool `opt:"debug"`
@@ -36,7 +35,7 @@ func (c *Config) Resolve() error {
 
 	val := reflect.ValueOf(c).Elem()
 	typ := val.Type()
-	hostname := util.GetHostname()
+
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
 		opt := field.Tag.Get("opt")
@@ -44,10 +43,6 @@ func (c *Config) Resolve() error {
 			continue
 		}
 		sec := c.iniFile.Section("jiacrontabd")
-
-		if opt == "hostname" && sec.Key(opt).String() == "" {
-			val.Field(i).SetString(hostname)
-		}
 
 		if !sec.HasKey(opt) {
 			continue
@@ -75,8 +70,8 @@ func NewConfig() *Config {
 		ListenAddr:       "127.0.0.1:20001",
 		AdminAddr:        "127.0.0.1:20003",
 		LogPath:          "./logs",
-		PprofAddr:        "127.0.0.1:20002",
 		AutoCleanTaskLog: true,
+		NodeName:         util.GetHostname(),
 		CfgPath:          "./jiacrontabd.ini",
 		DriverName:       "sqlite3",
 		BoardcastAddr:    util.InternalIP() + ":20001",

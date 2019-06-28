@@ -150,7 +150,7 @@ func EditJob(ctx *myctx) {
 		ctx.respRPCError(err)
 		return
 	}
-	ctx.pubEvent(reply.Name, event_EditCronJob, reqBody.Addr, reqBody)
+	ctx.pubEvent(reply.Name, event_EditCronJob, models.EventSourceName(reqBody.Addr), reqBody)
 	ctx.respSucc("", reply)
 }
 
@@ -203,7 +203,7 @@ func ActionTask(ctx *myctx) {
 	for _, v := range jobReply {
 		targetNames = append(targetNames, v.Name)
 	}
-	ctx.pubEvent(strings.Join(targetNames, ","), eDesc[reqBody.Action], reqBody.Addr, reqBody)
+	ctx.pubEvent(strings.Join(targetNames, ","), eDesc[reqBody.Action], models.EventSourceName(reqBody.Addr), reqBody)
 	ctx.respSucc("", jobReply)
 }
 
@@ -234,7 +234,7 @@ func ExecTask(ctx *myctx) {
 		return
 	}
 
-	ctx.pubEvent(execJobReply.Job.Name, event_ExecCronJob, reqBody.Addr, reqBody)
+	ctx.pubEvent(execJobReply.Job.Name, event_ExecCronJob, models.EventSourceName(reqBody.Addr), reqBody)
 	logList = strings.Split(string(execJobReply.Content), "\n")
 	ctx.respSucc("", logList)
 }

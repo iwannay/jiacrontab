@@ -91,7 +91,7 @@ func ActionDaemonTask(ctx *myctx) {
 		targetNames = append(targetNames, v.Name)
 	}
 
-	ctx.pubEvent(strings.Join(targetNames, ","), eDesc[reqBody.Action], reqBody.Addr, reqBody)
+	ctx.pubEvent(strings.Join(targetNames, ","), eDesc[reqBody.Action], models.EventSourceName(reqBody.Addr), reqBody)
 	ctx.respSucc("", nil)
 }
 
@@ -153,7 +153,7 @@ func EditDaemonJob(ctx *myctx) {
 		return
 	}
 
-	ctx.pubEvent(reply.Name, event_EditDaemonJob, reqBody.Addr, reqBody)
+	ctx.pubEvent(reply.Name, event_EditDaemonJob, models.EventSourceName(reqBody.Addr), reqBody)
 	ctx.respSucc("", reply)
 }
 

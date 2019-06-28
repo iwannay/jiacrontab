@@ -285,16 +285,16 @@ func (j *Jiacrontabd) count() int {
 func (j *Jiacrontabd) heartBeat() {
 	var reply bool
 	cfg := j.getOpts()
-	hostname := cfg.Hostname
-	if hostname == "" {
-		hostname = util.GetHostname()
+	NodeName := cfg.NodeName
+	if NodeName == "" {
+		NodeName = util.GetHostname()
 	}
 	node := models.Node{
 		Addr:           cfg.BoardcastAddr,
 		DaemonTaskNum:  j.daemon.count(),
 		CrontabTaskNum: j.count(),
 		GroupID:        models.SuperGroup.ID,
-		Name:           hostname,
+		Name:           NodeName,
 	}
 
 	models.DB().Model(&models.CrontabJob{}).Where("status=?", models.StatusJobUnaudited).Count(&node.CrontabJobAuditNum)
