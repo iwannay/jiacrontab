@@ -12,7 +12,7 @@ import (
 
 type Admin struct {
 	cfg           atomic.Value
-	initAdminUser bool
+	initAdminUser int32
 }
 
 func (n *Admin) getOpts() *Config {
@@ -35,8 +35,8 @@ func (a *Admin) init() {
 		panic(err)
 	}
 
-	if  models.DB().Take(&models.User{}, "group_id=?", 1).Error == nil {
-		a.initAdminUser = true
+	if models.DB().Take(&models.User{}, "group_id=?", 1).Error == nil {
+		atomic.StoreInt32(&a.initAdminUser, 1)
 	}
 
 	// mail

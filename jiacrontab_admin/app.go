@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"sync/atomic"
 
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/middleware/logger"
@@ -65,7 +66,7 @@ func newApp(adm *Admin) *iris.Application {
 	app.Use(crs)
 	app.AllowMethods(iris.MethodOptions)
 	app.Get("/", func(ctx iris.Context) {
-		if adm.initAdminUser {
+		if atomic.LoadInt32(&adm.initAdminUser) == 1 {
 			ctx.SetCookieKV("ready", "true", func(c *http.Cookie) {
 				c.HttpOnly = false
 			})
@@ -165,6 +166,6 @@ func InitApp(ctx *myctx) {
 		ctx.respBasicError(err)
 		return
 	}
-
+	atomic.StoreInt32(&ctx.adm.initAdminUser, 1)
 	ctx.respSucc("", true)
 }
