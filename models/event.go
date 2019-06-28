@@ -6,15 +6,19 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+type EventSourceName string
+type EventSourceUsername string
+
 type Event struct {
 	gorm.Model
-	GroupID    uint   `json:"groupID" gorm:"index"`
-	Username   string `json:"username"`
-	UserID     uint   `json:"userID" gorm:"index"`
-	EventDesc  string `json:"eventDesc"`
-	TargetName string `json:"targetName"`
-	SourceName string `json:"sourceName" gorm:"index"`
-	Content    string `json:"content"`
+	GroupID        uint   `json:"groupID" gorm:"index"`
+	Username       string `json:"username"`
+	UserID         uint   `json:"userID" gorm:"index"`
+	EventDesc      string `json:"eventDesc"`
+	TargetName     string `json:"targetName"`
+	SourceUsername string `json:"sourceUsername"`
+	SourceName     string `json:"sourceName" gorm:"index"`
+	Content        string `json:"content"`
 }
 
 func (e *Event) Pub() {

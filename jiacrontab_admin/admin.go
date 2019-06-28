@@ -11,8 +11,8 @@ import (
 )
 
 type Admin struct {
-	cfg       atomic.Value
-	initModel bool
+	cfg           atomic.Value
+	initAdminUser bool
 }
 
 func (n *Admin) getOpts() *Config {
@@ -34,6 +34,11 @@ func (a *Admin) init() {
 	if err := models.InitModel(cfg.Database.DriverName, cfg.Database.DSN, cfg.App.Debug); err != nil {
 		panic(err)
 	}
+
+	if  models.DB().Take(&models.User{}, "group_id=?", 1).Error == nil {
+		a.initAdminUser = true
+	}
+
 	// mail
 	if cfg.Mailer.Enabled {
 		mailer.InitMailer(&mailer.Mailer{
@@ -59,10 +64,6 @@ func (a *Admin) init() {
 func (a *Admin) Main() {
 
 	cfg := a.getOpts()
-	if cfg.Database.DriverName != "" && cfg.Database.DSN != "" {
-		a.initModel = true
-	}
-
 	a.init()
 	defer models.DB().Close()
 	go rpc.ListenAndServe(cfg.App.RPCListenAddr, NewSrv(a))

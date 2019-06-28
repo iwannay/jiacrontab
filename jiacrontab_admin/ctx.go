@@ -124,8 +124,8 @@ func (ctx *myctx) getGroupIDFromToken() (uint, error) {
 }
 
 func (ctx *myctx) isSuper() bool {
-	ok, err := ctx.getGroupIDFromToken()
-	return ok == models.SuperGroup.ID && err == nil
+	gid, err := ctx.getGroupIDFromToken()
+	return gid == models.SuperGroup.ID && err == nil
 }
 
 func (ctx *myctx) parseClaimsFromToken() error {
@@ -196,7 +196,7 @@ func (ctx *myctx) Valid(i Parameter) error {
 	return nil
 }
 
-func (ctx *myctx) pubEvent(targetName, desc, sourceName string, v interface{}) {
+func (ctx *myctx) pubEvent(targetName, desc string, source interface{}, v interface{}) {
 	var content string
 	if (ctx.claims == CustomerClaims{}) {
 		err := ctx.parseClaimsFromToken()
@@ -219,8 +219,15 @@ func (ctx *myctx) pubEvent(targetName, desc, sourceName string, v interface{}) {
 		Username:   ctx.claims.Username,
 		EventDesc:  desc,
 		TargetName: targetName,
-		SourceName: sourceName,
 		Content:    content,
 	}
+
+	switch v := source.(type) {
+	case models.EventSourceName:
+		e.SourceName = string(v)
+	case models.EventSourceUsername:
+		e.SourceUsername = string(v)
+	}
+
 	e.Pub()
 }

@@ -29,8 +29,8 @@ func GetNodeList(ctx *myctx) {
 		return
 	}
 
-	err = models.DB().Preload("Group").Where("group_id=?", reqBody.QueryGroupID).Offset(reqBody.Page - 1).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
-	models.DB().Model(&models.Node{}).Where("group_id=?", reqBody.QueryGroupID).Count(&count)
+	err = models.DB().Preload("Group").Where("group_id=? and name like ?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%").Offset(reqBody.Page - 1).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
+	models.DB().Model(&models.Node{}).Where("group_id=? and name like ?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%").Count(&count)
 
 	if err != nil {
 		ctx.respBasicError(err)
@@ -75,7 +75,7 @@ func DeleteNode(ctx *myctx) {
 		return
 	}
 
-	ctx.pubEvent(node.Name, event_DelNodeDesc, reqBody.Addr, reqBody)
+	ctx.pubEvent(node.Name, event_DelNodeDesc, models.EventSourceName(reqBody.Addr), reqBody)
 	ctx.respSucc("", nil)
 }
 
@@ -105,6 +105,8 @@ func GroupNode(ctx *myctx) {
 		return
 	}
 
-	ctx.pubEvent(reqBody.TargetNodeName, event_GroupNode, reqBody.Addr, reqBody)
+	ctx.pubEvent(reqBody.TargetNodeName, event_GroupNode, models.EventSourceName(reqBody.Addr), reqBody)
 	ctx.respSucc("", nil)
 }
+
+func UpdateNode(ctx *myctx) {}

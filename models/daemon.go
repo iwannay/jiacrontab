@@ -8,7 +8,7 @@ import (
 
 type DaemonJob struct {
 	gorm.Model
-	Name            string      `json:"name" gorm:"unique;not null"`
+	Name            string      `json:"name" gorm:"index;not null"`
 	UserID          uint        `json:"user_id"`
 	Command         StringSlice `json:"command" gorm:"type:varchar(1000)"`
 	Code            string      `json:"code"  gorm:"type:TEXT"`

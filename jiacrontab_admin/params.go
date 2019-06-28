@@ -174,6 +174,7 @@ func (p *GetJobListReqParams) Verify(ctx iris.Context) error {
 }
 
 type GetGroupListReqParams struct {
+	SearchTxt string `json:"searchTxt"`
 	PageReqParams
 }
 
@@ -287,7 +288,8 @@ type PageReqParams struct {
 
 type GetNodeListReqParams struct {
 	PageReqParams
-	QueryGroupID uint `json:"queryGroupID"`
+	SearchTxt    string `json:"searchTxt"`
+	QueryGroupID uint   `json:"queryGroupID"`
 }
 
 func (p *GetNodeListReqParams) Verify(ctx iris.Context) error {
@@ -379,8 +381,9 @@ func (p *AuditJobReqParams) Verify(ctx iris.Context) error {
 
 type GetUsersParams struct {
 	PageReqParams
-	IsAll        bool `json:"isAll"`
-	QueryGroupID uint `json:"queryGroupID"`
+	SearchTxt    string `json:"searchTxt"`
+	IsAll        bool   `json:"isAll"`
+	QueryGroupID uint   `json:"queryGroupID"`
 }
 
 func (p *GetUsersParams) Verify(ctx iris.Context) error {
