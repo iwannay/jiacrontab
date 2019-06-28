@@ -203,7 +203,7 @@ func AuditJob(ctx *myctx) {
 		for _, v := range reply {
 			targetNames = append(targetNames, v.Name)
 		}
-		ctx.pubEvent(strings.Join(targetNames, ","), event_AuditCrontabJob, reqBody.Addr, reqBody)
+		ctx.pubEvent(strings.Join(targetNames, ","), event_AuditCrontabJob, models.EventSourceName(reqBody.Addr), reqBody)
 	} else {
 		var reply []models.DaemonJob
 		if err = rpcCall(reqBody.Addr, "DaemonJob.Audit", proto.AuditJobArgs{
@@ -216,7 +216,7 @@ func AuditJob(ctx *myctx) {
 		for _, v := range reply {
 			targetNames = append(targetNames, v.Name)
 		}
-		ctx.pubEvent(strings.Join(targetNames, ","), event_AuditDaemonJob, reqBody.Addr, reqBody)
+		ctx.pubEvent(strings.Join(targetNames, ","), event_AuditDaemonJob, models.EventSourceName(reqBody.Addr), reqBody)
 	}
 
 	ctx.respSucc("", nil)
@@ -366,12 +366,12 @@ func GroupUser(ctx *myctx) {
 	user.ID = reqBody.UserID
 	user.GroupID = reqBody.TargetGroupID
 	user.Root = reqBody.Root
-	if err = user.SetGroup(); err != nil {
+	if err = user.SetGroup(&group); err != nil {
 		ctx.respDBError(err)
 		return
 	}
 
-	ctx.pubEvent(reqBody.TargetGroupName, event_GroupUser, user.Username, reqBody)
+	ctx.pubEvent(group.Name, event_GroupUser, models.EventSourceUsername(user.Username), reqBody)
 	ctx.respSucc("", nil)
 }
 
@@ -410,9 +410,9 @@ func GetUserList(ctx *myctx) {
 
 	m := models.DB().Model(&models.User{})
 	if reqBody.IsAll {
-		err = m.Count(&total).Error
+		err = m.Where("username like ?", "%"+reqBody.SearchTxt+"%").Count(&total).Error
 	} else {
-		err = m.Where("group_id=?", reqBody.QueryGroupID).Count(&total).Error
+		err = m.Where("group_id=? and username like ?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%").Count(&total).Error
 	}
 
 	if err != nil && err != sql.ErrNoRows {
@@ -421,9 +421,9 @@ func GetUserList(ctx *myctx) {
 	}
 
 	if reqBody.IsAll {
-		err = models.DB().Preload("Group").Limit(reqBody.Pagesize).Find(&userList).Error
+		err = models.DB().Debug().Preload("Group").Where("username like ?", "%"+reqBody.SearchTxt+"%").Order("id desc").Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&userList).Error
 	} else {
-		err = models.DB().Preload("Group").Where("group_id=?", reqBody.QueryGroupID).Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&userList).Error
+		err = models.DB().Preload("Group").Where("group_id=? and username like ?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%").Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&userList).Error
 	}
 
 	if err != nil && err != sql.ErrNoRows {

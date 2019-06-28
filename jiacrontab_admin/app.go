@@ -45,7 +45,7 @@ func newApp(adm *Admin) *iris.Application {
 
 		ErrorHandler: func(c iris.Context, data string) {
 			ctx := wrapCtx(c, adm)
-			if ctx.RequestPath(true) != "/user/login" && ctx.RequestPath(true) != "/user/signUp" {
+			if ctx.RequestPath(true) != "/user/login" {
 				ctx.respAuthFailed(errors.New("认证失败"))
 				return
 			}
@@ -65,7 +65,7 @@ func newApp(adm *Admin) *iris.Application {
 	app.Use(crs)
 	app.AllowMethods(iris.MethodOptions)
 	app.Get("/", func(ctx iris.Context) {
-		if adm.initModel {
+		if adm.initAdminUser {
 			ctx.SetCookieKV("ready", "true", func(c *http.Cookie) {
 				c.HttpOnly = false
 			})
@@ -74,6 +74,7 @@ func newApp(adm *Admin) *iris.Application {
 				c.HttpOnly = false
 			})
 		}
+		ctx.Header("Cache-Control", "no-cache")
 		ctx.Header("Content-Type", "text/html")
 		ctx.Header("Content-Encoding", "gzip")
 		asset, err := GzipAsset("assets/index.html")
@@ -83,48 +84,48 @@ func newApp(adm *Admin) *iris.Application {
 		ctx.WriteGzip(asset)
 	})
 
-	if adm.initModel {
-		adm := app.Party("/adm")
-		{
-			adm.Use(jwtHandler.Serve)
-			adm.Post("/crontab/job/list", wrapHandler(GetJobList))
-			adm.Post("/crontab/job/get", wrapHandler(GetJob))
-			adm.Post("/crontab/job/log", wrapHandler(GetRecentLog))
-			adm.Post("/crontab/job/edit", wrapHandler(EditJob))
-			adm.Post("/crontab/job/action", wrapHandler(ActionTask))
-			adm.Post("/crontab/job/exec", wrapHandler(ExecTask))
-
-			adm.Post("/config/get", wrapHandler(GetConfig))
-			adm.Post("/config/mail/send", wrapHandler(SendTestMail))
-			adm.Post("/system/info", wrapHandler(SystemInfo))
-
-			adm.Post("/daemon/job/list", wrapHandler(GetDaemonJobList))
-			adm.Post("/daemon/job/action", wrapHandler(ActionDaemonTask))
-			adm.Post("/daemon/job/edit", wrapHandler(EditDaemonJob))
-			adm.Post("/daemon/job/get", wrapHandler(GetDaemonJob))
-			adm.Post("/daemon/job/log", wrapHandler(GetRecentDaemonLog))
-
-			adm.Post("/group/list", wrapHandler(GetGroupList))
-			adm.Post("/group/edit", wrapHandler(EditGroup))
-
-			adm.Post("/node/list", wrapHandler(GetNodeList))
-			adm.Post("/node/delete", wrapHandler(DeleteNode))
-			adm.Post("/node/group_node", wrapHandler(GroupNode))
-
-			adm.Post("/user/activity_list", wrapHandler(GetActivityList))
-			adm.Post("/user/job_history", wrapHandler(GetJobHistory))
-			adm.Post("/user/audit_job", wrapHandler(AuditJob))
-			adm.Post("/user/stat", wrapHandler(UserStat))
-			adm.Post("/user/signup", wrapHandler(Signup))
-			adm.Post("/user/edit", wrapHandler(EditUser))
-			adm.Post("/user/group_user", wrapHandler(GroupUser))
-			adm.Post("/user/list", wrapHandler(GetUserList))
-		}
-
-		app.Post("/user/login", wrapHandler(Login))
+	v1 := app.Party("/v1")
+	{
+		v1.Post("/user/login", wrapHandler(Login))
+		v1.Post("/app/init", wrapHandler(InitApp))
 	}
 
-	app.Post("/app/init", wrapHandler(InitApp))
+	v2 := app.Party("/v2")
+	{
+		v2.Use(jwtHandler.Serve)
+		v2.Post("/crontab/job/list", wrapHandler(GetJobList))
+		v2.Post("/crontab/job/get", wrapHandler(GetJob))
+		v2.Post("/crontab/job/log", wrapHandler(GetRecentLog))
+		v2.Post("/crontab/job/edit", wrapHandler(EditJob))
+		v2.Post("/crontab/job/action", wrapHandler(ActionTask))
+		v2.Post("/crontab/job/exec", wrapHandler(ExecTask))
+
+		v2.Post("/config/get", wrapHandler(GetConfig))
+		v2.Post("/config/mail/send", wrapHandler(SendTestMail))
+		v2.Post("/system/info", wrapHandler(SystemInfo))
+
+		v2.Post("/daemon/job/list", wrapHandler(GetDaemonJobList))
+		v2.Post("/daemon/job/action", wrapHandler(ActionDaemonTask))
+		v2.Post("/daemon/job/edit", wrapHandler(EditDaemonJob))
+		v2.Post("/daemon/job/get", wrapHandler(GetDaemonJob))
+		v2.Post("/daemon/job/log", wrapHandler(GetRecentDaemonLog))
+
+		v2.Post("/group/list", wrapHandler(GetGroupList))
+		v2.Post("/group/edit", wrapHandler(EditGroup))
+
+		v2.Post("/node/list", wrapHandler(GetNodeList))
+		v2.Post("/node/delete", wrapHandler(DeleteNode))
+		v2.Post("/node/group_node", wrapHandler(GroupNode))
+
+		v2.Post("/user/activity_list", wrapHandler(GetActivityList))
+		v2.Post("/user/job_history", wrapHandler(GetJobHistory))
+		v2.Post("/user/audit_job", wrapHandler(AuditJob))
+		v2.Post("/user/stat", wrapHandler(UserStat))
+		v2.Post("/user/signup", wrapHandler(Signup))
+		v2.Post("/user/edit", wrapHandler(EditUser))
+		v2.Post("/user/group_user", wrapHandler(GroupUser))
+		v2.Post("/user/list", wrapHandler(GetUserList))
+	}
 
 	debug := app.Party("/debug")
 	{

@@ -67,15 +67,18 @@ func (u *User) Update() error {
 	return DB().Updates(u).Error
 }
 
-func (u *User) SetGroup() error {
+func (u *User) SetGroup(group *Group) error {
 
 	if u.GroupID != 0 {
-		if err := DB().Take(&Group{}, "id=?", u.GroupID).Error; err != nil {
+		if err := DB().Take(group, "id=?", u.GroupID).Error; err != nil {
 			return fmt.Errorf("查询分组失败：%s", err)
 		}
 	}
 
 	defer DB().Take(u, "id=?", u.ID)
 
-	return DB().Model(u).Where("id=?", u.ID).Update("group_id", u.GroupID).Error
+	return DB().Model(u).Where("id=?", u.ID).Updates(map[string]interface{}{
+		"group_id": u.GroupID,
+		"root":     u.Root,
+	}).Error
 }

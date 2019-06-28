@@ -10,6 +10,7 @@ func GetGroupList(ctx *myctx) {
 	var (
 		err       error
 		groupList []models.Group
+		count     int
 		reqBody   GetGroupListReqParams
 	)
 
@@ -23,13 +24,20 @@ func GetGroupList(ctx *myctx) {
 		return
 	}
 
-	err = models.DB().Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&groupList).Error
+	models.DB().Model(&models.Group{}).Where("name like ?", "%"+reqBody.SearchTxt+"%").Count(&count)
+
+	err = models.DB().Where("name like ?", "%"+reqBody.SearchTxt+"%").Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&groupList).Error
 	if err != nil {
 		ctx.respError(proto.Code_Error, err.Error(), nil)
 		return
 	}
 
-	ctx.respSucc("", groupList)
+	ctx.respSucc("", map[string]interface{}{
+		"list":     groupList,
+		"total":    count,
+		"page":     reqBody.Page,
+		"pagesize": reqBody.Pagesize,
+	})
 }
 
 // EditGroup 编辑分组

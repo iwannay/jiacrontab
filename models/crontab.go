@@ -28,7 +28,7 @@ const (
 
 type CrontabJob struct {
 	gorm.Model
-	Name             string      `json:"name" gorm:"unique;not null"`
+	Name             string      `json:"name" gorm:"index;not null"`
 	Command          StringSlice `json:"command" gorm:"type:varchar(1000)"`
 	Code             string      `json:"code" gorm:"type:TEXT"`
 	DependJobs       DependJobs  `json:"dependJobs" gorm:"type:TEXT"`

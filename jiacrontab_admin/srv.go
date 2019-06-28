@@ -30,6 +30,7 @@ func (s *Srv) Register(args models.Node, reply *bool) error {
 		"daemon_task_num":       args.DaemonTaskNum,
 		"crontab_task_num":      args.CrontabTaskNum,
 		"addr":                  args.Addr,
+		"name":                  args.Name,
 		"crontab_job_audit_num": args.CrontabJobAuditNum,
 		"daemon_job_audit_Num":  args.DaemonJobAuditNum,
 		"crontab_job_fail_num":  args.CrontabJobFailNum,
