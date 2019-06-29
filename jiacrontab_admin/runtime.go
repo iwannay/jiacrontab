@@ -2,6 +2,7 @@ package admin
 
 import (
 	"jiacrontab/pkg/proto"
+	"jiacrontab/pkg/version"
 )
 
 func SystemInfo(ctx *myctx) {
@@ -20,6 +21,6 @@ func SystemInfo(ctx *myctx) {
 		ctx.respRPCError(err)
 		return
 	}
-
+	info["version"] = version.String("jiacrontab")
 	ctx.respSucc("", info)
 }

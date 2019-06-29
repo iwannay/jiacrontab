@@ -3,6 +3,7 @@ package jiacrontabd
 import (
 	"jiacrontab/pkg/file"
 	"jiacrontab/pkg/util"
+	"net"
 	"reflect"
 
 	"github.com/iwannay/log"
@@ -60,6 +61,8 @@ func (c *Config) Resolve() error {
 			val.Field(i).SetString(key.String())
 		}
 	}
+	_, port, _ := net.SplitHostPort(c.ListenAddr)
+	c.BoardcastAddr = util.InternalIP() + ":" + port
 	return nil
 }
 

@@ -56,7 +56,7 @@ func (j *CrontabJob) List(args proto.QueryJobArgs, reply *proto.QueryCrontabJobR
 	reply.Page = args.Page
 	reply.Pagesize = args.Pagesize
 
-	return models.DB().Where("name like ?", "%"+args.SearchTxt+"%").Order(gorm.Expr("created_user_id=? desc, id desc", args.UserID)).Offset(args.Page - 1).Limit(args.Pagesize).Find(&reply.List).Error
+	return models.DB().Where("name like ?", "%"+args.SearchTxt+"%").Order(gorm.Expr("created_user_id=? desc, id desc", args.UserID)).Offset((args.Page - 1) * args.Pagesize).Limit(args.Pagesize).Find(&reply.List).Error
 }
 
 func (j *CrontabJob) Audit(args proto.AuditJobArgs, reply *[]models.CrontabJob) error {
@@ -293,7 +293,7 @@ func (j *DaemonJob) List(args proto.QueryJobArgs, reply *proto.QueryDaemonJobRet
 	reply.Page = args.Page
 	reply.Pagesize = args.Pagesize
 
-	return models.DB().Where("name like ?", "%"+args.SearchTxt+"%").Order(gorm.Expr("created_user_id=? desc, id desc", args.UserID)).Offset(args.Page - 1).Limit(args.Pagesize).Find(&reply.List).Error
+	return models.DB().Where("name like ?", "%"+args.SearchTxt+"%").Order(gorm.Expr("created_user_id=? desc, id desc", args.UserID)).Offset((args.Page - 1) * args.Pagesize).Limit(args.Pagesize).Find(&reply.List).Error
 }
 
 func (j *DaemonJob) Edit(args proto.EditDaemonJobArgs, job *models.DaemonJob) error {
