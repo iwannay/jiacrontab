@@ -69,9 +69,6 @@ type Job struct {
 }
 
 func (j *Job) GetNextExecTime() time.Time {
-	if j.nextExecutionTime.Before(time.Now()) {
-		return time.Now()
-	}
 	return j.nextExecutionTime
 }
 

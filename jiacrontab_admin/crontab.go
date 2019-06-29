@@ -199,11 +199,13 @@ func ActionTask(ctx *myctx) {
 		ctx.respRPCError(err)
 		return
 	}
-	var targetNames []string
-	for _, v := range jobReply {
-		targetNames = append(targetNames, v.Name)
+	if len(jobReply) > 0 {
+		var targetNames []string
+		for _, v := range jobReply {
+			targetNames = append(targetNames, v.Name)
+		}
+		ctx.pubEvent(strings.Join(targetNames, ","), eDesc[reqBody.Action], models.EventSourceName(reqBody.Addr), reqBody)
 	}
-	ctx.pubEvent(strings.Join(targetNames, ","), eDesc[reqBody.Action], models.EventSourceName(reqBody.Addr), reqBody)
 	ctx.respSucc("", jobReply)
 }
 
