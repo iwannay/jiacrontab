@@ -1,7 +1,7 @@
 package admin
 
 const (
-	event_DelNodeDesc = "删除节点{sourceName}"
+	event_DelNodeDesc = "{username}删除了节点{targetName}"
 	event_RenameNode  = "{username}将{sourceName}重命名为{targetName}"
 
 	event_EditCronJob  = "{sourceName}{username}编辑了定时任务{targetName}"

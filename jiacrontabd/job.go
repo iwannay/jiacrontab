@@ -331,6 +331,7 @@ func (j *JobEntry) timeoutTrigger(p *process) {
 func (j *JobEntry) exec() {
 
 	if atomic.LoadInt32(&j.stop) == 1 {
+		log.Error("stop return")
 		return
 	}
 
@@ -344,17 +345,20 @@ func (j *JobEntry) exec() {
 		}
 
 		if err != nil {
-			log.Info("JobEntry.exec:", err)
+			log.Error("JobEntry.exec:", err)
 			return
 		}
 
 		if !j.once {
 			if !j.detail.NextExecTime.Truncate(time.Second).Equal(j.job.GetNextExecTime().Truncate(time.Second)) {
-				log.Error("JobEntry.exec time error:", j.detail.NextExecTime, "not equal", j.job.GetNextExecTime())
+				log.Errorf("%s(%d) JobEntry.exec time error(%s not equal %s)",
+					j.detail.Name, j.detail.ID, j.detail.NextExecTime, j.job.GetNextExecTime())
+				j.jd.addJob(j.job)
 				return
 			}
 			j.jd.addJob(j.job)
 		}
+
 		if atomic.LoadInt32(&j.processNum) > int32(j.detail.MaxConcurrent) {
 			return
 		}

@@ -51,7 +51,6 @@ func DeleteNode(ctx *myctx) {
 	var (
 		err     error
 		reqBody DeleteNodeReqParams
-		group   models.Group
 		node    models.Node
 	)
 
@@ -62,11 +61,6 @@ func DeleteNode(ctx *myctx) {
 	// 普通用户不允许删除节点
 	if !ctx.isSuper() {
 		ctx.respNotAllowed()
-		return
-	}
-
-	if err := models.DB().Take(&group, "id=?", reqBody.GroupID).Error; err != nil {
-		ctx.respDBError(err)
 		return
 	}
 

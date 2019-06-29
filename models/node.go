@@ -35,8 +35,8 @@ func (n *Node) VerifyUserGroup(userID, groupID uint, addr string) bool {
 }
 
 func (n *Node) Delete(groupID uint, addr string) error {
-
 	var ret *gorm.DB
+	DB().Take(n, "group_id=? and addr=?", groupID, addr)
 	if groupID == SuperGroup.ID {
 		// 超级管理员分组采用软删除
 		ret = DB().Delete(n, "group_id=? and addr=?", groupID, addr)

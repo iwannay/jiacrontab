@@ -81,7 +81,7 @@ func (j *Jiacrontabd) addJob(job *crontab.Job) {
 	} else {
 		if err := models.DB().Model(&models.CrontabJob{}).Where("id=?", job.ID).
 			Updates(map[string]interface{}{
-				"next_exec_time": job.GetNextExecTime().Truncate(time.Second),
+				"next_exec_time": job.GetNextExecTime(),
 				"status":         models.StatusJobTiming,
 			}).Error; err != nil {
 			log.Error(err)
@@ -96,6 +96,8 @@ func (j *Jiacrontabd) execTask(job *crontab.Job) {
 		j.mux.RUnlock()
 		task.exec()
 		return
+	} else {
+		log.Errorf("not found jobID(%d)", job.ID)
 	}
 	j.mux.RUnlock()
 
@@ -118,7 +120,6 @@ func (j *Jiacrontabd) run() {
 
 	for v := range j.crontab.Ready() {
 		v := v.Value.(*crontab.Job)
-		log.Debugf("job queue:%+v", v)
 		j.execTask(v)
 	}
 }
