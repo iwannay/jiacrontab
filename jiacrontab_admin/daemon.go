@@ -86,12 +86,14 @@ func ActionDaemonTask(ctx *myctx) {
 		return
 	}
 
-	var targetNames []string
-	for _, v := range reply {
-		targetNames = append(targetNames, v.Name)
+	if len(reply) > 0 {
+		var targetNames []string
+		for _, v := range reply {
+			targetNames = append(targetNames, v.Name)
+		}
+		ctx.pubEvent(strings.Join(targetNames, ","), eDesc[reqBody.Action], models.EventSourceName(reqBody.Addr), reqBody)
 	}
 
-	ctx.pubEvent(strings.Join(targetNames, ","), eDesc[reqBody.Action], models.EventSourceName(reqBody.Addr), reqBody)
 	ctx.respSucc("", nil)
 }
 

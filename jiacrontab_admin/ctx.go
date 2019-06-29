@@ -151,7 +151,10 @@ func (ctx *myctx) parseClaimsFromToken() error {
 	if err := models.DB().Take(&user, "id=?", ctx.claims.UserID).Error; err != nil {
 		return fmt.Errorf("validate user from db error(%s)", err)
 	}
-	if ctx.claims.GroupID != user.GroupID || ctx.claims.Mail != user.Mail || ctx.claims.GroupID != user.GroupID {
+	if ctx.claims.GroupID != user.GroupID ||
+		ctx.claims.Mail != user.Mail ||
+		ctx.claims.GroupID != user.GroupID ||
+		ctx.claims.Root != user.Root {
 		return fmt.Errorf("token validate error")
 	}
 

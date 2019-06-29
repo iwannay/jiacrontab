@@ -42,6 +42,9 @@ func createSqlite3(dialect string, args ...interface{}) error {
 	}
 
 	db, err = gorm.Open(dialect, args...)
+	if err == nil {
+		db.DB().SetMaxOpenConns(1)
+	}
 	return err
 }
 
@@ -49,6 +52,7 @@ func DB() *D {
 	if db == nil {
 		panic("you must call CreateDb first")
 	}
+
 	if debugMode {
 		return db.Debug()
 	}
