@@ -7,6 +7,7 @@ import (
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/util"
+	"jiacrontab/pkg/version"
 	"strings"
 	"time"
 
@@ -332,6 +333,7 @@ func UserStat(ctx *myctx) {
 	ctx.respSucc("", map[string]interface{}{
 		"systemInfo": util.SystemInfo(cfg.ServerStartTime),
 		"auditStat":  auditNumStat,
+		"version":    version.String("jiacrontab"),
 	})
 }
 
@@ -421,9 +423,9 @@ func GetUserList(ctx *myctx) {
 	}
 
 	if reqBody.IsAll {
-		err = models.DB().Debug().Preload("Group").Where("username like ?", "%"+reqBody.SearchTxt+"%").Order("id desc").Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&userList).Error
+		err = models.DB().Preload("Group").Where("username like ?", "%"+reqBody.SearchTxt+"%").Order("id desc").Offset((reqBody.Page - 1) * reqBody.Pagesize).Limit(reqBody.Pagesize).Find(&userList).Error
 	} else {
-		err = models.DB().Preload("Group").Where("group_id=? and username like ?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%").Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&userList).Error
+		err = models.DB().Preload("Group").Where("group_id=? and username like ?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%").Offset((reqBody.Page - 1) * reqBody.Pagesize).Limit(reqBody.Pagesize).Find(&userList).Error
 	}
 
 	if err != nil && err != sql.ErrNoRows {

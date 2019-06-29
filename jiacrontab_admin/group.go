@@ -26,7 +26,7 @@ func GetGroupList(ctx *myctx) {
 
 	models.DB().Model(&models.Group{}).Where("name like ?", "%"+reqBody.SearchTxt+"%").Count(&count)
 
-	err = models.DB().Where("name like ?", "%"+reqBody.SearchTxt+"%").Offset(reqBody.Page - 1).Limit(reqBody.Pagesize).Find(&groupList).Error
+	err = models.DB().Where("name like ?", "%"+reqBody.SearchTxt+"%").Offset((reqBody.Page - 1) * reqBody.Pagesize).Limit(reqBody.Pagesize).Find(&groupList).Error
 	if err != nil {
 		ctx.respError(proto.Code_Error, err.Error(), nil)
 		return

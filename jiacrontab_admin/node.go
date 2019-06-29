@@ -29,7 +29,7 @@ func GetNodeList(ctx *myctx) {
 		return
 	}
 
-	err = models.DB().Preload("Group").Where("group_id=? and name like ?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%").Offset(reqBody.Page - 1).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
+	err = models.DB().Preload("Group").Where("group_id=? and name like ?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%").Offset((reqBody.Page - 1) * reqBody.Pagesize).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
 	models.DB().Model(&models.Node{}).Where("group_id=? and name like ?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%").Count(&count)
 
 	if err != nil {
