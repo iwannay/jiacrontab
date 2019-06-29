@@ -13,11 +13,11 @@ import (
 
 	"github.com/iwannay/log"
 
+	"flag"
 	"os"
 	"path/filepath"
 	"runtime"
 	"time"
-	"flag"
 )
 
 func RandIntn(end int) int {
@@ -38,7 +38,6 @@ func SystemInfo(startTime time.Time) map[string]interface{} {
 	mstat := &runtime.MemStats{}
 	runtime.ReadMemStats(mstat)
 	costTime := int(time.Since(startTime).Seconds())
-	mb := 1024 * 1024
 
 	if mstat.LastGC != 0 {
 		afterLastGC = fmt.Sprintf("%.1fs", float64(time.Now().UnixNano()-int64(mstat.LastGC))/1000/1000/1000)
@@ -66,7 +65,7 @@ func SystemInfo(startTime time.Time) map[string]interface{} {
 		// "被释放的 Heap 内存":  file.FileSize(int64(mstat.HeapReleased)),
 		// "Heap 对象数量":     mstat.HeapObjects,
 
-		"下次GC内存回收量": fmt.Sprintf("%.3fMB", float64(mstat.NextGC)/float64(mb)),
+		"下次GC内存回收量": file.FileSize(int64(mstat.NextGC)),
 		"GC暂停时间总量":  fmt.Sprintf("%.3fs", float64(mstat.PauseTotalNs)/1000/1000/1000),
 		"上次GC暂停时间":  fmt.Sprintf("%.3fs", float64(mstat.PauseNs[(mstat.NumGC+255)%256])/1000/1000/1000),
 	}
@@ -159,14 +158,14 @@ func GetHostname() string {
 }
 
 func HasFlagName(fs *flag.FlagSet, s string) bool {
-		var found bool
-		fs.Visit(func(flag *flag.Flag) {
-			if flag.Name == s {
-				found = true
-			}
-		})
-		return found
-	
+	var found bool
+	fs.Visit(func(flag *flag.Flag) {
+		if flag.Name == s {
+			found = true
+		}
+	})
+	return found
+
 }
 
 func init() {

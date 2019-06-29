@@ -94,6 +94,13 @@ func newApp(adm *Admin) *iris.Application {
 	v2 := app.Party("/v2")
 	{
 		v2.Use(jwtHandler.Serve)
+		v2.Use(wrapHandler(func(ctx *myctx) {
+			if err := ctx.parseClaimsFromToken(); err != nil {
+				ctx.respJWTError(err)
+				return
+			}
+			ctx.Next()
+		}))
 		v2.Post("/crontab/job/list", wrapHandler(GetJobList))
 		v2.Post("/crontab/job/get", wrapHandler(GetJob))
 		v2.Post("/crontab/job/log", wrapHandler(GetRecentLog))
