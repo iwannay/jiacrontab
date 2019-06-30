@@ -10,8 +10,8 @@ binAdm=$(sourceAdmDir)/jiacrontab_admin
 binNode=$(sourceNodeDir)/jiacrontabd
 
 buildDir=./build
-buildAdmDir=$(buildDir)/jiacrontab_admin
-buildNodeDir=$(buildDir)/jiacrontabd
+buildAdmDir=$(buildDir)/jiacrontab/jiacrontab_admin
+buildNodeDir=$(buildDir)/jiacrontab/jiacrontabd
 
 admCfg=$(sourceAdmDir)/jiacrontab_admin.ini
 nodeCfg=$(sourceNodeDir)/jiacrontabd.ini
@@ -57,8 +57,8 @@ build-windows:
 define init
 	rm -rf $(buildDir)
 	mkdir $(buildDir)
-	mkdir $(buildAdmDir)
-	mkdir $(buildNodeDir)
+	mkdir -p $(buildAdmDir)
+	mkdir -p $(buildNodeDir)
 
 	cp $(admCfg) $(buildAdmDir)
 	cp $(nodeCfg) $(buildNodeDir)
