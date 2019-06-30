@@ -31,7 +31,7 @@ github.com/iris-contrib/go.uuid
 # github.com/iris-contrib/middleware v0.0.0-20181021162728-8bd5d51b3c2e
 github.com/iris-contrib/middleware/cors
 github.com/iris-contrib/middleware/jwt
-# github.com/iwannay/log v0.0.0-20190624055842-11613384051f
+# github.com/iwannay/log v0.0.0-20190630100042-7fa98f256ca1
 github.com/iwannay/log
 # github.com/jinzhu/gorm v1.9.2
 github.com/jinzhu/gorm/dialects/mysql
