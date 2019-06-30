@@ -311,11 +311,6 @@ func UserStat(ctx *myctx) {
 		cfg = ctx.adm.getOpts()
 	)
 
-	if err = ctx.parseClaimsFromToken(); err != nil {
-		ctx.respJWTError(err)
-		return
-	}
-
 	err = models.DB().Raw(
 		`select 
 			sum(crontab_job_audit_num) as crontab_job_audit_num, 
@@ -389,11 +384,6 @@ func GetUserList(ctx *myctx) {
 
 	if err = ctx.Valid(&reqBody); err != nil {
 		ctx.respParamError(err)
-	}
-
-	if err = ctx.parseClaimsFromToken(); err != nil {
-		ctx.respJWTError(err)
-		return
 	}
 
 	if reqBody.IsAll && ctx.claims.GroupID != models.SuperGroup.ID {
