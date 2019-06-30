@@ -23,10 +23,17 @@ type myctx struct {
 }
 
 func wrapCtx(ctx iris.Context, adm *Admin) *myctx {
-	return &myctx{
+	key := "__ctx__"
+	if v := ctx.Values().Get(key); v != nil {
+		return v.(*myctx)
+	}
+
+	c := &myctx{
 		Context: ctx,
 		adm:     adm,
 	}
+	ctx.Values().Set(key, c)
+	return c
 }
 
 func (ctx *myctx) respNotAllowed() {
@@ -70,7 +77,6 @@ func (ctx *myctx) respError(code int, err interface{}, v ...interface{}) {
 	if err == nil {
 		msgStr = "error"
 	}
-
 	msgStr = fmt.Sprintf("%s", err)
 	if len(v) >= 1 {
 		data = v[0]
@@ -115,26 +121,17 @@ func (ctx *myctx) respSucc(msg string, v interface{}) {
 	})
 }
 
-func (ctx *myctx) getGroupIDFromToken() (uint, error) {
-	err := ctx.parseClaimsFromToken()
-	if err != nil {
-		return 0, err
-	}
-	return ctx.claims.GroupID, nil
-}
-
 func (ctx *myctx) isSuper() bool {
-	gid, err := ctx.getGroupIDFromToken()
-	return gid == models.SuperGroup.ID && err == nil
+	return ctx.claims.GroupID == models.SuperGroup.ID
 }
 
 func (ctx *myctx) parseClaimsFromToken() error {
+	var ok bool
 
 	if (ctx.claims != CustomerClaims{}) {
 		return nil
 	}
 
-	var ok bool
 	token, ok := ctx.Values().Get("jwt").(*jwt.Token)
 	if !ok {
 		return errors.New("claims is nil")
@@ -158,26 +155,23 @@ func (ctx *myctx) parseClaimsFromToken() error {
 		return fmt.Errorf("token validate error")
 	}
 
+	if ctx.claims.GroupID == models.SuperGroup.ID {
+		ctx.claims.Root = true
+	}
+
+	fmt.Println("root", ctx.claims.Root)
+
 	return nil
 }
 
 func (ctx *myctx) getGroupNodes() ([]models.Node, error) {
 	var nodes []models.Node
-	gid, err := ctx.getGroupIDFromToken()
-
-	if err != nil {
-		return nil, err
-	}
-
-	err = models.DB().Find(&nodes, "group_id=?", gid).Error
+	err := models.DB().Find(&nodes, "group_id=?", ctx.claims.GroupID).Error
 	return nodes, err
 }
 
 func (ctx *myctx) verifyNodePermission(addr string) bool {
 	var node models.Node
-	if err := ctx.parseClaimsFromToken(); err != nil {
-		return false
-	}
 	return node.VerifyUserGroup(ctx.claims.UserID, ctx.claims.GroupID, addr)
 }
 
@@ -212,12 +206,6 @@ func (ctx *myctx) Valid(i Parameter) error {
 
 func (ctx *myctx) pubEvent(targetName, desc string, source interface{}, v interface{}) {
 	var content string
-	if (ctx.claims == CustomerClaims{}) {
-		err := ctx.parseClaimsFromToken()
-		if err != nil {
-			return
-		}
-	}
 
 	if v != nil {
 		bts, err := json.Marshal(v)

@@ -331,7 +331,6 @@ func (j *JobEntry) timeoutTrigger(p *process) {
 func (j *JobEntry) exec() {
 
 	if atomic.LoadInt32(&j.stop) == 1 {
-		log.Error("stop return")
 		return
 	}
 
@@ -345,7 +344,7 @@ func (j *JobEntry) exec() {
 		}
 
 		if err != nil {
-			log.Error("JobEntry.exec:", err)
+			log.Warn("JobEntry.exec:", err)
 			return
 		}
 

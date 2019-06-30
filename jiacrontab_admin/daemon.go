@@ -19,10 +19,6 @@ func GetDaemonJobList(ctx *myctx) {
 		ctx.respParamError(err)
 		return
 	}
-	if err = ctx.parseClaimsFromToken(); err != nil {
-		ctx.respJWTError(err)
-		return
-	}
 
 	if err = rpcCall(reqBody.Addr, "DaemonJob.List", &proto.QueryJobArgs{
 		Page:      reqBody.Page,
@@ -67,10 +63,6 @@ func ActionDaemonTask(ctx *myctx) {
 	if err = ctx.Valid(&reqBody); err != nil {
 		ctx.respBasicError(err)
 	}
-	if err = ctx.parseClaimsFromToken(); err != nil {
-		ctx.respJWTError(err)
-		return
-	}
 
 	if method, ok = methods[reqBody.Action]; !ok {
 		ctx.respBasicError(errors.New("参数错误"))
@@ -105,11 +97,6 @@ func EditDaemonJob(ctx *myctx) {
 		reqBody   EditDaemonJobReqParams
 		daemonJob models.DaemonJob
 	)
-
-	if err = ctx.parseClaimsFromToken(); err != nil {
-		ctx.respJWTError(err)
-		return
-	}
 
 	if err = ctx.Valid(&reqBody); err != nil {
 		ctx.respParamError(err)
@@ -166,11 +153,6 @@ func GetDaemonJob(ctx *myctx) {
 		err       error
 	)
 
-	if err = ctx.parseClaimsFromToken(); err != nil {
-		ctx.respJWTError(err)
-		return
-	}
-
 	if err = ctx.Valid(&reqBody); err != nil {
 		ctx.respParamError(err)
 		return
@@ -203,10 +185,6 @@ func GetRecentDaemonLog(ctx *myctx) {
 
 	if err = ctx.Valid(&reqBody); err != nil {
 		ctx.respParamError(err)
-		return
-	}
-	if err = ctx.parseClaimsFromToken(); err != nil {
-		ctx.respJWTError(err)
 		return
 	}
 
