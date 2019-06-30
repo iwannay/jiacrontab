@@ -159,8 +159,6 @@ func (ctx *myctx) parseClaimsFromToken() error {
 		ctx.claims.Root = true
 	}
 
-	fmt.Println("root", ctx.claims.Root)
-
 	return nil
 }
 

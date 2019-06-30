@@ -309,7 +309,7 @@ func (j *DaemonJob) Edit(args proto.EditDaemonJobArgs, job *models.DaemonJob) er
 		}
 		model = model.Omit(
 			"updated_at", "created_at", "deleted_at",
-			"created_user_id", "created_username")
+			"created_user_id", "created_username", "start_at").Save(&args.Job)
 	}
 
 	*job = args.Job

@@ -362,7 +362,13 @@ func GroupUser(ctx *myctx) {
 
 	user.ID = reqBody.UserID
 	user.GroupID = reqBody.TargetGroupID
-	user.Root = reqBody.Root
+
+	if reqBody.TargetGroupID == models.SuperGroup.ID {
+		user.Root = true
+	} else {
+		user.Root = reqBody.Root
+	}
+
 	if err = user.SetGroup(&group); err != nil {
 		ctx.respDBError(err)
 		return
