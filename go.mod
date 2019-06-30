@@ -27,7 +27,7 @@ require (
 	github.com/iris-contrib/go.uuid v2.0.0+incompatible // indirect
 	github.com/iris-contrib/httpexpect v0.0.0-20180314041918-ebe99fcebbce // indirect
 	github.com/iris-contrib/middleware v0.0.0-20181021162728-8bd5d51b3c2e
-	github.com/iwannay/log v0.0.0-20190624055842-11613384051f
+	github.com/iwannay/log v0.0.0-20190630100042-7fa98f256ca1
 	github.com/jinzhu/gorm v1.9.2
 	github.com/jinzhu/inflection v0.0.0-20180308033659-04140366298a // indirect
 	github.com/jinzhu/now v1.0.0 // indirect
