@@ -2,12 +2,9 @@ package pprof
 
 import (
 	"jiacrontab/pkg/file"
-	"os"
-	"os/signal"
 	"path/filepath"
 	"runtime"
 	"runtime/pprof"
-	"syscall"
 	"time"
 
 	"github.com/iwannay/log"
@@ -15,17 +12,6 @@ import (
 
 func ListenPprof() {
 	go listenSignal()
-}
-
-func listenSignal() {
-	signChan := make(chan os.Signal, 1)
-	signal.Notify(signChan, syscall.SIGUSR1)
-	for {
-		<-signChan
-		profile()
-		memprofile()
-		cupprofile()
-	}
 }
 
 func cupprofile() {
