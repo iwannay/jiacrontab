@@ -84,11 +84,6 @@ func EditJob(ctx *myctx) {
 		job     models.CrontabJob
 	)
 
-	if err = ctx.parseClaimsFromToken(); err != nil {
-		ctx.respJWTError(err)
-		return
-	}
-
 	if err = ctx.Valid(&reqBody); err != nil {
 		ctx.respBasicError(err)
 		return
@@ -181,11 +176,6 @@ func ActionTask(ctx *myctx) {
 		return
 	}
 
-	if err = ctx.parseClaimsFromToken(); err != nil {
-		ctx.respJWTError(err)
-		return
-	}
-
 	if method, ok = methods[reqBody.Action]; !ok {
 		ctx.respBasicError(errors.New("action无法识别"))
 		return
@@ -222,11 +212,6 @@ func ExecTask(ctx *myctx) {
 		return
 	}
 
-	if err = ctx.parseClaimsFromToken(); err != nil {
-		ctx.respJWTError(err)
-		return
-	}
-
 	if err = rpcCall(reqBody.Addr, "CrontabJob.Exec", proto.GetJobArgs{
 		UserID: ctx.claims.UserID,
 		Root:   ctx.claims.Root,
@@ -247,11 +232,6 @@ func GetJob(ctx *myctx) {
 		crontabJob models.CrontabJob
 		err        error
 	)
-
-	if err = ctx.parseClaimsFromToken(); err != nil {
-		ctx.respJWTError(err)
-		return
-	}
 
 	if err = ctx.Valid(&reqBody); err != nil {
 		ctx.respParamError(err)

@@ -47,7 +47,7 @@ func newApp(adm *Admin) *iris.Application {
 		ErrorHandler: func(c iris.Context, data string) {
 			ctx := wrapCtx(c, adm)
 			if ctx.RequestPath(true) != "/user/login" {
-				ctx.respAuthFailed(errors.New("认证失败"))
+				ctx.respAuthFailed(errors.New("auth failed"))
 				return
 			}
 			ctx.Next()

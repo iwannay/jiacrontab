@@ -17,18 +17,19 @@ type Node struct {
 	DaemonJobAuditNum   uint   `json:"daemonJobAuditNum"`
 	DaemonJobRunningNum uint   `json:"daemonJobRunningNum"`
 	CrontabJobFailNum   uint   `json:"crontabJobFailNum"`
-	Addr                string `json:"addr"gorm:"not null;unique_index:uni_group_addr"`
+	Addr                string `json:"addr" gorm:"not null;unique_index:uni_group_addr"`
 	Group               Group  `json:"group"`
 }
 
 func (n *Node) VerifyUserGroup(userID, groupID uint, addr string) bool {
 	var user User
-	if DB().Take(&user, "id=? and group_id=?", userID, groupID).Error != nil {
-		return false
-	}
 
 	if groupID == SuperGroup.ID {
 		return true
+	}
+
+	if DB().Take(&user, "id=? and group_id=?", userID, groupID).Error != nil {
+		return false
 	}
 
 	return n.Exists(groupID, addr)
