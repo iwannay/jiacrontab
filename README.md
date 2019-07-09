@@ -157,6 +157,5 @@ clean_task_log = true
 
 [1.4.\*版本演示地址](http://jiacrontab.iwannay.cn/) 账号：admin 密码：123456
 
-## qq 群成立啦
-
-813377930 欢迎反馈问题
+## QQ群号：813377930
+<img src="https://github.com/iwannay/jiacrontab/blob/dev/qq.png" width="250" alt="qq群"/>
