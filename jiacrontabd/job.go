@@ -358,7 +358,7 @@ func (j *JobEntry) exec() {
 			j.jd.addJob(j.job)
 		}
 
-		if atomic.LoadInt32(&j.processNum) > int32(j.detail.MaxConcurrent) {
+		if atomic.LoadInt32(&j.processNum) >= int32(j.detail.MaxConcurrent) {
 			return
 		}
 
