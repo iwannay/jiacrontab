@@ -29,8 +29,8 @@ build:
 	mv $(binAdm) $(buildAdmDir)
 	mv $(binNode) $(buildNodeDir)
 test:
-	$(goTest) -mod=vendor -v $(sourceAdmDir)
-	$(goTest) -mod=vendor -v $(sourceNodeDir)
+	$(goTest) -mod=vendor -v -race -coverprofile=coverage.txt -covermode=atomic $(sourceAdmDir)
+	$(goTest) -mod=vendor -v -race -coverprofile=coverage.txt -covermode=atomic $(sourceNodeDir)
 clean:
 	rm -f $(binAdm)
 	rm -f $(binNode)
