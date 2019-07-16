@@ -109,6 +109,7 @@ func EditDaemonJob(ctx *myctx) {
 
 	daemonJob = models.DaemonJob{
 		Name:            reqBody.Name,
+		GroupID:         ctx.claims.GroupID,
 		ErrorMailNotify: reqBody.ErrorMailNotify,
 		ErrorAPINotify:  reqBody.ErrorAPINotify,
 		MailTo:          reqBody.MailTo,

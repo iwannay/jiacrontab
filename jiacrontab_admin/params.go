@@ -262,12 +262,19 @@ type EditUserReqParams struct {
 	UserID   uint   `json:"userID" rule:"required,缺少userID"`
 	Username string `json:"username" rule:"required,请输入用户名"`
 	Passwd   string `json:"passwd" rule:"required,请输入密码"`
-	GroupID  uint   `json:"groupID" rule:"required,请输入密码"`
 	Avatar   string `json:"avatar"`
 	Mail     string `json:"mail"`
 }
 
 func (p *EditUserReqParams) Verify(ctx iris.Context) error {
+	return nil
+}
+
+type DeleteUserReqParams struct {
+	UserID uint `json:"userID" rule:"required,缺少userID"`
+}
+
+func (p *DeleteUserReqParams) Verify(ctx iris.Context) error {
 	return nil
 }
 

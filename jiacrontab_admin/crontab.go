@@ -97,6 +97,7 @@ func EditJob(ctx *myctx) {
 	job = models.CrontabJob{
 		Name:    reqBody.Name,
 		Command: reqBody.Command,
+		GroupID: ctx.claims.GroupID,
 		Code:    reqBody.Code,
 		TimeArgs: models.TimeArgs{
 			Month:   reqBody.Month,
