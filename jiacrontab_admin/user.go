@@ -16,7 +16,7 @@ import (
 
 type CustomerClaims struct {
 	jwt.StandardClaims
-	Version  uint
+	Version  int64
 	UserID   uint
 	Mail     string
 	Username string
@@ -49,6 +49,7 @@ func Login(ctx *myctx) {
 	customerClaims.Mail = user.Mail
 	customerClaims.GroupID = user.GroupID
 	customerClaims.Root = user.Root
+	customerClaims.Version = user.Version
 
 	if reqBody.Remember {
 		customerClaims.ExpiresAt = time.Now().Add(24 * 30 * time.Hour).Unix()
