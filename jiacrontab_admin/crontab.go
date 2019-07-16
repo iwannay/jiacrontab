@@ -25,6 +25,7 @@ func GetJobList(ctx *myctx) {
 	rpcReqParams.Pagesize = reqBody.Pagesize
 	rpcReqParams.UserID = ctx.claims.UserID
 	rpcReqParams.Root = ctx.claims.Root
+	rpcReqParams.GroupID = ctx.claims.GroupID
 	rpcReqParams.SearchTxt = reqBody.SearchTxt
 
 	if err := rpcCall(reqBody.Addr, "CrontabJob.List", rpcReqParams, &jobRet); err != nil {
@@ -140,8 +141,9 @@ func EditJob(ctx *myctx) {
 	}
 
 	if err = rpcCall(reqBody.Addr, "CrontabJob.Edit", proto.EditCrontabJobArgs{
-		Job:  job,
-		Root: ctx.claims.Root,
+		Job:     job,
+		GroupID: ctx.claims.GroupID,
+		Root:    ctx.claims.Root,
 	}, &reply); err != nil {
 		ctx.respRPCError(err)
 		return
@@ -183,9 +185,10 @@ func ActionTask(ctx *myctx) {
 	}
 
 	if err = rpcCall(reqBody.Addr, method, proto.ActionJobsArgs{
-		UserID: ctx.claims.UserID,
-		Root:   ctx.claims.Root,
-		JobIDs: reqBody.JobIDs,
+		UserID:  ctx.claims.UserID,
+		GroupID: ctx.claims.GroupID,
+		Root:    ctx.claims.Root,
+		JobIDs:  reqBody.JobIDs,
 	}, &jobReply); err != nil {
 		ctx.respRPCError(err)
 		return
@@ -214,9 +217,10 @@ func ExecTask(ctx *myctx) {
 	}
 
 	if err = rpcCall(reqBody.Addr, "CrontabJob.Exec", proto.GetJobArgs{
-		UserID: ctx.claims.UserID,
-		Root:   ctx.claims.Root,
-		JobID:  reqBody.JobID,
+		UserID:  ctx.claims.UserID,
+		Root:    ctx.claims.Root,
+		JobID:   reqBody.JobID,
+		GroupID: ctx.claims.GroupID,
 	}, &execJobReply); err != nil {
 		ctx.respRPCError(err)
 		return
@@ -245,9 +249,10 @@ func GetJob(ctx *myctx) {
 	}
 
 	if err = rpcCall(reqBody.Addr, "CrontabJob.Get", proto.GetJobArgs{
-		UserID: ctx.claims.UserID,
-		Root:   ctx.claims.Root,
-		JobID:  reqBody.JobID,
+		UserID:  ctx.claims.UserID,
+		Root:    ctx.claims.Root,
+		GroupID: ctx.claims.GroupID,
+		JobID:   reqBody.JobID,
 	}, &crontabJob); err != nil {
 		ctx.respRPCError(err)
 		return

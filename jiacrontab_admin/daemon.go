@@ -25,6 +25,7 @@ func GetDaemonJobList(ctx *myctx) {
 		Pagesize:  reqBody.Pagesize,
 		SearchTxt: reqBody.SearchTxt,
 		Root:      ctx.claims.Root,
+		GroupID:   ctx.claims.GroupID,
 		UserID:    ctx.claims.UserID,
 	}, &jobRet); err != nil {
 		ctx.respRPCError(err)
@@ -70,9 +71,10 @@ func ActionDaemonTask(ctx *myctx) {
 	}
 
 	if err = rpcCall(reqBody.Addr, method, proto.ActionJobsArgs{
-		UserID: ctx.claims.UserID,
-		JobIDs: reqBody.JobIDs,
-		Root:   ctx.claims.Root,
+		UserID:  ctx.claims.UserID,
+		JobIDs:  reqBody.JobIDs,
+		GroupID: ctx.claims.GroupID,
+		Root:    ctx.claims.Root,
 	}, &reply); err != nil {
 		ctx.respRPCError(err)
 		return
@@ -138,8 +140,9 @@ func EditDaemonJob(ctx *myctx) {
 	}
 
 	if err = rpcCall(reqBody.Addr, "DaemonJob.Edit", proto.EditDaemonJobArgs{
-		Job:  daemonJob,
-		Root: ctx.claims.Root,
+		GroupID: ctx.claims.GroupID,
+		Job:     daemonJob,
+		Root:    ctx.claims.Root,
 	}, &reply); err != nil {
 		ctx.respRPCError(err)
 		return
@@ -167,9 +170,10 @@ func GetDaemonJob(ctx *myctx) {
 	}
 
 	if err = rpcCall(reqBody.Addr, "DaemonJob.Get", proto.GetJobArgs{
-		UserID: ctx.claims.UserID,
-		Root:   ctx.claims.Root,
-		JobID:  reqBody.JobID,
+		UserID:  ctx.claims.UserID,
+		GroupID: ctx.claims.GroupID,
+		Root:    ctx.claims.Root,
+		JobID:   reqBody.JobID,
 	}, &daemonJob); err != nil {
 		ctx.respRPCError(err)
 		return
@@ -193,6 +197,8 @@ func GetRecentDaemonLog(ctx *myctx) {
 
 	if err := rpc.Call(reqBody.Addr, "DaemonJob.Log", proto.SearchLog{
 		JobID:    reqBody.JobID,
+		GroupID:  ctx.claims.GroupID,
+		Root:     ctx.claims.Root,
 		Offset:   reqBody.Offset,
 		Pagesize: reqBody.Pagesize,
 		Date:     reqBody.Date,
