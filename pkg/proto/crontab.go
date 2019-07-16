@@ -23,6 +23,7 @@ type DepJob struct {
 type QueryJobArgs struct {
 	SearchTxt      string
 	Root           bool
+	GroupID        int
 	UserID         uint
 	Page, Pagesize int
 }
@@ -30,12 +31,14 @@ type QueryJobArgs struct {
 type QueryCrontabJobRet struct {
 	Total    int
 	Page     int
+	GroupID  int
 	Pagesize int
 	List     []models.CrontabJob
 }
 
 type QueryDaemonJobRet struct {
 	Total    int
+	GroupID  int
 	Page     int
 	Pagesize int
 	List     []models.DaemonJob
@@ -55,6 +58,7 @@ type CrontabApiNotifyBody struct {
 }
 
 type EditCrontabJobArgs struct {
-	Job  models.CrontabJob
-	Root bool
+	Job     models.CrontabJob
+	GroupID uint
+	Root    bool
 }

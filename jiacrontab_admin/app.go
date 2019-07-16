@@ -131,6 +131,7 @@ func newApp(adm *Admin) *iris.Application {
 		v2.Post("/user/stat", wrapHandler(UserStat))
 		v2.Post("/user/signup", wrapHandler(Signup))
 		v2.Post("/user/edit", wrapHandler(EditUser))
+		v2.Post("/user/delete", wrapHandler(DeleteUser))
 		v2.Post("/user/group_user", wrapHandler(GroupUser))
 		v2.Post("/user/list", wrapHandler(GetUserList))
 	}
