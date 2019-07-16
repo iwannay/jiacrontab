@@ -16,6 +16,7 @@ import (
 
 type CustomerClaims struct {
 	jwt.StandardClaims
+	Version  uint
 	UserID   uint
 	Mail     string
 	Username string

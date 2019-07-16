@@ -6,6 +6,8 @@ import (
 
 type SearchLog struct {
 	JobID    uint
+	GroupID  uint
+	Root     bool
 	IsTail   bool
 	Offset   int64
 	Pagesize int
@@ -36,15 +38,17 @@ type ExecCrontabJobReply struct {
 }
 
 type ActionJobsArgs struct {
-	UserID uint
-	Root   bool
-	JobIDs []uint
+	UserID  uint
+	Root    bool
+	GroupID uint
+	JobIDs  []uint
 }
 
 type GetJobArgs struct {
-	UserID uint
-	Root   bool
-	JobID  uint
+	UserID  uint
+	GroupID uint
+	Root    bool
+	JobID   uint
 }
 type EmptyArgs struct{}
 

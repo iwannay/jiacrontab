@@ -23,7 +23,7 @@ type DepJob struct {
 type QueryJobArgs struct {
 	SearchTxt      string
 	Root           bool
-	GroupID        int
+	GroupID        uint
 	UserID         uint
 	Page, Pagesize int
 }
@@ -31,7 +31,7 @@ type QueryJobArgs struct {
 type QueryCrontabJobRet struct {
 	Total    int
 	Page     int
-	GroupID  int
+	GroupID  uint
 	Pagesize int
 	List     []models.CrontabJob
 }
