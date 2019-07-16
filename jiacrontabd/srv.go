@@ -48,7 +48,13 @@ func newCrontabJobSrv(jd *Jiacrontabd) *CrontabJob {
 }
 
 func (j *CrontabJob) List(args proto.QueryJobArgs, reply *proto.QueryCrontabJobRet) error {
-	err := models.DB().Model(&models.CrontabJob{}).Where("name like ?", "%"+args.SearchTxt+"%").Count(&reply.Total).Error
+	model := models.DB().Model(&models.CrontabJob{})
+	if args.GroupID == models.SuperGroup.ID {
+		model = model.Where("name like ?", "%"+args.SearchTxt+"%")
+	} else {
+		model = model.Where("name like ? and group_id=?", "%"+args.SearchTxt+"%")
+	}
+	err := model.Count(&reply.Total).Error
 	if err != nil {
 		return err
 	}

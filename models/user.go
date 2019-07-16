@@ -16,6 +16,7 @@ type User struct {
 	Passwd   string `json:"-"`
 	Salt     string `json:"-"`
 	Avatar   string `json:"avatar"`
+	Version  uint   `json:"version"`
 	GroupID  uint   `json:"groupID" grom:"index"`
 	Root     bool   `json:"root"`
 	Mail     string `json:"mail"`
@@ -62,9 +63,9 @@ func (u *User) Create() error {
 	return DB().Create(u).Error
 }
 
-func (u *User) Update() error {
+func (u User) Update() error {
 	u.setPasswd()
-	return DB().Updates(u).Error
+	return DB().Model(&u).Updates(u).Update("version", gorm.Expr("version + ?", 1)).Error
 }
 
 func (u *User) Delete() error {
@@ -86,6 +87,7 @@ func (u *User) SetGroup(group *Group) error {
 
 	return DB().Model(u).Where("id=?", u.ID).Updates(map[string]interface{}{
 		"group_id": u.GroupID,
+		"version":  gorm.Expr("version + ?", 1),
 		"root":     u.Root,
 	}).Error
 }
