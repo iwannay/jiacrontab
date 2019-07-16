@@ -5,6 +5,7 @@ import (
 )
 
 type EditDaemonJobArgs struct {
-	Job  models.DaemonJob
-	Root bool
+	Job     models.DaemonJob
+	GroupID uint
+	Root    bool
 }

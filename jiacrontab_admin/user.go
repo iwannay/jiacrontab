@@ -284,16 +284,40 @@ func EditUser(ctx *myctx) {
 	user.ID = reqBody.UserID
 	user.Username = reqBody.Username
 	user.Passwd = reqBody.Passwd
-	user.GroupID = reqBody.GroupID
 	user.Avatar = reqBody.Avatar
 	user.Mail = reqBody.Mail
 
-	if err = user.Create(); err != nil {
+	if err = user.Update(); err != nil {
 		ctx.respDBError(err)
 		return
 	}
 
 	ctx.pubEvent(user.Username, event_EditUser, "", reqBody)
+	ctx.respSucc("", true)
+}
+
+func DeleteUser(ctx *myctx) {
+	var (
+		err     error
+		user    models.User
+		reqBody DeleteUserReqParams
+	)
+
+	if err = ctx.Valid(&reqBody); err != nil {
+		ctx.respParamError(err)
+		return
+	}
+
+	if !ctx.isSuper() {
+		ctx.respNotAllowed()
+		return
+	}
+	user.ID = reqBody.UserID
+	if err = user.Delete(); err != nil {
+		ctx.respDBError(err)
+		return
+	}
+	ctx.pubEvent(user.Username, event_DeleteUser, "", reqBody)
 	ctx.respSucc("", true)
 }
 

@@ -67,6 +67,13 @@ func (u *User) Update() error {
 	return DB().Updates(u).Error
 }
 
+func (u *User) Delete() error {
+	if err := DB().Take(u, "id=?", u.ID).Error; err != nil {
+		return err
+	}
+	return DB().Delete(u).Error
+}
+
 func (u *User) SetGroup(group *Group) error {
 
 	if u.GroupID != 0 {

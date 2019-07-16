@@ -21,6 +21,7 @@ const (
 
 	event_SignUpUser      = "{username}创建了用户{targetName}"
 	event_EditUser        = "{username}更新了用户信息"
+	event_DeleteUser      = "{username}删除了用户{targetName}"
 	event_GroupUser       = "{username}将用户{sourceUsername}设置为{targetName}组"
 	event_AuditCrontabJob = "{sourceName}{username}审核了定时任务{targetName}"
 	event_AuditDaemonJob  = "{sourceName}{username}审核了常驻任务{targetName}"
