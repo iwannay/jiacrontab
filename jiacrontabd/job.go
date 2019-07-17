@@ -232,6 +232,16 @@ func (j *JobEntry) handleDepError(startTime time.Time) {
 		}, &reply); err != nil {
 			log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
 		}
+
+		// 新增调用华为云SMN能力
+		if err := j.jd.rpcCallCtx(context.TODO(), "Srv.SendSMN", proto.Smn{
+			TemplateName: "demo",
+                        Subject: "",
+		}, &reply); err != nil {
+			log.Error("Srv.SendSMN error:", err)
+		}
+
+
 	}
 }
 
@@ -257,6 +267,19 @@ func (j *JobEntry) handleNotify(p *process) {
 				p.endTime.Format(proto.DefaultTimeLayout), p.err.Error(), p.retryNum),
 		}, &reply); err != nil {
 			log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
+		}
+
+		// 新增调用华为云SMN能力
+		if err := j.jd.rpcCallCtx(context.TODO(), "Srv.SendSMN", proto.Smn{
+			TemplateName:  "DemoEmail",
+			Subject: "Golang",
+                        Tags: map[string]string{
+                          "scriptToRun": "demoScript",
+                          "runAt": "demoRunAt",
+                          "result": "hhhhh",
+                        },
+		}, &reply); err != nil {
+			log.Error("Srv.SendSMN error:", err)
 		}
 	}
 

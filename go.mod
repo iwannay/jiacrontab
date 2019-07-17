@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go v0.36.0 // indirect
 	github.com/Joker/jade v1.0.0 // indirect
 	github.com/Shopify/goreferrer v0.0.0-20181106222321-ec9c9a553398 // indirect
+	github.com/SimpleMessageNotification/smn-sdk-go v0.0.0-20180420150945-7a43cf15cb61
 	github.com/ajg/form v0.0.0-20160822230020-523a5da1a92f // indirect
 	github.com/aymerick/raymond v2.0.2+incompatible // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect

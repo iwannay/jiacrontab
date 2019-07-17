@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"jiacrontab/models"
 	"jiacrontab/pkg/mailer"
+        "jiacrontab/pkg/smn"
 	"jiacrontab/pkg/proto"
 	"net/http"
 	"strings"
@@ -80,6 +81,18 @@ func (s *Srv) SendMail(args proto.SendMail, reply *bool) error {
 	*reply = true
 	return err
 }
+
+func (s *Srv) SendSMN(args proto.Smn, reply *bool) error {
+	var (
+		err error
+		cfg = s.adm.getOpts()
+	)
+
+	err = smn.PublishMessageTemplate(cfg.Smn.DomainName, cfg.Smn.UserName, cfg.Smn.UserPass, cfg.Smn.Region, cfg.Smn.TopicUrn, args.TemplateName, args.Tags)
+	*reply = true
+	return err
+}
+
 
 func (s *Srv) PushJobLog(args models.JobHistory, reply *bool) error {
 	models.PushJobHistory(&args)

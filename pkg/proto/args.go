@@ -27,6 +27,12 @@ type SendMail struct {
 	Content string
 }
 
+type Smn struct {
+  TemplateName string
+  Subject      string
+  Tags         map[string]string
+}
+
 type ApiPost struct {
 	Urls []string
 	Data string

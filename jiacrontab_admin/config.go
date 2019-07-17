@@ -49,6 +49,14 @@ type MailerOpt struct {
 	UsePlainText   bool   `opt:"use_plain_text"`
 }
 
+type SmnOpt struct {
+	DomainName string `opt:"domainName"`
+	UserName   string `opt:"userName"`
+	UserPass   string `opt:"userPass"`
+	Region     string `opt:"region"`
+	TopicUrn   string `opt:"topicUrn"`
+}
+
 type databaseOpt struct {
 	DriverName string `opt:"driver_name"`
 	DSN        string `opt:"dsn"`
@@ -56,6 +64,8 @@ type databaseOpt struct {
 
 type Config struct {
 	Mailer   *MailerOpt   `section:"mail"`
+	Smn      *SmnOpt      `section:"smn"`
+
 	Jwt      *JwtOpt      `section:"jwt"`
 	App      *AppOpt      `section:"app"`
 	Database *databaseOpt `section:"database"`
@@ -132,6 +142,14 @@ func NewConfig() *Config {
 			SkipVerify:     true,
 			UseCertificate: false,
 		},
+		Smn: &SmnOpt{
+			DomainName: "",
+			UserName: "",
+			UserPass: "",
+			Region: "",
+			TopicUrn: "",
+		},
+
 		Jwt: &JwtOpt{
 			SigningKey: "ADSFdfs2342$@@#",
 			Name:       "token",

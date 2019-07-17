@@ -4,6 +4,11 @@ github.com/BurntSushi/toml
 github.com/Joker/jade
 # github.com/Shopify/goreferrer v0.0.0-20181106222321-ec9c9a553398
 github.com/Shopify/goreferrer
+# github.com/SimpleMessageNotification/smn-sdk-go v0.0.0-20180420150945-7a43cf15cb61
+github.com/SimpleMessageNotification/smn-sdk-go/smn-sdk-go/client
+github.com/SimpleMessageNotification/smn-sdk-go/smn-sdk-go/auth
+github.com/SimpleMessageNotification/smn-sdk-go/smn-sdk-go/commom
+github.com/SimpleMessageNotification/smn-sdk-go/smn-sdk-go/util
 # github.com/aymerick/raymond v2.0.2+incompatible
 github.com/aymerick/raymond
 github.com/aymerick/raymond/ast
