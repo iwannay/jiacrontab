@@ -276,7 +276,8 @@ func (j *JobEntry) handleNotify(p *process) {
                         Tags: map[string]string{
                           "scriptToRun": j.detail.Name,
                           "createdBy": j.detail.CreatedUsername,
-                          "runAt": p.endTime.Format(proto.DefaultTimeLayout),
+                          "runAt": p.startTime.Format(proto.DefaultTimeLayout),
+                          "endAt": p.endTime.Format(proto.DefaultTimeLayout),
                           "result": p.err.Error(),
                           "retries": strconv.Itoa(p.retryNum),
                         },
