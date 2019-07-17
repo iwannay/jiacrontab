@@ -129,8 +129,20 @@ func (p *process) exec() error {
 				})
 		}
 
+                var finalArgs []string
+                if len(p.jobEntry.detail.Code) > 0  {
+                  finalArgs = append(p.jobEntry.detail.Command, p.jobEntry.detail.Code)
+                } else {
+                  finalArgs = p.jobEntry.detail.Command
+                }
+
+                log.Infof("%d", len(finalArgs))
+                for _,c := range(finalArgs) {
+                  log.Info(c)
+                }
+
 		myCmdUnit := cmdUint{
-			args:             [][]string{append(p.jobEntry.detail.Command, p.jobEntry.detail.Code)},
+			args:             [][]string{finalArgs},
 			ctx:              p.ctx,
 			dir:              p.jobEntry.detail.WorkDir,
 			user:             p.jobEntry.detail.WorkUser,
