@@ -12,6 +12,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+        "strconv"
 
 	"github.com/jinzhu/gorm"
 
@@ -272,11 +273,12 @@ func (j *JobEntry) handleNotify(p *process) {
 		// 新增调用华为云SMN能力
 		if err := j.jd.rpcCallCtx(context.TODO(), "Srv.SendSMN", proto.Smn{
 			TemplateName:  "DemoEmail",
-			Subject: "Golang",
                         Tags: map[string]string{
-                          "scriptToRun": "demoScript",
-                          "runAt": "demoRunAt",
-                          "result": "hhhhh",
+                          "scriptToRun": j.detail.Name,
+                          "createdBy": j.detail.CreatedUsername,
+                          "runAt": p.endTime.Format(proto.DefaultTimeLayout),
+                          "result": p.err.Error(),
+                          "retries": strconv.Itoa(p.retryNum),
                         },
 		}, &reply); err != nil {
 			log.Error("Srv.SendSMN error:", err)
