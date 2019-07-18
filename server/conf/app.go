@@ -7,7 +7,7 @@ import (
 
 const (
 	AppName = "jiacrontab"
-	Version = "v1.4.6"
+	Version = "v1.4.7"
 )
 
 var (
