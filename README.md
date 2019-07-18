@@ -4,7 +4,7 @@
 
 简单可信赖的任务管理工具
 
-# 2.0.0-alpha 测试版发布(正处于测试阶段，不建议生产使用。)
+## 2.0.0-alpha 测试版发布(正处于测试阶段，不建议生产使用。)
 生产建议使用1.4.x版本
 
 ## [🔴jiacrontab 最新版下载点这里 ](https://jiacrontab.iwannay.cn/download/)
