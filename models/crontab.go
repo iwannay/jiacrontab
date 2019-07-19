@@ -57,6 +57,9 @@ type CrontabJob struct {
 	MaxConcurrent    uint        `json:"maxConcurrent"` // 脚本最大并发量
 	TimeoutTrigger   StringSlice `json:"timeoutTrigger" gorm:"type:varchar(20)"`
 	TimeArgs         TimeArgs    `json:"timeArgs" gorm:"type:TEXT"`
+
+        TimeoutAction    StringSlice `json:"timeoutAction" gorm:"type:varchar(1000)"`
+        FailAction       StringSlice `json:"failAction" gorm:"type:varchar(1000)"`
 }
 
 type StringSlice []string

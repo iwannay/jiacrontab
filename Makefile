@@ -28,6 +28,7 @@ build:
 	$(goBuild) -mod=vendor -o $(binNode) -v $(sourceNodeDir)
 	mv $(binAdm) $(buildAdmDir)
 	mv $(binNode) $(buildNodeDir)
+        
 test:
 	$(goTest) -mod=vendor -v -race -coverprofile=coverage.txt -covermode=atomic $(sourceAdmDir)
 	$(goTest) -mod=vendor -v -race -coverprofile=coverage.txt -covermode=atomic $(sourceNodeDir)
