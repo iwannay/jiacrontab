@@ -352,7 +352,15 @@ func (j *JobEntry) exec() {
 			if !j.detail.NextExecTime.Truncate(time.Second).Equal(j.job.GetNextExecTime().Truncate(time.Second)) {
 				log.Errorf("%s(%d) JobEntry.exec time error(%s not equal %s)",
 					j.detail.Name, j.detail.ID, j.detail.NextExecTime, j.job.GetNextExecTime())
-				j.jd.addJob(j.job)
+				j.jd.addJob(&crontab.Job{
+					ID:      j.detail.ID,
+					Second:  j.detail.TimeArgs.Second,
+					Minute:  j.detail.TimeArgs.Minute,
+					Hour:    j.detail.TimeArgs.Hour,
+					Day:     j.detail.TimeArgs.Day,
+					Month:   j.detail.TimeArgs.Month,
+					Weekday: j.detail.TimeArgs.Weekday,
+				})
 				return
 			}
 			j.jd.addJob(j.job)
