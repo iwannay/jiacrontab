@@ -125,6 +125,9 @@ func EditJob(ctx *myctx) {
 		ErrorMailNotify:  reqBody.ErrorMailNotify,
 		ErrorAPINotify:   reqBody.ErrorAPINotify,
 		IsSync:           reqBody.IsSync,
+
+		TimeoutAction: reqBody.TimeoutAction,
+		FailAction: reqBody.FailAction,
 	}
 
 	job.ID = reqBody.JobID

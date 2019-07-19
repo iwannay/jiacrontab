@@ -28,6 +28,7 @@ type SendMail struct {
 }
 
 type Smn struct {
+  ActionType   string
   TemplateName string
   Subject      string
   Tags         map[string]string

@@ -69,6 +69,9 @@ type EditJobReqParams struct {
 	Minute           string            `json:"minute"`
 	Second           string            `json:"second"`
 	TimeoutTrigger   []string          `json:"timeoutTrigger"`
+
+        TimeoutAction    []string          `json:"timeoutAction"`
+        FailAction       []string          `json:"failAction"`
 }
 
 func (p *EditJobReqParams) Verify(ctx iris.Context) error {

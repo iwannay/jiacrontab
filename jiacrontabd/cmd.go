@@ -10,8 +10,6 @@ import (
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/util"
 	"os"
-        "strings"
-        "strconv"
 	"runtime/debug"
 	"time"
 
@@ -131,13 +129,7 @@ func (cu *cmdUint) exec() error {
 	readerErr := bufio.NewReader(stderr)
 	// 如果已经存在日志则直接写入
 	cu.logFile.Write(cu.content)
-        for _, args := range(cu.args) {
-          for _, arg := range(args) {
-            cu.logFile.WriteString(arg + "\n")
-          }
-          cu.logFile.WriteString(strconv.Itoa(len(args)) + " : " + strings.Join(args, " ") + "\n")
-        }
-
+        
 	go func() {
 		var (
 			err  error

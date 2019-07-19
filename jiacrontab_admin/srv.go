@@ -88,7 +88,24 @@ func (s *Srv) SendSMN(args proto.Smn, reply *bool) error {
 		cfg = s.adm.getOpts()
 	)
 
-	err = smn.PublishMessageTemplate(cfg.Smn.DomainName, cfg.Smn.UserName, cfg.Smn.UserPass, cfg.Smn.Region, cfg.Smn.TopicUrn, args.TemplateName, args.Tags)
+fmt.Println(args.ActionType)
+        var topicUrn string
+        switch args.ActionType { 
+        case "Critical": 
+          topicUrn = cfg.Smn.CriticalTopicUrn 
+        case "Important": 
+          topicUrn = cfg.Smn.ImportantTopicUrn
+        case "LessImportant": 
+          topicUrn = cfg.Smn.LessImportantTopicUrn
+        case "Info": 
+          topicUrn = cfg.Smn.InfoTopicUrn
+        default: 
+          topicUrn = cfg.Smn.TopicUrn 
+        } 
+
+        fmt.Println(topicUrn)
+
+	err = smn.PublishMessageTemplate(cfg.Smn.DomainName, cfg.Smn.UserName, cfg.Smn.UserPass, cfg.Smn.Region, topicUrn, args.TemplateName, args.Tags)
 	*reply = true
 	return err
 }

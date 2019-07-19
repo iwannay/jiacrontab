@@ -2,7 +2,6 @@ package jiacrontabd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"jiacrontab/models"
 	"jiacrontab/pkg/crontab"
@@ -233,16 +232,6 @@ func (j *JobEntry) handleDepError(startTime time.Time) {
 		}, &reply); err != nil {
 			log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
 		}
-
-		// 新增调用华为云SMN能力
-		if err := j.jd.rpcCallCtx(context.TODO(), "Srv.SendSMN", proto.Smn{
-			TemplateName: "demo",
-                        Subject: "",
-		}, &reply); err != nil {
-			log.Error("Srv.SendSMN error:", err)
-		}
-
-
 	}
 }
 
@@ -269,101 +258,61 @@ func (j *JobEntry) handleNotify(p *process) {
 		}, &reply); err != nil {
 			log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
 		}
+        }
 
-		// 新增调用华为云SMN能力
+        log.Info("fail found, failAction is ", len(j.detail.FailAction))
+
+	// 新增调用华为云SMN能力
+	for _, failAction := range j.detail.FailAction {
 		if err := j.jd.rpcCallCtx(context.TODO(), "Srv.SendSMN", proto.Smn{
-			TemplateName:  "DemoEmail",
-                        Tags: map[string]string{
-                          "scriptToRun": j.detail.Name,
-                          "createdBy": j.detail.CreatedUsername,
-                          "runAt": p.startTime.Format(proto.DefaultTimeLayout),
-                          "endAt": p.endTime.Format(proto.DefaultTimeLayout),
-                          "result": p.err.Error(),
-                          "retries": strconv.Itoa(p.retryNum),
-                        },
+                        ActionType: failAction,
+			TemplateName: "DemoEmail",
+			Tags: map[string]string{
+				"actionType":  failAction,
+				"scriptToRun": j.detail.Name,
+				"createdBy":   j.detail.CreatedUsername,
+				"runAt":       p.startTime.Format(proto.DefaultTimeLayout),
+				"endAt":       p.endTime.Format(proto.DefaultTimeLayout),
+				"result":      p.err.Error(),
+				"retries":     strconv.Itoa(p.retryNum),
+			},
 		}, &reply); err != nil {
 			log.Error("Srv.SendSMN error:", err)
 		}
 	}
 
-	if j.detail.ErrorAPINotify {
-		postData, err := json.Marshal(proto.CrontabApiNotifyBody{
-			NodeAddr:       cfg.BoardcastAddr,
-			JobName:        j.detail.Name,
-			JobID:          int(j.detail.ID),
-			CreateUsername: j.detail.CreatedUsername,
-			CreatedAt:      j.detail.CreatedAt,
-			Timeout:        int64(j.detail.Timeout),
-			Type:           "error",
-			RetryNum:       p.retryNum,
-		})
-		if err != nil {
-			log.Error("json.Marshal error:", err)
-			return
-		}
 
-		if err = j.jd.rpcCallCtx(context.TODO(), "Srv.ApiPost", proto.ApiPost{
-			Urls: j.detail.APITo,
-			Data: string(postData),
-		}, &reply); err != nil {
-			log.Error("Srv.ApiPost error:", err, "server addr:", cfg.AdminAddr)
-		}
-
-	}
 }
 
 func (j *JobEntry) timeoutTrigger(p *process) {
 
 	var (
-		err   error
-		reply bool
-		cfg   = j.jd.getOpts()
+                reply bool
 	)
 
-	for _, e := range j.detail.TimeoutTrigger {
-		switch e {
-		case proto.TimeoutTrigger_CallApi:
-			j.detail.LastExitStatus = exitTimeout
-			postData, err := json.Marshal(proto.CrontabApiNotifyBody{
-				NodeAddr:       cfg.BoardcastAddr,
-				JobName:        j.detail.Name,
-				JobID:          int(j.detail.ID),
-				CreateUsername: j.detail.CreatedUsername,
-				CreatedAt:      j.detail.CreatedAt,
-				Timeout:        int64(j.detail.Timeout),
-				Type:           "timeout",
-				RetryNum:       p.retryNum,
-			})
-			if err != nil {
-				log.Error("json.Marshal error:", err)
-			}
-
-			if err = j.jd.rpcCallCtx(context.TODO(), "Srv.ErrorNotify err:", proto.ApiPost{
-				Urls: j.detail.APITo,
-				Data: string(postData),
-			}, &reply); err != nil {
-				log.Error("Srv.ErrorNotify err:", err, "server addr:", cfg.AdminAddr)
-			}
-
-		case proto.TimeoutTrigger_SendEmail:
-			j.detail.LastExitStatus = exitTimeout
-			if err = j.jd.rpcCallCtx(context.TODO(), "Srv.SendMail", proto.SendMail{
-				MailTo:  j.detail.MailTo,
-				Subject: cfg.BoardcastAddr + "提醒脚本执行超时",
-				Content: fmt.Sprintf(
-					"任务名：%s\n创建者：%v\n开始时间：%s\n超时：%ds\n重试次数：%d",
-					j.detail.Name, j.detail.CreatedUsername, p.startTime.Format(proto.DefaultTimeLayout),
-					j.detail.Timeout, p.retryNum),
-			}, &reply); err != nil {
-				log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
-			}
-		case proto.TimeoutTrigger_Kill:
-			j.detail.LastExitStatus = exitTimeout
-			p.cancel()
-		default:
-			log.Error("invalid timeoutTrigger", e)
-		}
-	}
+        // 新增调用华为云SMN能力
+        for _, action := range j.detail.TimeoutAction {
+            if action == "Killed" {
+                j.detail.LastExitStatus = exitTimeout
+                p.cancel()
+            } else {
+                 if err := j.jd.rpcCallCtx(context.TODO(), "Srv.SendSMN", proto.Smn{
+                        ActionType: action,
+                        TemplateName: "DemoEmail",
+                        Tags: map[string]string{
+                                "actionType":  action,
+                                "scriptToRun": j.detail.Name,
+                                "createdBy":   j.detail.CreatedUsername,
+                                "runAt":       p.startTime.Format(proto.DefaultTimeLayout),
+                                "endAt":       p.endTime.Format(proto.DefaultTimeLayout),
+                                "result":      p.err.Error(),
+                                "retries":     strconv.Itoa(p.retryNum),
+                        },
+                }, &reply); err != nil {
+                        log.Error("Srv.SendSMN error:", err)
+                }
+            }
+        }
 }
 
 func (j *JobEntry) exec() {

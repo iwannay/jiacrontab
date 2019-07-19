@@ -55,6 +55,11 @@ type SmnOpt struct {
 	UserPass   string `opt:"userPass"`
 	Region     string `opt:"region"`
 	TopicUrn   string `opt:"topicUrn"`
+
+	CriticalTopicUrn   string `opt:"criticalTopicUrn"`
+	ImportantTopicUrn   string `opt:"importantTopicUrn"`
+	LessImportantTopicUrn   string `opt:"lessImportantTopicUrn"`
+	InfoTopicUrn   string `opt:"infoTopicUrn"`
 }
 
 type databaseOpt struct {
