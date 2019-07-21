@@ -141,6 +141,7 @@ func EditDaemonJob(ctx *myctx) {
 
 	if err = rpcCall(reqBody.Addr, "DaemonJob.Edit", proto.EditDaemonJobArgs{
 		GroupID: ctx.claims.GroupID,
+		UserID:  ctx.claims.UserID,
 		Job:     daemonJob,
 		Root:    ctx.claims.Root,
 	}, &reply); err != nil {
@@ -199,6 +200,7 @@ func GetRecentDaemonLog(ctx *myctx) {
 		JobID:    reqBody.JobID,
 		GroupID:  ctx.claims.GroupID,
 		Root:     ctx.claims.Root,
+		UserID:   ctx.claims.UserID,
 		Offset:   reqBody.Offset,
 		Pagesize: reqBody.Pagesize,
 		Date:     reqBody.Date,

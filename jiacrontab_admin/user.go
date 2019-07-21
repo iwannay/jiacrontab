@@ -197,7 +197,9 @@ func AuditJob(ctx *myctx) {
 	if reqBody.JobType == "crontab" {
 		var reply []models.CrontabJob
 		if err = rpcCall(reqBody.Addr, "CrontabJob.Audit", proto.AuditJobArgs{
-			JobIDs: reqBody.JobIDs,
+			Root:    ctx.claims.Root,
+			GroupID: ctx.claims.GroupID,
+			JobIDs:  reqBody.JobIDs,
 		}, &reply); err != nil {
 			ctx.respRPCError(err)
 			return
@@ -210,7 +212,9 @@ func AuditJob(ctx *myctx) {
 	} else {
 		var reply []models.DaemonJob
 		if err = rpcCall(reqBody.Addr, "DaemonJob.Audit", proto.AuditJobArgs{
-			JobIDs: reqBody.JobIDs,
+			Root:    ctx.claims.Root,
+			GroupID: ctx.claims.GroupID,
+			JobIDs:  reqBody.JobIDs,
 		}, &reply); err != nil {
 			ctx.respRPCError(err)
 			return
