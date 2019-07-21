@@ -315,8 +315,8 @@ func (j *Jiacrontabd) heartBeat() {
 		nodeName = util.GetHostname()
 	}
 
-	models.DB().Model(&models.CrontabJob{}).Debug().Select("id,group_id,status,failed,count(1) as total").Group("group_id,status,failed").Scan(&cronJobs)
-	models.DB().Model(&models.DaemonJob{}).Debug().Select("id,group_id,status,failed,count(1) as total").Group("group_id,status,failed").Scan(&daemonJobs)
+	models.DB().Model(&models.CrontabJob{}).Select("id,group_id,status,failed,count(1) as total").Group("group_id,status,failed").Scan(&cronJobs)
+	models.DB().Model(&models.DaemonJob{}).Select("id,group_id,status,count(1) as total").Group("group_id,status").Scan(&daemonJobs)
 
 	nodes[models.SuperGroup.ID] = models.Node{
 		Addr:    cfg.BoardcastAddr,
