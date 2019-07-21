@@ -26,7 +26,7 @@ func CreateDB(dialect string, args ...interface{}) error {
 		db, err = gorm.Open(dialect, args...)
 		return err
 	}
-	return nil
+	return fmt.Errorf("unknow database type %s", dialect)
 }
 
 func createSqlite3(dialect string, args ...interface{}) error {
@@ -86,8 +86,6 @@ func InitModel(driverName string, dsn string, debug bool) error {
 	}
 
 	debugMode = debug
-
-	// DB().CreateTable(&Node{}, &Group{}, &User{}, &Event{}, &JobHistory{})
 	DB().AutoMigrate(&Node{}, &Group{}, &User{}, &Event{}, &JobHistory{})
 
 	DB().Create(&SuperGroup)

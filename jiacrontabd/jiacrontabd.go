@@ -351,7 +351,9 @@ func (j *Jiacrontabd) recovery() {
 
 func (j *Jiacrontabd) init() {
 	cfg := j.getOpts()
-	models.CreateDB(cfg.DriverName, cfg.DSN)
+	if err := models.CreateDB(cfg.DriverName, cfg.DSN); err != nil {
+		panic(err)
+	}
 	models.DB().AutoMigrate(&models.CrontabJob{}, &models.DaemonJob{})
 	j.startTime = time.Now()
 	if cfg.AutoCleanTaskLog {
