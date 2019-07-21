@@ -54,6 +54,7 @@ func (j *CrontabJob) List(args proto.QueryJobArgs, reply *proto.QueryCrontabJobR
 	} else {
 		model = model.Where("name like ? and group_id=?", "%"+args.SearchTxt+"%")
 	}
+
 	err := model.Count(&reply.Total).Error
 	if err != nil {
 		return err
@@ -62,12 +63,20 @@ func (j *CrontabJob) List(args proto.QueryJobArgs, reply *proto.QueryCrontabJobR
 	reply.Page = args.Page
 	reply.Pagesize = args.Pagesize
 
-	return models.DB().Where("name like ?", "%"+args.SearchTxt+"%").Order(gorm.Expr("created_user_id=? desc, id desc", args.UserID)).Offset((args.Page - 1) * args.Pagesize).Limit(args.Pagesize).Find(&reply.List).Error
+	return model.Order(gorm.Expr("created_user_id=? desc, id desc", args.UserID)).Offset((args.Page - 1) * args.Pagesize).Limit(args.Pagesize).Find(&reply.List).Error
 }
 
 func (j *CrontabJob) Audit(args proto.AuditJobArgs, reply *[]models.CrontabJob) error {
-	defer models.DB().Model(&models.CrontabJob{}).Find(reply, "id in(?)", args.JobIDs)
-	return models.DB().Model(&models.CrontabJob{}).Where("id in(?) and status=?", args.JobIDs, models.StatusJobUnaudited).Update("status", models.StatusJobOk).Error
+	model := models.DB().Model(&models.CrontabJob{})
+
+	if args.GroupID == models.SuperGroup.ID {
+		model = model.Where("id in (?)", args.JobIDs)
+	} else {
+		model = model.Where("id in (?) and group_id=?", args.JobIDs, args.GroupID)
+	}
+
+	defer model.Find(reply)
+	return model.Where("status=?", models.StatusJobUnaudited).Update("status", models.StatusJobOk).Error
 }
 
 func (j *CrontabJob) Edit(args proto.EditCrontabJobArgs, reply *models.CrontabJob) error {
@@ -83,10 +92,12 @@ func (j *CrontabJob) Edit(args proto.EditCrontabJobArgs, reply *models.CrontabJo
 	if args.Job.ID == 0 {
 		model = models.DB().Save(&args.Job)
 	} else {
-		if args.Root {
+		if args.GroupID == models.SuperGroup.ID {
 			model = model.Where("id=?", args.Job.ID)
+		} else if args.Root {
+			model = model.Where("id=? and group_id=?", args.Job.ID, args.Job.GroupID)
 		} else {
-			model = model.Where("id=? and created_user_id", args.Job.ID, args.Job.CreatedUserID)
+			model = model.Where("id=? and created_user_id=? and group_id=?", args.Job.ID, args.Job.CreatedUserID, args.Job.GroupID)
 		}
 		model = model.Omit(
 			"updated_at", "created_at", "deleted_at",
@@ -99,7 +110,13 @@ func (j *CrontabJob) Edit(args proto.EditCrontabJobArgs, reply *models.CrontabJo
 	return model.Error
 }
 func (j *CrontabJob) Get(args proto.GetJobArgs, reply *models.CrontabJob) error {
-	return models.DB().Find(reply, "id=?", args.JobID).Error
+	model := models.DB()
+	if args.GroupID == models.SuperGroup.ID {
+		model = model.Where("id=?", args.JobID)
+	} else {
+		model = model.Where("id=? and group_id=?", args.JobID, args.GroupID)
+	}
+	return model.Find(reply, "id=?", args.JobID).Error
 }
 
 func (j *CrontabJob) Start(args proto.ActionJobsArgs, jobs *[]models.CrontabJob) error {
@@ -110,12 +127,15 @@ func (j *CrontabJob) Start(args proto.ActionJobsArgs, jobs *[]models.CrontabJob)
 		return errors.New("empty ids")
 	}
 
-	if args.Root {
+	if args.GroupID == models.SuperGroup.ID {
 		model = model.Where("id in (?) and status in (?)",
 			args.JobIDs, []models.JobStatus{models.StatusJobOk, models.StatusJobStop})
+	} else if args.Root {
+		model = model.Where("id in (?) and status in (?) and group_id=?",
+			args.JobIDs, []models.JobStatus{models.StatusJobOk, models.StatusJobStop}, args.GroupID)
 	} else {
-		model = model.Where("created_user_id = ? and id in (?) and status in (?)",
-			args.UserID, args.JobIDs, []models.JobStatus{models.StatusJobOk, models.StatusJobStop})
+		model = model.Where("created_user_id = ? and id in (?) and status in (?) and group_id=?",
+			args.UserID, args.JobIDs, []models.JobStatus{models.StatusJobOk, models.StatusJobStop}, args.GroupID)
 	}
 
 	ret := model.Find(jobs)
@@ -140,34 +160,40 @@ func (j *CrontabJob) Start(args proto.ActionJobsArgs, jobs *[]models.CrontabJob)
 
 func (j *CrontabJob) Stop(args proto.ActionJobsArgs, job *[]models.CrontabJob) error {
 	model := models.DB()
-	if args.Root {
+	if args.GroupID == models.SuperGroup.ID {
 		model = model.Where("id in (?) and status in (?)", args.JobIDs, []models.JobStatus{models.StatusJobTiming, models.StatusJobRunning})
+	} else if args.Root {
+		model = model.Where(" id in (?) and status in (?) and group_id=?",
+			args.JobIDs, []models.JobStatus{models.StatusJobTiming, models.StatusJobRunning}, args.GroupID)
 	} else {
-		model = model.Where("created_user_id = ? and id in (?) and status in (?)",
-			args.UserID, args.JobIDs, []models.JobStatus{models.StatusJobTiming, models.StatusJobRunning})
+		model = model.Where("created_user_id = ? and id in (?) and status in (?)  and group_id=?",
+			args.UserID, args.JobIDs, []models.JobStatus{models.StatusJobTiming, models.StatusJobRunning}, args.GroupID)
 	}
 	return model.Find(job).Update("status", models.StatusJobStop).Error
 }
 
 func (j *CrontabJob) Delete(args proto.ActionJobsArgs, job *[]models.CrontabJob) error {
-
 	model := models.DB()
-	if args.Root {
+	if args.GroupID == models.SuperGroup.ID {
 		model = model.Where("id in (?)", args.JobIDs)
+	} else if args.Root {
+		model = model.Where("id in (?) and group_id=?", args.JobIDs, args.GroupID)
 	} else {
-		model = model.Where("created_user_id = ? and id in (?)",
-			args.UserID, args.JobIDs)
+		model = model.Where("created_user_id = ? and id in (?) and group_id=?",
+			args.UserID, args.JobIDs, args.GroupID)
 	}
 	return model.Find(job).Delete(&models.CrontabJob{}).Error
 }
 
 func (j *CrontabJob) Kill(args proto.ActionJobsArgs, job *[]models.CrontabJob) error {
 	model := models.DB()
-	if args.Root {
+	if args.GroupID == models.SuperGroup.ID {
 		model = model.Where("id in (?)", args.JobIDs)
+	} else if args.Root {
+		model = model.Where("id in (?) and group_id=?", args.JobIDs, args.GroupID)
 	} else {
-		model = model.Where("created_user_id = ? and id in (?)",
-			args.UserID, args.JobIDs)
+		model = model.Where("created_user_id = ? and id in (?) and group_id=?",
+			args.UserID, args.JobIDs, args.GroupID)
 	}
 
 	err := model.Take(job).Error
@@ -184,10 +210,12 @@ func (j *CrontabJob) Kill(args proto.ActionJobsArgs, job *[]models.CrontabJob) e
 func (j *CrontabJob) Exec(args proto.GetJobArgs, reply *proto.ExecCrontabJobReply) error {
 
 	model := models.DB()
-	if args.Root == true {
+	if args.GroupID == models.SuperGroup.ID {
 		model = model.Where("id=?", args.JobID)
+	} else if args.Root {
+		model = model.Where("id=? and group_id=?", args.JobID, args.GroupID)
 	} else {
-		model = model.Where("created_user_id = ? and id=?", args.UserID, args.JobID)
+		model = model.Where("created_user_id = ? and id=? and group_id=?", args.UserID, args.JobID, args.GroupID)
 	}
 
 	ret := model.Take(&reply.Job)
@@ -215,7 +243,6 @@ func (j *CrontabJob) Exec(args proto.GetJobArgs, reply *proto.ExecCrontabJobRepl
 }
 
 func (j *CrontabJob) Log(args proto.SearchLog, reply *proto.SearchLogResult) error {
-
 	fd := finder.NewFinder(func(info os.FileInfo) bool {
 		basename := filepath.Base(info.Name())
 		arr := strings.Split(basename, ".")
@@ -291,7 +318,18 @@ func newDaemonJobSrv(jd *Jiacrontabd) *DaemonJob {
 }
 
 func (j *DaemonJob) List(args proto.QueryJobArgs, reply *proto.QueryDaemonJobRet) error {
-	err := models.DB().Model(&models.DaemonJob{}).Where("name like ?", "%"+args.SearchTxt+"%").Count(&reply.Total).Error
+
+	model := models.DB().Model(&models.DaemonJob{})
+
+	if args.GroupID == models.SuperGroup.ID {
+		model = model.Where("name like ?", "%"+args.SearchTxt+"%")
+	} else if args.Root {
+		model = model.Where("name like ? and group_id=?", "%"+args.SearchTxt+"%", args.GroupID)
+	} else {
+		model = model.Where("name like ? and user_id=? and group_id=?", "%"+args.SearchTxt+"%", args.UserID, args.GroupID)
+	}
+
+	err := model.Count(&reply.Total).Error
 	if err != nil {
 		return err
 	}
@@ -299,7 +337,7 @@ func (j *DaemonJob) List(args proto.QueryJobArgs, reply *proto.QueryDaemonJobRet
 	reply.Page = args.Page
 	reply.Pagesize = args.Pagesize
 
-	return models.DB().Where("name like ?", "%"+args.SearchTxt+"%").Order(gorm.Expr("created_user_id=? desc, id desc", args.UserID)).Offset((args.Page - 1) * args.Pagesize).Limit(args.Pagesize).Find(&reply.List).Error
+	return model.Order(gorm.Expr("created_user_id=? desc, id desc", args.UserID)).Offset((args.Page - 1) * args.Pagesize).Limit(args.Pagesize).Find(&reply.List).Error
 }
 
 func (j *DaemonJob) Edit(args proto.EditDaemonJobArgs, job *models.DaemonJob) error {
@@ -308,10 +346,12 @@ func (j *DaemonJob) Edit(args proto.EditDaemonJobArgs, job *models.DaemonJob) er
 	if args.Job.ID == 0 {
 		model = models.DB().Create(&args.Job)
 	} else {
-		if args.Root {
+		if args.GroupID == models.SuperGroup.ID {
 			model = model.Where("id=?", args.Job.ID)
+		} else if args.Root {
+			model = model.Where("id=? and group_id=?", args.Job.ID, args.GroupID)
 		} else {
-			model = model.Where("id=? and created_user_id=?", args.Job.ID, args.Job.CreatedUserID)
+			model = model.Where("id=? and created_user_id=? and group_id=?", args.Job.ID, args.Job.CreatedUserID, args.GroupID)
 		}
 		model = model.Omit(
 			"updated_at", "created_at", "deleted_at",
@@ -325,12 +365,15 @@ func (j *DaemonJob) Edit(args proto.EditDaemonJobArgs, job *models.DaemonJob) er
 func (j *DaemonJob) Start(args proto.ActionJobsArgs, jobs *[]models.DaemonJob) error {
 
 	model := models.DB()
-	if args.Root {
+	if args.GroupID == models.SuperGroup.ID {
 		model = model.Where("id in(?) and status in (?)",
 			args.JobIDs, []models.JobStatus{models.StatusJobOk, models.StatusJobStop})
+	} else if args.Root {
+		model = model.Where(" and id in(?) and status in (?) and group_id=?",
+			args.JobIDs, []models.JobStatus{models.StatusJobOk, models.StatusJobStop}, args.GroupID)
 	} else {
-		model = model.Where("created_user_id = ? and id in(?) and status in (?)",
-			args.UserID, args.JobIDs, []models.JobStatus{models.StatusJobOk, models.StatusJobStop})
+		model = model.Where("created_user_id = ? and id in(?) and status in (?) and group_id=?",
+			args.UserID, args.JobIDs, []models.JobStatus{models.StatusJobOk, models.StatusJobStop}, args.GroupID)
 	}
 
 	ret := model.Find(&jobs)
@@ -351,12 +394,15 @@ func (j *DaemonJob) Start(args proto.ActionJobsArgs, jobs *[]models.DaemonJob) e
 func (j *DaemonJob) Stop(args proto.ActionJobsArgs, jobs *[]models.DaemonJob) error {
 
 	model := models.DB()
-	if args.Root {
+	if args.GroupID == models.SuperGroup.ID {
 		model = model.Where("id in(?) and status in (?)",
 			args.JobIDs, []models.JobStatus{models.StatusJobRunning, models.StatusJobTiming})
+	} else if args.Root {
+		model = model.Where("id in(?) and status in (?) and group_id=?",
+			args.JobIDs, []models.JobStatus{models.StatusJobRunning, models.StatusJobTiming}, args.GroupID)
 	} else {
-		model = model.Where("created_user_id = ? and id in(?) and status in (?)",
-			args.UserID, args.JobIDs, []models.JobStatus{models.StatusJobRunning, models.StatusJobTiming})
+		model = model.Where("created_user_id = ? and id in(?) and status in (?) and group_id=?",
+			args.UserID, args.JobIDs, []models.JobStatus{models.StatusJobRunning, models.StatusJobTiming}, args.GroupID)
 	}
 
 	if err := model.Find(jobs).Error; err != nil {
@@ -368,7 +414,7 @@ func (j *DaemonJob) Stop(args proto.ActionJobsArgs, jobs *[]models.DaemonJob) er
 		j.jd.daemon.PopJob(job.ID)
 	}
 
-	ret := models.DB().Model(&models.DaemonJob{}).Where("id in(?)", args.JobIDs).Update("status", models.StatusJobStop)
+	ret := model.Update("status", models.StatusJobStop)
 
 	if ret.Error != nil {
 		return ret.Error
@@ -380,12 +426,15 @@ func (j *DaemonJob) Stop(args proto.ActionJobsArgs, jobs *[]models.DaemonJob) er
 func (j *DaemonJob) Delete(args proto.ActionJobsArgs, jobs *[]models.DaemonJob) error {
 
 	model := models.DB()
-	if args.Root {
+	if args.GroupID == models.SuperGroup.ID {
 		model = model.Where("id in(?) and status in (?)",
 			args.JobIDs, []models.JobStatus{models.StatusJobRunning, models.StatusJobTiming})
+	} else if args.Root {
+		model = model.Where("id in(?) and status in (?) and group_id=?",
+			args.JobIDs, []models.JobStatus{models.StatusJobRunning, models.StatusJobTiming}, args.GroupID)
 	} else {
-		model = model.Where("created_user_id = ? and id in(?) and status in (?)",
-			args.UserID, args.JobIDs, []models.JobStatus{models.StatusJobRunning, models.StatusJobTiming})
+		model = model.Where("created_user_id = ? and id in(?) and status in (?) and group_id=?",
+			args.UserID, args.JobIDs, []models.JobStatus{models.StatusJobRunning, models.StatusJobTiming}, args.GroupID)
 	}
 
 	if err := model.Find(jobs).Error; err != nil {
@@ -396,17 +445,19 @@ func (j *DaemonJob) Delete(args proto.ActionJobsArgs, jobs *[]models.DaemonJob) 
 		args.JobIDs = append(args.JobIDs, job.ID)
 		j.jd.daemon.PopJob(job.ID)
 	}
-	ret := models.DB().Delete(&models.DaemonJob{}, "id in (?)", args.JobIDs)
-
-	if ret.Error != nil {
-		return ret.Error
-	}
-
-	return nil
+	return model.Delete(&models.DaemonJob{}).Error
 }
 
 func (j *DaemonJob) Get(args proto.GetJobArgs, job *models.DaemonJob) error {
-	return models.DB().Take(job, "id=?", args.JobID).Error
+	model := models.DB()
+	if args.GroupID == models.SuperGroup.ID {
+		model = model.Where("id=?", args.JobID)
+	} else if args.Root {
+		model = model.Where("id=? and group_id=?", args.JobID, args.GroupID)
+	} else {
+		model = model.Where("id=? and group_id=? and created_user_id=?", args.JobID, args.GroupID, args.UserID)
+	}
+	return model.Take(job).Error
 }
 
 func (j *DaemonJob) Log(args proto.SearchLog, reply *proto.SearchLogResult) error {
@@ -440,6 +491,14 @@ func (j *DaemonJob) Log(args proto.SearchLog, reply *proto.SearchLogResult) erro
 }
 
 func (j *DaemonJob) Audit(args proto.AuditJobArgs, jobs *[]models.DaemonJob) error {
-	defer models.DB().Find(jobs, "id in (?)", args.JobIDs)
-	return models.DB().Model(&models.DaemonJob{}).Where("id in (?) and status=?", args.JobIDs, models.StatusJobUnaudited).Update("status", models.StatusJobOk).Error
+	model := models.DB().Model(&models.DaemonJob{})
+	if args.GroupID == models.SuperGroup.ID {
+		model = model.Where("id in (?)", args.JobIDs)
+	} else if args.Root {
+		model = model.Where("id in (?) and group_id=?", args.JobIDs, args.GroupID)
+	} else {
+		model = model.Where("id in (?) and group_id=? and created_user_id=?", args.JobIDs, args.GroupID, args.UserID)
+	}
+	defer model.Find(jobs)
+	return model.Where("status=?", models.StatusJobUnaudited).Update("status", models.StatusJobOk).Error
 }

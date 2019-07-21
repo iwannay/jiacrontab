@@ -16,19 +16,20 @@ const (
 )
 
 type Config struct {
-	LogLevel         string `opt:"log_level"`
-	VerboseJobLog    bool   `opt:"verbose_job_log"`
-	ListenAddr       string `opt:"listen_addr"`
-	AdminAddr        string `opt:"admin_addr"`
-	LogPath          string `opt:"log_path"`
-	AutoCleanTaskLog bool   `opt:"auto_clean_task_log"`
-	NodeName         string `opt:"node_name"`
-	BoardcastAddr    string `opt:"boardcast_addr"`
-	CfgPath          string
-	Debug            bool `opt:"debug"`
-	iniFile          *ini.File
-	DriverName       string `opt:"driver_name"`
-	DSN              string `opt:"dsn"`
+	LogLevel            string `opt:"log_level"`
+	VerboseJobLog       bool   `opt:"verbose_job_log"`
+	ListenAddr          string `opt:"listen_addr"`
+	AdminAddr           string `opt:"admin_addr"`
+	LogPath             string `opt:"log_path"`
+	AutoCleanTaskLog    bool   `opt:"auto_clean_task_log"`
+	NodeName            string `opt:"node_name"`
+	BoardcastAddr       string `opt:"boardcast_addr"`
+	ClientAliveInterval int    `opt:"Client_alive_interval"`
+	CfgPath             string
+	Debug               bool `opt:"debug"`
+	iniFile             *ini.File
+	DriverName          string `opt:"driver_name"`
+	DSN                 string `opt:"dsn"`
 }
 
 func (c *Config) Resolve() error {
