@@ -4,7 +4,8 @@
 
 简单可信赖的任务管理工具
 
-# 2.0.0-alpha 测试版发布
+## 2.0.0-alpha 测试版发布(正处于测试阶段，不建议生产使用。)
+生产建议使用1.4.x版本
 
 ## [🔴jiacrontab 最新版下载点这里 ](https://jiacrontab.iwannay.cn/download/)
 
@@ -161,3 +162,7 @@ clean_task_log = true
 
 ## QQ群号：813377930
 <img src="https://github.com/iwannay/jiacrontab/blob/dev/qq.png" width="250" alt="qq群"/>
+
+## 赞助
+本项目花费了作者大量时间，如果你觉的该项目对你有用，或者你希望该项目有更好的发展，欢迎赞助。
+<img src="https://github.com/iwannay/jiacrontab/blob/dev/alipay.jpg" width="250" alt="赞助"/>
