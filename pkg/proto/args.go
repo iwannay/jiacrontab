@@ -7,6 +7,7 @@ import (
 type SearchLog struct {
 	JobID    uint
 	GroupID  uint
+	UserID   uint
 	Root     bool
 	IsTail   bool
 	Offset   int64

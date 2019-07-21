@@ -44,7 +44,12 @@ type QueryDaemonJobRet struct {
 	List     []models.DaemonJob
 }
 
-type AuditJobArgs struct{ JobIDs []uint }
+type AuditJobArgs struct {
+	GroupID uint
+	Root    bool
+	UserID  uint
+	JobIDs  []uint
+}
 
 type CrontabApiNotifyBody struct {
 	NodeAddr       string

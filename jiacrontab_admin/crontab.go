@@ -59,6 +59,9 @@ func GetRecentLog(ctx *myctx) {
 		Offset:   reqBody.Offset,
 		Pagesize: reqBody.Pagesize,
 		Date:     reqBody.Date,
+		Root:     ctx.claims.Root,
+		GroupID:  ctx.claims.GroupID,
+		UserID:   ctx.claims.UserID,
 		Pattern:  reqBody.Pattern,
 		IsTail:   reqBody.IsTail,
 	}, &searchRet); err != nil {
@@ -144,6 +147,7 @@ func EditJob(ctx *myctx) {
 		Job:     job,
 		GroupID: ctx.claims.GroupID,
 		Root:    ctx.claims.Root,
+		UserID:  ctx.claims.UserID,
 	}, &reply); err != nil {
 		ctx.respRPCError(err)
 		return
