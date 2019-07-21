@@ -3,16 +3,17 @@ package models
 import (
 	"crypto/md5"
 	"fmt"
-	"github.com/iwannay/log"
 	"jiacrontab/pkg/util"
 	"time"
+
+	"github.com/iwannay/log"
 
 	"github.com/jinzhu/gorm"
 )
 
 type User struct {
 	gorm.Model
-	Username string `json:"username" gorm:"not null; unique"`
+	Username string `json:"username" gorm:"not null; index"`
 	Passwd   string `json:"-"`
 	Salt     string `json:"-"`
 	Avatar   string `json:"avatar"`
