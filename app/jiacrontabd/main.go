@@ -56,6 +56,10 @@ func parseFlag(opt *jiacrontabd.Config) *flag.FlagSet {
 		opt.BoardcastAddr = boardcastAddr
 	}
 
+	if debug {
+		log.JSON("debug config:", opt)
+	}
+
 	return flagSet
 }
 
