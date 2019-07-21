@@ -339,11 +339,12 @@ func UserStat(ctx *myctx) {
 	var (
 		err          error
 		auditNumStat struct {
-			CrontabJobAuditNum  uint
-			DaemonJobAuditNum   uint
-			CrontabJobFailNum   uint
-			DaemonJobRunningNum uint
-			NodeNum             uint
+			CrontabJobAuditNum uint
+			DaemonJobAuditNum  uint
+			CrontabJobFailNum  uint
+			DaemonTaskNum      uint
+			CrontabTaskNum     uint
+			NodeNum            uint
 		}
 		cfg = ctx.adm.getOpts()
 	)
@@ -353,7 +354,8 @@ func UserStat(ctx *myctx) {
 			sum(crontab_job_audit_num) as crontab_job_audit_num, 
 			sum(daemon_job_audit_num) as daemon_job_audit_num,
 			sum(crontab_job_fail_num) as crontab_job_fail_num,
-			sum(daemon_job_running_num) as daemon_job_running_num,
+			sum(daemon_task_num) as daemon_task_num,
+			sum(crontab_task_num) as crontab_task_num,
 			count(*) as node_num
 		from nodes 
 		where group_id=?`, ctx.claims.GroupID).Scan(&auditNumStat).Error
