@@ -87,20 +87,9 @@ func InitModel(driverName string, dsn string, debug bool) error {
 
 	debugMode = debug
 
-	DB().CreateTable(&Node{})
-	DB().AutoMigrate(&Node{})
+	// DB().CreateTable(&Node{}, &Group{}, &User{}, &Event{}, &JobHistory{})
+	DB().AutoMigrate(&Node{}, &Group{}, &User{}, &Event{}, &JobHistory{})
 
-	DB().CreateTable(&Group{})
-	DB().AutoMigrate(&Group{})
-
-	DB().CreateTable(&User{})
-	DB().AutoMigrate(&User{})
-
-	DB().CreateTable(&Event{})
-	DB().AutoMigrate(&Event{})
-
-	DB().CreateTable(&JobHistory{})
-	DB().AutoMigrate(&JobHistory{})
 	DB().Create(&SuperGroup)
 	return nil
 }

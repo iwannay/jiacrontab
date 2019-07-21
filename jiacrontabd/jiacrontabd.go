@@ -310,7 +310,7 @@ func (j *Jiacrontabd) heartBeat() {
 		log.Error("Srv.Register error:", err, ",server addr:", cfg.AdminAddr)
 	}
 
-	time.AfterFunc(time.Duration(j.getOpts().ClientAliveInterval), j.heartBeat)
+	time.AfterFunc(time.Duration(j.getOpts().ClientAliveInterval)*time.Second, j.heartBeat)
 }
 
 func (j *Jiacrontabd) recovery() {
@@ -352,7 +352,6 @@ func (j *Jiacrontabd) recovery() {
 func (j *Jiacrontabd) init() {
 	cfg := j.getOpts()
 	models.CreateDB(cfg.DriverName, cfg.DSN)
-	models.DB().CreateTable(&models.CrontabJob{}, &models.DaemonJob{})
 	models.DB().AutoMigrate(&models.CrontabJob{}, &models.DaemonJob{})
 	j.startTime = time.Now()
 	if cfg.AutoCleanTaskLog {
