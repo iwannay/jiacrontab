@@ -51,8 +51,10 @@ func (j *CrontabJob) List(args proto.QueryJobArgs, reply *proto.QueryCrontabJobR
 	model := models.DB().Model(&models.CrontabJob{})
 	if args.GroupID == models.SuperGroup.ID {
 		model = model.Where("name like ?", "%"+args.SearchTxt+"%")
-	} else {
+	} else if args.Root {
 		model = model.Where("name like ? and group_id=?", "%"+args.SearchTxt+"%", args.GroupID)
+	} else {
+		model = model.Where("name like ? and created_user_id=? and group_id=?", "%"+args.SearchTxt+"%", args.UserID, args.GroupID)
 	}
 
 	err := model.Count(&reply.Total).Error
@@ -331,7 +333,7 @@ func (j *DaemonJob) List(args proto.QueryJobArgs, reply *proto.QueryDaemonJobRet
 	} else if args.Root {
 		model = model.Where("name like ? and group_id=?", "%"+args.SearchTxt+"%", args.GroupID)
 	} else {
-		model = model.Where("name like ? and user_id=? and group_id=?", "%"+args.SearchTxt+"%", args.UserID, args.GroupID)
+		model = model.Where("name like ? and created_user_id=? and group_id=?", "%"+args.SearchTxt+"%", args.UserID, args.GroupID)
 	}
 
 	err := model.Count(&reply.Total).Error
