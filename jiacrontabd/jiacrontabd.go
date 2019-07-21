@@ -310,7 +310,7 @@ func (j *Jiacrontabd) heartBeat() {
 		log.Error("Srv.Register error:", err, ",server addr:", cfg.AdminAddr)
 	}
 
-	time.AfterFunc(heartbeatPeriod, j.heartBeat)
+	time.AfterFunc(time.Duration(j.getOpts().ClientAliveInterval), j.heartBeat)
 }
 
 func (j *Jiacrontabd) recovery() {

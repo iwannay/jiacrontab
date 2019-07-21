@@ -56,7 +56,9 @@ func parseFlag(opt *admin.Config) *flag.FlagSet {
 	if util.HasFlagName(flagSet, "log_level") {
 		opt.App.LogLevel = logLevel
 	}
-
+	if debug {
+		log.JSON("debug config:", opt)
+	}
 	return flagSet
 }
 

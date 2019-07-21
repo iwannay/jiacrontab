@@ -24,7 +24,7 @@ type Config struct {
 	AutoCleanTaskLog    bool   `opt:"auto_clean_task_log"`
 	NodeName            string `opt:"node_name"`
 	BoardcastAddr       string `opt:"boardcast_addr"`
-	ClientAliveInterval int    `opt:"Client_alive_interval"`
+	ClientAliveInterval int    `opt:"client_alive_interval"`
 	CfgPath             string
 	Debug               bool `opt:"debug"`
 	iniFile             *ini.File
@@ -60,6 +60,12 @@ func (c *Config) Resolve() error {
 			val.Field(i).SetBool(v)
 		case reflect.String:
 			val.Field(i).SetString(key.String())
+		case reflect.Int, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Int8:
+			if v, err := key.Int64(); err != nil {
+				log.Errorf("cannot convert to int64 type (%s)", err)
+			} else {
+				val.Field(i).SetInt(v)
+			}
 		}
 	}
 	if c.BoardcastAddr == "" {
@@ -71,17 +77,18 @@ func (c *Config) Resolve() error {
 
 func NewConfig() *Config {
 	return &Config{
-		LogLevel:         "warn",
-		VerboseJobLog:    true,
-		ListenAddr:       "127.0.0.1:20001",
-		AdminAddr:        "127.0.0.1:20003",
-		LogPath:          "./logs",
-		AutoCleanTaskLog: true,
-		NodeName:         util.GetHostname(),
-		CfgPath:          "./jiacrontabd.ini",
-		DriverName:       "sqlite3",
-		BoardcastAddr:    util.InternalIP() + ":20001",
-		DSN:              "data/jiacrontabd.db",
+		LogLevel:            "warn",
+		VerboseJobLog:       true,
+		ListenAddr:          "127.0.0.1:20001",
+		AdminAddr:           "127.0.0.1:20003",
+		LogPath:             "./logs",
+		AutoCleanTaskLog:    true,
+		NodeName:            util.GetHostname(),
+		CfgPath:             "./jiacrontabd.ini",
+		DriverName:          "sqlite3",
+		BoardcastAddr:       util.InternalIP() + ":20001",
+		DSN:                 "data/jiacrontabd.db",
+		ClientAliveInterval: 30,
 	}
 }
 
