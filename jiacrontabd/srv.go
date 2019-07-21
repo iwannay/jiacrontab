@@ -169,7 +169,10 @@ func (j *CrontabJob) Stop(args proto.ActionJobsArgs, job *[]models.CrontabJob) e
 		model = model.Where("created_user_id = ? and id in (?) and status in (?)  and group_id=?",
 			args.UserID, args.JobIDs, []models.JobStatus{models.StatusJobTiming, models.StatusJobRunning}, args.GroupID)
 	}
-	return model.Find(job).Update("status", models.StatusJobStop).Error
+	return model.Find(job).Update(map[string]interface{}{
+		"status":         models.StatusJobStop,
+		"next_exec_time": time.Time{},
+	}).Error
 }
 
 func (j *CrontabJob) Delete(args proto.ActionJobsArgs, job *[]models.CrontabJob) error {

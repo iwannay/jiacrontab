@@ -64,6 +64,7 @@ type CrontabApiNotifyBody struct {
 
 type EditCrontabJobArgs struct {
 	Job     models.CrontabJob
+	UserID  uint
 	GroupID uint
 	Root    bool
 }
