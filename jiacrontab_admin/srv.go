@@ -24,25 +24,30 @@ func NewSrv(adm *Admin) *Srv {
 	}
 }
 
-func (s *Srv) Register(args models.Node, reply *bool) error {
+func (s *Srv) Register(args map[uint]models.Node, reply *bool) error {
 	*reply = true
-	ret := models.DB().Unscoped().Model(&models.Node{}).Where("addr=?", args.Addr).Updates(map[string]interface{}{
-		"daemon_task_num":       args.DaemonTaskNum,
-		"crontab_task_num":      args.CrontabTaskNum,
-		"addr":                  args.Addr,
-		"name":                  args.Name,
-		"crontab_job_audit_num": args.CrontabJobAuditNum,
-		"daemon_job_audit_Num":  args.DaemonJobAuditNum,
-		"crontab_job_fail_num":  args.CrontabJobFailNum,
-		"deleted_at":            nil,
-		"disabled":              false,
-	})
 
-	if ret.RowsAffected == 0 {
-		ret = models.DB().Create(&args)
+	for _, node := range args {
+		ret := models.DB().Unscoped().Model(&models.Node{}).Where("addr=? and group_id=?", node.Addr, node.GroupID).Updates(map[string]interface{}{
+			"daemon_task_num":       node.DaemonTaskNum,
+			"crontab_task_num":      node.CrontabTaskNum,
+			"name":                  node.Name,
+			"crontab_job_audit_num": node.CrontabJobAuditNum,
+			"daemon_job_audit_Num":  node.DaemonJobAuditNum,
+			"crontab_job_fail_num":  node.CrontabJobFailNum,
+			"deleted_at":            nil,
+			"disabled":              false,
+		})
+		if ret.RowsAffected == 0 && node.GroupID == models.SuperGroup.ID {
+			ret = models.DB().Create(&node)
+		}
+
+		if ret.Error != nil {
+			return ret.Error
+		}
 	}
 
-	return ret.Error
+	return nil
 }
 
 func (s *Srv) ExecDepend(args proto.DepJobs, reply *bool) error {

@@ -344,6 +344,7 @@ func (j *JobEntry) exec() {
 		}
 
 		if err != nil {
+			j.jd.deleteJob(j.detail.ID)
 			log.Warn("JobEntry.exec:", err)
 			return
 		}
@@ -418,6 +419,11 @@ func (j *JobEntry) updateJob(status models.JobStatus, startTime, endTime time.Ti
 		"process_num":      atomic.LoadInt32(&j.processNum),
 		"last_exec_time":   j.job.GetLastExecTime(),
 		"last_exit_status": "",
+		"failed":           false,
+	}
+
+	if endTime.After(startTime) {
+		data["last_cost_time"] = endTime.Sub(startTime).Seconds()
 	}
 
 	if j.once && (status == models.StatusJobRunning) {
@@ -432,6 +438,7 @@ func (j *JobEntry) updateJob(status models.JobStatus, startTime, endTime time.Ti
 	if err != nil {
 		errMsg = err.Error()
 		data["last_exit_status"] = errMsg
+		data["failed"] = true
 	}
 
 	if j.once {
