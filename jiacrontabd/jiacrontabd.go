@@ -283,28 +283,98 @@ func (j *Jiacrontabd) count() int {
 	return num
 }
 
+func (j *Jiacrontabd) deleteJob(jobID uint) {
+	j.mux.Lock()
+	delete(j.jobs, jobID)
+	j.mux.Unlock()
+}
+
 func (j *Jiacrontabd) heartBeat() {
-	var reply bool
-	cfg := j.getOpts()
-	NodeName := cfg.NodeName
-	if NodeName == "" {
-		NodeName = util.GetHostname()
-	}
-	node := models.Node{
-		Addr:           cfg.BoardcastAddr,
-		DaemonTaskNum:  j.daemon.count(),
-		CrontabTaskNum: j.count(),
-		GroupID:        models.SuperGroup.ID,
-		Name:           NodeName,
+	var (
+		reply    bool
+		cronJobs []struct {
+			Total   uint
+			GroupID uint
+			Failed  bool
+			Status  models.JobStatus
+		}
+		daemonJobs []struct {
+			Total   uint
+			GroupID uint
+			Status  models.JobStatus
+		}
+		ok             bool
+		nodes          = make(map[uint]models.Node)
+		cfg            = j.getOpts()
+		nodeName       = cfg.NodeName
+		node           models.Node
+		superGroupNode models.Node
+	)
+
+	if nodeName == "" {
+		nodeName = util.GetHostname()
 	}
 
-	models.DB().Model(&models.CrontabJob{}).Where("status=?", models.StatusJobUnaudited).Count(&node.CrontabJobAuditNum)
-	models.DB().Model(&models.DaemonJob{}).Where("status=?", models.StatusJobUnaudited).Count(&node.DaemonJobAuditNum)
-	models.DB().Model(&models.CrontabJob{}).Where("status in (?) and last_exit_status != ''", []models.JobStatus{
-		models.StatusJobTiming, models.StatusJobRunning,
-	}).Count(&node.CrontabJobFailNum)
+	models.DB().Model(&models.CrontabJob{}).Debug().Select("id,group_id,status,failed,count(1) as total").Group("group_id,status,failed").Scan(&cronJobs)
+	models.DB().Model(&models.DaemonJob{}).Debug().Select("id,group_id,status,failed,count(1) as total").Group("group_id,status,failed").Scan(&daemonJobs)
 
-	err := j.rpcCallCtx(context.TODO(), rpc.RegisterService, node, &reply)
+	nodes[models.SuperGroup.ID] = models.Node{
+		Addr:    cfg.BoardcastAddr,
+		GroupID: models.SuperGroup.ID,
+		Name:    nodeName,
+	}
+
+	for _, job := range cronJobs {
+		superGroupNode = nodes[models.SuperGroup.ID]
+		if node, ok = nodes[job.GroupID]; !ok {
+			node = models.Node{
+				Addr:    cfg.BoardcastAddr,
+				GroupID: job.GroupID,
+				Name:    nodeName,
+			}
+		}
+
+		if job.Failed && job.Status == models.StatusJobTiming || job.Status == models.StatusJobRunning {
+			node.CrontabJobFailNum += job.Total
+			superGroupNode.CrontabJobFailNum += job.Total
+		}
+
+		if job.Status == models.StatusJobUnaudited {
+			node.CrontabJobAuditNum += job.Total
+			superGroupNode.CrontabJobAuditNum += job.Total
+		}
+
+		if job.Status == models.StatusJobTiming || job.Status == models.StatusJobRunning {
+			node.CrontabTaskNum += job.Total
+			superGroupNode.CrontabTaskNum += job.Total
+		}
+
+		nodes[job.GroupID] = node
+		nodes[models.SuperGroup.ID] = superGroupNode
+	}
+
+	for _, job := range daemonJobs {
+		superGroupNode = nodes[models.SuperGroup.ID]
+		if node, ok = nodes[job.GroupID]; !ok {
+			node = models.Node{
+				Addr:    cfg.BoardcastAddr,
+				GroupID: job.GroupID,
+				Name:    nodeName,
+			}
+		}
+		if job.Status == models.StatusJobUnaudited {
+			node.DaemonJobAuditNum += job.Total
+			superGroupNode.DaemonJobAuditNum += job.Total
+		}
+		if job.Status == models.StatusJobRunning {
+			node.DaemonTaskNum += job.Total
+			superGroupNode.DaemonTaskNum += job.Total
+		}
+		nodes[job.GroupID] = node
+		nodes[models.SuperGroup.ID] = superGroupNode
+	}
+
+	err := j.rpcCallCtx(context.TODO(), rpc.RegisterService, nodes, &reply)
 
 	if err != nil {
 		log.Error("Srv.Register error:", err, ",server addr:", cfg.AdminAddr)
