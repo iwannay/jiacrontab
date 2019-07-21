@@ -265,6 +265,9 @@ func Signup(ctx *myctx) {
 	user.Avatar = reqBody.Avatar
 	user.Mail = reqBody.Mail
 	reqBody.Passwd = ""
+	if user.GroupID == models.SuperGroup.ID {
+		user.Root = true
+	}
 
 	if err = user.Create(); err != nil {
 		ctx.respDBError(err)
