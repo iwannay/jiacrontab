@@ -68,10 +68,10 @@ func (c *Config) Resolve() error {
 			}
 		}
 	}
-	if c.BoardcastAddr == "" {
-		_, port, _ := net.SplitHostPort(c.ListenAddr)
-		c.BoardcastAddr = util.InternalIP() + ":" + port
-	}
+
+	_, port, _ := net.SplitHostPort(c.ListenAddr)
+	c.BoardcastAddr = util.InternalIP() + ":" + port
+
 	return nil
 }
 
@@ -86,7 +86,6 @@ func NewConfig() *Config {
 		NodeName:            util.GetHostname(),
 		CfgPath:             "./jiacrontabd.ini",
 		DriverName:          "sqlite3",
-		BoardcastAddr:       util.InternalIP() + ":20001",
 		DSN:                 "data/jiacrontabd.db",
 		ClientAliveInterval: 30,
 	}
