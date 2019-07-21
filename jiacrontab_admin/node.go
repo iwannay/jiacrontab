@@ -2,8 +2,6 @@ package admin
 
 import (
 	"jiacrontab/models"
-
-	"github.com/iwannay/log"
 )
 
 // GetNodeList 获得任务节点列表
@@ -23,7 +21,6 @@ func GetNodeList(ctx *myctx) {
 
 	if reqBody.QueryGroupID != ctx.claims.GroupID && !ctx.isSuper() {
 		ctx.respNotAllowed()
-		log.Debug("----")
 		return
 	}
 

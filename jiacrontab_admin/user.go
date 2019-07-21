@@ -290,8 +290,12 @@ func EditUser(ctx *myctx) {
 		return
 	}
 
+	if !user.Verify(reqBody.Username, reqBody.OldPwd) {
+		ctx.respParamError(errors.New("密码错误"))
+		return
+	}
+
 	user.ID = reqBody.UserID
-	user.Username = reqBody.Username
 	user.Passwd = reqBody.Passwd
 	user.Avatar = reqBody.Avatar
 	user.Mail = reqBody.Mail
