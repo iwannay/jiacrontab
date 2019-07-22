@@ -32,7 +32,7 @@ func CreateDB(dialect string, args ...interface{}) error {
 func createSqlite3(dialect string, args ...interface{}) error {
 	var err error
 	if args[0] == nil {
-		errors.New("sqlite3:db file cannot empty")
+		return errors.New("sqlite3:db file cannot empty")
 	}
 
 	dbDir := filepath.Dir(filepath.Clean(fmt.Sprint(args[0])))
