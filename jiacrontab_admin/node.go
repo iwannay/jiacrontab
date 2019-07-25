@@ -94,7 +94,7 @@ func GroupNode(ctx *myctx) {
 		return
 	}
 
-	ctx.pubEvent(reqBody.TargetGroupName, event_GroupNode, models.EventSourceName(reqBody.Addr), reqBody)
+	ctx.pubEvent(node.Group.Name, event_GroupNode, models.EventSourceName(reqBody.Addr), reqBody)
 	ctx.respSucc("", nil)
 }
 

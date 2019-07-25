@@ -72,7 +72,7 @@ func (n *Node) GroupNode(addr string, targetGroupID uint, targetNodeName, target
 		targetGroupID = group.ID
 	}
 
-	err := DB().Model(n).Debug().Where("group_id=? and addr=?", SuperGroup.ID, addr).Take(n).Error
+	err := DB().Preload("Group").Where("group_id=? and addr=?", SuperGroup.ID, addr).Take(n).Error
 	if err != nil {
 		return err
 	}
