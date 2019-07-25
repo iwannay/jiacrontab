@@ -165,4 +165,4 @@ clean_task_log = true
 
 ## 赞助
 本项目花费了作者大量时间，如果你觉的该项目对你有用，或者你希望该项目有更好的发展，欢迎赞助。
-<img src="https://github.com/iwannay/jiacrontab/blob/dev/alipay.jpg" width="250" alt="赞助"/>
+<img src="https://github.com/iwannay/jiacrontab/blob/dev/admire.jpg" alt="赞助"/>
