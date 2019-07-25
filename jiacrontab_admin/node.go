@@ -64,7 +64,7 @@ func DeleteNode(ctx *myctx) {
 		return
 	}
 
-	ctx.pubEvent(node.Name, event_DelNodeDesc, models.EventSourceName(reqBody.Addr), reqBody)
+	ctx.pubEvent(node.Addr, event_DelNodeDesc, models.EventSourceName(reqBody.Addr), reqBody)
 	ctx.respSucc("", nil)
 }
 
@@ -94,7 +94,7 @@ func GroupNode(ctx *myctx) {
 		return
 	}
 
-	ctx.pubEvent(reqBody.TargetNodeName, event_GroupNode, models.EventSourceName(reqBody.Addr), reqBody)
+	ctx.pubEvent(reqBody.TargetGroupName, event_GroupNode, models.EventSourceName(reqBody.Addr), reqBody)
 	ctx.respSucc("", nil)
 }
 
