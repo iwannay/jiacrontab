@@ -421,13 +421,7 @@ func (j *DaemonJob) Stop(args proto.ActionJobsArgs, jobs *[]models.DaemonJob) er
 		j.jd.daemon.PopJob(job.ID)
 	}
 
-	ret := model.Update("status", models.StatusJobStop)
-
-	if ret.Error != nil {
-		return ret.Error
-	}
-
-	return nil
+	return model.Model(&models.DaemonJob{}).Update("status", models.StatusJobStop).Error
 }
 
 func (j *DaemonJob) Delete(args proto.ActionJobsArgs, jobs *[]models.DaemonJob) error {
@@ -506,6 +500,5 @@ func (j *DaemonJob) Audit(args proto.AuditJobArgs, jobs *[]models.DaemonJob) err
 	} else {
 		model = model.Where("id in (?) and group_id=? and created_user_id=?", args.JobIDs, args.GroupID, args.UserID)
 	}
-	defer model.Find(jobs)
-	return model.Where("status=?", models.StatusJobUnaudited).Update("status", models.StatusJobOk).Error
+	return model.Where("status=?", models.StatusJobUnaudited).Find(jobs).Update("status", models.StatusJobOk).Error
 }
