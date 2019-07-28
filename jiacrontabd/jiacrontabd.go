@@ -96,9 +96,8 @@ func (j *Jiacrontabd) execTask(job *crontab.Job) {
 		j.mux.RUnlock()
 		task.exec()
 		return
-	} else {
-		log.Errorf("not found jobID(%d)", job.ID)
 	}
+	log.Errorf("not found jobID(%d)", job.ID)
 	j.mux.RUnlock()
 
 }
@@ -128,15 +127,20 @@ func (j *Jiacrontabd) run() {
 // 目标网络不是本机时返回false
 func (j *Jiacrontabd) SetDependDone(task *depEntry) bool {
 
+	var (
+		ok  bool
+		job *JobEntry
+	)
+
 	if task.dest != j.getOpts().BoardcastAddr {
 		return false
 	}
 
 	isAllDone := true
+
 	j.mux.Lock()
-	job, ok := j.jobs[task.jobID]
-	if !ok {
-		job, ok = j.tmpJobs[task.jobUniqueID]
+	if job, ok = j.tmpJobs[task.jobUniqueID]; !ok {
+		job, ok = j.jobs[task.jobID]
 	}
 	j.mux.Unlock()
 
@@ -182,12 +186,13 @@ func (j *Jiacrontabd) SetDependDone(task *depEntry) bool {
 		// 如果依赖任务执行出错直接通知主任务停止
 		if task.err != nil {
 			isAllDone = true
+			curTaskEntry.err = task.err
 			log.Infof("depend %s %s exec failed, %s, try to stop master task", task.name, task.commands, task.err)
 		}
 
 		if isAllDone {
 			curTaskEntry.ready <- struct{}{}
-			curTaskEntry.jobEntry.logContent = logContent
+			curTaskEntry.jobEntry.logContent = append(curTaskEntry.jobEntry.logContent, logContent...)
 		}
 
 	} else {

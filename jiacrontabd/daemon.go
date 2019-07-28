@@ -64,9 +64,13 @@ func (d *daemonJob) do(ctx context.Context) {
 			stop bool
 			err  error
 		)
+		arg := d.job.Command
+		if d.job.Code != "" {
+			arg = append(arg, d.job.Code)
+		}
 		myCmdUint := cmdUint{
 			ctx:     ctx,
-			args:    [][]string{append(d.job.Command, d.job.Code)},
+			args:    [][]string{arg},
 			env:     d.job.WorkEnv,
 			dir:     d.job.WorkDir,
 			user:    d.job.WorkUser,
