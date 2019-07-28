@@ -14,6 +14,7 @@ type depEntry struct {
 	jobUniqueID string // job的唯一标志
 	processID   int    // 当前依赖的父级任务（可能存在多个并发的task)
 	id          string // depID
+	once        bool
 	workDir     string
 	user        string
 	env         []string
@@ -60,9 +61,8 @@ func (d *dependencies) run() {
 func (d *dependencies) exec(task *depEntry) {
 
 	var (
-		reply     bool
-		myCmdUnit cmdUint
-		err       error
+		reply bool
+		err   error
 	)
 
 	if task.timeout == 0 {
@@ -73,17 +73,18 @@ func (d *dependencies) exec(task *depEntry) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(task.timeout)*time.Second)
 	defer cancel()
 
-	myCmdUnit.args = [][]string{task.commands}
-	myCmdUnit.ctx = ctx
-	myCmdUnit.dir = task.workDir
-	myCmdUnit.user = task.user
-	myCmdUnit.logPath = task.logPath
-	myCmdUnit.jd = d.jd
+	myCmdUnit := cmdUint{
+		args:      [][]string{task.commands},
+		ctx:       ctx,
+		dir:       task.workDir,
+		user:      task.user,
+		logPath:   task.logPath,
+		jd:        d.jd,
+		exportLog: true,
+	}
 
 	err = myCmdUnit.launch()
-
 	log.Infof("exec %s %s cost %.4fs %v", task.name, task.commands, float64(myCmdUnit.costTime)/1000000000, err)
-
 	task.logContent = bytes.TrimRight(myCmdUnit.content, "\x00")
 	task.done = true
 	task.err = err

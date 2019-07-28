@@ -56,7 +56,7 @@ func newProcess(id int, jobEntry *JobEntry) *process {
 			jobUniqueID: p.jobEntry.uniqueID,
 			id:          v.ID,
 			from:        v.From,
-			commands:    append(v.Command, v.Code),
+			commands:    v.Command,
 			dest:        v.Dest,
 			logPath:     filepath.Join(p.jobEntry.jd.getOpts().LogPath, "depend_job", time.Now().Format("2006/01/02"), fmt.Sprintf("%d-%s.log", v.JobID, v.ID)),
 			done:        false,
@@ -83,7 +83,7 @@ func (p *process) waitDepExecDone() bool {
 	}
 	if !ok {
 		prefix := fmt.Sprintf("[%s %s] ", time.Now().Format("2006-01-02 15:04:05"), p.jobEntry.jd.getOpts().BoardcastAddr)
-		p.jobEntry.logContent = append(p.jobEntry.logContent, []byte(prefix+"failed to exec depends, push depends error\n")...)
+		p.jobEntry.logContent = append(p.jobEntry.logContent, []byte(prefix+"failed to exec depends\n")...)
 		return ok
 	}
 
@@ -100,6 +100,10 @@ func (p *process) waitDepExecDone() bool {
 			log.Errorf("jobID:%d exec dep timeout!", p.jobEntry.detail.ID)
 			return false
 		case <-p.ready:
+			if p.err != nil {
+				log.Errorf("jobID:%d exec dep error(%s)", p.jobEntry.detail.ID, p.err)
+				return false
+			}
 			log.Debugf("jobID:%d exec all dep done.", p.jobEntry.detail.ID)
 			return true
 		}
@@ -114,7 +118,7 @@ func (p *process) exec() error {
 	)
 
 	if ok = p.waitDepExecDone(); !ok {
-		p.jobEntry.handleDepError(p.startTime)
+		p.jobEntry.handleDepError(p.startTime, p)
 	} else {
 		if p.jobEntry.detail.Timeout != 0 {
 			time.AfterFunc(
@@ -129,8 +133,13 @@ func (p *process) exec() error {
 				})
 		}
 
+		arg := p.jobEntry.detail.Command
+		if p.jobEntry.detail.Code != "" {
+			arg = append(arg, p.jobEntry.detail.Code)
+		}
+
 		myCmdUnit := cmdUint{
-			args:             [][]string{append(p.jobEntry.detail.Command, p.jobEntry.detail.Code)},
+			args:             [][]string{arg},
 			ctx:              p.ctx,
 			dir:              p.jobEntry.detail.WorkDir,
 			user:             p.jobEntry.detail.WorkUser,
@@ -147,7 +156,6 @@ func (p *process) exec() error {
 		}
 		p.err = myCmdUnit.launch()
 		p.jobEntry.logContent = myCmdUnit.content
-
 		doneChan <- struct{}{}
 
 		if p.err != nil {
@@ -189,6 +197,10 @@ func newJobEntry(job *crontab.Job, jd *Jiacrontabd) *JobEntry {
 	}
 }
 
+func (j *JobEntry) setOnce(v bool) {
+	j.once = v
+}
+
 func (j *JobEntry) setPc() int {
 	return int(atomic.AddInt32(&j.pc, 1))
 }
@@ -200,9 +212,9 @@ func (j *JobEntry) writeLog() {
 	writeFile(j.logPath, &j.logContent)
 }
 
-func (j *JobEntry) handleDepError(startTime time.Time) {
+func (j *JobEntry) handleDepError(startTime time.Time, p *process) {
 	cfg := j.jd.getOpts()
-	err := fmt.Errorf("%s %s execution of dependency job failed, jobID:%d", time.Now().Format(proto.DefaultTimeLayout), cfg.BoardcastAddr, j.detail.ID)
+	err := fmt.Errorf("%s %s exec depend job err(%s)", time.Now().Format(proto.DefaultTimeLayout), cfg.BoardcastAddr, p.err)
 	endTime := time.Now()
 	reply := true
 
@@ -216,7 +228,7 @@ func (j *JobEntry) handleDepError(startTime time.Time) {
 			Subject: cfg.BoardcastAddr + "提醒脚本依赖异常退出",
 			Content: fmt.Sprintf(
 				"任务名：%s\n创建者：%s\n开始时间：%s\n耗时：%.4f\n异常：%s",
-				j.detail.Name, j.detail.CreatedUsername, endTime.Format(proto.DefaultTimeLayout), endTime.Sub(startTime).Seconds(), err),
+				j.detail.Name, j.detail.CreatedUsername, startTime.Format(proto.DefaultTimeLayout), endTime.Sub(startTime).Seconds(), err),
 		}, &reply); err != nil {
 			log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
 		}
@@ -242,7 +254,7 @@ func (j *JobEntry) handleNotify(p *process) {
 			Content: fmt.Sprintf(
 				"任务名：%s\n创建者：%s\n开始时间：%s\n异常：%s\n重试次数：%d",
 				j.detail.Name, j.detail.CreatedUsername,
-				p.endTime.Format(proto.DefaultTimeLayout), p.err.Error(), p.retryNum),
+				p.startTime.Format(proto.DefaultTimeLayout), p.err.Error(), p.retryNum),
 		}, &reply); err != nil {
 			log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
 		}
@@ -328,13 +340,17 @@ func (j *JobEntry) timeoutTrigger(p *process) {
 	}
 }
 
+func (j *JobEntry) GetLog() []byte {
+	return j.logContent
+}
+
 func (j *JobEntry) exec() {
 
 	if atomic.LoadInt32(&j.stop) == 1 {
 		return
 	}
 
-	j.wg.Wrap(func() {
+	exec := func() {
 		var err error
 		if j.once {
 			err = models.DB().Take(&j.detail, "id=?", j.job.ID).Error
@@ -371,6 +387,10 @@ func (j *JobEntry) exec() {
 			return
 		}
 
+		if atomic.LoadInt32(&j.processNum) == 0 {
+			j.logContent = nil
+		}
+
 		atomic.AddInt32(&j.processNum, 1)
 
 		id := j.setPc()
@@ -404,13 +424,19 @@ func (j *JobEntry) exec() {
 				delete(j.processes, id)
 				j.mux.Unlock()
 			}()
-
 			// 执行脚本
 			if err = p.exec(); err == nil || j.once {
 				break
 			}
 		}
-	})
+	}
+
+	if j.once {
+		exec()
+		return
+	}
+
+	j.wg.Wrap(exec)
 }
 
 func (j *JobEntry) updateJob(status models.JobStatus, startTime, endTime time.Time, err error) {
