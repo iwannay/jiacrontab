@@ -5,12 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/smtp"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/iwannay/log"
 
 	"gopkg.in/gomail.v2"
 )
@@ -162,11 +163,11 @@ func processMailQueue() {
 	for {
 		select {
 		case msg := <-mailQueue:
-			log.Printf("New e-mail sending request %s: %s\n", msg.GetHeader("To"), msg.Info)
+			log.Infof("New e-mail sending request %s: %s\n", msg.GetHeader("To"), msg.Info)
 			if err := gomail.Send(sender, msg.Message); err != nil {
-				log.Printf("Fail to send emails %s: %s - %v\n", msg.GetHeader("To"), msg.Info, err)
+				log.Errorf("Fail to send emails %s: %s - %v\n", msg.GetHeader("To"), msg.Info, err)
 			} else {
-				log.Printf("E-mails sent %s: %s\n", msg.GetHeader("To"), msg.Info)
+				log.Infof("E-mails sent %s: %s\n", msg.GetHeader("To"), msg.Info)
 			}
 			msg.confirmChan <- struct{}{}
 		}

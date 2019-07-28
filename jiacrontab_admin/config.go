@@ -188,7 +188,7 @@ func SendTestMail(ctx *myctx) {
 	}
 
 	if cfg.Mailer.Enabled {
-		err = mailer.SendMail([]string{reqBody.MailTo}, "测试邮件", "测试邮件请勿回复！")
+		err = mailer.SendMail([]string{reqBody.MailTo}, "jiacrontab欢迎你", "来自jiacrontab的温馨祝福！")
 		if err != nil {
 			ctx.respBasicError(err)
 			return

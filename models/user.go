@@ -13,7 +13,7 @@ import (
 
 type User struct {
 	gorm.Model
-	Username string `json:"username" gorm:"not null; index"`
+	Username string `json:"username" gorm:"not null; unique"`
 	Passwd   string `json:"-"`
 	Salt     string `json:"-"`
 	Avatar   string `json:"avatar"`
@@ -54,6 +54,9 @@ func (u *User) Verify(username, passwd string) bool {
 }
 
 func (u *User) setPasswd() {
+	if u.Passwd == "" {
+		return
+	}
 	u.Salt = u.getSalt()
 	bts := md5.Sum([]byte(fmt.Sprint(u.Passwd, u.Salt)))
 	u.Passwd = fmt.Sprintf("%x", bts)

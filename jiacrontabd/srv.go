@@ -232,15 +232,12 @@ func (j *CrontabJob) Exec(args proto.GetJobArgs, reply *proto.ExecCrontabJobRepl
 			ID:    reply.Job.ID,
 			Value: reply.Job,
 		}, j.jd)
-
+		jobInstance.setOnce(true)
 		j.jd.addTmpJob(jobInstance)
 		defer j.jd.removeTmpJob(jobInstance)
-
 		jobInstance.once = true
 		jobInstance.exec()
-
-		reply.Content = jobInstance.waitDone()
-
+		reply.Content = jobInstance.GetLog()
 	} else {
 		reply.Content = []byte(ret.Error.Error())
 		return ret.Error
