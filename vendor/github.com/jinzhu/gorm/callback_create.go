@@ -31,7 +31,7 @@ func beforeCreateCallback(scope *Scope) {
 // updateTimeStampForCreateCallback will set `CreatedAt`, `UpdatedAt` when creating
 func updateTimeStampForCreateCallback(scope *Scope) {
 	if !scope.HasError() {
-		now := NowFunc()
+		now := scope.db.nowFunc()
 
 		if createdAtField, ok := scope.FieldByName("CreatedAt"); ok {
 			if createdAtField.IsBlank {
@@ -50,7 +50,7 @@ func updateTimeStampForCreateCallback(scope *Scope) {
 // createCallback the callback used to insert data into database
 func createCallback(scope *Scope) {
 	if !scope.HasError() {
-		defer scope.trace(NowFunc())
+		defer scope.trace(scope.db.nowFunc())
 
 		var (
 			columns, placeholders        []string
@@ -83,10 +83,17 @@ func createCallback(scope *Scope) {
 			quotedTableName = scope.QuotedTableName()
 			primaryField    = scope.PrimaryField()
 			extraOption     string
+			insertModifier  string
 		)
 
 		if str, ok := scope.Get("gorm:insert_option"); ok {
 			extraOption = fmt.Sprint(str)
+		}
+		if str, ok := scope.Get("gorm:insert_modifier"); ok {
+			insertModifier = strings.ToUpper(fmt.Sprint(str))
+			if insertModifier == "INTO" {
+				insertModifier = ""
+			}
 		}
 
 		if primaryField != nil {
@@ -97,7 +104,8 @@ func createCallback(scope *Scope) {
 
 		if len(columns) == 0 {
 			scope.Raw(fmt.Sprintf(
-				"INSERT INTO %v %v%v%v",
+				"INSERT %v INTO %v %v%v%v",
+				addExtraSpaceIfExist(insertModifier),
 				quotedTableName,
 				scope.Dialect().DefaultValueStr(),
 				addExtraSpaceIfExist(extraOption),
@@ -105,7 +113,8 @@ func createCallback(scope *Scope) {
 			))
 		} else {
 			scope.Raw(fmt.Sprintf(
-				"INSERT INTO %v (%v) VALUES (%v)%v%v",
+				"INSERT %v INTO %v (%v) VALUES (%v)%v%v",
+				addExtraSpaceIfExist(insertModifier),
 				scope.QuotedTableName(),
 				strings.Join(columns, ","),
 				strings.Join(placeholders, ","),
