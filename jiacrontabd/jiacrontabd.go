@@ -150,7 +150,7 @@ func (j *Jiacrontabd) SetDependDone(task *depEntry) bool {
 		var curTaskEntry *process
 
 		for _, p := range job.processes {
-			if p.id == task.processID {
+			if int(p.id) == task.processID {
 				curTaskEntry = p
 				for _, dep := range p.deps {
 
