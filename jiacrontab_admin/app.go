@@ -1,7 +1,6 @@
 package admin
 
 import (
-	"errors"
 	"net/http"
 	"net/url"
 	"sync/atomic"
@@ -10,6 +9,8 @@ import (
 	"github.com/kataras/iris/middleware/logger"
 
 	"jiacrontab/models"
+
+	"fmt"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/iris-contrib/middleware/cors"
@@ -44,10 +45,10 @@ func newApp(adm *Admin) *iris.Application {
 		},
 		Expiration: true,
 
-		ErrorHandler: func(c iris.Context, data string) {
+		ErrorHandler: func(c iris.Context, err error) {
 			ctx := wrapCtx(c, adm)
 			if ctx.RequestPath(true) != "/user/login" {
-				ctx.respAuthFailed(errors.New("auth failed"))
+				ctx.respAuthFailed(fmt.Errorf("Token verification failed(%s)", err))
 				return
 			}
 			ctx.Next()

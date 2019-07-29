@@ -16,37 +16,39 @@ github.com/eknkc/amber
 github.com/eknkc/amber/parser
 # github.com/fatih/structs v1.1.0
 github.com/fatih/structs
-# github.com/flosch/pongo2 v0.0.0-20181225140029-79872a7b2769
+# github.com/flosch/pongo2 v0.0.0-20190707114632-bbf5a6c351f4
 github.com/flosch/pongo2
 # github.com/go-sql-driver/mysql v1.4.1
 github.com/go-sql-driver/mysql
 # github.com/gofrs/uuid v3.2.0+incompatible
 github.com/gofrs/uuid
+# github.com/gorilla/schema v1.1.0
+github.com/gorilla/schema
 # github.com/iris-contrib/blackfriday v2.0.0+incompatible
 github.com/iris-contrib/blackfriday
-# github.com/iris-contrib/formBinder v0.0.0-20190104093907-fbd5963f41e1
+# github.com/iris-contrib/formBinder v5.0.0+incompatible
 github.com/iris-contrib/formBinder
 # github.com/iris-contrib/go.uuid v2.0.0+incompatible
 github.com/iris-contrib/go.uuid
-# github.com/iris-contrib/middleware v0.0.0-20181021162728-8bd5d51b3c2e
+# github.com/iris-contrib/middleware v0.0.0-20190720041902-5f3a20f489c4
 github.com/iris-contrib/middleware/cors
 github.com/iris-contrib/middleware/jwt
 # github.com/iwannay/log v0.0.0-20190630100042-7fa98f256ca1
 github.com/iwannay/log
-# github.com/jinzhu/gorm v1.9.2
+# github.com/jinzhu/gorm v1.9.10
 github.com/jinzhu/gorm/dialects/mysql
 github.com/jinzhu/gorm/dialects/postgres
 github.com/jinzhu/gorm/dialects/sqlite
 github.com/jinzhu/gorm
-# github.com/jinzhu/inflection v0.0.0-20180308033659-04140366298a
+# github.com/jinzhu/inflection v1.0.0
 github.com/jinzhu/inflection
-# github.com/json-iterator/go v1.1.5
+# github.com/json-iterator/go v1.1.7
 github.com/json-iterator/go
 # github.com/juju/errors v0.0.0-20190207033735-e65537c515d7
 github.com/juju/errors
-# github.com/kataras/golog v0.0.0-20180321173939-03be10146386
+# github.com/kataras/golog v0.0.0-20190624001437-99c81de45f40
 github.com/kataras/golog
-# github.com/kataras/iris v11.1.0+incompatible
+# github.com/kataras/iris v11.1.1+incompatible
 github.com/kataras/iris
 github.com/kataras/iris/context
 github.com/kataras/iris/middleware/logger
@@ -74,16 +76,17 @@ github.com/kataras/iris/macro/interpreter/token
 # github.com/kataras/pio v0.0.0-20190103105442-ea782b38602d
 github.com/kataras/pio
 github.com/kataras/pio/terminal
-# github.com/klauspost/compress v1.4.1
+# github.com/klauspost/compress v1.7.4
 github.com/klauspost/compress/gzip
 github.com/klauspost/compress/flate
-# github.com/klauspost/cpuid v1.2.0
+# github.com/klauspost/cpuid v1.2.1
 github.com/klauspost/cpuid
-# github.com/lib/pq v1.0.0
+# github.com/lib/pq v1.2.0
 github.com/lib/pq
 github.com/lib/pq/hstore
 github.com/lib/pq/oid
-# github.com/mattn/go-sqlite3 v1.10.0
+github.com/lib/pq/scram
+# github.com/mattn/go-sqlite3 v1.11.0
 github.com/mattn/go-sqlite3
 # github.com/microcosm-cc/bluemonday v1.0.2
 github.com/microcosm-cc/bluemonday
@@ -95,14 +98,14 @@ github.com/modern-go/reflect2
 github.com/ryanuber/columnize
 # github.com/shurcooL/sanitized_anchor_name v1.0.0
 github.com/shurcooL/sanitized_anchor_name
-# golang.org/x/crypto v0.0.0-20190219172222-a4c6cb3142f2
+# golang.org/x/crypto v0.0.0-20190325154230-a5d413f7728c
 golang.org/x/crypto/acme/autocert
 golang.org/x/crypto/acme
-# golang.org/x/net v0.0.0-20190213061140-3a22650c66bd
+# golang.org/x/net v0.0.0-20190327091125-710a502c58a2
 golang.org/x/net/publicsuffix
 golang.org/x/net/html
 golang.org/x/net/html/atom
-# golang.org/x/sys v0.0.0-20190221222158-ec7b60b042fd
+# golang.org/x/sys v0.0.0-20190222072716-a9d3bda3a223
 golang.org/x/sys/unix
 # google.golang.org/appengine v1.4.0
 google.golang.org/appengine/cloudsql
@@ -110,7 +113,7 @@ google.golang.org/appengine/cloudsql
 gopkg.in/alexcesaro/quotedprintable.v3
 # gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 gopkg.in/gomail.v2
-# gopkg.in/ini.v1 v1.42.0
+# gopkg.in/ini.v1 v1.44.0
 gopkg.in/ini.v1
 # gopkg.in/yaml.v2 v2.2.2
 gopkg.in/yaml.v2

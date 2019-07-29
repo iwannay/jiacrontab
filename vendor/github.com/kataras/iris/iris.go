@@ -33,7 +33,7 @@ import (
 
 var (
 	// Version is the current version number of the Iris Web Framework.
-	Version = "11.1.0"
+	Version = "11.1.1"
 )
 
 // HTTP status codes as registered with IANA.
@@ -90,6 +90,7 @@ const (
 	StatusUnprocessableEntity          = 422 // RFC 4918, 11.2
 	StatusLocked                       = 423 // RFC 4918, 11.3
 	StatusFailedDependency             = 424 // RFC 4918, 11.4
+	StatusTooEarly                     = 425 // RFC 8470, 5.2.
 	StatusUpgradeRequired              = 426 // RFC 7231, 6.5.15
 	StatusPreconditionRequired         = 428 // RFC 6585, 3
 	StatusTooManyRequests              = 429 // RFC 6585, 4
@@ -462,6 +463,12 @@ var (
 	//
 	// A shortcut for the `context#CookieDecode`.
 	CookieDecode = context.CookieDecode
+	// IsErrPath can be used at `context#ReadForm`.
+	// It reports whether the incoming error is type of `formbinder.ErrPath`,
+	// which can be ignored when server allows unknown post values to be sent by the client.
+	//
+	// A shortcut for the `context#IsErrPath`.
+	IsErrPath = context.IsErrPath
 )
 
 // SPA  accepts an "assetHandler" which can be the result of an
