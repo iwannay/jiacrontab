@@ -27,7 +27,7 @@ const (
 )
 
 type process struct {
-	id        int
+	id        uint32
 	deps      []*depEntry
 	ctx       context.Context
 	cancel    context.CancelFunc
@@ -39,7 +39,7 @@ type process struct {
 	jobEntry  *JobEntry
 }
 
-func newProcess(id int, jobEntry *JobEntry) *process {
+func newProcess(id uint32, jobEntry *JobEntry) *process {
 	p := &process{
 		id:        id,
 		jobEntry:  jobEntry,
@@ -52,7 +52,7 @@ func newProcess(id int, jobEntry *JobEntry) *process {
 	for _, v := range p.jobEntry.detail.DependJobs {
 		p.deps = append(p.deps, &depEntry{
 			jobID:       p.jobEntry.detail.ID,
-			processID:   id,
+			processID:   int(id),
 			jobUniqueID: p.jobEntry.uniqueID,
 			id:          v.ID,
 			from:        v.From,
@@ -171,27 +171,30 @@ func (p *process) exec() error {
 }
 
 type JobEntry struct {
-	job        *crontab.Job
-	detail     models.CrontabJob
-	processNum int32
-	processes  map[int]*process
-	pc         int32
-	wg         util.WaitGroupWrapper
-	logContent []byte
-	logPath    string
-	jd         *Jiacrontabd
-	mux        sync.RWMutex
-	once       bool // 只执行一次
-	sync       bool
-	stop       int32 // job stop status
-	uniqueID   string
+	job         *crontab.Job
+	detail      models.CrontabJob
+	processNum  int32
+	processes   map[uint32]*process
+	pc          int32
+	wg          util.WaitGroupWrapper
+	logContent  []byte
+	logPath     string
+	jd          *Jiacrontabd
+	IDChan      chan uint32
+	IDGenerator uint32
+	mux         sync.RWMutex
+	once        bool // 只执行一次
+	sync        bool
+	stop        int32 // job stop status
+	uniqueID    string
 }
 
 func newJobEntry(job *crontab.Job, jd *Jiacrontabd) *JobEntry {
 	return &JobEntry{
 		uniqueID:  util.UUID(),
 		job:       job,
-		processes: make(map[int]*process),
+		IDChan:    make(chan uint32, 10000),
+		processes: make(map[uint32]*process),
 		logPath:   filepath.Join(jd.getOpts().LogPath, "crontab_task", time.Now().Format("2006/01/02"), fmt.Sprintf("%d.log", job.ID)),
 		jd:        jd,
 	}
@@ -201,11 +204,25 @@ func (j *JobEntry) setOnce(v bool) {
 	j.once = v
 }
 
-func (j *JobEntry) setPc() int {
-	return int(atomic.AddInt32(&j.pc, 1))
+func (j *JobEntry) takeID() uint32 {
+	for {
+		select {
+		case id := <-j.IDChan:
+			return id
+		default:
+			id := atomic.AddUint32(&j.IDGenerator, 1)
+			if id != 0 {
+				return id
+			}
+		}
+	}
 }
-func (j *JobEntry) getPc() int {
-	return int(atomic.LoadInt32(&j.pc))
+
+func (j *JobEntry) putID(id uint32) {
+	select {
+	case j.IDChan <- id:
+	default:
+	}
 }
 
 func (j *JobEntry) writeLog() {
@@ -340,6 +357,7 @@ func (j *JobEntry) timeoutTrigger(p *process) {
 	}
 }
 
+// GetLog return log data
 func (j *JobEntry) GetLog() []byte {
 	return j.logContent
 }
@@ -393,7 +411,7 @@ func (j *JobEntry) exec() {
 
 		atomic.AddInt32(&j.processNum, 1)
 
-		id := j.setPc()
+		id := j.takeID()
 		startTime := time.Now()
 		var endTime time.Time
 		defer func() {
@@ -423,6 +441,7 @@ func (j *JobEntry) exec() {
 				j.mux.Lock()
 				delete(j.processes, id)
 				j.mux.Unlock()
+				j.putID(id)
 			}()
 			// 执行脚本
 			if err = p.exec(); err == nil || j.once {
