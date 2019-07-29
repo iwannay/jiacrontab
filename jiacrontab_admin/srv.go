@@ -88,7 +88,6 @@ func (s *Srv) SendSMN(args proto.Smn, reply *bool) error {
 		cfg = s.adm.getOpts()
 	)
 
-fmt.Println(args.ActionType)
         var topicUrn string
         switch args.ActionType { 
         case "Critical": 
@@ -101,11 +100,9 @@ fmt.Println(args.ActionType)
           topicUrn = cfg.Smn.InfoTopicUrn
         default: 
           topicUrn = cfg.Smn.TopicUrn 
-        } 
+        }
 
-        fmt.Println(topicUrn)
-
-	err = smn.PublishMessageTemplate(cfg.Smn.DomainName, cfg.Smn.UserName, cfg.Smn.UserPass, cfg.Smn.Region, topicUrn, args.TemplateName, args.Tags)
+	err = smn.PublishMessageTemplate(cfg.Smn.DomainName, cfg.Smn.UserName, cfg.Smn.UserPass, cfg.Smn.Region, topicUrn, args.TemplateName, args.Subject, args.Tags)
 	*reply = true
 	return err
 }

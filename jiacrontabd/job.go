@@ -266,7 +266,8 @@ func (j *JobEntry) handleNotify(p *process) {
 	for _, failAction := range j.detail.FailAction {
 		if err := j.jd.rpcCallCtx(context.TODO(), "Srv.SendSMN", proto.Smn{
                         ActionType: failAction,
-			TemplateName: "DemoEmail",
+			TemplateName: "SendCT",
+                        Subject: "华为云CT告警",
 			Tags: map[string]string{
 				"actionType":  failAction,
 				"scriptToRun": j.detail.Name,
@@ -298,7 +299,8 @@ func (j *JobEntry) timeoutTrigger(p *process) {
             } else {
                  if err := j.jd.rpcCallCtx(context.TODO(), "Srv.SendSMN", proto.Smn{
                         ActionType: action,
-                        TemplateName: "DemoEmail",
+                        TemplateName: "SendCT",
+                        Subject: "华为云CT告警",
                         Tags: map[string]string{
                                 "actionType":  action,
                                 "scriptToRun": j.detail.Name,

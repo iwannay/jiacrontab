@@ -6,7 +6,7 @@ import (
 	"github.com/SimpleMessageNotification/smn-sdk-go/smn-sdk-go/client"
 )
 
-func PublishMessageTemplate(domainName string, userName string, userPass string, region string, topicUrn string, templateName string, tags map[string]string) error {
+func PublishMessageTemplate(domainName string, userName string, userPass string, region string, topicUrn string, templateName string, subject string, tags map[string]string) error {
 	smnClient, err := client.NewClient(userName, domainName, userPass, region)
 	if err != nil {
 		panic(err)
@@ -15,6 +15,7 @@ func PublishMessageTemplate(domainName string, userName string, userPass string,
 	request := smnClient.NewPublishMessageTemplateRequest()
 	request.TopicUrn = topicUrn
 	request.MessageTemplateName = templateName
+        request.Subject = subject
         for k,v := range(tags) {
           request.Tags[k] = v
         }
