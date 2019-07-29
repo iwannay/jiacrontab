@@ -50,7 +50,7 @@ func beforeUpdateCallback(scope *Scope) {
 // updateTimeStampForUpdateCallback will set `UpdatedAt` when updating
 func updateTimeStampForUpdateCallback(scope *Scope) {
 	if _, ok := scope.Get("gorm:update_column"); !ok {
-		scope.SetColumn("UpdatedAt", NowFunc())
+		scope.SetColumn("UpdatedAt", scope.db.nowFunc())
 	}
 }
 
@@ -75,7 +75,7 @@ func updateCallback(scope *Scope) {
 		} else {
 			for _, field := range scope.Fields() {
 				if scope.changeableField(field) {
-					if !field.IsPrimaryKey && field.IsNormal {
+					if !field.IsPrimaryKey && field.IsNormal && (field.Name != "CreatedAt" || !field.IsBlank) {
 						if !field.IsForeignKey || !field.IsBlank || !field.HasDefaultValue {
 							sqls = append(sqls, fmt.Sprintf("%v = %v", scope.Quote(field.DBName), scope.AddToVars(field.Field.Interface())))
 						}

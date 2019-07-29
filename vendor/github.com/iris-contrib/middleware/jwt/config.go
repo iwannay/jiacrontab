@@ -26,9 +26,6 @@ type Config struct {
 	// A function that extracts the token from the request
 	// Default: FromAuthHeader (i.e., from Authorization header as bearer token)
 	Extractor TokenExtractor
-	// Debug flag turns on debugging output
-	// Default: false
-	Debug bool
 	// When set, all requests with the OPTIONS method will use authentication
 	// if you enable this option you should register your route with iris.Options(...) also
 	// Default: false
