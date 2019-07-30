@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"jiacrontab/pkg/kproc"
@@ -95,6 +96,10 @@ func (cu *cmdUint) setLogFile() error {
 
 func (cu *cmdUint) exec() error {
 	log.Debug("cmd exec args:", cu.args)
+	if len(cu.args) == 0 {
+		return errors.New("invalid args")
+	}
+	cu.args[0] = util.FilterEmptyEle(cu.args[0])
 	cmdName := cu.args[0][0]
 	args := cu.args[0][1:]
 	cmd := kproc.CommandContext(cu.ctx, cmdName, args...)
@@ -189,6 +194,7 @@ func (cu *cmdUint) pipeExec() error {
 	)
 
 	for _, v := range cu.args {
+		v = util.FilterEmptyEle(v)
 		cmdName := v[0]
 		args := v[1:]
 
