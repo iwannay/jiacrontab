@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
+	"jiacrontab/pkg/util"
 
 	"github.com/kataras/iris"
 )
@@ -83,6 +84,11 @@ func (p *EditJobReqParams) Verify(ctx iris.Context) error {
 			return fmt.Errorf("%s:%v", v, paramsError)
 		}
 	}
+
+	p.Command = util.FilterEmptyEle(p.Command)
+	p.MailTo = util.FilterEmptyEle(p.MailTo)
+	p.APITo = util.FilterEmptyEle(p.APITo)
+	p.WorkEnv = util.FilterEmptyEle(p.WorkEnv)
 
 	if p.Month == "" {
 		p.Month = "*"
@@ -221,6 +227,10 @@ type EditDaemonJobReqParams struct {
 }
 
 func (p *EditDaemonJobReqParams) Verify(ctx iris.Context) error {
+	p.MailTo = util.FilterEmptyEle(p.MailTo)
+	p.APITo = util.FilterEmptyEle(p.APITo)
+	p.Command = util.FilterEmptyEle(p.Command)
+	p.WorkEnv = util.FilterEmptyEle(p.WorkEnv)
 	return nil
 }
 
