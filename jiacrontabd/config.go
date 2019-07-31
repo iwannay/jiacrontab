@@ -69,8 +69,10 @@ func (c *Config) Resolve() error {
 		}
 	}
 
-	_, port, _ := net.SplitHostPort(c.ListenAddr)
-	c.BoardcastAddr = util.InternalIP() + ":" + port
+	if c.BoardcastAddr == "" {
+		_, port, _ := net.SplitHostPort(c.ListenAddr)
+		c.BoardcastAddr = util.InternalIP() + ":" + port
+	}
 
 	return nil
 }
