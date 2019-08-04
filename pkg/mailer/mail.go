@@ -163,7 +163,6 @@ func processMailQueue() {
 	for {
 		select {
 		case msg := <-mailQueue:
-			log.Infof("New e-mail sending request %s: %s\n", msg.GetHeader("To"), msg.Info)
 			if err := gomail.Send(sender, msg.Message); err != nil {
 				log.Errorf("Fail to send emails %s: %s - %v\n", msg.GetHeader("To"), msg.Info, err)
 			} else {
