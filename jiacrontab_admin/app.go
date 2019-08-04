@@ -77,13 +77,14 @@ func newApp(adm *Admin) *iris.Application {
 			})
 		}
 		ctx.Header("Cache-Control", "no-cache")
-		ctx.Header("Content-Type", "text/html")
+		ctx.Header("Content-Type", "text/html; charset=utf-8")
 		ctx.Header("Content-Encoding", "gzip")
+		ctx.Header("Vary", "Accept-Encoding")
 		asset, err := GzipAsset("assets/index.html")
 		if err != nil {
 			log.Error(err)
 		}
-		ctx.WriteGzip(asset)
+		ctx.Write(asset)
 	})
 
 	v1 := app.Party("/v1")
