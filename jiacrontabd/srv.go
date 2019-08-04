@@ -101,11 +101,12 @@ func (j *CrontabJob) Edit(args proto.EditCrontabJobArgs, reply *models.CrontabJo
 		} else {
 			model = model.Where("id=? and created_user_id=? and group_id=?", args.Job.ID, args.Job.CreatedUserID, args.Job.GroupID)
 		}
+		args.Job.NextExecTime = time.Time{}
 		model = model.Omit(
 			"updated_at", "created_at", "deleted_at",
 			"created_user_id", "created_username",
 			"last_cost_time", "last_exec_time",
-			"next_exec_time", "last_exit_status", "process_num",
+			"last_exit_status", "process_num",
 		).Save(&args.Job)
 	}
 	*reply = args.Job
@@ -281,6 +282,7 @@ func (j *CrontabJob) SetDependDone(args proto.DepJob, reply *bool) error {
 		jobID:       args.JobID,
 		processID:   args.ProcessID,
 		jobUniqueID: args.JobUniqueID,
+		id:          args.ID,
 		dest:        args.Dest,
 		from:        args.From,
 		done:        true,
