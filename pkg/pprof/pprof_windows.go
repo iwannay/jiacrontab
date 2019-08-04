@@ -1,0 +1,4 @@
+package pprof
+
+func listenSignal() {
+}
