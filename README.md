@@ -126,8 +126,8 @@ $ nohup ./jiacrontabd &> jiacrontabd.log &
 [2.0.0版本演示地址](http://jiacrontab-spa.iwannay.cn/) 账号：test 密码：123456
 
 ## QQ群号：813377930
-<img src="https://github.com/iwannay/jiacrontab/blob/dev/qq.png" width="250" alt="qq群"/>
+<img src="https://raw.githubusercontent.com/iwannay/jiacrontab/dev/qq.png" width="250" alt="qq群"/>
 
 ## 赞助
 本项目花费了作者大量时间，如果你觉的该项目对你有用，或者你希望该项目有更好的发展，欢迎赞助。
-<img src="https://github.com/iwannay/jiacrontab/blob/dev/admire.jpg" alt="赞助"/>
+<img src="https://raw.githubusercontent.com/iwannay/jiacrontab/dev/admire.jpg" alt="赞助"/>
