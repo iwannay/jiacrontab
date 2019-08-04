@@ -4,8 +4,8 @@
 
 简单可信赖的任务管理工具
 
-## 2.0.0-alpha 测试版发布(正处于测试阶段，不建议生产使用。)
-生产建议使用1.4.7版本
+## v2.0.0版发布
+
 
 ## [❤jiacrontab 最新版下载点这里❤ ](https://jiacrontab.iwannay.cn/download/)
 
@@ -44,7 +44,7 @@ $ nohup ./jiacrontab_admin &> jiacrontab_admin.log &
 $ nohup ./jiacrontabd &> jiacrontabd.log &
 ```
 
-### 1.4.\*源码安装
+### v2.0.x源码安装
 
 1.安装 git，golang(version 1.12.x)；可参考官网。  
 2.安装运行
