@@ -13,7 +13,7 @@ import (
 func rpcCall(addr string, serviceMethod string, args interface{}, reply interface{}) error {
 	err := rpc.Call(addr, serviceMethod, args, reply)
 	if err != nil {
-		log.Errorf("rpcCall:%v", err)
+		log.Errorf("rpcCall(%s->%s):%v", addr, serviceMethod, err)
 	}
 	if err == rpc.ErrRpc || err == rpc.ErrShutdown {
 		models.DB().Unscoped().Model(&models.Node{}).Where("addr=?", addr).Update("disabled", true)
