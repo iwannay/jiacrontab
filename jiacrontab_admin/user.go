@@ -370,7 +370,7 @@ func UserStat(ctx *myctx) {
 	ctx.respSucc("", map[string]interface{}{
 		"systemInfo": util.SystemInfo(cfg.ServerStartTime),
 		"auditStat":  auditNumStat,
-		"version":    version.String("jiacrontab"),
+		"version":    version.String(cfg.App.AppName),
 	})
 }
 

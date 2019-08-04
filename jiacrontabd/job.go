@@ -244,7 +244,7 @@ func (j *JobEntry) handleDepError(startTime time.Time, p *process) {
 			MailTo:  j.detail.MailTo,
 			Subject: cfg.BoardcastAddr + "提醒脚本依赖异常退出",
 			Content: fmt.Sprintf(
-				"任务名：%s\n创建者：%s\n开始时间：%s\n耗时：%.4f\n异常：%s",
+				"任务名：%s<br/>创建者：%s<br/>开始时间：%s<br/>耗时：%.4f<br/>异常：%s",
 				j.detail.Name, j.detail.CreatedUsername, startTime.Format(proto.DefaultTimeLayout), endTime.Sub(startTime).Seconds(), err),
 		}, &reply); err != nil {
 			log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
@@ -269,7 +269,7 @@ func (j *JobEntry) handleNotify(p *process) {
 			MailTo:  j.detail.MailTo,
 			Subject: cfg.BoardcastAddr + "提醒脚本异常退出",
 			Content: fmt.Sprintf(
-				"任务名：%s\n创建者：%s\n开始时间：%s\n异常：%s\n重试次数：%d",
+				"任务名：%s<br/>创建者：%s<br/>开始时间：%s<br/>异常：%s<br/>重试次数：%d",
 				j.detail.Name, j.detail.CreatedUsername,
 				p.startTime.Format(proto.DefaultTimeLayout), p.err.Error(), p.retryNum),
 		}, &reply); err != nil {
@@ -342,7 +342,7 @@ func (j *JobEntry) timeoutTrigger(p *process) {
 				MailTo:  j.detail.MailTo,
 				Subject: cfg.BoardcastAddr + "提醒脚本执行超时",
 				Content: fmt.Sprintf(
-					"任务名：%s\n创建者：%v\n开始时间：%s\n超时：%ds\n重试次数：%d",
+					"任务名：%s<br/>创建者：%v<br/>开始时间：%s<br/>超时：%ds<br/>重试次数：%d",
 					j.detail.Name, j.detail.CreatedUsername, p.startTime.Format(proto.DefaultTimeLayout),
 					j.detail.Timeout, p.retryNum),
 			}, &reply); err != nil {

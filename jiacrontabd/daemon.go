@@ -124,7 +124,7 @@ func (d *daemonJob) handleNotify(err error) {
 			MailTo:  d.job.MailTo,
 			Subject: cfg.BoardcastAddr + "提醒常驻脚本异常退出",
 			Content: fmt.Sprintf(
-				"任务名：%s\n创建者：%s\n开始时间：%s\n异常：%s",
+				"任务名：%s<br/>创建者：%s<br/>开始时间：%s<br/>异常：%s",
 				d.job.Name, d.job.CreatedUsername, time.Now().Format(proto.DefaultTimeLayout), err),
 		}, &reply)
 		if err != nil {
