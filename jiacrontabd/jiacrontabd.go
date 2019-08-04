@@ -14,6 +14,8 @@ import (
 	"jiacrontab/pkg/util"
 	"sync"
 	"time"
+
+	"fmt"
 )
 
 // Jiacrontabd scheduling center
@@ -143,8 +145,7 @@ func (j *Jiacrontabd) SetDependDone(task *depEntry) bool {
 		job, ok = j.jobs[task.jobID]
 	}
 	j.mux.Unlock()
-
-	if ok && task.jobUniqueID == job.uniqueID {
+	if ok {
 
 		var logContent []byte
 		var curTaskEntry *process
@@ -167,10 +168,10 @@ func (j *Jiacrontabd) SetDependDone(task *depEntry) bool {
 					} else {
 						logContent = append(logContent, dep.logContent...)
 					}
-
-					if dep.id == task.id && p.jobEntry.sync {
-						if ok := j.dispatchDependSync(p.ctx, p.deps, dep.id); ok {
-							return true
+					// 同步模式上一个依赖结束才会触发下一个
+					if dep.id == task.id && task.err == nil && p.jobEntry.detail.IsSync {
+						if err := j.dispatchDependSync(p.ctx, p.deps, dep.id); err != nil {
+							task.err = err
 						}
 					}
 
@@ -204,13 +205,12 @@ func (j *Jiacrontabd) SetDependDone(task *depEntry) bool {
 }
 
 // 同步模式根据depEntryID确定位置实现任务的依次调度
-func (j *Jiacrontabd) dispatchDependSync(ctx context.Context, deps []*depEntry, depEntryID string) bool {
+func (j *Jiacrontabd) dispatchDependSync(ctx context.Context, deps []*depEntry, depEntryID string) error {
 	flag := true
 	cfg := j.getOpts()
 	if len(deps) > 0 {
 		flag = false
-		l := len(deps) - 1
-		for k, v := range deps {
+		for _, v := range deps {
 			// 根据flag实现调度下一个依赖任务
 			if flag || depEntryID == "" {
 				// 检测目标服务器为本机时直接执行脚本
@@ -230,25 +230,22 @@ func (j *Jiacrontabd) dispatchDependSync(ctx context.Context, deps []*depEntry, 
 						Timeout:     v.timeout,
 					}}, &reply)
 					if !reply || err != nil {
-						log.Error("Srv.ExecDepend error:", err, "server addr:", cfg.AdminAddr)
-						return false
+						return fmt.Errorf("Srv.ExecDepend error:%v server addr:%s", err, cfg.AdminAddr)
 					}
 				}
-				flag = true
 				break
 			}
 
-			if (v.id == depEntryID) && (l != k) {
+			if v.id == depEntryID {
 				flag = true
 			}
 
 		}
-
 	}
-	return flag
+	return nil
 }
 
-func (j *Jiacrontabd) dispatchDependAsync(ctx context.Context, deps []*depEntry) bool {
+func (j *Jiacrontabd) dispatchDependAsync(ctx context.Context, deps []*depEntry) error {
 	var depJobs proto.DepJobs
 	cfg := j.getOpts()
 	for _, v := range deps {
@@ -273,12 +270,11 @@ func (j *Jiacrontabd) dispatchDependAsync(ctx context.Context, deps []*depEntry)
 	if len(depJobs) > 0 {
 		var reply bool
 		if err := j.rpcCallCtx(ctx, "Srv.ExecDepend", depJobs, &reply); err != nil {
-			log.Error("Srv.ExecDepend error:", err, "server addr:", cfg.AdminAddr)
-			return false
+			return fmt.Errorf("Srv.ExecDepend error:%v server addr: %s", err, cfg.AdminAddr)
+
 		}
 	}
-
-	return true
+	return nil
 }
 
 func (j *Jiacrontabd) count() int {

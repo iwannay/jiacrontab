@@ -27,6 +27,7 @@ type cmdUint struct {
 	user             string
 	verboseLog       bool
 	exportLog        bool
+	ignoreFileLog    bool
 	env              []string
 	killChildProcess bool
 	dir              string
@@ -66,15 +67,16 @@ func (cu *cmdUint) launch() error {
 
 	if err != nil {
 		var errMsg string
+		var prefix string
 		if cu.verboseLog {
-			prefix := fmt.Sprintf("[%s %s %s] ", time.Now().Format(proto.DefaultTimeLayout), cfg.BoardcastAddr, cu.label)
+			prefix = fmt.Sprintf("[%s %s %s] ", time.Now().Format(proto.DefaultTimeLayout), cfg.BoardcastAddr, cu.label)
 			errMsg = prefix + err.Error() + "\n"
 		} else {
-			errMsg = err.Error() + "\n"
+			prefix = fmt.Sprintf("[%s %s] ", cfg.BoardcastAddr, cu.label)
+			errMsg = prefix + err.Error() + "\n"
 		}
 
-		cu.logFile.WriteString(errMsg)
-
+		cu.writeLog([]byte(errMsg))
 		if cu.exportLog {
 			cu.content = append(cu.content, []byte(errMsg)...)
 		}
@@ -87,11 +89,23 @@ func (cu *cmdUint) launch() error {
 
 func (cu *cmdUint) setLogFile() error {
 	var err error
+
+	if cu.ignoreFileLog {
+		return nil
+	}
+
 	cu.logFile, err = util.TryOpen(cu.logPath, os.O_APPEND|os.O_CREATE|os.O_RDWR)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (cu *cmdUint) writeLog(b []byte) {
+	if cu.ignoreFileLog {
+		return
+	}
+	cu.logFile.Write(b)
 }
 
 func (cu *cmdUint) exec() error {
@@ -132,8 +146,7 @@ func (cu *cmdUint) exec() error {
 	reader := bufio.NewReader(stdout)
 	readerErr := bufio.NewReader(stderr)
 	// 如果已经存在日志则直接写入
-	cu.logFile.Write(cu.content)
-
+	cu.writeLog(cu.content)
 	go func() {
 		var (
 			err  error
@@ -155,8 +168,7 @@ func (cu *cmdUint) exec() error {
 			if cu.exportLog {
 				cu.content = append(cu.content, line...)
 			}
-
-			cu.logFile.Write(line)
+			cu.writeLog(line)
 		}
 
 		for {
@@ -172,7 +184,7 @@ func (cu *cmdUint) exec() error {
 			if cu.exportLog {
 				cu.content = append(cu.content, line...)
 			}
-			cu.logFile.Write(line)
+			cu.writeLog(line)
 		}
 	}()
 
@@ -213,7 +225,7 @@ func (cu *cmdUint) pipeExec() error {
 	)
 
 	// 如果已经存在日志则直接写入
-	cu.logFile.Write(cu.content)
+	cu.writeLog(cu.content)
 
 	for {
 
@@ -227,7 +239,7 @@ func (cu *cmdUint) pipeExec() error {
 		}
 
 		cu.content = append(cu.content, line...)
-		cu.logFile.Write(line)
+		cu.writeLog(line)
 	}
 
 	for {
@@ -244,7 +256,7 @@ func (cu *cmdUint) pipeExec() error {
 		if cu.exportLog {
 			cu.content = append(cu.content, line...)
 		}
-		cu.logFile.Write(line)
+		cu.writeLog(line)
 	}
 	return exitError
 }

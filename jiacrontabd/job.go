@@ -69,22 +69,23 @@ func newProcess(id uint32, jobEntry *JobEntry) *process {
 
 func (p *process) waitDepExecDone() bool {
 
+	var err error
+
 	if len(p.deps) == 0 {
 		return true
 	}
 
-	ok := true
 	if p.jobEntry.detail.IsSync {
 		// 同步
-		ok = p.jobEntry.jd.dispatchDependSync(p.ctx, p.deps, "")
+		err = p.jobEntry.jd.dispatchDependSync(p.ctx, p.deps, "")
 	} else {
 		// 并发模式
-		ok = p.jobEntry.jd.dispatchDependAsync(p.ctx, p.deps)
+		err = p.jobEntry.jd.dispatchDependAsync(p.ctx, p.deps)
 	}
-	if !ok {
+	if err != nil {
 		prefix := fmt.Sprintf("[%s %s] ", time.Now().Format("2006-01-02 15:04:05"), p.jobEntry.jd.getOpts().BoardcastAddr)
 		p.jobEntry.logContent = append(p.jobEntry.logContent, []byte(prefix+"failed to exec depends\n")...)
-		return ok
+		return false
 	}
 
 	c := time.NewTimer(3600 * time.Second)
@@ -183,8 +184,7 @@ type JobEntry struct {
 	IDChan      chan uint32
 	IDGenerator uint32
 	mux         sync.RWMutex
-	once        bool // 只执行一次
-	sync        bool
+	once        bool  // 只执行一次
 	stop        int32 // job stop status
 	uniqueID    string
 }
@@ -231,7 +231,7 @@ func (j *JobEntry) writeLog() {
 
 func (j *JobEntry) handleDepError(startTime time.Time, p *process) {
 	cfg := j.jd.getOpts()
-	err := fmt.Errorf("%s %s exec depend job err(%s)", time.Now().Format(proto.DefaultTimeLayout), cfg.BoardcastAddr, p.err)
+	err := fmt.Errorf("%s %s exec depend job err(%v)", time.Now().Format(proto.DefaultTimeLayout), cfg.BoardcastAddr, p.err)
 	endTime := time.Now()
 	reply := true
 

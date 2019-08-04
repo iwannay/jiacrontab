@@ -13,7 +13,7 @@ type depEntry struct {
 	jobID       uint   // 定时任务id
 	jobUniqueID string // job的唯一标志
 	processID   int    // 当前依赖的父级任务（可能存在多个并发的task)
-	id          string // depID
+	id          string // depID uuid
 	once        bool
 	workDir     string
 	user        string
@@ -43,7 +43,12 @@ type dependencies struct {
 }
 
 func (d *dependencies) add(t *depEntry) {
-	d.dep <- t
+	select {
+	case d.dep <- t:
+	default:
+		log.Warnf("discard %v", t)
+	}
+
 }
 
 func (d *dependencies) run() {
@@ -74,13 +79,14 @@ func (d *dependencies) exec(task *depEntry) {
 	defer cancel()
 
 	myCmdUnit := cmdUint{
-		args:      [][]string{task.commands},
-		ctx:       ctx,
-		dir:       task.workDir,
-		user:      task.user,
-		logPath:   task.logPath,
-		jd:        d.jd,
-		exportLog: true,
+		args:          [][]string{task.commands},
+		ctx:           ctx,
+		dir:           task.workDir,
+		user:          task.user,
+		logPath:       task.logPath,
+		ignoreFileLog: true,
+		jd:            d.jd,
+		exportLog:     true,
 	}
 
 	err = myCmdUnit.launch()
