@@ -67,7 +67,10 @@ var Levels = map[Level]*LevelMetadata{
 	},
 }
 
-func fromLevelName(levelName string) Level {
+// ParseLevel returns a `golog.Level` from a string level.
+// Note that all existing log levels (name, prefix and color) can be customized
+// and new one can be added by the package-level `golog.Levels` map variable.
+func ParseLevel(levelName string) Level {
 	for level, meta := range Levels {
 		if meta.Name == levelName {
 			return level

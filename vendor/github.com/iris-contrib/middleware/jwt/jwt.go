@@ -3,32 +3,56 @@ package jwt
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
 
+	"time"
+
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/context"
-	"time"
 )
 
-// iris provides some basic middleware, most for your learning courve.
-// You can use any net/http compatible middleware with iris.FromStd wrapper.
-//
-// JWT net/http video tutorial for golang newcomers: https://www.youtube.com/watch?v=dgJFeqeXVKw
-//
-// Unlike the other middleware, this middleware was cloned from external source: https://github.com/auth0/go-jwt-middleware
-// (because it used "context" to define the user but we don't need that so a simple iris.FromStd wouldn't work as expected.)
-// jwt_test.go also didn't created by me:
-// 28 Jul 2016
-// @heralight heralight add jwt unit test.
-//
-// So if this doesn't works for you just try other net/http compatible middleware and bind it via `iris.FromStd(myHandlerWithNext)`,
-// It's here for your learning curve.
+type (
+	// Token for JWT. Different fields will be used depending on whether you're
+	// creating or parsing/verifying a token.
+	//
+	// A type alias for jwt.Token.
+	Token = jwt.Token
+	// MapClaims type that uses the map[string]interface{} for JSON decoding
+	// This is the default claims type if you don't supply one
+	//
+	// A type alias for jwt.MapClaims.
+	MapClaims = jwt.MapClaims
+	// Claims must just have a Valid method that determines
+	// if the token is invalid for any supported reason.
+	//
+	// A type alias for jwt.Claims.
+	Claims = jwt.Claims
+)
+
+// Shortcuts to create a new Token.
+var (
+	NewToken           = jwt.New
+	NewTokenWithClaims = jwt.NewWithClaims
+)
+
+// HS256 and company.
+var (
+	SigningMethodHS256 = jwt.SigningMethodHS256
+	SigningMethodHS384 = jwt.SigningMethodHS384
+	SigningMethodHS512 = jwt.SigningMethodHS512
+)
+
+// ECDSA - EC256 and company.
+var (
+	SigningMethodES256 = jwt.SigningMethodES256
+	SigningMethodES384 = jwt.SigningMethodES384
+	SigningMethodES512 = jwt.SigningMethodES512
+)
 
 // A function called whenever an error is encountered
-type errorHandler func(context.Context, string)
+type errorHandler func(context.Context, error)
 
 // TokenExtractor is a function that takes a context as input and returns
 // either a token or an error.  An error should only be returned if an attempt
@@ -42,10 +66,17 @@ type Middleware struct {
 	Config Config
 }
 
-// OnError default error handler
-func OnError(ctx context.Context, err string) {
+// OnError is the default error handler.
+// Use it to change the behavior for each error.
+// See `Config.ErrorHandler`.
+func OnError(ctx context.Context, err error) {
+	if err == nil {
+		return
+	}
+
+	ctx.StopExecution()
 	ctx.StatusCode(iris.StatusUnauthorized)
-	ctx.Writef(err)
+	ctx.WriteString(err.Error())
 }
 
 // New constructs a new Secure instance with supplied options.
@@ -73,10 +104,8 @@ func New(cfg ...Config) *Middleware {
 	return &Middleware{Config: c}
 }
 
-func (m *Middleware) logf(format string, args ...interface{}) {
-	if m.Config.Debug {
-		log.Printf(format, args...)
-	}
+func logf(ctx iris.Context, format string, args ...interface{}) {
+	ctx.Application().Logger().Debugf(format, args...)
 }
 
 // Get returns the user (&token) information for this client/request
@@ -87,7 +116,7 @@ func (m *Middleware) Get(ctx context.Context) *jwt.Token {
 // Serve the middleware's action
 func (m *Middleware) Serve(ctx context.Context) {
 	if err := m.CheckJWT(ctx); err != nil {
-		ctx.StopExecution()
+		m.Config.ErrorHandler(ctx, err)
 		return
 	}
 	// If everything ok then call next.
@@ -97,7 +126,6 @@ func (m *Middleware) Serve(ctx context.Context) {
 // FromAuthHeader is a "TokenExtractor" that takes a give context and extracts
 // the JWT token from the Authorization header.
 func FromAuthHeader(ctx context.Context) (string, error) {
-
 	authHeader := ctx.GetHeader("Authorization")
 	if authHeader == "" {
 		return "", nil // No error, just no token
@@ -137,6 +165,20 @@ func FromFirst(extractors ...TokenExtractor) TokenExtractor {
 	}
 }
 
+var (
+	// ErrTokenMissing is the error value that it's returned when
+	// a token is not found based on the token extractor.
+	ErrTokenMissing = errors.New("required authorization token not found")
+
+	// ErrTokenInvalid is the error value that it's returned when
+	// a token is not valid.
+	ErrTokenInvalid = errors.New("token is invalid")
+
+	// ErrTokenExpired is the error value that it's returned when
+	// a token value is found and it's valid but it's expired.
+	ErrTokenExpired = errors.New("token is expired")
+)
+
 // CheckJWT the main functionality, checks for token
 func (m *Middleware) CheckJWT(ctx context.Context) error {
 	if !m.Config.EnableAuthOnOptions {
@@ -150,31 +192,24 @@ func (m *Middleware) CheckJWT(ctx context.Context) error {
 
 	// If debugging is turned on, log the outcome
 	if err != nil {
-		m.logf("Error extracting JWT: %v", err)
-	} else {
-		m.logf("Token extracted: %s", token)
+		logf(ctx, "Error extracting JWT: %v", err)
+		return err
 	}
 
-	// If an error occurs, call the error handler and return an error
-	if err != nil {
-		m.Config.ErrorHandler(ctx, err.Error())
-		return fmt.Errorf("Error extracting token: %v", err)
-	}
+	logf(ctx, "Token extracted: %s", token)
 
 	// If the token is empty...
 	if token == "" {
 		// Check if it was required
 		if m.Config.CredentialsOptional {
-			m.logf("  No credentials found (CredentialsOptional=true)")
+			logf(ctx, "No credentials found (CredentialsOptional=true)")
 			// No error, just no token (and that is ok given that CredentialsOptional is true)
 			return nil
 		}
 
 		// If we get here, the required token is missing
-		errorMsg := "Required authorization token not found"
-		m.Config.ErrorHandler(ctx, errorMsg)
-		m.logf("  Error: No credentials found (CredentialsOptional=false)")
-		return fmt.Errorf(errorMsg)
+		logf(ctx, "Error: No credentials found (CredentialsOptional=false)")
+		return ErrTokenMissing
 	}
 
 	// Now parse the token
@@ -182,36 +217,35 @@ func (m *Middleware) CheckJWT(ctx context.Context) error {
 	parsedToken, err := jwt.Parse(token, m.Config.ValidationKeyGetter)
 	// Check if there was an error in parsing...
 	if err != nil {
-		m.logf("Error parsing token: %v", err)
-		m.Config.ErrorHandler(ctx, err.Error())
-		return fmt.Errorf("Error parsing token: %v", err)
+		logf(ctx, "Error parsing token: %v", err)
+		return err
 	}
 
 	if m.Config.SigningMethod != nil && m.Config.SigningMethod.Alg() != parsedToken.Header["alg"] {
-		message := fmt.Sprintf("Expected %s signing method but token specified %s",
+		err := fmt.Errorf("Expected %s signing method but token specified %s",
 			m.Config.SigningMethod.Alg(),
 			parsedToken.Header["alg"])
-		m.logf("Error validating token algorithm: %s", message)
-		m.Config.ErrorHandler(ctx, errors.New(message).Error())
-		return fmt.Errorf("Error validating token algorithm: %s", message)
+		logf(ctx, "Error validating token algorithm: %v", err)
+		return err
 	}
 
 	// Check if the parsed token is valid...
 	if !parsedToken.Valid {
-		m.logf("Token is invalid")
-		m.Config.ErrorHandler(ctx, "The token isn't valid")
-		return fmt.Errorf("Token is invalid")
+		logf(ctx, "Token is invalid")
+		m.Config.ErrorHandler(ctx, ErrTokenInvalid)
+		return ErrTokenInvalid
 	}
 
 	if m.Config.Expiration {
 		if claims, ok := parsedToken.Claims.(jwt.MapClaims); ok {
 			if expired := claims.VerifyExpiresAt(time.Now().Unix(), true); !expired {
-				return fmt.Errorf("Token is expired")
+				logf(ctx, "Token is expired")
+				return ErrTokenExpired
 			}
 		}
 	}
 
-	m.logf("JWT: %v", parsedToken)
+	logf(ctx, "JWT: %v", parsedToken)
 
 	// If we get here, everything worked and we can set the
 	// user property in context.
