@@ -123,6 +123,7 @@ func NewConfig() *Config {
 			HTTPListenAddr: ":20000",
 			RPCListenAddr:  ":20003",
 			AppName:        "jiacrontab",
+			LogLevel:       "warn",
 			SigningKey:     "WERRTT1234$@#@@$",
 		},
 		Mailer: &MailerOpt{
