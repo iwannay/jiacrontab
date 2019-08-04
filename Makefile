@@ -1,74 +1,65 @@
 # Go parameters
-GOCMD=go
-GOBUILD=$(GOCMD) build
-GOCLEAN=$(GOCMD) clean
-GOTEST=$(GOCMD) test
-GOGET=$(GOCMD) get
-BINARY_MANAGER=jiaserver
-BINARY_CLIENT=jiaclient
-BINARY_MANAGER_UNIX=$(BINARY_MANAGER)_unix
-BINARY_CLIENT_UNIX=$(BINARY_CLIENT)_unix
-WORKDIR=./app
-SERVERDIR=$(WORKDIR)/jiacrontab/server
-CLIENTDIR=$(WORKDIR)/jiacrontab/client
+goCmd=go
+goBuild=$(goCmd) build
+goClean=$(goCmd) clean
+goTest=$(goCmd) test
+goGet=$(goCmd) get
+sourceAdmDir=./app/jiacrontab_admin
+sourceNodeDir=./app/jiacrontabd
+binAdm=$(sourceAdmDir)/jiacrontab_admin
+binNode=$(sourceNodeDir)/jiacrontabd
 
-OPT?=
+buildDir=./build
+buildAdmDir=$(buildDir)/jiacrontab/jiacrontab_admin
+buildNodeDir=$(buildDir)/jiacrontab/jiacrontabd
 
-.PHONY: all build test clean run build-linux build-windows
+admCfg=$(sourceAdmDir)/jiacrontab_admin.ini
+nodeCfg=$(sourceNodeDir)/jiacrontabd.ini
+staticDir=./jiacrontab_admin/static/build
+staticSourceDir=./jiacrontab_admin/static
+workDir=$(shell pwd)
+
+
+.PHONY: all build test clean build-linux build-windows
 all: test build
 build:
-	mkdir $(WORKDIR)
-	mkdir $(WORKDIR)/jiacrontab
-	mkdir $(SERVERDIR)
-	mkdir $(CLIENTDIR)
-	cp server/server.ini $(SERVERDIR)
-	cp -r server/template $(SERVERDIR)
-	cp -r server/static $(SERVERDIR)
-	cp client/client.ini $(CLIENTDIR)
-	$(GOBUILD) -mod=vendor $(OPT) -o $(BINARY_MANAGER) -v ./server	
-	$(GOBUILD) -mod=vendor $(OPT) -o $(BINARY_CLIENT) -v ./client
-	mv $(BINARY_MANAGER) $(SERVERDIR)
-	mv $(BINARY_CLIENT) $(CLIENTDIR)
+	$(call init)
+	$(goBuild) -mod=vendor -o $(binAdm) -v $(sourceAdmDir)
+	$(goBuild) -mod=vendor -o $(binNode) -v $(sourceNodeDir)
+	mv $(binAdm) $(buildAdmDir)
+	mv $(binNode) $(buildNodeDir)
 test:
-	$(GOTEST) -mod=vendor -v ./server
-	$(GOTEST) -mod=vendor -v ./client
+	$(goTest) -mod=vendor -v -race -coverprofile=coverage.txt -covermode=atomic $(sourceAdmDir)
+	$(goTest) -mod=vendor -v -race -coverprofile=coverage.txt -covermode=atomic $(sourceNodeDir)
 clean:
-	rm -f $(BINARY_CLIENT_UNIX)
-	rm -f $(BINARY_MANAGER_UNIX)
-	rm -f $(BINARY_MANAGER)
-	rm -f $(BINARY_CLIENT)
-	rm -rf $(WORKDIR)
-run:
-	$(GOBUILD) -mod=vendor -o $(BINARY_NAME) -v ./...
-	./$(BINARY_NAME)
+	rm -f $(binAdm)
+	rm -f $(binNode)
+	rm -rf $(buildDir)
 
 
 # Cross compilation
 build-linux:
-	mkdir $(WORKDIR)
-	mkdir $(WORKDIR)/jiacrontab
-	mkdir $(SERVERDIR)
-	mkdir $(CLIENTDIR)
-	cp server/server.ini $(SERVERDIR)
-	cp -r server/template $(SERVERDIR)
-	cp -r server/static $(SERVERDIR)
-	cp client/client.ini $(CLIENTDIR)
-	GOOS=linux GOARCH=amd64 $(GOBUILD) $(OPT) -mod=vendor -o $(BINARY_MANAGER) -v ./server
-	GOOS=linux GOARCH=amd64 $(GOBUILD) $(OPT) -mod=vendor -o $(BINARY_CLIENT) -v ./client
-	mv $(BINARY_MANAGER) $(SERVERDIR)
-	mv $(BINARY_CLIENT) $(CLIENTDIR)
+	$(call init)
+	GOOS=linux GOARCH=amd64 $(goBuild) -mod=vendor -o $(binAdm) -v $(sourceAdmDir)
+	GOOS=linux GOARCH=amd64 $(goBuild) -mod=vendor -o $(binNode) -v $(sourceNodeDir)
+	mv $(binAdm) $(buildAdmDir)
+	mv $(binNode) $(buildNodeDir)
 
 build-windows:
-	mkdir $(WORKDIR)
-	mkdir $(WORKDIR)/jiacrontab
-	mkdir $(SERVERDIR)
-	mkdir $(CLIENTDIR)
-	cp server/server.ini $(SERVERDIR)
-	cp -r server/template $(SERVERDIR)
-	cp -r server/static $(SERVERDIR)
-	cp client/client.ini $(CLIENTDIR)
-	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC="x86_64-w64-mingw32-gcc -fno-stack-protector -D_FORTIFY_SOURCE=0 -lssp" $(GOBUILD) $(OPT) -mod=vendor -o $(BINARY_MANAGER).exe -v ./server
-	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC="x86_64-w64-mingw32-gcc -fno-stack-protector -D_FORTIFY_SOURCE=0 -lssp" $(GOBUILD) $(OPT) -mod=vendor -o $(BINARY_CLIENT).exe -v ./client
+	$(call init)
+	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC="x86_64-w64-mingw32-gcc -fno-stack-protector -D_FORTIFY_SOURCE=0 -lssp" $(goBuild) -mod=vendor -o $(binAdm).exe -v $(sourceAdmDir)
+	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC="x86_64-w64-mingw32-gcc -fno-stack-protector -D_FORTIFY_SOURCE=0 -lssp" $(goBuild) -mod=vendor -o $(binNode).exe -v $(sourceNodeDir)
 
-	mv $(BINARY_MANAGER).exe $(SERVERDIR)
-	mv $(BINARY_CLIENT).exe $(CLIENTDIR)
+	mv $(binAdm).exe $(buildAdmDir)
+	mv $(binNode).exe $(buildNodeDir)
+
+
+define init
+	rm -rf $(buildDir)
+	mkdir $(buildDir)
+	mkdir -p $(buildAdmDir)
+	mkdir -p $(buildNodeDir)
+
+	cp $(admCfg) $(buildAdmDir)
+	cp $(nodeCfg) $(buildNodeDir)
+endef
