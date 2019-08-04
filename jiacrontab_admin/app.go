@@ -15,7 +15,6 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/iris-contrib/middleware/cors"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
-	"github.com/iwannay/log"
 	"github.com/kataras/iris/context"
 )
 
@@ -23,9 +22,10 @@ func newApp(adm *Admin) *iris.Application {
 
 	app := iris.New()
 	app.UseGlobal(newRecover(adm))
-	app.Logger().SetLevel("debug")
+	app.Logger().SetLevel(adm.getOpts().App.LogLevel)
 	app.Use(logger.New())
 	app.StaticEmbeddedGzip("/", "./assets/", GzipAsset, GzipAssetNames)
+
 	cfg := adm.getOpts()
 
 	wrapHandler := func(h func(ctx *myctx)) context.Handler {
@@ -77,13 +77,6 @@ func newApp(adm *Admin) *iris.Application {
 			})
 		}
 		ctx.Header("Cache-Control", "no-cache")
-		ctx.Header("Content-Type", "text/html")
-		ctx.Header("Content-Encoding", "gzip")
-		asset, err := GzipAsset("assets/index.html")
-		if err != nil {
-			log.Error(err)
-		}
-		ctx.WriteGzip(asset)
 	})
 
 	v1 := app.Party("/v1")
