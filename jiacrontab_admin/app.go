@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"sync/atomic"
 
+	"github.com/iwannay/log"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/middleware/logger"
 
@@ -25,7 +26,6 @@ func newApp(adm *Admin) *iris.Application {
 	app.Logger().SetLevel(adm.getOpts().App.LogLevel)
 	app.Use(logger.New())
 	app.StaticEmbeddedGzip("/", "./assets/", GzipAsset, GzipAssetNames)
-
 	cfg := adm.getOpts()
 
 	wrapHandler := func(h func(ctx *myctx)) context.Handler {
@@ -77,6 +77,13 @@ func newApp(adm *Admin) *iris.Application {
 			})
 		}
 		ctx.Header("Cache-Control", "no-cache")
+		ctx.Header("Content-Type", "text/html")
+		ctx.Header("Content-Encoding", "gzip")
+		asset, err := GzipAsset("assets/index.html")
+		if err != nil {
+			log.Error(err)
+		}
+		ctx.WriteGzip(asset)
 	})
 
 	v1 := app.Party("/v1")
