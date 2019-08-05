@@ -174,6 +174,11 @@ func (j *CrontabJob) Stop(args proto.ActionJobsArgs, job *[]models.CrontabJob) e
 		model = model.Where("created_user_id = ? and id in (?) and status in (?)  and group_id=?",
 			args.UserID, args.JobIDs, []models.JobStatus{models.StatusJobTiming, models.StatusJobRunning}, args.GroupID)
 	}
+
+	for _, jobID := range args.JobIDs {
+		j.jd.killTask(jobID)
+	}
+
 	return model.Find(job).Update(map[string]interface{}{
 		"status":         models.StatusJobStop,
 		"next_exec_time": time.Time{},
