@@ -13,8 +13,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/jinzhu/gorm"
-
 	"github.com/iwannay/log"
 )
 
@@ -50,13 +48,17 @@ func newProcess(id uint32, jobEntry *JobEntry) *process {
 	p.ctx, p.cancel = context.WithCancel(context.Background())
 
 	for _, v := range p.jobEntry.detail.DependJobs {
+		cmd := v.Command
+		if v.Code != "" {
+			cmd = append(cmd, v.Code)
+		}
 		p.deps = append(p.deps, &depEntry{
 			jobID:       p.jobEntry.detail.ID,
 			processID:   int(id),
 			jobUniqueID: p.jobEntry.uniqueID,
 			id:          v.ID,
 			from:        v.From,
-			commands:    v.Command,
+			commands:    cmd,
 			dest:        v.Dest,
 			logPath:     filepath.Join(p.jobEntry.jd.getOpts().LogPath, "depend_job", time.Now().Format("2006/01/02"), fmt.Sprintf("%d-%s.log", v.JobID, v.ID)),
 			done:        false,
@@ -372,6 +374,7 @@ func (j *JobEntry) exec() {
 		var err error
 		if j.once {
 			err = models.DB().Take(&j.detail, "id=?", j.job.ID).Error
+			atomic.StoreInt32(&j.processNum, int32(j.detail.ProcessNum))
 		} else {
 			err = models.DB().Take(&j.detail, "id=? and status in(?)",
 				j.job.ID, []models.JobStatus{models.StatusJobTiming, models.StatusJobRunning}).Error
@@ -379,7 +382,7 @@ func (j *JobEntry) exec() {
 
 		if err != nil {
 			j.jd.deleteJob(j.detail.ID)
-			log.Warn("JobEntry.exec:", err)
+			log.Warnf("jobID:%d JobEntry.exec:%v", j.detail.ID, err)
 			return
 		}
 
@@ -401,7 +404,8 @@ func (j *JobEntry) exec() {
 			j.jd.addJob(j.job)
 		}
 
-		if atomic.LoadInt32(&j.processNum) >= int32(j.detail.MaxConcurrent) {
+		if atomic.LoadInt32(&j.processNum) >= int32(j.detail.MaxConcurrent) && j.detail.MaxConcurrent != 0 {
+			j.logContent = []byte("不得超过job最大并发数量")
 			return
 		}
 
@@ -473,13 +477,13 @@ func (j *JobEntry) updateJob(status models.JobStatus, startTime, endTime time.Ti
 		data["last_cost_time"] = endTime.Sub(startTime).Seconds()
 	}
 
-	if j.once && (status == models.StatusJobRunning) {
-		data["process_num"] = gorm.Expr("process_num + ?", 1)
-	}
+	// if j.once && (status == models.StatusJobRunning) {
+	// 	data["process_num"] = gorm.Expr("process_num + ?", 1)
+	// }
 
-	if j.once && (status == models.StatusJobTiming) {
-		data["process_num"] = gorm.Expr("process_num - ?", 1)
-	}
+	// if j.once && (status == models.StatusJobTiming) {
+	// 	data["process_num"] = gorm.Expr("process_num - ?", 1)
+	// }
 
 	var errMsg string
 	if err != nil {
@@ -514,11 +518,6 @@ func (j *JobEntry) updateJob(status models.JobStatus, startTime, endTime time.Ti
 func (j *JobEntry) kill() {
 	j.exit()
 	j.waitDone()
-	if err := models.DB().Model(&j.detail).Updates(map[string]interface{}{
-		"process_num": 0,
-	}).Error; err != nil {
-		log.Error("JobEntry.kill", err)
-	}
 }
 
 func (j *JobEntry) waitDone() []byte {
