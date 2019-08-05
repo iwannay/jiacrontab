@@ -285,6 +285,7 @@ func (j *Jiacrontabd) count() int {
 }
 
 func (j *Jiacrontabd) deleteJob(jobID uint) {
+	j.killTask(jobID)
 	j.mux.Lock()
 	delete(j.jobs, jobID)
 	j.mux.Unlock()
