@@ -513,6 +513,7 @@ func (j *JobEntry) updateJob(status models.JobStatus, startTime, endTime time.Ti
 
 func (j *JobEntry) kill() {
 	j.exit()
+	j.waitDone()
 	if err := models.DB().Model(&j.detail).Updates(map[string]interface{}{
 		"process_num": 0,
 	}).Error; err != nil {
@@ -533,5 +534,4 @@ func (j *JobEntry) exit() {
 		v.cancel()
 	}
 	j.mux.Unlock()
-	j.waitDone()
 }
