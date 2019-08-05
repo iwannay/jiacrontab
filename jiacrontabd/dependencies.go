@@ -77,7 +77,6 @@ func (d *dependencies) exec(task *depEntry) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(task.timeout)*time.Second)
 	defer cancel()
-
 	myCmdUnit := cmdUint{
 		args:          [][]string{task.commands},
 		ctx:           ctx,
@@ -89,11 +88,11 @@ func (d *dependencies) exec(task *depEntry) {
 		exportLog:     true,
 	}
 
-	err = myCmdUnit.launch()
-	log.Infof("exec %s %s cost %.4fs %v", task.name, task.commands, float64(myCmdUnit.costTime)/1000000000, err)
+	log.Infof("dep start exec %s->%v", task.name, task.commands)
+	task.err = myCmdUnit.launch()
 	task.logContent = bytes.TrimRight(myCmdUnit.content, "\x00")
 	task.done = true
-	task.err = err
+	log.Infof("exec %s %s cost %.4fs %v", task.name, task.commands, float64(myCmdUnit.costTime)/1000000000, err)
 
 	task.dest, task.from = task.from, task.dest
 
