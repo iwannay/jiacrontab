@@ -422,6 +422,19 @@ func (j *JobEntry) exec() {
 
 		j.updateJob(models.StatusJobRunning, startTime, endTime, err)
 
+		p := newProcess(id, j)
+
+		j.mux.Lock()
+		j.processes[id] = p
+		j.mux.Unlock()
+
+		defer func() {
+			j.mux.Lock()
+			delete(j.processes, id)
+			j.mux.Unlock()
+			j.putID(id)
+		}()
+
 		for i := 0; i <= j.detail.RetryNum; i++ {
 
 			if atomic.LoadInt32(&j.stop) == 1 {
@@ -430,19 +443,8 @@ func (j *JobEntry) exec() {
 
 			log.Debug("jobID:", j.detail.ID, "retryNum:", i)
 
-			p := newProcess(id, j)
 			p.retryNum = i
 
-			j.mux.Lock()
-			j.processes[id] = p
-			j.mux.Unlock()
-
-			defer func() {
-				j.mux.Lock()
-				delete(j.processes, id)
-				j.mux.Unlock()
-				j.putID(id)
-			}()
 			// 执行脚本
 			if err = p.exec(); err == nil || j.once {
 				break
