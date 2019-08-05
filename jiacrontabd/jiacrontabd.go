@@ -105,13 +105,22 @@ func (j *Jiacrontabd) execTask(job *crontab.Job) {
 }
 
 func (j *Jiacrontabd) killTask(jobID uint) {
+	var jobs []*JobEntry
 	j.mux.RLock()
-	if task, ok := j.jobs[jobID]; ok {
-		j.mux.RUnlock()
-		task.kill()
-		return
+	if job, ok := j.jobs[jobID]; ok {
+		jobs = append(jobs, job)
+	}
+
+	for _, v := range j.tmpJobs {
+		if v.detail.ID == jobID {
+			jobs = append(jobs, v)
+		}
 	}
 	j.mux.RUnlock()
+
+	for _, v := range jobs {
+		v.kill()
+	}
 }
 
 func (j *Jiacrontabd) run() {
