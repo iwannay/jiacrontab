@@ -49,23 +49,22 @@ func TestJob_NextExecutionTime(t *testing.T) {
 	test.Equal(t, "2020-03-04 12:08:58", tt.Format(timeLayout))
 
 	j = &Job{
-		Second:  "*/2",
-		Minute:  "*/3",
+		Second:  "0",
+		Minute:  "*",
 		Hour:    "*",
 		Day:     "*",
 		Weekday: "*",
 		Month:   "*",
 	}
+
 	tt, err = j.NextExecutionTime(time.Now())
 	test.Nil(t, err)
-	t.Log(tt)
-	tt, err = j.NextExecutionTime(tt)
-	test.Nil(t, err)
-	t.Log(tt)
-	tt, err = j.NextExecutionTime(tt)
-	test.Nil(t, err)
-	t.Log(tt)
-	tt, err = j.NextExecutionTime(tt)
-	test.Nil(t, err)
-	t.Log(tt)
+	t.Log(tt, j.GetLastExecTime())
+	for i := 0; i < 1000; i++ {
+		tt, err = j.NextExecutionTime(tt)
+		test.Nil(t, err)
+		t.Log(tt, j.GetLastExecTime())
+	}
+
+	t.Log("end")
 }
