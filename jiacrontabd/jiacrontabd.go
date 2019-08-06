@@ -69,7 +69,7 @@ func (j *Jiacrontabd) removeTmpJob(job *JobEntry) {
 	j.mux.Unlock()
 }
 
-func (j *Jiacrontabd) addJob(job *crontab.Job) {
+func (j *Jiacrontabd) addJob(job *crontab.Job, updateLastExecTime bool) {
 	j.mux.Lock()
 	if v, ok := j.jobs[job.ID]; ok {
 		v.job = job
@@ -81,11 +81,17 @@ func (j *Jiacrontabd) addJob(job *crontab.Job) {
 	if err := j.crontab.AddJob(job); err != nil {
 		log.Error("NextExecutionTime:", err, " timeArgs:", job)
 	} else {
+		data := map[string]interface{}{
+			"next_exec_time": job.GetNextExecTime(),
+			"status":         models.StatusJobTiming,
+		}
+
+		if updateLastExecTime {
+			data["last_exec_time"] = time.Now()
+		}
+
 		if err := models.DB().Model(&models.CrontabJob{}).Where("id=?", job.ID).
-			Updates(map[string]interface{}{
-				"next_exec_time": job.GetNextExecTime(),
-				"status":         models.StatusJobTiming,
-			}).Error; err != nil {
+			Updates(data).Error; err != nil {
 			log.Error(err)
 		}
 	}
@@ -411,7 +417,7 @@ func (j *Jiacrontabd) recovery() {
 			Day:     v.TimeArgs.Day,
 			Month:   v.TimeArgs.Month,
 			Weekday: v.TimeArgs.Weekday,
-		})
+		}, false)
 	}
 
 	err = models.DB().Find(&daemonJobs, "status in (?)", []models.JobStatus{models.StatusJobOk}).Error

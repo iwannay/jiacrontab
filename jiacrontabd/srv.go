@@ -157,7 +157,7 @@ func (j *CrontabJob) Start(args proto.ActionJobsArgs, jobs *[]models.CrontabJob)
 			Day:     v.TimeArgs.Day,
 			Month:   v.TimeArgs.Month,
 			Weekday: v.TimeArgs.Weekday,
-		})
+		}, false)
 	}
 
 	return nil
