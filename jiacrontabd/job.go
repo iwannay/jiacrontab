@@ -405,14 +405,14 @@ func (j *JobEntry) exec() {
 					Day:     j.detail.TimeArgs.Day,
 					Month:   j.detail.TimeArgs.Month,
 					Weekday: j.detail.TimeArgs.Weekday,
-				})
+				}, false)
 				return
 			}
-			j.jd.addJob(j.job)
+			j.jd.addJob(j.job, true)
 		}
 
 		if atomic.LoadInt32(&j.processNum) >= int32(j.detail.MaxConcurrent) && j.detail.MaxConcurrent != 0 {
-			j.logContent = []byte("不得超过job最大并发数量")
+			j.logContent = []byte("不得超过job最大并发数量\n")
 			return
 		}
 
@@ -475,7 +475,6 @@ func (j *JobEntry) updateJob(status models.JobStatus, startTime, endTime time.Ti
 	data := map[string]interface{}{
 		"status":           status,
 		"process_num":      atomic.LoadInt32(&j.processNum),
-		"last_exec_time":   j.job.GetLastExecTime(),
 		"last_exit_status": "",
 		"failed":           false,
 	}
@@ -483,14 +482,6 @@ func (j *JobEntry) updateJob(status models.JobStatus, startTime, endTime time.Ti
 	if endTime.After(startTime) {
 		data["last_cost_time"] = endTime.Sub(startTime).Seconds()
 	}
-
-	// if j.once && (status == models.StatusJobRunning) {
-	// 	data["process_num"] = gorm.Expr("process_num + ?", 1)
-	// }
-
-	// if j.once && (status == models.StatusJobTiming) {
-	// 	data["process_num"] = gorm.Expr("process_num - ?", 1)
-	// }
 
 	var errMsg string
 	if err != nil {
@@ -500,7 +491,6 @@ func (j *JobEntry) updateJob(status models.JobStatus, startTime, endTime time.Ti
 	}
 
 	if j.once {
-		delete(data, "last_exec_time")
 		delete(data, "status")
 		delete(data, "last_exit_status")
 	}
