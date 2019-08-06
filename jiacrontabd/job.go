@@ -387,6 +387,13 @@ func (j *JobEntry) exec() {
 		}
 
 		if !j.once {
+
+			// 忽略一秒内重复执行的job
+			if j.detail.LastExecTime.Truncate(time.Second).Equal(time.Now().Truncate(time.Second)) {
+				log.Infof("ignore repeat job %s", j.detail.Name)
+				return
+			}
+
 			if !j.detail.NextExecTime.Truncate(time.Second).Equal(j.job.GetNextExecTime().Truncate(time.Second)) {
 				log.Errorf("%s(%d) JobEntry.exec time error(%s not equal %s)",
 					j.detail.Name, j.detail.ID, j.detail.NextExecTime, j.job.GetNextExecTime())
