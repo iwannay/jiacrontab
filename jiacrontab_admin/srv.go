@@ -31,13 +31,19 @@ func (s *Srv) Register(args map[uint]models.Node, reply *bool) error {
 		ret := models.DB().Unscoped().Model(&models.Node{}).Where("addr=? and group_id=?", node.Addr, node.GroupID).Updates(map[string]interface{}{
 			"daemon_task_num":       node.DaemonTaskNum,
 			"crontab_task_num":      node.CrontabTaskNum,
-			"name":                  node.Name,
 			"crontab_job_audit_num": node.CrontabJobAuditNum,
 			"daemon_job_audit_Num":  node.DaemonJobAuditNum,
 			"crontab_job_fail_num":  node.CrontabJobFailNum,
-			"deleted_at":            nil,
-			"disabled":              false,
 		})
+
+		if node.GroupID == models.SuperGroup.ID {
+			models.DB().Unscoped().Model(&models.Node{}).Where("addr=?", node.Addr).Updates(map[string]interface{}{
+				"name":       node.Name,
+				"deleted_at": nil,
+				"disabled":   false,
+			})
+		}
+
 		if ret.RowsAffected == 0 && node.GroupID == models.SuperGroup.ID {
 			ret = models.DB().Create(&node)
 		}
