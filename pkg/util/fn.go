@@ -80,7 +80,7 @@ func TryOpen(path string, flag int) (*os.File, error) {
 
 	f, err := os.OpenFile(fabs, flag, 0644)
 	if os.IsNotExist(err) {
-		err = os.MkdirAll(filepath.Dir(fabs), os.ModeDir)
+		err = os.MkdirAll(filepath.Dir(fabs), 0755)
 		if err != nil {
 			return nil, err
 		}
