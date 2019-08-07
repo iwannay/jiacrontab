@@ -78,13 +78,13 @@ func TryOpen(path string, flag int) (*os.File, error) {
 		return nil, err
 	}
 
-	f, err := os.OpenFile(fabs, flag, os.ModePerm)
+	f, err := os.OpenFile(fabs, flag, 0644)
 	if os.IsNotExist(err) {
-		err = os.MkdirAll(filepath.Dir(fabs), os.ModePerm)
+		err = os.MkdirAll(filepath.Dir(fabs), os.ModeDir)
 		if err != nil {
 			return nil, err
 		}
-		return os.OpenFile(fabs, flag, os.ModePerm)
+		return os.OpenFile(fabs, flag, 0644)
 	}
 	return f, err
 }

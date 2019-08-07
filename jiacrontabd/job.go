@@ -148,7 +148,7 @@ func (p *process) exec() error {
 			user:             p.jobEntry.detail.WorkUser,
 			env:              p.jobEntry.detail.WorkEnv,
 			content:          p.jobEntry.logContent,
-			logPath:          p.jobEntry.logPath,
+			logPath:          p.jobEntry.getLogPath(),
 			label:            p.jobEntry.detail.Name,
 			killChildProcess: p.jobEntry.detail.KillChildProcess,
 			jd:               p.jobEntry.jd,
@@ -181,7 +181,6 @@ type JobEntry struct {
 	pc          int32
 	wg          util.WaitGroupWrapper
 	logContent  []byte
-	logPath     string
 	jd          *Jiacrontabd
 	IDChan      chan uint32
 	IDGenerator uint32
@@ -197,9 +196,12 @@ func newJobEntry(job *crontab.Job, jd *Jiacrontabd) *JobEntry {
 		job:       job,
 		IDChan:    make(chan uint32, 10000),
 		processes: make(map[uint32]*process),
-		logPath:   filepath.Join(jd.getOpts().LogPath, "crontab_task", time.Now().Format("2006/01/02"), fmt.Sprintf("%d.log", job.ID)),
 		jd:        jd,
 	}
+}
+
+func (j *JobEntry) getLogPath() string {
+	return filepath.Join(j.jd.getOpts().LogPath, "crontab_task", time.Now().Format("2006/01/02"), fmt.Sprintf("%d.log", j.job.ID))
 }
 
 func (j *JobEntry) setOnce(v bool) {
@@ -228,7 +230,7 @@ func (j *JobEntry) putID(id uint32) {
 }
 
 func (j *JobEntry) writeLog() {
-	writeFile(j.logPath, &j.logContent)
+	writeFile(j.getLogPath(), &j.logContent)
 }
 
 func (j *JobEntry) handleDepError(startTime time.Time, p *process) {
