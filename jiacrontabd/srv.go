@@ -432,22 +432,19 @@ func (j *DaemonJob) Delete(args proto.ActionJobsArgs, jobs *[]models.DaemonJob) 
 
 	model := models.DB()
 	if args.GroupID == models.SuperGroup.ID {
-		model = model.Where("id in(?) and status in (?)",
-			args.JobIDs, []models.JobStatus{models.StatusJobRunning, models.StatusJobTiming})
+		model = model.Where("id in(?)", args.JobIDs)
 	} else if args.Root {
-		model = model.Where("id in(?) and status in (?) and group_id=?",
-			args.JobIDs, []models.JobStatus{models.StatusJobRunning, models.StatusJobTiming}, args.GroupID)
+		model = model.Where("id in(?) and group_id=?",
+			args.JobIDs, args.GroupID)
 	} else {
-		model = model.Where("created_user_id = ? and id in(?) and status in (?) and group_id=?",
-			args.UserID, args.JobIDs, []models.JobStatus{models.StatusJobRunning, models.StatusJobTiming}, args.GroupID)
+		model = model.Where("created_user_id = ? and id in(?) and group_id=?",
+			args.UserID, args.JobIDs, args.GroupID)
 	}
 
 	if err := model.Find(jobs).Error; err != nil {
 		return err
 	}
-	args.JobIDs = nil
 	for _, job := range *jobs {
-		args.JobIDs = append(args.JobIDs, job.ID)
 		j.jd.daemon.PopJob(job.ID)
 	}
 	return model.Delete(&models.DaemonJob{}).Error
