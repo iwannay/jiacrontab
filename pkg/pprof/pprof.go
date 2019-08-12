@@ -14,7 +14,7 @@ func ListenPprof() {
 	go listenSignal()
 }
 
-func cupprofile() {
+func cpuprofile() {
 	path := filepath.Join("pprof", "cpuprofile")
 	log.Debugf("profile save in %s", path)
 
