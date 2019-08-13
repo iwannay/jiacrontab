@@ -21,7 +21,7 @@ func New(capacity int) PriorityQueue {
 	return make(PriorityQueue, 0, capacity)
 }
 
-// Less 队列长队
+// Len 队列长队
 func (pq PriorityQueue) Len() int {
 	return len(pq)
 }

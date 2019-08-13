@@ -15,6 +15,6 @@ func listenSignal() {
 		<-signChan
 		profile()
 		memprofile()
-		cupprofile()
+		cpuprofile()
 	}
 }
