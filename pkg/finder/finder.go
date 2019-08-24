@@ -100,8 +100,9 @@ func (fd *Finder) find(fpath string, modifyTime time.Time) error {
 
 	for {
 
-		bts, err := reader.ReadBytes('\n')
-		if err != nil {
+		bts, _ := reader.ReadBytes('\n')
+
+		if len(bts) == 0 {
 			break
 		}
 
@@ -112,6 +113,9 @@ func (fd *Finder) find(fpath string, modifyTime time.Time) error {
 		}
 
 		if fd.isTail {
+			if fd.offset == 0 {
+				bts = append(bts, '\n')
+			}
 			invert(bts)
 		}
 
@@ -124,11 +128,12 @@ func (fd *Finder) find(fpath string, modifyTime time.Time) error {
 			break
 		}
 
-		if fd.offset == 0 {
+		if fd.offset <= 0 {
 			break
 		}
 
 	}
+
 	if len(matchData) > 0 {
 		fd.matchDataQueue = append(fd.matchDataQueue, matchDataChunk{
 			modifyTime: modifyTime,
