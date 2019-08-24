@@ -149,14 +149,13 @@ func (cu *cmdUint) exec() error {
 	cu.writeLog(cu.content)
 	go func() {
 		var (
-			err  error
 			line []byte
 		)
 
 		for {
 
-			line, err = reader.ReadBytes('\n')
-			if err != nil || err == io.EOF {
+			line, _ = reader.ReadBytes('\n')
+			if len(line) == 0 {
 				break
 			}
 
@@ -172,8 +171,8 @@ func (cu *cmdUint) exec() error {
 		}
 
 		for {
-			line, err = readerErr.ReadBytes('\n')
-			if err != nil || err == io.EOF {
+			line, _ = readerErr.ReadBytes('\n')
+			if len(line) == 0 {
 				break
 			}
 			// 默认给err信息加上日期标志
