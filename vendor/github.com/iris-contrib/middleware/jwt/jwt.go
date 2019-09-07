@@ -179,6 +179,8 @@ var (
 	ErrTokenExpired = errors.New("token is expired")
 )
 
+var jwtParser = new(jwt.Parser)
+
 // CheckJWT the main functionality, checks for token
 func (m *Middleware) CheckJWT(ctx context.Context) error {
 	if !m.Config.EnableAuthOnOptions {
@@ -214,7 +216,7 @@ func (m *Middleware) CheckJWT(ctx context.Context) error {
 
 	// Now parse the token
 
-	parsedToken, err := jwt.Parse(token, m.Config.ValidationKeyGetter)
+	parsedToken, err := jwtParser.Parse(token, m.Config.ValidationKeyGetter)
 	// Check if there was an error in parsing...
 	if err != nil {
 		logf(ctx, "Error parsing token: %v", err)

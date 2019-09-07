@@ -88,7 +88,7 @@ func (fd *Finder) find(fpath string, modifyTime time.Time) error {
 	}
 
 	if fd.isTail {
-		if fd.offset == 0 {
+		if fd.offset < 0 {
 			fd.offset = fd.fileSize
 		}
 		f.Seek(fd.offset, 0)
