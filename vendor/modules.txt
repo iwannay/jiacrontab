@@ -7,8 +7,8 @@ github.com/Shopify/goreferrer
 # github.com/aymerick/raymond v2.0.2+incompatible
 github.com/aymerick/raymond
 github.com/aymerick/raymond/ast
-github.com/aymerick/raymond/parser
 github.com/aymerick/raymond/lexer
+github.com/aymerick/raymond/parser
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
 github.com/dgrijalva/jwt-go
 # github.com/eknkc/amber v0.0.0-20171010120322-cdade1c07385
@@ -30,55 +30,55 @@ github.com/iris-contrib/blackfriday
 github.com/iris-contrib/formBinder
 # github.com/iris-contrib/go.uuid v2.0.0+incompatible
 github.com/iris-contrib/go.uuid
-# github.com/iris-contrib/middleware v0.0.0-20190720041902-5f3a20f489c4
+# github.com/iris-contrib/middleware v0.0.0-20190816193017-7838277651e8
 github.com/iris-contrib/middleware/cors
 github.com/iris-contrib/middleware/jwt
 # github.com/iwannay/log v0.0.0-20190630100042-7fa98f256ca1
 github.com/iwannay/log
 # github.com/jinzhu/gorm v1.9.10
+github.com/jinzhu/gorm
 github.com/jinzhu/gorm/dialects/mysql
 github.com/jinzhu/gorm/dialects/postgres
 github.com/jinzhu/gorm/dialects/sqlite
-github.com/jinzhu/gorm
 # github.com/jinzhu/inflection v1.0.0
 github.com/jinzhu/inflection
 # github.com/json-iterator/go v1.1.7
 github.com/json-iterator/go
-# github.com/juju/errors v0.0.0-20190207033735-e65537c515d7
+# github.com/juju/errors v0.0.0-20190806202954-0232dcc7464d
 github.com/juju/errors
 # github.com/kataras/golog v0.0.0-20190624001437-99c81de45f40
 github.com/kataras/golog
 # github.com/kataras/iris v11.1.1+incompatible
 github.com/kataras/iris
-github.com/kataras/iris/context
-github.com/kataras/iris/middleware/logger
 github.com/kataras/iris/cache
-github.com/kataras/iris/core/errors
-github.com/kataras/iris/core/handlerconv
-github.com/kataras/iris/core/host
-github.com/kataras/iris/core/netutil
-github.com/kataras/iris/core/router
-github.com/kataras/iris/middleware/recover
-github.com/kataras/iris/view
-github.com/kataras/iris/core/memstore
-github.com/kataras/iris/macro
-github.com/kataras/iris/cache/client
-github.com/kataras/iris/macro/handler
-github.com/kataras/iris/macro/interpreter/ast
-github.com/kataras/iris/macro/interpreter/lexer
-github.com/kataras/iris/macro/interpreter/parser
 github.com/kataras/iris/cache/cfg
+github.com/kataras/iris/cache/client
 github.com/kataras/iris/cache/client/rule
 github.com/kataras/iris/cache/entry
 github.com/kataras/iris/cache/ruleset
 github.com/kataras/iris/cache/uri
+github.com/kataras/iris/context
+github.com/kataras/iris/core/errors
+github.com/kataras/iris/core/handlerconv
+github.com/kataras/iris/core/host
+github.com/kataras/iris/core/memstore
+github.com/kataras/iris/core/netutil
+github.com/kataras/iris/core/router
+github.com/kataras/iris/macro
+github.com/kataras/iris/macro/handler
+github.com/kataras/iris/macro/interpreter/ast
+github.com/kataras/iris/macro/interpreter/lexer
+github.com/kataras/iris/macro/interpreter/parser
 github.com/kataras/iris/macro/interpreter/token
+github.com/kataras/iris/middleware/logger
+github.com/kataras/iris/middleware/recover
+github.com/kataras/iris/view
 # github.com/kataras/pio v0.0.0-20190103105442-ea782b38602d
 github.com/kataras/pio
 github.com/kataras/pio/terminal
-# github.com/klauspost/compress v1.7.4
-github.com/klauspost/compress/gzip
+# github.com/klauspost/compress v1.8.2
 github.com/klauspost/compress/flate
+github.com/klauspost/compress/gzip
 # github.com/klauspost/cpuid v1.2.1
 github.com/klauspost/cpuid
 # github.com/lib/pq v1.2.0
@@ -98,22 +98,28 @@ github.com/modern-go/reflect2
 github.com/ryanuber/columnize
 # github.com/shurcooL/sanitized_anchor_name v1.0.0
 github.com/shurcooL/sanitized_anchor_name
-# golang.org/x/crypto v0.0.0-20190325154230-a5d413f7728c
-golang.org/x/crypto/acme/autocert
+# golang.org/x/crypto v0.0.0-20190907121410-71b5226ff739
 golang.org/x/crypto/acme
-# golang.org/x/net v0.0.0-20190327091125-710a502c58a2
-golang.org/x/net/publicsuffix
+golang.org/x/crypto/acme/autocert
+# golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297
 golang.org/x/net/html
 golang.org/x/net/html/atom
-# golang.org/x/sys v0.0.0-20190222072716-a9d3bda3a223
+golang.org/x/net/idna
+golang.org/x/net/publicsuffix
+# golang.org/x/sys v0.0.0-20190904154756-749cb33beabd
 golang.org/x/sys/unix
-# google.golang.org/appengine v1.4.0
+# golang.org/x/text v0.3.2
+golang.org/x/text/secure/bidirule
+golang.org/x/text/transform
+golang.org/x/text/unicode/bidi
+golang.org/x/text/unicode/norm
+# google.golang.org/appengine v1.6.2
 google.golang.org/appengine/cloudsql
 # gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc
 gopkg.in/alexcesaro/quotedprintable.v3
 # gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 gopkg.in/gomail.v2
-# gopkg.in/ini.v1 v1.44.0
+# gopkg.in/ini.v1 v1.46.0
 gopkg.in/ini.v1
 # gopkg.in/yaml.v2 v2.2.2
 gopkg.in/yaml.v2
