@@ -396,7 +396,9 @@ func (j *JobEntry) exec() {
 				return
 			}
 
-			if !j.detail.NextExecTime.Truncate(time.Second).Equal(j.job.GetNextExecTime().Truncate(time.Second)) {
+			// 数据库中记录的执行时刻等于计时器中的时刻和现在的时刻才允许执行
+			execTime := j.detail.NextExecTime.Truncate(time.Second)
+			if !(execTime.Equal(j.job.GetNextExecTime().Truncate(time.Second)) && execTime.Equal(time.Now().Truncate(time.Second))) {
 				log.Errorf("%s(%d) JobEntry.exec time error(%s not equal %s)",
 					j.detail.Name, j.detail.ID, j.detail.NextExecTime, j.job.GetNextExecTime())
 				j.jd.addJob(&crontab.Job{
