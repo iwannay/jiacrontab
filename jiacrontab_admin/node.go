@@ -2,6 +2,7 @@ package admin
 
 import (
 	"jiacrontab/models"
+	"time"
 )
 
 // GetNodeList 获得任务节点列表
@@ -24,8 +25,18 @@ func GetNodeList(ctx *myctx) {
 		return
 	}
 
-	err = models.DB().Preload("Group").Where("group_id=? and name like ?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%").Offset((reqBody.Page - 1) * reqBody.Pagesize).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
-	models.DB().Model(&models.Node{}).Where("group_id=? and name like ?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%").Count(&count)
+	currentTime := time.Now().Add(time.Second * -30).Format("2006-01-02 15:04:05")
+	switch reqBody.QueryStatus {
+	case 1:
+		err = models.DB().Preload("Group").Where("group_id=? and name like ? and updated_at>=?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%", currentTime).Offset((reqBody.Page - 1) * reqBody.Pagesize).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
+		models.DB().Model(&models.Node{}).Where("group_id=? and name like ? and updated_at>=?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%", currentTime).Count(&count)
+	case 2:
+		err = models.DB().Preload("Group").Where("group_id=? and name like ? and updated_at<?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%", currentTime).Offset((reqBody.Page - 1) * reqBody.Pagesize).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
+		models.DB().Model(&models.Node{}).Where("group_id=? and name like ? and updated_at<?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%", currentTime).Count(&count)
+	default:
+		err = models.DB().Preload("Group").Where("group_id=? and name like ?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%").Offset((reqBody.Page - 1) * reqBody.Pagesize).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
+		models.DB().Model(&models.Node{}).Where("group_id=? and name like ?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%").Count(&count)
+	}
 
 	if err != nil {
 		ctx.respBasicError(err)

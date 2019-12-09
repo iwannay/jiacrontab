@@ -116,6 +116,7 @@ func EditJob(ctx *myctx) {
 		UpdatedUsername:  ctx.claims.Username,
 		WorkDir:          reqBody.WorkDir,
 		WorkUser:         reqBody.WorkUser,
+		WorkIp:           reqBody.WorkIp,
 		WorkEnv:          reqBody.WorkEnv,
 		KillChildProcess: reqBody.KillChildProcess,
 		RetryNum:         reqBody.RetryNum,
