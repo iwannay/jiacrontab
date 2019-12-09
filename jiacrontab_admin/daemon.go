@@ -121,6 +121,8 @@ func EditDaemonJob(ctx *myctx) {
 		Command:         reqBody.Command,
 		WorkDir:         reqBody.WorkDir,
 		WorkEnv:         reqBody.WorkEnv,
+		WorkUser:        reqBody.WorkUser,
+		WorkIp:          reqBody.WorkIp,
 		Code:            reqBody.Code,
 		RetryNum:        reqBody.RetryNum,
 		FailRestart:     reqBody.FailRestart,

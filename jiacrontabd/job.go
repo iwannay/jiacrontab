@@ -147,6 +147,7 @@ func (p *process) exec() error {
 			dir:              p.jobEntry.detail.WorkDir,
 			user:             p.jobEntry.detail.WorkUser,
 			env:              p.jobEntry.detail.WorkEnv,
+			ip:               p.jobEntry.detail.WorkIp,
 			content:          p.jobEntry.logContent,
 			logPath:          p.jobEntry.getLogPath(),
 			label:            p.jobEntry.detail.Name,
