@@ -25,7 +25,11 @@ func GetNodeList(ctx *myctx) {
 		return
 	}
 
-	currentTime := time.Now().Add(time.Second * -30).Format("2006-01-02 15:04:05")
+	cfg := ctx.adm.getOpts()
+	maxClientAliveInterval := -1 * cfg.App.MaxClientAliveInterval
+
+	currentTime := time.Now().Add(time.Second * time.Duration(maxClientAliveInterval)).Format("2006-01-02 15:04:05")
+
 	switch reqBody.QueryStatus {
 	case 1:
 		err = models.DB().Preload("Group").Where("group_id=? and name like ? and updated_at>=?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%", currentTime).Offset((reqBody.Page - 1) * reqBody.Pagesize).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
