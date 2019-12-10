@@ -30,13 +30,18 @@ func GetNodeList(ctx *myctx) {
 
 	currentTime := time.Now().Add(time.Second * time.Duration(maxClientAliveInterval)).Format("2006-01-02 15:04:05")
 
+	//失联列表更新为已断开状态
+	models.DB().Unscoped().Model(&models.Node{}).Where("updated_at<?", currentTime).Updates(map[string]interface{}{
+		"disabled": true,
+	})
+
 	switch reqBody.QueryStatus {
 	case 1:
-		err = models.DB().Preload("Group").Where("group_id=? and name like ? and updated_at>=?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%", currentTime).Offset((reqBody.Page - 1) * reqBody.Pagesize).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
-		models.DB().Model(&models.Node{}).Where("group_id=? and name like ? and updated_at>=?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%", currentTime).Count(&count)
+		err = models.DB().Preload("Group").Where("group_id=? and name like ? and disabled=0", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%", currentTime).Offset((reqBody.Page - 1) * reqBody.Pagesize).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
+		models.DB().Model(&models.Node{}).Where("group_id=? and name like ? and disabled=0", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%", currentTime).Count(&count)
 	case 2:
-		err = models.DB().Preload("Group").Where("group_id=? and name like ? and updated_at<?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%", currentTime).Offset((reqBody.Page - 1) * reqBody.Pagesize).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
-		models.DB().Model(&models.Node{}).Where("group_id=? and name like ? and updated_at<?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%", currentTime).Count(&count)
+		err = models.DB().Preload("Group").Where("group_id=? and name like ? and disabled=1", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%", currentTime).Offset((reqBody.Page - 1) * reqBody.Pagesize).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
+		models.DB().Model(&models.Node{}).Where("group_id=? and name like ? and disabled=1", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%", currentTime).Count(&count)
 	default:
 		err = models.DB().Preload("Group").Where("group_id=? and name like ?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%").Offset((reqBody.Page - 1) * reqBody.Pagesize).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
 		models.DB().Model(&models.Node{}).Where("group_id=? and name like ?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%").Count(&count)
