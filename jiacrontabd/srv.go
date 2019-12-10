@@ -360,9 +360,9 @@ func (j *DaemonJob) Edit(args proto.EditDaemonJobArgs, job *models.DaemonJob) er
 	if args.Job.ID == 0 {
 		model = models.DB().Create(&args.Job)
 	} else {
-		j.jd.mux.Lock()
-		delete(j.jd.jobs, args.Job.ID)
-		j.jd.mux.Unlock()
+		j.jd.daemon.lock.Lock()
+		delete(j.jd.daemon.taskMap, args.Job.ID)
+		j.jd.daemon.lock.Unlock()
 		if args.GroupID == models.SuperGroup.ID {
 			model = model.Where("id=?", args.Job.ID)
 		} else if args.Root {
