@@ -25,7 +25,7 @@ func newApp(adm *Admin) *iris.Application {
 	app.UseGlobal(newRecover(adm))
 	app.Logger().SetLevel(adm.getOpts().App.LogLevel)
 	app.Use(logger.New())
-	app.StaticEmbedded("/", "./assets/", Asset, AssetNames)
+	app.StaticEmbeddedGzip("/", "./assets/", GzipAsset, GzipAssetNames)
 	cfg := adm.getOpts()
 
 	wrapHandler := func(h func(ctx *myctx)) context.Handler {
