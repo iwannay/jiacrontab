@@ -82,7 +82,6 @@ func (d *daemonJob) do(ctx context.Context) {
 
 		log.Info("exec daemon job, jobName:", d.job.Name, " jobID", d.job.ID)
 
-		//todo: 需要校验任务运行 ip
 		err = myCmdUint.launch()
 		retryNum--
 		d.handleNotify(err)
