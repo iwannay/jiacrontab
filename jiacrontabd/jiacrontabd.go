@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"fmt"
+	"strings"
 )
 
 // Jiacrontabd scheduling center
@@ -74,6 +75,25 @@ func (j *Jiacrontabd) addJob(job *crontab.Job, updateLastExecTime bool) {
 	if v, ok := j.jobs[job.ID]; ok {
 		v.job = job
 	} else {
+		var crontabJob models.CrontabJob
+		err := models.DB().First(&crontabJob, "id=?", job.ID).Error
+		if err != nil {
+			log.Error(err)
+			j.mux.Unlock()
+			return
+		}
+		if len(crontabJob.WorkIp) > 0 && !checkIpInWhiteList(strings.Join(crontabJob.WorkIp, ",")) {
+			if err := models.DB().Model(&models.CrontabJob{}).Where("id=?", job.ID).
+				Updates(map[string]interface{}{
+					"status":         models.StatusJobStop,
+					"next_exec_time": time.Time{},
+					"lastExitStatus": "IP受限制",
+				}).Error; err != nil {
+				log.Error(err)
+			}
+			j.mux.Unlock()
+			return
+		}
 		j.jobs[job.ID] = newJobEntry(job, j)
 	}
 	j.mux.Unlock()
