@@ -53,6 +53,23 @@ func (u *User) Verify(username, passwd string) bool {
 	return false
 }
 
+// Verify 验证用户
+func (u *User) VerifyByUserId(id uint, passwd string) bool {
+	ret := DB().Take(u, "id=?", id)
+
+	if ret.Error != nil {
+		log.Error("user.Verify:", ret.Error)
+		return false
+	}
+
+	bts := md5.Sum([]byte(fmt.Sprint(passwd, u.Salt)))
+	if fmt.Sprintf("%x", bts) == u.Passwd {
+		return true
+	}
+
+	return false
+}
+
 func (u *User) setPasswd() {
 	if u.Passwd == "" {
 		return
