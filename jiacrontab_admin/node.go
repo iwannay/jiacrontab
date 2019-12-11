@@ -37,11 +37,11 @@ func GetNodeList(ctx *myctx) {
 
 	switch reqBody.QueryStatus {
 	case 1:
-		err = models.DB().Preload("Group").Where("group_id=? and name like ? and disabled=0", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%", currentTime).Offset((reqBody.Page - 1) * reqBody.Pagesize).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
-		models.DB().Model(&models.Node{}).Where("group_id=? and name like ? and disabled=0", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%", currentTime).Count(&count)
+		err = models.DB().Preload("Group").Where("group_id=? and name like ? and disabled=?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%", false).Offset((reqBody.Page - 1) * reqBody.Pagesize).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
+		models.DB().Model(&models.Node{}).Where("group_id=? and name like ? and disabled=?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%", false).Count(&count)
 	case 2:
-		err = models.DB().Preload("Group").Where("group_id=? and name like ? and disabled=1", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%", currentTime).Offset((reqBody.Page - 1) * reqBody.Pagesize).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
-		models.DB().Model(&models.Node{}).Where("group_id=? and name like ? and disabled=1", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%", currentTime).Count(&count)
+		err = models.DB().Preload("Group").Where("group_id=? and name like ? and disabled=?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%", true).Offset((reqBody.Page - 1) * reqBody.Pagesize).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
+		models.DB().Model(&models.Node{}).Where("group_id=? and name like ? and disabled=?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%", true).Count(&count)
 	default:
 		err = models.DB().Preload("Group").Where("group_id=? and name like ?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%").Offset((reqBody.Page - 1) * reqBody.Pagesize).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
 		models.DB().Model(&models.Node{}).Where("group_id=? and name like ?", reqBody.QueryGroupID, "%"+reqBody.SearchTxt+"%").Count(&count)
