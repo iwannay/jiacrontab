@@ -292,7 +292,7 @@ func EditUser(ctx *myctx) {
 
 	// change password
 	if reqBody.OldPwd != "" && reqBody.Passwd != "" {
-		if !user.Verify(reqBody.Username, reqBody.OldPwd) {
+		if !user.VerifyByUserId(reqBody.UserID, reqBody.OldPwd) {
 			ctx.respParamError(errors.New("密码错误"))
 			return
 		}
