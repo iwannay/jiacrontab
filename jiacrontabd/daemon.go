@@ -7,6 +7,7 @@ import (
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -72,6 +73,7 @@ func (d *daemonJob) do(ctx context.Context) {
 			ctx:     ctx,
 			args:    [][]string{arg},
 			env:     d.job.WorkEnv,
+			ip:      d.job.WorkIp,
 			dir:     d.job.WorkDir,
 			user:    d.job.WorkUser,
 			label:   d.job.Name,
@@ -173,6 +175,17 @@ func newDaemon(taskChannelLength int, jd *Jiacrontabd) *Daemon {
 
 func (d *Daemon) add(t *daemonJob) {
 	if t != nil {
+		if len(t.job.WorkIp) > 0 && !checkIpInWhiteList(strings.Join(t.job.WorkIp, ",")) {
+			if err := models.DB().Model(t.job).Updates(map[string]interface{}{
+				"status": models.StatusJobStop,
+				//"next_exec_time": time.Time{},
+				//"lastExitStatus": "IP受限制",
+			}).Error; err != nil {
+				log.Error(err)
+			}
+			return
+		}
+
 		log.Debugf("daemon.add(%s)\n", t.job.Name)
 		t.daemon = d
 		d.taskChannel <- t

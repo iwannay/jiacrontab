@@ -17,12 +17,13 @@ const (
 )
 
 type AppOpt struct {
-	HTTPListenAddr string `opt:"http_listen_addr"`
-	RPCListenAddr  string `opt:"rpc_listen_addr"`
-	AppName        string `opt:"app_name" `
-	Debug          bool   `opt:"debug" `
-	LogLevel       string `opt:"log_level"`
-	SigningKey     string `opt:"signing_key"`
+	HTTPListenAddr         string `opt:"http_listen_addr"`
+	RPCListenAddr          string `opt:"rpc_listen_addr"`
+	AppName                string `opt:"app_name" `
+	Debug                  bool   `opt:"debug" `
+	LogLevel               string `opt:"log_level"`
+	SigningKey             string `opt:"signing_key"`
+	MaxClientAliveInterval int    `opt:"max_client_alive_interval"`
 }
 
 type JwtOpt struct {
@@ -119,12 +120,13 @@ func (c *Config) Resolve() {
 func NewConfig() *Config {
 	return &Config{
 		App: &AppOpt{
-			Debug:          false,
-			HTTPListenAddr: ":20000",
-			RPCListenAddr:  ":20003",
-			AppName:        "jiacrontab",
-			LogLevel:       "warn",
-			SigningKey:     "WERRTT1234$@#@@$",
+			Debug:                  false,
+			HTTPListenAddr:         ":20000",
+			RPCListenAddr:          ":20003",
+			AppName:                "jiacrontab",
+			LogLevel:               "warn",
+			SigningKey:             "WERRTT1234$@#@@$",
+			MaxClientAliveInterval: 30,
 		},
 		Mailer: &MailerOpt{
 			Enabled:        false,

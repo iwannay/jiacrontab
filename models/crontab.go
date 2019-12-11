@@ -43,6 +43,7 @@ type CrontabJob struct {
 	UpdatedUserID    uint        `json:"updatedUserID"`
 	UpdatedUsername  string      `json:"updatedUsername"`
 	WorkUser         string      `json:"workUser"`
+	WorkIp           StringSlice `json:"workIp" gorm:"type:varchar(1000)"`
 	WorkEnv          StringSlice `json:"workEnv" gorm:"type:varchar(1000)"`
 	WorkDir          string      `json:"workDir"`
 	KillChildProcess bool        `json:"killChildProcess"`

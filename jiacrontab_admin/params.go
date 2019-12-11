@@ -61,6 +61,7 @@ type EditJobReqParams struct {
 	WorkDir          string            `json:"workDir"`
 	WorkUser         string            `json:"workUser"`
 	WorkEnv          []string          `json:"workEnv"`
+	WorkIp           []string          `json:"workIp"`
 	KillChildProcess bool              `json:"killChildProcess"`
 	DependJobs       models.DependJobs `json:"dependJobs"`
 	Month            string            `json:"month"`
@@ -89,6 +90,7 @@ func (p *EditJobReqParams) Verify(ctx iris.Context) error {
 	p.MailTo = util.FilterEmptyEle(p.MailTo)
 	p.APITo = util.FilterEmptyEle(p.APITo)
 	p.WorkEnv = util.FilterEmptyEle(p.WorkEnv)
+	p.WorkIp = util.FilterEmptyEle(p.WorkIp)
 
 	if p.Month == "" {
 		p.Month = "*"
@@ -218,6 +220,7 @@ type EditDaemonJobReqParams struct {
 	Command         []string `json:"command"  rule:"required,请填写command"`
 	Code            string   `json:"code"`
 	WorkUser        string   `json:"workUser"`
+	WorkIp          []string `json:"workIp"`
 	WorkEnv         []string `json:"workEnv"`
 	WorkDir         string   `json:"workDir"`
 	FailRestart     bool     `json:"failRestart"`
@@ -231,6 +234,7 @@ func (p *EditDaemonJobReqParams) Verify(ctx iris.Context) error {
 	p.APITo = util.FilterEmptyEle(p.APITo)
 	p.Command = util.FilterEmptyEle(p.Command)
 	p.WorkEnv = util.FilterEmptyEle(p.WorkEnv)
+	p.WorkIp = util.FilterEmptyEle(p.WorkIp)
 	return nil
 }
 
@@ -308,6 +312,7 @@ type GetNodeListReqParams struct {
 	PageReqParams
 	SearchTxt    string `json:"searchTxt"`
 	QueryGroupID uint   `json:"queryGroupID"`
+	QueryStatus  uint   `json:"queryStatus"`
 }
 
 func (p *GetNodeListReqParams) Verify(ctx iris.Context) error {
