@@ -29,6 +29,7 @@ type cmdUint struct {
 	exportLog        bool
 	ignoreFileLog    bool
 	env              []string
+	ip               []string
 	killChildProcess bool
 	dir              string
 	startTime        time.Time
@@ -44,6 +45,7 @@ func (cu *cmdUint) release() {
 }
 
 func (cu *cmdUint) launch() error {
+	//todo: 需要添加 ip 校验
 	defer func() {
 		if err := recover(); err != nil {
 			log.Errorf("wrapExecScript error:%v\n%s", err, debug.Stack())
