@@ -127,14 +127,10 @@ func EditDaemonJob(ctx *myctx) {
 		RetryNum:        reqBody.RetryNum,
 		FailRestart:     reqBody.FailRestart,
 		Status:          models.StatusJobUnaudited,
+		CreatedUserID:   ctx.claims.UserID,
+		CreatedUsername: ctx.claims.Username,
 	}
-
 	daemonJob.ID = reqBody.JobID
-
-	if daemonJob.ID == 0 {
-		daemonJob.CreatedUserID = ctx.claims.UserID
-		daemonJob.CreatedUsername = ctx.claims.Username
-	}
 	if ctx.claims.Root || ctx.claims.GroupID == models.SuperGroup.ID {
 		daemonJob.Status = models.StatusJobOk
 	} else {
