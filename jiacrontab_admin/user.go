@@ -285,6 +285,9 @@ func EditUser(ctx *myctx) {
 		reqBody EditUserReqParams
 	)
 
+	ctx.respBasicError(errors.New("demo环境禁止修改账号"))
+	return
+
 	if err = ctx.Valid(&reqBody); err != nil {
 		ctx.respParamError(err)
 		return
