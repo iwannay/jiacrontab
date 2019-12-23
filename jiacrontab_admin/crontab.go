@@ -129,15 +129,11 @@ func EditJob(ctx *myctx) {
 		ErrorMailNotify:  reqBody.ErrorMailNotify,
 		ErrorAPINotify:   reqBody.ErrorAPINotify,
 		IsSync:           reqBody.IsSync,
+		CreatedUserID:    ctx.claims.UserID,
+		CreatedUsername:  ctx.claims.Username,
 	}
 
 	job.ID = reqBody.JobID
-
-	if job.ID == 0 {
-		job.CreatedUserID = ctx.claims.UserID
-		job.CreatedUsername = ctx.claims.Username
-	}
-
 	if ctx.claims.Root || ctx.claims.GroupID == models.SuperGroup.ID {
 		job.Status = models.StatusJobOk
 	} else {
