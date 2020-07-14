@@ -50,15 +50,20 @@ $ nohup ./jiacrontabd &> jiacrontabd.log &
 2.安装运行
 
 ```sh
-$ cd $GOPATH/src
 $ git clone git@github.com:iwannay/jiacrontab.git
 $ cd jiacrontab
+# 配置代理
+$ go env -w GONOPROXY=\*\*.baidu.com\*\*              ## 配置GONOPROXY环境变量,所有百度内代码,不走代理
+$ go env -w GONOSUMDB=\*                              ## 配置GONOSUMDB,暂不支持sumdb索引
+$ go env -w GOPROXY=https://goproxy.baidu.com         ## 配置GOPROXY,可以下载墙外代码
+
+# 编译
 $ make build
 
 $ cd build/jiacrontab/jiacrontab_admin/
 $ nohup ./jiacrontab_admin &> jiacrontab_admin.log &
 
-$ cd app/jiacrontab/jiacrontabd/
+$ cd build/jiacrontab/jiacrontabd/
 $ nohup ./jiacrontabd &> jiacrontabd.log &
 ```
 

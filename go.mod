@@ -1,6 +1,6 @@
 module jiacrontab
 
-go 1.13
+go 1.14
 
 require (
 	github.com/Joker/hpp v1.0.0 // indirect
