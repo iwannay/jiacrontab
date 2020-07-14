@@ -108,7 +108,7 @@ func (j *CrontabJob) Edit(args proto.EditCrontabJobArgs, reply *models.CrontabJo
 		model = model.Omit(
 			"updated_at", "created_at", "deleted_at",
 			"created_user_id", "created_username",
-			"last_cost_time", "last_exec_time",
+			"last_cost_time", "last_exec_time", "group_id",
 			"last_exit_status", "process_num",
 		).Save(&args.Job)
 	}
@@ -371,7 +371,7 @@ func (j *DaemonJob) Edit(args proto.EditDaemonJobArgs, job *models.DaemonJob) er
 			model = model.Where("id=? and created_user_id=? and group_id=?", args.Job.ID, args.Job.CreatedUserID, args.GroupID)
 		}
 		model = model.Omit(
-			"updated_at", "created_at", "deleted_at",
+			"updated_at", "created_at", "deleted_at", "group_id",
 			"created_user_id", "created_username", "start_at").Save(&args.Job)
 	}
 
