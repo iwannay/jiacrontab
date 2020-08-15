@@ -2,6 +2,7 @@ package models
 
 import (
 	"crypto/md5"
+	"errors"
 	"fmt"
 	"jiacrontab/pkg/util"
 	"time"
@@ -104,6 +105,9 @@ func (u *User) SetGroup(group *Group) error {
 		if err := DB().Take(group, "id=?", u.GroupID).Error; err != nil {
 			return fmt.Errorf("查询分组失败：%s", err)
 		}
+	}
+	if u.ID == 1 {
+		return errors.New("系统用户不允许修改")
 	}
 
 	defer DB().Take(u, "id=?", u.ID)

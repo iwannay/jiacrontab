@@ -70,7 +70,7 @@ func (j *Jiacrontabd) removeTmpJob(job *JobEntry) {
 	j.mux.Unlock()
 }
 
-func (j *Jiacrontabd) addJob(job *crontab.Job, updateLastExecTime bool) {
+func (j *Jiacrontabd) addJob(job *crontab.Job, updateLastExecTime bool) error {
 	j.mux.Lock()
 	if v, ok := j.jobs[job.ID]; ok {
 		v.job = job
@@ -80,7 +80,7 @@ func (j *Jiacrontabd) addJob(job *crontab.Job, updateLastExecTime bool) {
 		if err != nil {
 			log.Error(err)
 			j.mux.Unlock()
-			return
+			return nil
 		}
 		if len(crontabJob.WorkIp) > 0 && !checkIpInWhiteList(strings.Join(crontabJob.WorkIp, ",")) {
 			if err := models.DB().Model(&models.CrontabJob{}).Where("id=?", job.ID).
@@ -92,7 +92,7 @@ func (j *Jiacrontabd) addJob(job *crontab.Job, updateLastExecTime bool) {
 				log.Error(err)
 			}
 			j.mux.Unlock()
-			return
+			return nil
 		}
 		j.jobs[job.ID] = newJobEntry(job, j)
 	}
@@ -100,21 +100,23 @@ func (j *Jiacrontabd) addJob(job *crontab.Job, updateLastExecTime bool) {
 
 	if err := j.crontab.AddJob(job); err != nil {
 		log.Error("NextExecutionTime:", err, " timeArgs:", job)
-	} else {
-		data := map[string]interface{}{
-			"next_exec_time": job.GetNextExecTime(),
-			"status":         models.StatusJobTiming,
-		}
-
-		if updateLastExecTime {
-			data["last_exec_time"] = time.Now()
-		}
-
-		if err := models.DB().Model(&models.CrontabJob{}).Where("id=?", job.ID).
-			Updates(data).Error; err != nil {
-			log.Error(err)
-		}
+		return fmt.Errorf("时间格式错误: %v - %s", err, job.Format())
 	}
+	data := map[string]interface{}{
+		"next_exec_time": job.GetNextExecTime(),
+		"status":         models.StatusJobTiming,
+	}
+
+	if updateLastExecTime {
+		data["last_exec_time"] = time.Now()
+	}
+
+	if err := models.DB().Model(&models.CrontabJob{}).Where("id=?", job.ID).
+		Updates(data).Error; err != nil {
+		log.Error(err)
+		return err
+	}
+	return nil
 }
 
 func (j *Jiacrontabd) execTask(job *crontab.Job) {
