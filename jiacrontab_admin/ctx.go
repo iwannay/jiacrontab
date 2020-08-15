@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
+	"net/http"
 	"sync/atomic"
 
 	"jiacrontab/pkg/version"
@@ -34,9 +35,17 @@ func wrapCtx(ctx iris.Context, adm *Admin) *myctx {
 		adm:     adm,
 	}
 	if atomic.LoadInt32(&adm.initAdminUser) == 1 {
-		ctx.SetCookieKV("ready", "true")
+		ctx.SetCookieKV("ready", "true", func(ctx iris.Context, c *http.Cookie, op uint8) {
+			if op == 1 {
+				c.HttpOnly = false
+			}
+		})
 	} else {
-		ctx.SetCookieKV("ready", "false")
+		ctx.SetCookieKV("ready", "false", func(ctx iris.Context, c *http.Cookie, op uint8) {
+			if op == 1 {
+				c.HttpOnly = false
+			}
+		})
 	}
 	ctx.Values().Set(key, c)
 	return c

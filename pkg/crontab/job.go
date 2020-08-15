@@ -6,6 +6,7 @@ package crontab
 
 import (
 	"errors"
+	"fmt"
 	"jiacrontab/pkg/util"
 	"time"
 )
@@ -68,6 +69,10 @@ type Job struct {
 	Value interface{}
 }
 
+func (j *Job) Format() string {
+	return fmt.Sprintf("second: %s minute: %s hour: %s day: %s weekday: %s month: %s",
+		j.Second, j.Minute, j.Hour, j.Day, j.Weekday, j.Month)
+}
 func (j *Job) GetNextExecTime() time.Time {
 	return j.nextExecutionTime
 }
