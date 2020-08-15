@@ -1,13 +1,11 @@
 package admin
 
 import (
-	"net/http"
 	"net/url"
 	"sync/atomic"
 
-	"github.com/iwannay/log"
-	"github.com/kataras/iris"
-	"github.com/kataras/iris/middleware/logger"
+	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/middleware/logger"
 
 	"jiacrontab/models"
 
@@ -16,7 +14,7 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/iris-contrib/middleware/cors"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
-	"github.com/kataras/iris/context"
+	"github.com/kataras/iris/v12/context"
 )
 
 func newApp(adm *Admin) *iris.Application {
@@ -25,7 +23,17 @@ func newApp(adm *Admin) *iris.Application {
 	app.UseGlobal(newRecover(adm))
 	app.Logger().SetLevel(adm.getOpts().App.LogLevel)
 	app.Use(logger.New())
-	app.StaticEmbeddedGzip("/", "./assets/", GzipAsset, GzipAssetNames)
+	app.HandleDir("/", AssetFile(), iris.DirOptions{
+		IndexName: "index.html",
+		Cache: iris.DirCacheOptions{
+			Enable:          true,
+			CompressIgnore:  iris.MatchImagesAssets,
+			Encodings:       []string{"gzip", "deflate", "br", "snappy"},
+			CompressMinSize: 50,
+			Verbose:         1,
+		},
+	})
+	// app.StaticEmbeddedGzip("/", "./assets/", GzipAsset, GzipAssetNames)
 	cfg := adm.getOpts()
 
 	wrapHandler := func(h func(ctx *myctx)) context.Handler {
@@ -66,26 +74,6 @@ func newApp(adm *Admin) *iris.Application {
 
 	app.Use(crs)
 	app.AllowMethods(iris.MethodOptions)
-	app.Get("/", func(ctx iris.Context) {
-		if atomic.LoadInt32(&adm.initAdminUser) == 1 {
-			ctx.SetCookieKV("ready", "true", func(c *http.Cookie) {
-				c.HttpOnly = false
-			})
-		} else {
-			ctx.SetCookieKV("ready", "false", func(c *http.Cookie) {
-				c.HttpOnly = false
-			})
-		}
-		ctx.Header("Cache-Control", "no-cache")
-		ctx.Header("Content-Type", "text/html; charset=utf-8")
-		ctx.Header("Content-Encoding", "gzip")
-		ctx.Header("Vary", "Accept-Encoding")
-		asset, err := GzipAsset("assets/index.html")
-		if err != nil {
-			log.Error(err)
-		}
-		ctx.Write(asset)
-	})
 
 	v1 := app.Party("/v1")
 	{

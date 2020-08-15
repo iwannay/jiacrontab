@@ -6,8 +6,6 @@ import (
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/util"
-
-	"github.com/kataras/iris"
 )
 
 var (
@@ -15,7 +13,7 @@ var (
 )
 
 type Parameter interface {
-	Verify(iris.Context) error
+	Verify(*myctx) error
 }
 
 type JobReqParams struct {
@@ -23,7 +21,7 @@ type JobReqParams struct {
 	Addr  string `json:"addr"  rule:"required,请填写addr"`
 }
 
-func (p *JobReqParams) Verify(ctx iris.Context) error {
+func (p *JobReqParams) Verify(*myctx) error {
 	if p.JobID == 0 || p.Addr == "" {
 		return paramsError
 	}
@@ -35,7 +33,7 @@ type JobsReqParams struct {
 	Addr   string `json:"addr"`
 }
 
-func (p *JobsReqParams) Verify(ctx iris.Context) error {
+func (p *JobsReqParams) Verify(ctx *myctx) error {
 
 	if len(p.JobIDs) == 0 || p.Addr == "" {
 		return paramsError
@@ -73,7 +71,7 @@ type EditJobReqParams struct {
 	TimeoutTrigger   []string          `json:"timeoutTrigger"`
 }
 
-func (p *EditJobReqParams) Verify(ctx iris.Context) error {
+func (p *EditJobReqParams) Verify(ctx *myctx) error {
 	ts := map[string]bool{
 		proto.TimeoutTrigger_CallApi:   true,
 		proto.TimeoutTrigger_SendEmail: true,
@@ -129,7 +127,7 @@ type GetLogReqParams struct {
 	Pagesize int    `json:"pagesize"`
 }
 
-func (p *GetLogReqParams) Verify(ctx iris.Context) error {
+func (p *GetLogReqParams) Verify(ctx *myctx) error {
 
 	if p.Pagesize <= 0 {
 		p.Pagesize = 50
@@ -143,7 +141,7 @@ type DeleteNodeReqParams struct {
 	GroupID uint   `json:"groupID"`
 }
 
-func (p *DeleteNodeReqParams) Verify(ctx iris.Context) error {
+func (p *DeleteNodeReqParams) Verify(ctx *myctx) error {
 	return nil
 }
 
@@ -151,7 +149,7 @@ type SendTestMailReqParams struct {
 	MailTo string `json:"mailTo" rule:"required,请填写mailTo"`
 }
 
-func (p *SendTestMailReqParams) Verify(ctx iris.Context) error {
+func (p *SendTestMailReqParams) Verify(ctx *myctx) error {
 	return nil
 }
 
@@ -159,7 +157,7 @@ type SystemInfoReqParams struct {
 	Addr string `json:"addr" rule:"required,请填写addr"`
 }
 
-func (p *SystemInfoReqParams) Verify(ctx iris.Context) error {
+func (p *SystemInfoReqParams) Verify(ctx *myctx) error {
 	return nil
 }
 
@@ -169,7 +167,7 @@ type GetJobListReqParams struct {
 	PageReqParams
 }
 
-func (p *GetJobListReqParams) Verify(ctx iris.Context) error {
+func (p *GetJobListReqParams) Verify(ctx *myctx) error {
 
 	if p.Page <= 1 {
 		p.Page = 1
@@ -186,7 +184,7 @@ type GetGroupListReqParams struct {
 	PageReqParams
 }
 
-func (p *GetGroupListReqParams) Verify(ctx iris.Context) error {
+func (p *GetGroupListReqParams) Verify(ctx *myctx) error {
 
 	if p.Page <= 1 {
 		p.Page = 1
@@ -204,7 +202,7 @@ type ActionTaskReqParams struct {
 	JobIDs []uint `json:"jobIDs" rule:"required,请填写jobIDs"`
 }
 
-func (p *ActionTaskReqParams) Verify(ctx iris.Context) error {
+func (p *ActionTaskReqParams) Verify(ctx *myctx) error {
 	if len(p.JobIDs) == 0 {
 		return paramsError
 	}
@@ -229,7 +227,7 @@ type EditDaemonJobReqParams struct {
 	ErrorAPINotify  bool     `json:"errorAPINotify"`
 }
 
-func (p *EditDaemonJobReqParams) Verify(ctx iris.Context) error {
+func (p *EditDaemonJobReqParams) Verify(ctx *myctx) error {
 	p.MailTo = util.FilterEmptyEle(p.MailTo)
 	p.APITo = util.FilterEmptyEle(p.APITo)
 	p.Command = util.FilterEmptyEle(p.Command)
@@ -243,7 +241,7 @@ type GetJobReqParams struct {
 	Addr  string `json:"addr" rule:"required,请填写addr"`
 }
 
-func (p *GetJobReqParams) Verify(ctx iris.Context) error {
+func (p *GetJobReqParams) Verify(ctx *myctx) error {
 	return nil
 }
 
@@ -257,7 +255,7 @@ type UserReqParams struct {
 	Mail      string `json:"mail"`
 }
 
-func (p *UserReqParams) Verify(ctx iris.Context) error {
+func (p *UserReqParams) Verify(ctx *myctx) error {
 	return nil
 }
 
@@ -268,7 +266,7 @@ type InitAppReqParams struct {
 	Mail     string `json:"mail"`
 }
 
-func (p *InitAppReqParams) Verify(ctx iris.Context) error {
+func (p *InitAppReqParams) Verify(ctx *myctx) error {
 	return nil
 }
 
@@ -281,7 +279,7 @@ type EditUserReqParams struct {
 	Mail     string `json:"mail"`
 }
 
-func (p *EditUserReqParams) Verify(ctx iris.Context) error {
+func (p *EditUserReqParams) Verify(ctx *myctx) error {
 	return nil
 }
 
@@ -289,7 +287,7 @@ type DeleteUserReqParams struct {
 	UserID uint `json:"userID" rule:"required,缺少userID"`
 }
 
-func (p *DeleteUserReqParams) Verify(ctx iris.Context) error {
+func (p *DeleteUserReqParams) Verify(ctx *myctx) error {
 	return nil
 }
 
@@ -299,7 +297,7 @@ type LoginReqParams struct {
 	Remember bool   `json:"remember"`
 }
 
-func (p *LoginReqParams) Verify(ctx iris.Context) error {
+func (p *LoginReqParams) Verify(ctx *myctx) error {
 	return nil
 }
 
@@ -315,7 +313,7 @@ type GetNodeListReqParams struct {
 	QueryStatus  uint   `json:"queryStatus"`
 }
 
-func (p *GetNodeListReqParams) Verify(ctx iris.Context) error {
+func (p *GetNodeListReqParams) Verify(ctx *myctx) error {
 
 	if p.Page == 0 {
 		p.Page = 1
@@ -331,7 +329,7 @@ type EditGroupReqParams struct {
 	GroupName string `json:"groupName"  rule:"required,请填写groupName"`
 }
 
-func (p *EditGroupReqParams) Verify(ctx iris.Context) error {
+func (p *EditGroupReqParams) Verify(ctx *myctx) error {
 	return nil
 }
 
@@ -342,7 +340,7 @@ type SetGroupReqParams struct {
 	Root            bool   `json:"root"`
 }
 
-func (p *SetGroupReqParams) Verify(ctx iris.Context) error {
+func (p *SetGroupReqParams) Verify(ctx *myctx) error {
 	return nil
 }
 
@@ -352,7 +350,7 @@ type ReadMoreReqParams struct {
 	Orderby  string `json:"orderby"`
 }
 
-func (p *ReadMoreReqParams) Verify(ctx iris.Context) error {
+func (p *ReadMoreReqParams) Verify(ctx *myctx) error {
 	if p.Pagesize == 0 {
 		p.Pagesize = 50
 	}
@@ -371,7 +369,7 @@ type GroupNodeReqParams struct {
 	TargetGroupID   uint   `json:"targetGroupID"`
 }
 
-func (p *GroupNodeReqParams) Verify(ctx iris.Context) error {
+func (p *GroupNodeReqParams) Verify(ctx *myctx) error {
 	return nil
 }
 
@@ -380,7 +378,7 @@ type AuditJobReqParams struct {
 	JobType string `json:"jobType"`
 }
 
-func (p *AuditJobReqParams) Verify(ctx iris.Context) error {
+func (p *AuditJobReqParams) Verify(ctx *myctx) error {
 
 	if p.Addr == "" {
 		return paramsError
@@ -409,7 +407,7 @@ type GetUsersParams struct {
 	QueryGroupID uint   `json:"queryGroupID"`
 }
 
-func (p *GetUsersParams) Verify(ctx iris.Context) error {
+func (p *GetUsersParams) Verify(ctx *myctx) error {
 
 	if p.Page <= 1 {
 		p.Page = 1
@@ -417,6 +415,18 @@ func (p *GetUsersParams) Verify(ctx iris.Context) error {
 
 	if p.Pagesize <= 0 {
 		p.Pagesize = 50
+	}
+	return nil
+}
+
+type ClearLogParams struct {
+	Unit     string `json:"Unit" rule:"required,请填写时间单位"`
+	Duration int    `json:"val" rule:"required,请填写时间"`
+}
+
+func (c *ClearLogParams) Verify(ctx *myctx) error {
+	if c.Unit != "day" && c.Unit != "month" {
+		return errors.New("不支持的时间单位")
 	}
 	return nil
 }

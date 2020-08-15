@@ -35,7 +35,7 @@ clean:
 	rm -f $(binAdm)
 	rm -f $(binNode)
 	rm -rf $(buildDir)
-
+	
 
 # Cross compilation
 build-linux:
@@ -53,13 +53,13 @@ build-windows:
 	mv $(binAdm).exe $(buildAdmDir)
 	mv $(binNode).exe $(buildNodeDir)
 
-
 define init
+	@if [ "$(assets)" = ""  ]; then  echo "no assets, see https://github.com/jiacrontab/jiacrontab-frontend"; exit -1;else echo "build release"; fi
+	go-bindata -pkg admin -prefix $(assets) -o jiacrontab_admin/bindata_gzip.go -fs $(assets)/...
 	rm -rf $(buildDir)
 	mkdir $(buildDir)
 	mkdir -p $(buildAdmDir)
 	mkdir -p $(buildNodeDir)
-
 	cp $(admCfg) $(buildAdmDir)
 	cp $(nodeCfg) $(buildNodeDir)
 endef
