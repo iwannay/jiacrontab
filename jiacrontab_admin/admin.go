@@ -7,7 +7,7 @@ import (
 
 	"sync/atomic"
 
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
 )
 
 type Admin struct {

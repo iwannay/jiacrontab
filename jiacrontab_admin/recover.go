@@ -7,10 +7,10 @@ import (
 	"runtime"
 	"strconv"
 
-	"github.com/kataras/iris/context"
+	"github.com/kataras/iris/v12"
 )
 
-func getRequestLogs(ctx context.Context) string {
+func getRequestLogs(ctx *myctx) string {
 	var status, ip, method, path string
 	status = strconv.Itoa(ctx.GetStatusCode())
 	path = ctx.Path()
@@ -20,8 +20,8 @@ func getRequestLogs(ctx context.Context) string {
 	return fmt.Sprintf("%v %s %s %s", status, path, method, ip)
 }
 
-func newRecover(adm *Admin) context.Handler {
-	return func(c context.Context) {
+func newRecover(adm *Admin) iris.Handler {
+	return func(c iris.Context) {
 		ctx := wrapCtx(c, adm)
 		base.Stat.AddConcurrentCount()
 		defer func() {

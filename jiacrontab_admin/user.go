@@ -173,6 +173,10 @@ func GetJobHistory(ctx *myctx) {
 	})
 }
 
+func ClearLog(ctx *myctx) {
+
+}
+
 func AuditJob(ctx *myctx) {
 	var (
 		err     error

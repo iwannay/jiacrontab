@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
+	"sync/atomic"
 
 	"jiacrontab/pkg/version"
 
 	"github.com/iwannay/log"
 
 	jwt "github.com/dgrijalva/jwt-go"
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
 )
 
 type myctx struct {
@@ -31,6 +32,11 @@ func wrapCtx(ctx iris.Context, adm *Admin) *myctx {
 	c := &myctx{
 		Context: ctx,
 		adm:     adm,
+	}
+	if atomic.LoadInt32(&adm.initAdminUser) == 1 {
+		ctx.SetCookieKV("ready", "true")
+	} else {
+		ctx.SetCookieKV("ready", "false")
 	}
 	ctx.Values().Set(key, c)
 	return c
