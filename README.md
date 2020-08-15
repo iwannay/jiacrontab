@@ -42,6 +42,8 @@ jiacrontabd：负责job数据存储，任务调度
 ```sh
 $ nohup ./jiacrontab_admin &> jiacrontab_admin.log &
 $ nohup ./jiacrontabd &> jiacrontabd.log &
+
+## 建议使用systemd守护
 ```
 
 ### v2.0.x源码安装
@@ -58,7 +60,9 @@ $ go env -w GONOSUMDB=\*                              ## 配置GONOSUMDB,暂不�
 $ go env -w GOPROXY=https://goproxy.baidu.com         ## 配置GOPROXY,可以下载墙外代码
 
 # 编译
-$ make build
+# 注意需要先编译前端
+# 然后assets指定前端资源编译后的位置
+$ make build assets=$HOME/project/jiacrontab-frontend/build
 
 $ cd build/jiacrontab/jiacrontab_admin/
 $ nohup ./jiacrontab_admin &> jiacrontab_admin.log &
@@ -131,8 +135,8 @@ $ nohup ./jiacrontabd &> jiacrontabd.log &
 [2.0.0版本演示地址](http://jiacrontab-spa.iwannay.cn/) 账号：test 密码：123456
 
 ## QQ群号：813377930
-<img src="https://raw.githubusercontent.com/iwannay/jiacrontab/dev/qq.png" width="250" alt="qq群"/>
+<img src="https://raw.githubusercontent.com/iwannay/jiacrontab/master/qq.png" width="250" alt="qq群"/>
 
 ## 赞助
 本项目花费了作者大量时间，如果你觉的该项目对你有用，或者你希望该项目有更好的发展，欢迎赞助。
-<img src="https://raw.githubusercontent.com/iwannay/jiacrontab/dev/admire.jpg" alt="赞助"/>
+<img src="https://raw.githubusercontent.com/iwannay/jiacrontab/master/admire.jpg" alt="赞助"/>
