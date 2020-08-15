@@ -152,7 +152,7 @@ func (j *CrontabJob) Start(args proto.ActionJobsArgs, jobs *[]models.CrontabJob)
 	}
 
 	for _, v := range *jobs {
-		j.jd.addJob(&crontab.Job{
+		err := j.jd.addJob(&crontab.Job{
 			ID:      v.ID,
 			Second:  v.TimeArgs.Second,
 			Minute:  v.TimeArgs.Minute,
@@ -161,6 +161,9 @@ func (j *CrontabJob) Start(args proto.ActionJobsArgs, jobs *[]models.CrontabJob)
 			Month:   v.TimeArgs.Month,
 			Weekday: v.TimeArgs.Weekday,
 		}, false)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
