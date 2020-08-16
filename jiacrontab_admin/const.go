@@ -25,4 +25,6 @@ const (
 	event_GroupUser       = "{username}将用户{sourceUsername}设置为{targetName}组"
 	event_AuditCrontabJob = "{sourceName}{username}审核了定时任务{targetName}"
 	event_AuditDaemonJob  = "{sourceName}{username}审核了常驻任务{targetName}"
+
+	event_ClearHistory = "{username}清除了{targetName}前的任务执行日志"
 )

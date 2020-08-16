@@ -1,0 +1,21 @@
+[Unit]
+Description=jiacrontab_admin service
+After=network.target
+
+[Install]
+WantedBy=multi-user.target
+
+
+[Service]
+Type=simple
+User=root
+Group=root
+ProtectSystem=full
+WorkingDirectory=/opt/jiacrontab/jiacrontab_admin
+ExecStart=/opt/jiacrontab/jiacrontab_admin/jiacrontab_admin
+KillMode=process
+KillSignal=SIGTERM
+SendSIGKILL=no
+Restart=on-abort
+RestartSec=5s
+UMask=007

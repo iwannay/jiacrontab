@@ -1,0 +1,20 @@
+[Unit]
+Description=jiacrontabd service
+After=network.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ProtectSystem=full
+WorkingDirectory=/opt/jiacrontab/jiacrontabd
+ExecStart=/opt/jiacrontab/jiacrontabd/jiacrontabd
+KillMode=process
+KillSignal=SIGTERM
+SendSIGKILL=no
+Restart=on-abort
+RestartSec=5s
+UMask=007

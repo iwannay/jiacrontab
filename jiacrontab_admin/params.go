@@ -420,8 +420,8 @@ func (p *GetUsersParams) Verify(ctx *myctx) error {
 }
 
 type ClearLogParams struct {
-	Unit     string `json:"Unit" rule:"required,请填写时间单位"`
-	Duration int    `json:"val" rule:"required,请填写时间"`
+	Unit   string `json:"unit" rule:"required,请填写时间单位"`
+	Offset int    `json:"offset" rule:"required,请填写时间"`
 }
 
 func (c *ClearLogParams) Verify(ctx *myctx) error {

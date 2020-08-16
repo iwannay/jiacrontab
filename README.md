@@ -48,7 +48,7 @@ $ nohup ./jiacrontabd &> jiacrontabd.log &
 
 ### v2.0.x源码安装
 
-1.安装 git，golang(version 1.12.x)；可参考官网。  
+1.安装 git，golang(version 1.12.x)；可参考官网。
 2.安装运行
 
 ```sh
@@ -60,8 +60,10 @@ $ go env -w GONOSUMDB=\*                              ## 配置GONOSUMDB,暂不�
 $ go env -w GOPROXY=https://goproxy.baidu.com         ## 配置GOPROXY,可以下载墙外代码
 
 # 编译
-# 注意需要先编译前端
+# 注意需要先编译前端(https://github.com/jiacrontab/jiacrontab-frontend)
+# 再安装go-bindata
 # 然后assets指定前端资源编译后的位置
+$ GO111MODULE=on go get -u github.com/go-bindata/go-bindata/v3/go-bindata
 $ make build assets=$HOME/project/jiacrontab-frontend/build
 
 $ cd build/jiacrontab/jiacrontab_admin/
