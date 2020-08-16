@@ -49,12 +49,15 @@ func newCrontabJobSrv(jd *Jiacrontabd) *CrontabJob {
 
 func (j *CrontabJob) List(args proto.QueryJobArgs, reply *proto.QueryCrontabJobRet) error {
 	model := models.DB().Model(&models.CrontabJob{})
+	txt := "%" + args.SearchTxt + "%"
 	if args.GroupID == models.SuperGroup.ID {
-		model = model.Where("name like ?", "%"+args.SearchTxt+"%")
+		model = model.Where("name like ? or command like ? or code like ?", txt, txt, txt)
 	} else if args.Root {
-		model = model.Where("name like ? and group_id=?", "%"+args.SearchTxt+"%", args.GroupID)
+		model = model.Where("(name like ? or command like ? or code like ?) and group_id=?",
+			txt, txt, txt, args.GroupID)
 	} else {
-		model = model.Where("name like ? and created_user_id=? and group_id=?", "%"+args.SearchTxt+"%", args.UserID, args.GroupID)
+		model = model.Where("(name like ? or command like ? or code like ?) and created_user_id=? and group_id=?",
+			txt, txt, txt, args.UserID, args.GroupID)
 	}
 
 	err := model.Count(&reply.Total).Error
@@ -337,13 +340,16 @@ func newDaemonJobSrv(jd *Jiacrontabd) *DaemonJob {
 func (j *DaemonJob) List(args proto.QueryJobArgs, reply *proto.QueryDaemonJobRet) error {
 
 	model := models.DB().Model(&models.DaemonJob{})
-
+	txt := "%" + args.SearchTxt + "%"
 	if args.GroupID == models.SuperGroup.ID {
-		model = model.Where("name like ?", "%"+args.SearchTxt+"%")
+		model = model.Where("name like ? or command like ? or code like ?",
+			txt, txt, txt)
 	} else if args.Root {
-		model = model.Where("name like ? and group_id=?", "%"+args.SearchTxt+"%", args.GroupID)
+		model = model.Where("(name like ? or command like ? or code like ?) and group_id=?",
+			txt, txt, txt, args.GroupID)
 	} else {
-		model = model.Where("name like ? and created_user_id=? and group_id=?", "%"+args.SearchTxt+"%", args.UserID, args.GroupID)
+		model = model.Where("(name like ? or command like ? or code like ?) and created_user_id=? and group_id=?",
+			txt, txt, txt, args.UserID, args.GroupID)
 	}
 
 	err := model.Count(&reply.Total).Error
