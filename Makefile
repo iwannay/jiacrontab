@@ -68,6 +68,8 @@ define checkStatic
 endef
 
 define init
+	@if [ "$(assets)" = ""  ]; then  echo "no assets, see https://github.com/jiacrontab/jiacrontab-frontend"; exit -1;else echo "build release"; fi
+	go-bindata -pkg admin -prefix $(assets) -o jiacrontab_admin/bindata_gzip.go -fs $(assets)/...
 	rm -rf $(buildDir)
 	mkdir $(buildDir)
 	mkdir -p $(buildAdmDir)
