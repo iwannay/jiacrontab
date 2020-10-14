@@ -23,6 +23,13 @@ workDir=$(shell pwd)
 .PHONY: all build test clean build-linux build-windows
 all: test build
 build:
+	$(call checkStatic)
+	$(call init)
+	$(goBuild) -o $(binAdm) -v $(sourceAdmDir)
+	$(goBuild) -o $(binNode) -v $(sourceNodeDir)
+	mv $(binAdm) $(buildAdmDir)
+	mv $(binNode) $(buildNodeDir)
+build2:
 	$(call init)
 	$(goBuild) -o $(binAdm) -v $(sourceAdmDir)
 	$(goBuild) -o $(binNode) -v $(sourceNodeDir)
@@ -39,6 +46,7 @@ clean:
 
 # Cross compilation
 build-linux:
+	$(call checkStatic)
 	$(call init)
 	GOOS=linux GOARCH=amd64 $(goBuild) -o $(binAdm) -v $(sourceAdmDir)
 	GOOS=linux GOARCH=amd64 $(goBuild) -o $(binNode) -v $(sourceNodeDir)
@@ -46,6 +54,7 @@ build-linux:
 	mv $(binNode) $(buildNodeDir)
 
 build-windows:
+	$(call checkStatic)
 	$(call init)
 	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC="x86_64-w64-mingw32-gcc -fno-stack-protector -D_FORTIFY_SOURCE=0 -lssp" $(goBuild) -o $(binAdm).exe -v $(sourceAdmDir)
 	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC="x86_64-w64-mingw32-gcc -fno-stack-protector -D_FORTIFY_SOURCE=0 -lssp" $(goBuild) -o $(binNode).exe -v $(sourceNodeDir)
@@ -53,9 +62,12 @@ build-windows:
 	mv $(binAdm).exe $(buildAdmDir)
 	mv $(binNode).exe $(buildNodeDir)
 
-define init
-	@if [ "$(assets)" = ""  ]; then  echo "no assets, see https://github.com/jiacrontab/jiacrontab-frontend"; exit -1;else echo "build release"; fi
+define checkStatic
+@if [ "$(assets)" = ""  ]; then  echo "no assets, see https://github.com/jiacrontab/jiacrontab-frontend"; exit -1;else echo "build release"; fi
 	go-bindata -pkg admin -prefix $(assets) -o jiacrontab_admin/bindata_gzip.go -fs $(assets)/...
+endef
+
+define init
 	rm -rf $(buildDir)
 	mkdir $(buildDir)
 	mkdir -p $(buildAdmDir)

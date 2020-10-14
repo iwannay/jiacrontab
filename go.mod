@@ -7,6 +7,7 @@ require (
 	github.com/denisenkom/go-mssqldb v0.0.0-20200620013148-b91950f658ec // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gofrs/uuid v3.2.0+incompatible
+	github.com/google/go-cmp v0.5.1 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20190812055157-5d271430af9f // indirect
 	github.com/iris-contrib/middleware/cors v0.0.0-20200810001613-32cf668f999f
 	github.com/iris-contrib/middleware/jwt v0.0.0-20200810001613-32cf668f999f
@@ -24,6 +25,8 @@ require (
 	github.com/smartystreets/goconvey v0.0.0-20190731233626-505e41936337 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
+	golang.org/x/net v0.0.0-20200822124328-c89045814202 // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 	gopkg.in/ini.v1 v1.58.0
