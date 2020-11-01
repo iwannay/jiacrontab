@@ -117,6 +117,7 @@ func newApp(adm *Admin) *iris.Application {
 
 		v2.Post("/user/activity_list", wrapHandler(GetActivityList))
 		v2.Post("/user/job_history", wrapHandler(GetJobHistory))
+		v2.Post("/user/job_history/clean", wrapHandler(ClearLog))
 		v2.Post("/user/audit_job", wrapHandler(AuditJob))
 		v2.Post("/user/stat", wrapHandler(UserStat))
 		v2.Post("/user/signup", wrapHandler(Signup))

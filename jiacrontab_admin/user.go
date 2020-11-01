@@ -122,7 +122,7 @@ func GetActivityList(ctx *myctx) {
 func GetJobHistory(ctx *myctx) {
 	var (
 		err      error
-		reqBody  ReadMoreReqParams
+		reqBody  GetJobHistoryParams
 		historys []models.JobHistory
 		addrs    []string
 		model    = models.DB()

@@ -362,6 +362,15 @@ func (p *ReadMoreReqParams) Verify(ctx *myctx) error {
 	return nil
 }
 
+type GetJobHistoryParams struct {
+	ReadMoreReqParams
+	SearchTxt string `json:"searchTxt"`
+}
+
+func (p *GetJobHistoryParams) Verify(ctx *myctx) error {
+	return nil
+}
+
 type GroupNodeReqParams struct {
 	Addr            string `json:"addr" rule:"required,请填写addr"`
 	TargetNodeName  string `json:"targetNodeName"`
