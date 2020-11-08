@@ -6,6 +6,7 @@ import (
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/util"
+	"strings"
 )
 
 var (
@@ -347,6 +348,7 @@ func (p *SetGroupReqParams) Verify(ctx *myctx) error {
 type ReadMoreReqParams struct {
 	LastID   int    `json:"lastID"`
 	Pagesize uint   `json:"pagesize"`
+	Keywords string `json:"keywords"`
 	Orderby  string `json:"orderby"`
 }
 
@@ -359,15 +361,7 @@ func (p *ReadMoreReqParams) Verify(ctx *myctx) error {
 		p.Orderby = "desc"
 	}
 
-	return nil
-}
-
-type GetJobHistoryParams struct {
-	ReadMoreReqParams
-	SearchTxt string `json:"searchTxt"`
-}
-
-func (p *GetJobHistoryParams) Verify(ctx *myctx) error {
+	p.Keywords = strings.TrimSpace(p.Keywords)
 	return nil
 }
 

@@ -94,19 +94,27 @@ func GetActivityList(ctx *myctx) {
 		if !isSuper {
 			model = model.Where("group_id=?", ctx.claims.GroupID)
 		}
-		err = model.Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
-			Limit(reqBody.Pagesize).
-			Find(&events).Error
+
 	} else {
 		if !isSuper {
 			model = model.Where("group_id=? and id<?", ctx.claims.GroupID, reqBody.LastID)
 		} else {
 			model = model.Where("id<?", reqBody.LastID)
 		}
-		err = model.Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
-			Limit(reqBody.Pagesize).
-			Find(&events).Error
 	}
+	if reqBody.Keywords != "" {
+		txt := "%" + reqBody.Keywords + "%"
+		model = model.Where(`(
+				username like ? or 
+				event_desc like ? or 
+				target_name like ? or 
+				source_uesrname like ? or 
+				source_name like ? or 
+				content like ?)`, txt, txt, txt, txt, txt, txt)
+	}
+	err = model.Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
+		Limit(reqBody.Pagesize).
+		Find(&events).Error
 
 	if err != nil && err != sql.ErrNoRows {
 		ctx.respDBError(err)
@@ -122,7 +130,7 @@ func GetActivityList(ctx *myctx) {
 func GetJobHistory(ctx *myctx) {
 	var (
 		err      error
-		reqBody  GetJobHistoryParams
+		reqBody  ReadMoreReqParams
 		historys []models.JobHistory
 		addrs    []string
 		model    = models.DB()
@@ -139,10 +147,17 @@ func GetJobHistory(ctx *myctx) {
 		return
 	}
 
+	if reqBody.Keywords != "" {
+		txt := "%" + reqBody.Keywords + "%"
+		model = model.Where("(job_name like ? or addr like ? or exit_msg like ?)",
+			txt, txt, txt)
+	}
+
 	if reqBody.LastID == 0 {
 		if !isSuper {
 			model = model.Where("addr in (?)", addrs)
 		}
+
 		err = model.Order(fmt.Sprintf("created_at %s", reqBody.Orderby)).
 			Limit(reqBody.Pagesize).
 			Find(&historys).Error
@@ -190,7 +205,6 @@ func ClearLog(ctx *myctx) {
 	if reqBody.Unit == "month" {
 		offset = offset.AddDate(0, -reqBody.Offset, 0)
 	}
-
 	err = models.DB().Where("created_at<?", offset).Delete(&models.JobHistory{}).Error
 	if err != nil {
 		ctx.respDBError(err)
