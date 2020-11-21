@@ -13,8 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jinzhu/gorm"
-
 	"github.com/iwannay/log"
 )
 
@@ -49,17 +47,17 @@ func newCrontabJobSrv(jd *Jiacrontabd) *CrontabJob {
 
 func (j *CrontabJob) List(args proto.QueryJobArgs, reply *proto.QueryCrontabJobRet) error {
 	model := models.DB().Model(&models.CrontabJob{})
-	txt := "%" + args.SearchTxt + "%"
-	if args.GroupID == models.SuperGroup.ID {
-		model = model.Where("name like ? or command like ? or code like ?", txt, txt, txt)
-	} else if args.Root {
-		model = model.Where("(name like ? or command like ? or code like ?) and group_id=?",
-			txt, txt, txt, args.GroupID)
-	} else {
-		model = model.Where("(name like ? or command like ? or code like ?) and created_user_id=? and group_id=?",
-			txt, txt, txt, args.UserID, args.GroupID)
+	if args.SearchTxt != "" {
+		txt := "%" + args.SearchTxt + "%"
+		model = model.Where("(name like ? or command like ? or code like ?)", txt, txt, txt)
 	}
 
+	if args.GroupID == models.SuperGroup.ID {
+	} else if args.Root {
+		model = model.Where("group_id=?", args.GroupID)
+	} else {
+		model = model.Where("created_user_id=? and group_id=?", args.UserID, args.GroupID)
+	}
 	err := model.Count(&reply.Total).Error
 	if err != nil {
 		return err
@@ -68,7 +66,7 @@ func (j *CrontabJob) List(args proto.QueryJobArgs, reply *proto.QueryCrontabJobR
 	reply.Page = args.Page
 	reply.Pagesize = args.Pagesize
 
-	return model.Order(gorm.Expr("created_user_id=? desc, id desc", args.UserID)).Offset((args.Page - 1) * args.Pagesize).Limit(args.Pagesize).Find(&reply.List).Error
+	return model.Order(fmt.Sprintf("created_user_id=%d desc, id desc", args.UserID)).Offset((args.Page - 1) * args.Pagesize).Limit(args.Pagesize).Find(&reply.List).Error
 }
 
 func (j *CrontabJob) Audit(args proto.AuditJobArgs, reply *[]models.CrontabJob) error {
@@ -188,7 +186,7 @@ func (j *CrontabJob) Stop(args proto.ActionJobsArgs, job *[]models.CrontabJob) e
 		j.jd.killTask(jobID)
 	}
 
-	return model.Find(job).Update(map[string]interface{}{
+	return model.Find(job).Updates(map[string]interface{}{
 		"status":         models.StatusJobStop,
 		"next_exec_time": time.Time{},
 	}).Error
@@ -340,16 +338,17 @@ func newDaemonJobSrv(jd *Jiacrontabd) *DaemonJob {
 func (j *DaemonJob) List(args proto.QueryJobArgs, reply *proto.QueryDaemonJobRet) error {
 
 	model := models.DB().Model(&models.DaemonJob{})
-	txt := "%" + args.SearchTxt + "%"
-	if args.GroupID == models.SuperGroup.ID {
-		model = model.Where("name like ? or command like ? or code like ?",
+	if args.SearchTxt != "" {
+		txt := "%" + args.SearchTxt + "%"
+		model = model.Where("(name like ? or command like ? or code like ?)",
 			txt, txt, txt)
+	}
+
+	if args.GroupID == models.SuperGroup.ID {
 	} else if args.Root {
-		model = model.Where("(name like ? or command like ? or code like ?) and group_id=?",
-			txt, txt, txt, args.GroupID)
+		model = model.Where("group_id=?", args.GroupID)
 	} else {
-		model = model.Where("(name like ? or command like ? or code like ?) and created_user_id=? and group_id=?",
-			txt, txt, txt, args.UserID, args.GroupID)
+		model = model.Where("created_user_id=? and group_id=?", args.UserID, args.GroupID)
 	}
 
 	err := model.Count(&reply.Total).Error
@@ -360,7 +359,7 @@ func (j *DaemonJob) List(args proto.QueryJobArgs, reply *proto.QueryDaemonJobRet
 	reply.Page = args.Page
 	reply.Pagesize = args.Pagesize
 
-	return model.Order(gorm.Expr("created_user_id=? desc, id desc", args.UserID)).Offset((args.Page - 1) * args.Pagesize).Limit(args.Pagesize).Find(&reply.List).Error
+	return model.Order(fmt.Sprintf("created_user_id=%d desc, id desc", args.UserID)).Offset((args.Page - 1) * args.Pagesize).Limit(args.Pagesize).Find(&reply.List).Error
 }
 
 func (j *DaemonJob) Edit(args proto.EditDaemonJobArgs, job *models.DaemonJob) error {

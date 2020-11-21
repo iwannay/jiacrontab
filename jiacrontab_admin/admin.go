@@ -38,7 +38,6 @@ func (a *Admin) init() {
 	if models.DB().Take(&models.User{}, "group_id=?", 1).Error == nil {
 		atomic.StoreInt32(&a.initAdminUser, 1)
 	}
-
 	// mail
 	if cfg.Mailer.Enabled {
 		mailer.InitMailer(&mailer.Mailer{
@@ -62,12 +61,9 @@ func (a *Admin) init() {
 }
 
 func (a *Admin) Main() {
-
 	cfg := a.getOpts()
 	a.init()
-	defer models.DB().Close()
 	go rpc.ListenAndServe(cfg.App.RPCListenAddr, NewSrv(a))
-
 	app := newApp(a)
 	app.Run(iris.Addr(cfg.App.HTTPListenAddr))
 }

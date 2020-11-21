@@ -7,7 +7,7 @@ import (
 	"jiacrontab/pkg/util"
 	"time"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 // JobStatus 任务状态

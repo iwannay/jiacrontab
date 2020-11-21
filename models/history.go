@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/iwannay/log"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 const (

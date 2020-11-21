@@ -108,7 +108,7 @@ func GetActivityList(ctx *myctx) {
 				username like ? or 
 				event_desc like ? or 
 				target_name like ? or 
-				source_uesrname like ? or 
+				source_username like ? or 
 				source_name like ? or 
 				content like ?)`, txt, txt, txt, txt, txt, txt)
 	}
@@ -469,7 +469,7 @@ func GetUserList(ctx *myctx) {
 		reqBody  GetUsersParams
 		userList []models.User
 		err      error
-		total    int
+		total    int64
 	)
 
 	if err = ctx.Valid(&reqBody); err != nil {

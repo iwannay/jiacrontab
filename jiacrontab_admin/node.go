@@ -12,7 +12,7 @@ func GetNodeList(ctx *myctx) {
 		err      error
 		nodeList []models.Node
 		reqBody  GetNodeListReqParams
-		count    int
+		count    int64
 	)
 
 	if err = ctx.Valid(&reqBody); err != nil {

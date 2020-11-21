@@ -3,7 +3,7 @@ package models
 import (
 	"errors"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type Node struct {

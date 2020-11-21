@@ -3,7 +3,7 @@ package models
 import (
 	"github.com/iwannay/log"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type EventSourceName string

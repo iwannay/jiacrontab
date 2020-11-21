@@ -6,7 +6,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 // D alias DB
@@ -17,33 +20,42 @@ var (
 	debugMode bool
 )
 
-func CreateDB(dialect string, args ...interface{}) error {
+func CreateDB(dialect string, dsn string) (err error) {
 	switch dialect {
 	case "sqlite3":
-		return createSqlite3(dialect, args...)
-	case "postgres", "mysql":
-		var err error
-		db, err = gorm.Open(dialect, args...)
-		return err
+		return createSqlite(dsn)
+	case "mysql":
+		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
+			PrepareStmt: true,
+		})
+		return
+	case "postgres":
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+			PrepareStmt: true,
+		})
+		return
 	}
 	return fmt.Errorf("unknow database type %s", dialect)
 }
 
-func createSqlite3(dialect string, args ...interface{}) error {
+func createSqlite(dsn string) error {
 	var err error
-	if args[0] == nil {
-		return errors.New("sqlite3:db file cannot empty")
+	if dsn == "" {
+		return errors.New("sqlite:db file cannot empty")
 	}
 
-	dbDir := filepath.Dir(filepath.Clean(fmt.Sprint(args[0])))
+	dbDir := filepath.Dir(filepath.Clean(dsn))
 	err = os.MkdirAll(dbDir, 0755)
 	if err != nil {
-		return fmt.Errorf("sqlite3:%s", err)
+		return fmt.Errorf("sqlite: makedir failed %s", err)
 	}
-
-	db, err = gorm.Open(dialect, args...)
+	db, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{})
 	if err == nil {
-		db.DB().SetMaxOpenConns(1)
+		d, err := db.DB()
+		if err != nil {
+			panic(err)
+		}
+		d.SetMaxOpenConns(1)
 	}
 	return err
 }
@@ -52,7 +64,6 @@ func DB() *D {
 	if db == nil {
 		panic("you must call CreateDb first")
 	}
-
 	if debugMode {
 		return db.Debug()
 	}
@@ -84,10 +95,8 @@ func InitModel(driverName string, dsn string, debug bool) error {
 	if err := CreateDB(driverName, dsn); err != nil {
 		return err
 	}
-
 	debugMode = debug
 	DB().AutoMigrate(&Node{}, &Group{}, &User{}, &Event{}, &JobHistory{})
-
 	DB().Create(&SuperGroup)
 	return nil
 }

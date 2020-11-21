@@ -10,7 +10,7 @@ func GetGroupList(ctx *myctx) {
 	var (
 		err       error
 		groupList []models.Group
-		count     int
+		count     int64
 		model     = models.DB().Model(&models.Group{})
 		reqBody   GetGroupListReqParams
 	)

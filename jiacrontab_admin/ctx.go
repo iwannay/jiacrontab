@@ -107,7 +107,7 @@ func (ctx *myctx) respError(code int, err interface{}, v ...interface{}) {
 	ctx.JSON(proto.Resp{
 		Code:    code,
 		Msg:     msgStr,
-		Data:    string(bts),
+		Data:    json.RawMessage(bts),
 		Sign:    sign,
 		Version: version.String(cfg.App.AppName),
 	})
@@ -130,7 +130,7 @@ func (ctx *myctx) respSucc(msg string, v interface{}) {
 	ctx.JSON(proto.Resp{
 		Code:    proto.SuccessRespCode,
 		Msg:     msg,
-		Data:    string(bts),
+		Data:    json.RawMessage(bts),
 		Sign:    sign,
 		Version: version.String(cfg.App.AppName),
 	})

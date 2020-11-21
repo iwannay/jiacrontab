@@ -13,9 +13,6 @@ import (
 	"jiacrontab/pkg/util"
 
 	"github.com/iwannay/log"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
 func parseFlag(opt *admin.Config) *flag.FlagSet {

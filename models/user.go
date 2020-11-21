@@ -9,7 +9,7 @@ import (
 
 	"github.com/iwannay/log"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type User struct {

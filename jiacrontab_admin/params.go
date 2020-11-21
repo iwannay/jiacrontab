@@ -347,7 +347,7 @@ func (p *SetGroupReqParams) Verify(ctx *myctx) error {
 
 type ReadMoreReqParams struct {
 	LastID   int    `json:"lastID"`
-	Pagesize uint   `json:"pagesize"`
+	Pagesize int    `json:"pagesize"`
 	Keywords string `json:"keywords"`
 	Orderby  string `json:"orderby"`
 }

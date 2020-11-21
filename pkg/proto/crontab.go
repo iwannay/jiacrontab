@@ -29,7 +29,7 @@ type QueryJobArgs struct {
 }
 
 type QueryCrontabJobRet struct {
-	Total    int
+	Total    int64
 	Page     int
 	GroupID  uint
 	Pagesize int
@@ -37,7 +37,7 @@ type QueryCrontabJobRet struct {
 }
 
 type QueryDaemonJobRet struct {
-	Total    int
+	Total    int64
 	GroupID  int
 	Page     int
 	Pagesize int
