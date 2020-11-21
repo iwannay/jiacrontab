@@ -16,6 +16,16 @@ type SearchLog struct {
 	Pattern  string
 }
 
+type CleanNodeLog struct {
+	Unit   string
+	Offset int
+}
+
+type CleanNodeLogRet struct {
+	Total int64  `json:"total"`
+	Size  string `json:"size"`
+}
+
 type SearchLogResult struct {
 	Content  []byte
 	Offset   int64

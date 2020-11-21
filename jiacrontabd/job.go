@@ -375,6 +375,7 @@ func (j *JobEntry) exec() {
 
 	exec := func() {
 		var err error
+		now := time.Now()
 		if j.once {
 			err = models.DB().Take(&j.detail, "id=?", j.job.ID).Error
 			atomic.StoreInt32(&j.processNum, int32(j.detail.ProcessNum))
@@ -390,18 +391,16 @@ func (j *JobEntry) exec() {
 		}
 
 		if !j.once {
-
 			// 忽略一秒内重复执行的job
-			if j.detail.LastExecTime.Truncate(time.Second).Equal(time.Now().Truncate(time.Second)) {
+			if j.detail.LastExecTime.Truncate(time.Second).Equal(now.Truncate(time.Second)) {
 				log.Infof("ignore repeat job %s", j.detail.Name)
 				return
 			}
-
 			// 数据库中记录的执行时刻等于计时器中的时刻和现在的时刻才允许执行
 			execTime := j.detail.NextExecTime.Truncate(time.Second)
-			if !(execTime.Equal(j.job.GetNextExecTime().Truncate(time.Second)) && execTime.Equal(time.Now().Truncate(time.Second))) {
+			if !(execTime.Equal(j.job.GetNextExecTime().Truncate(time.Second)) && execTime.Equal(now.Truncate(time.Second))) {
 				log.Errorf("%s(%d) JobEntry.exec time error(%s not equal %s)",
-					j.detail.Name, j.detail.ID, j.detail.NextExecTime, j.job.GetNextExecTime())
+					j.detail.Name, j.detail.ID, execTime, now)
 				j.jd.addJob(&crontab.Job{
 					ID:      j.detail.ID,
 					Second:  j.detail.TimeArgs.Second,

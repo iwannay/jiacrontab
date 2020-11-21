@@ -1,7 +1,9 @@
 package admin
 
 import (
+	"fmt"
 	"jiacrontab/models"
+	"jiacrontab/pkg/proto"
 	"time"
 )
 
@@ -124,4 +126,34 @@ func GroupNode(ctx *myctx) {
 	ctx.respSucc("", nil)
 }
 
-func UpdateNode(ctx *myctx) {}
+// DeleteNode 删除分组内节点
+// 仅超级管理员有权限
+func CleanNodeLog(ctx *myctx) {
+	var (
+		err      error
+		reqBody  CleanNodeLogReqParams
+		cleanRet proto.CleanNodeLogRet
+	)
+
+	if err = ctx.Valid(&reqBody); err != nil {
+		ctx.respParamError(err)
+		return
+	}
+
+	// 普通用户不允许删除节点
+	if !ctx.isSuper() {
+		ctx.respNotAllowed()
+		return
+	}
+
+	if err = rpcCall(reqBody.Addr, "Srv.CleanLogFiles", proto.CleanNodeLog{
+		Unit:   reqBody.Unit,
+		Offset: reqBody.Offset,
+	}, &cleanRet); err != nil {
+		ctx.respRPCError(err)
+		return
+	}
+
+	ctx.pubEvent(fmt.Sprintf("%d %s", reqBody.Offset, reqBody.Unit), event_CleanNodeLog, models.EventSourceName(reqBody.Addr), reqBody)
+	ctx.respSucc("", cleanRet)
+}

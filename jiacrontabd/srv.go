@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"jiacrontab/models"
 	"jiacrontab/pkg/crontab"
+	"jiacrontab/pkg/file"
 	"jiacrontab/pkg/finder"
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/util"
@@ -32,7 +33,24 @@ func (s *Srv) Ping(args proto.EmptyArgs, reply *proto.EmptyReply) error {
 
 func (s *Srv) SystemInfo(args proto.EmptyArgs, reply *map[string]interface{}) error {
 	*reply = util.SystemInfo(s.jd.startTime)
+	(*reply)["job日志文件大小"] = file.FileSize(file.DirSize(s.jd.getOpts().LogPath))
 	return nil
+}
+
+func (s *Srv) CleanLogFiles(args proto.CleanNodeLog, reply *proto.CleanNodeLogRet) error {
+	dir := s.jd.getOpts().LogPath
+
+	var t time.Time
+	if args.Unit == "month" {
+		t = time.Now().AddDate(0, -args.Offset, 0)
+	} else if args.Unit == "day" {
+		t = time.Now().AddDate(0, 0, -args.Offset)
+	}
+
+	total, size, err := file.Remove(dir, t)
+	reply.Total = total
+	reply.Size = file.FileSize(size)
+	return err
 }
 
 type CrontabJob struct {

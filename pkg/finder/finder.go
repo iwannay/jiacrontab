@@ -198,25 +198,22 @@ func SearchAndDeleteFileOnDisk(dir string, d time.Duration, size int64) {
 				}
 				if !info.IsDir() {
 					if time.Now().Sub(info.ModTime()) > d {
-						os.Remove(fpath)
-						return nil
+						err = os.Remove(fpath)
+
 					}
 
 					if info.Size() > size && size != 0 {
-						os.Remove(fpath)
-						return nil
-					}
-				}
+						err = os.Remove(fpath)
 
-				if info.IsDir() {
+					}
+				} else {
 					// 删除空目录
 					err := os.Remove(fpath)
 					if err == nil {
 						log.Println("delete ", fpath)
 					}
 				}
-
-				return nil
+				return err
 			})
 		}
 	}

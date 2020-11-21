@@ -26,5 +26,7 @@ const (
 	event_AuditCrontabJob = "{sourceName}{username}审核了定时任务{targetName}"
 	event_AuditDaemonJob  = "{sourceName}{username}审核了常驻任务{targetName}"
 
-	event_ClearHistory = "{username}清除了{targetName}前的任务执行日志"
+	event_CleanJobHistory = "{username}清除了{targetName}前的任务执行记录"
+	event_CleanUserEvent  = "{username}清除了{targetName}前的用户动态"
+	event_CleanNodeLog    = "{sourceName}{username}清除了{targetName}前的job动态"
 )

@@ -146,6 +146,19 @@ func (p *DeleteNodeReqParams) Verify(ctx *myctx) error {
 	return nil
 }
 
+type CleanNodeLogReqParams struct {
+	Unit   string `json:"unit" rule:"required,请填写时间单位"`
+	Offset int    `json:"offset"`
+	Addr   string `json:"addr" rule:"required,请填写addr"`
+}
+
+func (p *CleanNodeLogReqParams) Verify(ctx *myctx) error {
+	if p.Unit != "day" && p.Unit != "month" {
+		return errors.New("不支持的时间单位")
+	}
+	return nil
+}
+
 type SendTestMailReqParams struct {
 	MailTo string `json:"mailTo" rule:"required,请填写mailTo"`
 }
@@ -422,12 +435,13 @@ func (p *GetUsersParams) Verify(ctx *myctx) error {
 	return nil
 }
 
-type ClearLogParams struct {
-	Unit   string `json:"unit" rule:"required,请填写时间单位"`
-	Offset int    `json:"offset" rule:"required,请填写时间"`
+type CleanLogParams struct {
+	IsEvent bool   `json:"isEvent"`
+	Unit    string `json:"unit" rule:"required,请填写时间单位"`
+	Offset  int    `json:"offset"`
 }
 
-func (c *ClearLogParams) Verify(ctx *myctx) error {
+func (c *CleanLogParams) Verify(ctx *myctx) error {
 	if c.Unit != "day" && c.Unit != "month" {
 		return errors.New("不支持的时间单位")
 	}

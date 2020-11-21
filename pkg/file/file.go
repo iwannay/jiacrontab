@@ -1,12 +1,14 @@
 package file
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/iwannay/log"
 )
@@ -89,4 +91,44 @@ func CreateFile(path string) (*os.File, error) {
 		return nil, err
 	}
 	return os.Create(path)
+}
+
+func DirSize(dir string) int64 {
+	var total int64
+	filepath.Walk(dir, func(fpath string, info os.FileInfo, err error) error {
+		if info == nil {
+			return nil
+		}
+		if !info.IsDir() {
+			total += info.Size()
+		}
+		return nil
+	})
+	return total
+}
+
+func Remove(dir string, t time.Time) (total int64, size int64, err error) {
+	err = filepath.Walk(dir, func(fpath string, info os.FileInfo, err error) error {
+		if info == nil {
+			return errors.New(fpath + " not exists")
+		}
+		if !info.IsDir() {
+			if info.ModTime().Before(t) {
+				total++
+				size += info.Size()
+				err = os.Remove(fpath)
+			}
+		} else {
+			// 删除空目录
+			err = os.Remove(fpath)
+			if err == nil {
+				total++
+				log.Println("delete ", fpath)
+			}
+			err = nil
+		}
+
+		return err
+	})
+	return
 }

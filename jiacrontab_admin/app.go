@@ -101,6 +101,8 @@ func newApp(adm *Admin) *iris.Application {
 		v2.Post("/config/get", wrapHandler(GetConfig))
 		v2.Post("/config/mail/send", wrapHandler(SendTestMail))
 		v2.Post("/system/info", wrapHandler(SystemInfo))
+		v2.Post("/log/info", wrapHandler(LogInfo))
+		v2.Post("/log/clean", wrapHandler(CleanLog))
 
 		v2.Post("/daemon/job/list", wrapHandler(GetDaemonJobList))
 		v2.Post("/daemon/job/action", wrapHandler(ActionDaemonTask))
@@ -114,10 +116,10 @@ func newApp(adm *Admin) *iris.Application {
 		v2.Post("/node/list", wrapHandler(GetNodeList))
 		v2.Post("/node/delete", wrapHandler(DeleteNode))
 		v2.Post("/node/group_node", wrapHandler(GroupNode))
+		v2.Post("/node/clean_log", wrapHandler(CleanNodeLog))
 
 		v2.Post("/user/activity_list", wrapHandler(GetActivityList))
 		v2.Post("/user/job_history", wrapHandler(GetJobHistory))
-		v2.Post("/user/job_history/clean", wrapHandler(ClearLog))
 		v2.Post("/user/audit_job", wrapHandler(AuditJob))
 		v2.Post("/user/stat", wrapHandler(UserStat))
 		v2.Post("/user/signup", wrapHandler(Signup))

@@ -184,37 +184,6 @@ func GetJobHistory(ctx *myctx) {
 	})
 }
 
-func ClearLog(ctx *myctx) {
-	var (
-		err     error
-		reqBody ClearLogParams
-		isSuper = ctx.isSuper()
-	)
-	if err = ctx.Valid(&reqBody); err != nil {
-		ctx.respParamError(err)
-		return
-	}
-	if !isSuper {
-		ctx.respNotAllowed()
-		return
-	}
-	offset := time.Now()
-	if reqBody.Unit == "day" {
-		offset = offset.AddDate(0, 0, -reqBody.Offset)
-	}
-	if reqBody.Unit == "month" {
-		offset = offset.AddDate(0, -reqBody.Offset, 0)
-	}
-	err = models.DB().Where("created_at<?", offset).Delete(&models.JobHistory{}).Error
-	if err != nil {
-		ctx.respDBError(err)
-		return
-
-	}
-	ctx.pubEvent(fmt.Sprintf("%d%s", reqBody.Offset, reqBody.Unit), event_ClearHistory, "", reqBody)
-	return
-}
-
 func AuditJob(ctx *myctx) {
 	var (
 		err     error
