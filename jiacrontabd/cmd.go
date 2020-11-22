@@ -11,6 +11,7 @@ import (
 	"jiacrontab/pkg/proto"
 	"jiacrontab/pkg/util"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 	"time"
 
@@ -19,12 +20,14 @@ import (
 
 type cmdUint struct {
 	ctx              context.Context
+	id               uint
 	args             [][]string
-	logPath          string
+	logDir           string
 	content          []byte
 	logFile          *os.File
 	label            string
 	user             string
+	logPath          string
 	verboseLog       bool
 	exportLog        bool
 	ignoreFileLog    bool
@@ -95,6 +98,9 @@ func (cu *cmdUint) setLogFile() error {
 	if cu.ignoreFileLog {
 		return nil
 	}
+	if cu.logPath == "" {
+		cu.logPath = filepath.Join(cu.logDir, time.Now().Format("2006/01/02"), fmt.Sprintf("%d.log", cu.id))
+	}
 
 	cu.logFile, err = util.TryOpen(cu.logPath, os.O_APPEND|os.O_CREATE|os.O_RDWR)
 	if err != nil {
@@ -107,6 +113,18 @@ func (cu *cmdUint) writeLog(b []byte) {
 	if cu.ignoreFileLog {
 		return
 	}
+	var err error
+	logPath := filepath.Join(cu.logDir, time.Now().Format("2006/01/02"), fmt.Sprintf("%d.log", cu.id))
+	if logPath != cu.logPath {
+		cu.logFile.Close()
+		cu.logFile, err = util.TryOpen(logPath, os.O_APPEND|os.O_CREATE|os.O_RDWR)
+		if err != nil {
+			log.Errorf("writeLog failed - %v", err)
+			return
+		}
+		cu.logPath = logPath
+	}
+
 	cu.logFile.Write(b)
 }
 

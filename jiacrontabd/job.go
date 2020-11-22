@@ -149,7 +149,8 @@ func (p *process) exec() error {
 			env:              p.jobEntry.detail.WorkEnv,
 			ip:               p.jobEntry.detail.WorkIp,
 			content:          p.jobEntry.logContent,
-			logPath:          p.jobEntry.getLogPath(),
+			logDir:           p.jobEntry.getLogDir(),
+			id:               p.jobEntry.job.ID,
 			label:            p.jobEntry.detail.Name,
 			killChildProcess: p.jobEntry.detail.KillChildProcess,
 			jd:               p.jobEntry.jd,
@@ -203,6 +204,10 @@ func newJobEntry(job *crontab.Job, jd *Jiacrontabd) *JobEntry {
 
 func (j *JobEntry) getLogPath() string {
 	return filepath.Join(j.jd.getOpts().LogPath, "crontab_task", time.Now().Format("2006/01/02"), fmt.Sprintf("%d.log", j.job.ID))
+}
+
+func (j *JobEntry) getLogDir() string {
+	return filepath.Join(j.jd.getOpts().LogPath, "crontab_task")
 }
 
 func (j *JobEntry) setOnce(v bool) {

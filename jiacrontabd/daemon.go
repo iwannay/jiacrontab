@@ -70,15 +70,16 @@ func (d *daemonJob) do(ctx context.Context) {
 			arg = append(arg, d.job.Code)
 		}
 		myCmdUint := cmdUint{
-			ctx:     ctx,
-			args:    [][]string{arg},
-			env:     d.job.WorkEnv,
-			ip:      d.job.WorkIp,
-			dir:     d.job.WorkDir,
-			user:    d.job.WorkUser,
-			label:   d.job.Name,
-			jd:      d.daemon.jd,
-			logPath: filepath.Join(cfg.LogPath, "daemon_job", time.Now().Format("2006/01/02"), fmt.Sprintf("%d.log", d.job.ID)),
+			ctx:    ctx,
+			args:   [][]string{arg},
+			env:    d.job.WorkEnv,
+			ip:     d.job.WorkIp,
+			dir:    d.job.WorkDir,
+			user:   d.job.WorkUser,
+			label:  d.job.Name,
+			jd:     d.daemon.jd,
+			id:     d.job.ID,
+			logDir: filepath.Join(cfg.LogPath, "daemon_job"),
 		}
 
 		log.Info("exec daemon job, jobName:", d.job.Name, " jobID", d.job.ID)

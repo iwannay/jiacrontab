@@ -161,17 +161,19 @@ func ActionTask(ctx *myctx) {
 		reqBody  ActionTaskReqParams
 		jobReply []models.CrontabJob
 		methods  = map[string]string{
-			"start":  "CrontabJob.Start",
-			"stop":   "CrontabJob.Stop",
-			"delete": "CrontabJob.Delete",
-			"kill":   "CrontabJob.Kill",
+			"start":      "CrontabJob.Start",
+			"stop":       "CrontabJob.Stop",
+			"delete":     "CrontabJob.Delete",
+			"batch-exec": "CrontabJob.Execs",
+			"kill":       "CrontabJob.Kill",
 		}
 
 		eDesc = map[string]string{
-			"start":  event_StartCronJob,
-			"stop":   event_StopCronJob,
-			"delete": event_DelCronJob,
-			"kill":   event_KillCronJob,
+			"start":      event_StartCronJob,
+			"stop":       event_StopCronJob,
+			"batch-exec": event_ExecCronJob,
+			"delete":     event_DelCronJob,
+			"kill":       event_KillCronJob,
 		}
 	)
 
@@ -226,9 +228,8 @@ func ExecTask(ctx *myctx) {
 		ctx.respRPCError(err)
 		return
 	}
-
-	ctx.pubEvent(execJobReply.Job.Name, event_ExecCronJob, models.EventSourceName(reqBody.Addr), reqBody)
 	logList = strings.Split(string(execJobReply.Content), "\n")
+	ctx.pubEvent(execJobReply.Job.Name, event_ExecCronJob, models.EventSourceName(reqBody.Addr), reqBody)
 	ctx.respSucc("", logList)
 }
 

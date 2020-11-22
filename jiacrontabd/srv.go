@@ -245,6 +245,39 @@ func (j *CrontabJob) Kill(args proto.ActionJobsArgs, job *[]models.CrontabJob) e
 	return nil
 }
 
+func (j *CrontabJob) Execs(args proto.ActionJobsArgs, reply *[]models.CrontabJob) error {
+
+	model := models.DB()
+	if args.GroupID == models.SuperGroup.ID {
+		model = model.Where("id in (?)", args.JobIDs)
+	} else if args.Root {
+		model = model.Where("id in (?) and group_id=?", args.JobIDs, args.GroupID)
+	} else {
+		model = model.Where("created_user_id=? and id in (?) and group_id=?", args.UserID, args.JobIDs, args.GroupID)
+	}
+
+	var jobs []models.CrontabJob
+	if err := model.Find(&jobs).Error; err != nil {
+		return err
+	}
+
+	for _, v := range jobs {
+		*reply = append(*reply, v)
+		go func(v models.CrontabJob) {
+			ins := newJobEntry(&crontab.Job{
+				ID:    v.ID,
+				Value: v,
+			}, j.jd)
+			ins.setOnce(true)
+			j.jd.addTmpJob(ins)
+			defer j.jd.removeTmpJob(ins)
+			ins.once = true
+			ins.exec()
+		}(v)
+	}
+	return nil
+}
+
 func (j *CrontabJob) Exec(args proto.GetJobArgs, reply *proto.ExecCrontabJobReply) error {
 
 	model := models.DB()
@@ -256,25 +289,23 @@ func (j *CrontabJob) Exec(args proto.GetJobArgs, reply *proto.ExecCrontabJobRepl
 		model = model.Where("created_user_id = ? and id=? and group_id=?", args.UserID, args.JobID, args.GroupID)
 	}
 
-	ret := model.Take(&reply.Job)
+	err := model.Take(&reply.Job).Error
 
-	if ret.Error == nil {
-		jobInstance := newJobEntry(&crontab.Job{
+	if err == nil {
+		ins := newJobEntry(&crontab.Job{
 			ID:    reply.Job.ID,
 			Value: reply.Job,
 		}, j.jd)
-		jobInstance.setOnce(true)
-		j.jd.addTmpJob(jobInstance)
-		defer j.jd.removeTmpJob(jobInstance)
-		jobInstance.once = true
-		jobInstance.exec()
-		reply.Content = jobInstance.GetLog()
+		ins.setOnce(true)
+		j.jd.addTmpJob(ins)
+		defer j.jd.removeTmpJob(ins)
+		ins.once = true
+		ins.exec()
+		reply.Content = ins.GetLog()
 	} else {
-		reply.Content = []byte(ret.Error.Error())
-		return ret.Error
+		reply.Content = []byte(err.Error())
 	}
-	return nil
-
+	return err
 }
 
 func (j *CrontabJob) Log(args proto.SearchLog, reply *proto.SearchLogResult) error {
