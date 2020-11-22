@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"errors"
 	"jiacrontab/models"
 	"jiacrontab/pkg/mailer"
 	"jiacrontab/pkg/rpc"
@@ -34,7 +35,6 @@ func (a *Admin) init() {
 	if err := models.InitModel(cfg.Database.DriverName, cfg.Database.DSN, cfg.App.Debug); err != nil {
 		panic(err)
 	}
-
 	if models.DB().Take(&models.User{}, "group_id=?", 1).Error == nil {
 		atomic.StoreInt32(&a.initAdminUser, 1)
 	}
@@ -58,6 +58,18 @@ func (a *Admin) init() {
 			HookMode:       false,
 		})
 	}
+}
+
+func (a *Admin) ResetPwd(username string, password string) error {
+	if username == "" || password == "" {
+		return errors.New("username or password cannot empty!")
+	}
+	a.init()
+	user := models.User{
+		Username: username,
+		Passwd:   password,
+	}
+	return user.Update()
 }
 
 func (a *Admin) Main() {

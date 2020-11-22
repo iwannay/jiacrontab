@@ -66,7 +66,7 @@ func newApp(adm *Admin) *iris.Application {
 	})
 
 	crs := cors.New(cors.Options{
-		Debug:            true,
+		Debug:            false,
 		AllowedHeaders:   []string{"Content-Type", "Token"},
 		AllowedOrigins:   []string{"*"}, // allows everything, use that to change the hosts.
 		AllowCredentials: true,

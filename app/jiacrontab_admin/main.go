@@ -15,14 +15,16 @@ import (
 	"github.com/iwannay/log"
 )
 
+var (
+	debug    bool
+	cfgPath  string
+	logLevel string
+	user     string
+	resetpwd bool
+	pwd      string
+)
+
 func parseFlag(opt *admin.Config) *flag.FlagSet {
-
-	var (
-		debug    bool
-		cfgPath  string
-		logLevel string
-	)
-
 	flagSet := flag.NewFlagSet("jiacrontab_admin", flag.ExitOnError)
 	// app options
 	flagSet.Bool("version", false, "打印版本信息")
@@ -30,6 +32,9 @@ func parseFlag(opt *admin.Config) *flag.FlagSet {
 	flagSet.StringVar(&logLevel, "log_level", "warn", "日志级别(debug|info|warn|error)")
 	flagSet.BoolVar(&debug, "debug", false, "开启debug模式")
 	flagSet.StringVar(&cfgPath, "config", "./jiacrontab_admin.ini", "配置文件路径")
+	flagSet.BoolVar(&resetpwd, "resetpwd", false, "重置密码")
+	flagSet.StringVar(&pwd, "pwd", "", "重置密码时的新密码")
+	flagSet.StringVar(&user, "user", "", "重置密码时的用户名")
 	// jwt options
 	flagSet.Parse(os.Args[1:])
 
@@ -70,5 +75,14 @@ func main() {
 	}[cfg.App.LogLevel])
 	pprof.ListenPprof()
 	admin := admin.New(cfg)
+	if resetpwd {
+		if err := admin.ResetPwd(user, pwd); err != nil {
+			fmt.Printf("failed reset passwrod (%s)\n", err)
+		} else {
+			fmt.Printf("reset password success!\n")
+		}
+		os.Exit(0)
+
+	}
 	admin.Main()
 }

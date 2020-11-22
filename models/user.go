@@ -89,6 +89,9 @@ func (u *User) Create() error {
 func (u User) Update() error {
 	u.setPasswd()
 	u.Version = time.Now().Unix()
+	if u.ID == 0 && u.Username != "" {
+		return DB().Where("username=?", u.Username).Updates(u).Error
+	}
 	return DB().Model(&u).Updates(u).Error
 }
 

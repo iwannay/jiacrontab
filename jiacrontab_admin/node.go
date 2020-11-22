@@ -37,22 +37,31 @@ func GetNodeList(ctx *myctx) {
 		"disabled": true,
 	})
 
-	txt := "%" + reqBody.SearchTxt + "%"
+	model := models.DB()
+	if reqBody.SearchTxt != "" {
+		txt := "%" + reqBody.SearchTxt + "%"
+		model = model.Where("(name like ? or addr like ?)", txt, txt)
+	}
+
 	switch reqBody.QueryStatus {
 	case 1:
-		err = models.DB().Preload("Group").Where("group_id=? and (name like ? or addr like ?) and disabled=?",
-			reqBody.QueryGroupID, txt, txt, false).Offset((reqBody.Page - 1) * reqBody.Pagesize).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
-		models.DB().Model(&models.Node{}).Where("group_id=? and (name like ? or addr like ?) and disabled=?",
-			reqBody.QueryGroupID, txt, txt, false).Count(&count)
+		err = model.Preload("Group").Where("group_id=? and disabled=?",
+			reqBody.QueryGroupID, false).Offset((reqBody.Page - 1) * reqBody.Pagesize).
+			Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
+
+		model.Model(&models.Node{}).Where("group_id=? and disabled=?",
+			reqBody.QueryGroupID, false).Count(&count)
 	case 2:
-		err = models.DB().Preload("Group").Where("group_id=? and (name like ? or addr like ?) and disabled=?",
-			reqBody.QueryGroupID, txt, txt, true).Offset((reqBody.Page - 1) * reqBody.Pagesize).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
-		models.DB().Model(&models.Node{}).Where("group_id=? and (name like ? or addr like ?) and disabled=?", reqBody.QueryGroupID, txt, true).Count(&count)
+		err = model.Preload("Group").Where("group_id=? and disabled=?",
+			reqBody.QueryGroupID, true).Offset((reqBody.Page - 1) * reqBody.Pagesize).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
+
+		model.Model(&models.Node{}).Where("group_id=? and disabled=?", reqBody.QueryGroupID, true).Count(&count)
 	default:
-		err = models.DB().Preload("Group").Where("group_id=? and (name like ? or addr like ?)",
-			reqBody.QueryGroupID, txt, txt).Offset((reqBody.Page - 1) * reqBody.Pagesize).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
-		models.DB().Model(&models.Node{}).Where("group_id=? and (name like ? or addr like ?)",
-			reqBody.QueryGroupID, txt, txt).Count(&count)
+		err = model.Preload("Group").Where("group_id=?",
+			reqBody.QueryGroupID).Offset((reqBody.Page - 1) * reqBody.Pagesize).Order("id desc").Limit(reqBody.Pagesize).Find(&nodeList).Error
+
+		model.Model(&models.Node{}).Where("group_id=?",
+			reqBody.QueryGroupID).Count(&count)
 	}
 
 	if err != nil {

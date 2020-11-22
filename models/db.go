@@ -96,7 +96,11 @@ func InitModel(driverName string, dsn string, debug bool) error {
 		return err
 	}
 	debugMode = debug
-	DB().AutoMigrate(&Node{}, &Group{}, &User{}, &Event{}, &JobHistory{})
-	DB().Create(&SuperGroup)
+	AutoMigrate()
 	return nil
+}
+
+func AutoMigrate() {
+	DB().AutoMigrate(&Node{}, &Group{}, &User{}, &Event{}, &JobHistory{})
+	DB().FirstOrCreate(&SuperGroup)
 }
