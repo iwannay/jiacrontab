@@ -139,6 +139,9 @@ func (ctx *myctx) respSucc(msg string, v interface{}) {
 func (ctx *myctx) isSuper() bool {
 	return ctx.claims.GroupID == models.SuperGroup.ID
 }
+func (ctx *myctx) isRoot() bool {
+	return ctx.claims.Root
+}
 
 func (ctx *myctx) parseClaimsFromToken() error {
 	var ok bool

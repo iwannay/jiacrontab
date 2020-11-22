@@ -91,7 +91,7 @@ func DeleteNode(ctx *myctx) {
 	}
 
 	// 普通用户不允许删除节点
-	if !ctx.isSuper() {
+	if !(ctx.isSuper() || (ctx.isRoot() && ctx.claims.GroupID == reqBody.GroupID)) {
 		ctx.respNotAllowed()
 		return
 	}
