@@ -85,9 +85,9 @@ func (j *Jiacrontabd) addJob(job *crontab.Job, updateLastExecTime bool) error {
 		if len(crontabJob.WorkIp) > 0 && !checkIpInWhiteList(strings.Join(crontabJob.WorkIp, ",")) {
 			if err := models.DB().Model(&models.CrontabJob{}).Where("id=?", job.ID).
 				Updates(map[string]interface{}{
-					"status":         models.StatusJobStop,
-					"next_exec_time": time.Time{},
-					"lastExitStatus": "IP受限制",
+					"status":           models.StatusJobStop,
+					"next_exec_time":   time.Time{},
+					"last_exit_status": "IP受限制",
 				}).Error; err != nil {
 				log.Error(err)
 			}

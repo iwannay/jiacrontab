@@ -180,7 +180,7 @@ func (d *Daemon) add(t *daemonJob) {
 			if err := models.DB().Model(t.job).Updates(map[string]interface{}{
 				"status": models.StatusJobStop,
 				//"next_exec_time": time.Time{},
-				//"lastExitStatus": "IP受限制",
+				//"last_exit_status": "IP受限制",
 			}).Error; err != nil {
 				log.Error(err)
 			}
