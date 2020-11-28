@@ -372,7 +372,7 @@ func (j *Jiacrontabd) heartBeat() {
 			}
 		}
 
-		if job.Failed && job.Status == models.StatusJobTiming || job.Status == models.StatusJobRunning {
+		if job.Failed && (job.Status == models.StatusJobTiming || job.Status == models.StatusJobRunning) {
 			node.CrontabJobFailNum += job.Total
 			superGroupNode.CrontabJobFailNum += job.Total
 		}
