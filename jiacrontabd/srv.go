@@ -188,8 +188,8 @@ func (j *CrontabJob) Start(args proto.ActionJobsArgs, jobs *[]models.CrontabJob)
 	return nil
 }
 
-func (j *CrontabJob) Stop(args proto.ActionJobsArgs, job *[]models.CrontabJob) error {
-	model := models.DB()
+func (j *CrontabJob) Stop(args proto.ActionJobsArgs, jobs *[]models.CrontabJob) error {
+	model := models.DB().Model(&models.CrontabJob{})
 	if args.GroupID == models.SuperGroup.ID {
 		model = model.Where("id in (?) and status in (?)", args.JobIDs, []models.JobStatus{models.StatusJobTiming, models.StatusJobRunning})
 	} else if args.Root {
@@ -204,10 +204,10 @@ func (j *CrontabJob) Stop(args proto.ActionJobsArgs, job *[]models.CrontabJob) e
 		j.jd.killTask(jobID)
 	}
 
-	return model.Find(job).Updates(map[string]interface{}{
+	return model.Updates(map[string]interface{}{
 		"status":         models.StatusJobStop,
 		"next_exec_time": time.Time{},
-	}).Error
+	}).Find(jobs).Error
 }
 
 func (j *CrontabJob) Delete(args proto.ActionJobsArgs, job *[]models.CrontabJob) error {
