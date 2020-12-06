@@ -193,7 +193,7 @@ func (j *CrontabJob) Stop(args proto.ActionJobsArgs, jobs *[]models.CrontabJob) 
 	if args.GroupID == models.SuperGroup.ID {
 		model = model.Where("id in (?) and status in (?)", args.JobIDs, []models.JobStatus{models.StatusJobTiming, models.StatusJobRunning})
 	} else if args.Root {
-		model = model.Where(" id in (?) and status in (?) and group_id=?",
+		model = model.Where("id in (?) and status in (?) and group_id=?",
 			args.JobIDs, []models.JobStatus{models.StatusJobTiming, models.StatusJobRunning}, args.GroupID)
 	} else {
 		model = model.Where("created_user_id = ? and id in (?) and status in (?)  and group_id=?",
@@ -440,13 +440,13 @@ func (j *DaemonJob) Start(args proto.ActionJobsArgs, jobs *[]models.DaemonJob) e
 
 	model := models.DB()
 	if args.GroupID == models.SuperGroup.ID {
-		model = model.Where("id in(?) and status in (?)",
+		model = model.Where("id in (?) and status in (?)",
 			args.JobIDs, []models.JobStatus{models.StatusJobOk, models.StatusJobStop})
 	} else if args.Root {
-		model = model.Where(" and id in(?) and status in (?) and group_id=?",
+		model = model.Where("id in (?) and status in (?) and group_id=?",
 			args.JobIDs, []models.JobStatus{models.StatusJobOk, models.StatusJobStop}, args.GroupID)
 	} else {
-		model = model.Where("created_user_id = ? and id in(?) and status in (?) and group_id=?",
+		model = model.Where("created_user_id = ? and id in (?) and status in (?) and group_id=?",
 			args.UserID, args.JobIDs, []models.JobStatus{models.StatusJobOk, models.StatusJobStop}, args.GroupID)
 	}
 
@@ -469,13 +469,13 @@ func (j *DaemonJob) Stop(args proto.ActionJobsArgs, jobs *[]models.DaemonJob) er
 
 	model := models.DB()
 	if args.GroupID == models.SuperGroup.ID {
-		model = model.Where("id in(?) and status in (?)",
+		model = model.Where("id in (?) and status in (?)",
 			args.JobIDs, []models.JobStatus{models.StatusJobRunning, models.StatusJobTiming})
 	} else if args.Root {
-		model = model.Where("id in(?) and status in (?) and group_id=?",
+		model = model.Where("id in (?) and status in (?) and group_id=?",
 			args.JobIDs, []models.JobStatus{models.StatusJobRunning, models.StatusJobTiming}, args.GroupID)
 	} else {
-		model = model.Where("created_user_id = ? and id in(?) and status in (?) and group_id=?",
+		model = model.Where("created_user_id = ? and id in (?) and status in (?) and group_id=?",
 			args.UserID, args.JobIDs, []models.JobStatus{models.StatusJobRunning, models.StatusJobTiming}, args.GroupID)
 	}
 
@@ -495,9 +495,9 @@ func (j *DaemonJob) Delete(args proto.ActionJobsArgs, jobs *[]models.DaemonJob) 
 
 	model := models.DB()
 	if args.GroupID == models.SuperGroup.ID {
-		model = model.Where("id in(?)", args.JobIDs)
+		model = model.Where("id in (?)", args.JobIDs)
 	} else if args.Root {
-		model = model.Where("id in(?) and group_id=?",
+		model = model.Where("id in (?) and group_id=?",
 			args.JobIDs, args.GroupID)
 	} else {
 		model = model.Where("created_user_id = ? and id in(?) and group_id=?",
