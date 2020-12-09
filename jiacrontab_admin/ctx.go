@@ -8,6 +8,7 @@ import (
 	"jiacrontab/models"
 	"jiacrontab/pkg/proto"
 	"net/http"
+	"strings"
 	"sync/atomic"
 
 	"jiacrontab/pkg/version"
@@ -95,6 +96,10 @@ func (ctx *myctx) respError(code int, err interface{}, v ...interface{}) {
 	msgStr = fmt.Sprintf("%s", err)
 	if len(v) >= 1 {
 		data = v[0]
+	}
+
+	if strings.Contains(msgStr, "UNIQUE constraint failed") {
+		msgStr = strings.Replace(msgStr, "UNIQUE constraint failed", "数据已存在，请检查索引", -1)
 	}
 
 	bts, err = json.Marshal(data)

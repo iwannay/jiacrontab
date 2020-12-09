@@ -12,11 +12,11 @@ type Node struct {
 	DaemonTaskNum      uint   `json:"daemonTaskNum"`
 	Disabled           bool   `json:"disabled"` // 通信失败时Disabled会被设置为true
 	CrontabTaskNum     uint   `json:"crontabTaskNum"`
-	GroupID            uint   `json:"groupID" gorm:"not null;unique_index:uni_group_addr" `
+	GroupID            uint   `json:"groupID" gorm:"not null;uniqueIndex:uni_group_addr" `
 	CrontabJobAuditNum uint   `json:"crontabJobAuditNum"`
 	DaemonJobAuditNum  uint   `json:"daemonJobAuditNum"`
 	CrontabJobFailNum  uint   `json:"crontabJobFailNum"`
-	Addr               string `json:"addr" gorm:"not null;unique_index:uni_group_addr"`
+	Addr               string `json:"addr" gorm:"not null;uniqueIndex:uni_group_addr"`
 	Group              Group  `json:"group"`
 }
 
