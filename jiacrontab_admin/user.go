@@ -372,7 +372,7 @@ func UserStat(ctx *myctx) {
 			sum(crontab_task_num) as crontab_task_num,
 			count(*) as node_num
 		from nodes 
-		where group_id=?`, ctx.claims.GroupID).Scan(&auditNumStat).Error
+		where group_id=? and deleted_at is null`, ctx.claims.GroupID).Scan(&auditNumStat).Error
 	if err != nil {
 		ctx.respDBError(err)
 		return
