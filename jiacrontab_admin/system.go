@@ -52,10 +52,10 @@ func CleanLog(ctx *myctx) {
 	}
 	var tx *gorm.DB
 	if reqBody.IsEvent {
-		tx = models.DB().Where("created_at<?", offset).Delete(&models.Event{})
+		tx = models.DB().Where("created_at<?", offset).Unscoped().Delete(&models.Event{})
 
 	} else {
-		tx = models.DB().Where("created_at<?", offset).Delete(&models.JobHistory{})
+		tx = models.DB().Where("created_at<?", offset).Unscoped().Delete(&models.JobHistory{})
 	}
 	err = tx.Error
 	if err != nil {
