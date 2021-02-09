@@ -17,7 +17,7 @@ type Event struct {
 	EventDesc      string `json:"eventDesc"`
 	TargetName     string `json:"targetName"`
 	SourceUsername string `json:"sourceUsername"`
-	SourceName     string `json:"sourceName" gorm:"index"`
+	SourceName     string `json:"sourceName" gorm:"index;size:500"`
 	Content        string `json:"content"`
 }
 

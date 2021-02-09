@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/iwannay/log"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
@@ -101,6 +102,10 @@ func InitModel(driverName string, dsn string, debug bool) error {
 }
 
 func AutoMigrate() {
-	DB().AutoMigrate(&Node{}, &Group{}, &User{}, &Event{}, &JobHistory{})
-	DB().FirstOrCreate(&SuperGroup)
+	if err := DB().AutoMigrate(&Node{}, &Group{}, &User{}, &Event{}, &JobHistory{}); err != nil {
+		log.Fatal(err)
+	}
+	if err := DB().FirstOrCreate(&SuperGroup).Error; err != nil {
+		log.Fatal(err)
+	}
 }
