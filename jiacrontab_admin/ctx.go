@@ -165,11 +165,11 @@ func (ctx *myctx) parseClaimsFromToken() error {
 	}
 	err = json.Unmarshal(bts, &ctx.claims)
 	if err != nil {
-		return fmt.Errorf("unmarshal claims error(%s)", err)
+		return fmt.Errorf("unmarshal claims error - (%s)", err)
 	}
 	var user models.User
 	if err := models.DB().Take(&user, "id=?", ctx.claims.UserID).Error; err != nil {
-		return fmt.Errorf("validate user from db error(%s)", err)
+		return fmt.Errorf("validate user from db error - (%s)", err)
 	}
 	if ctx.claims.Mail != user.Mail || ctx.claims.GroupID != user.GroupID || ctx.claims.Root != user.Root || ctx.claims.Version != user.Version {
 		return fmt.Errorf("token validate error")

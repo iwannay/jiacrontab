@@ -8,7 +8,7 @@ var SuperGroup Group
 
 type Group struct {
 	gorm.Model
-	Name string `json:"name" gorm:"not null;uniqueIndex"`
+	Name string `json:"name" gorm:"not null;uniqueIndex;size:500"`
 }
 
 func (g *Group) Save() error {

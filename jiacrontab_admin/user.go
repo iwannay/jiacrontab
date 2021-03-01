@@ -78,7 +78,7 @@ func GetActivityList(ctx *myctx) {
 		reqBody ReadMoreReqParams
 		events  []models.Event
 		isSuper bool
-		model   = models.DB().Debug()
+		model   = models.DB()
 	)
 
 	if err = ctx.Valid(&reqBody); err != nil {
