@@ -54,8 +54,10 @@ type EditJobReqParams struct {
 	MaxConcurrent    uint              `json:"maxConcurrent"`
 	ErrorMailNotify  bool              `json:"errorMailNotify"`
 	ErrorAPINotify   bool              `json:"errorAPINotify"`
+	ErrorDingdingNotify   bool         `json:"errorDingdingNotify"`
 	MailTo           []string          `json:"mailTo"`
 	APITo            []string          `json:"APITo"`
+	DingdingTo       []string          `json:"DingdingTo"`
 	RetryNum         int               `json:"retryNum"`
 	WorkDir          string            `json:"workDir"`
 	WorkUser         string            `json:"workUser"`
@@ -77,6 +79,7 @@ func (p *EditJobReqParams) Verify(ctx *myctx) error {
 		proto.TimeoutTrigger_CallApi:   true,
 		proto.TimeoutTrigger_SendEmail: true,
 		proto.TimeoutTrigger_Kill:      true,
+		proto.TimeoutTrigger_DingdingWebhook: true,
 	}
 
 	for _, v := range p.TimeoutTrigger {
@@ -88,6 +91,7 @@ func (p *EditJobReqParams) Verify(ctx *myctx) error {
 	p.Command = util.FilterEmptyEle(p.Command)
 	p.MailTo = util.FilterEmptyEle(p.MailTo)
 	p.APITo = util.FilterEmptyEle(p.APITo)
+	p.DingdingTo = util.FilterEmptyEle(p.DingdingTo)
 	p.WorkEnv = util.FilterEmptyEle(p.WorkEnv)
 	p.WorkIp = util.FilterEmptyEle(p.WorkIp)
 

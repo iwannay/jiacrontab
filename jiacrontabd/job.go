@@ -260,6 +260,27 @@ func (j *JobEntry) handleDepError(startTime time.Time, p *process) {
 			log.Error("Srv.SendMail error:", err, "server addr:", cfg.AdminAddr)
 		}
 	}
+
+	// 钉钉webhook通知
+	if j.detail.ErrorDingdingNotify && len(j.detail.DingdingTo) != 0 {
+		nodeAddr := cfg.BoardcastAddr
+		title := nodeAddr + "告警：脚本依赖异常退出"
+		notifyContent := fmt.Sprintf("> ###### 来自jiacrontabd: %s 的依赖异常退出报警：\n> ##### 任务id：%d\n> ##### 任务名称：%s\n> ##### timeout:%d\n> ##### 尝试次数：%d\n> ##### 异常：%s\n> ##### 报警时间：%s", nodeAddr, int(j.detail.ID), j.detail.Name, int64(j.detail.Timeout), p.retryNum, err, time.Now().Format("2006-01-02 15:04:05"))
+		notifyBody := fmt.Sprintf(
+			`{
+				"msgtype": "markdown",
+				"markdown": {
+					"title": "%s",
+					"text": "%s"
+				}
+			}`, title, notifyContent)
+		if err = j.jd.rpcCallCtx(context.TODO(), "Srv.ApiPost", proto.ApiPost{
+			Urls: j.detail.DingdingTo,
+			Data: notifyBody,
+		}, &reply); err != nil {
+			log.Error("Srv.ApiPost error:", err, "server addr:", cfg.AdminAddr)
+		}
+	}
 }
 
 func (j *JobEntry) handleNotify(p *process) {
@@ -311,6 +332,27 @@ func (j *JobEntry) handleNotify(p *process) {
 		}
 
 	}
+
+	// 钉钉webhook通知
+	if j.detail.ErrorDingdingNotify {
+		nodeAddr := cfg.BoardcastAddr
+		title := nodeAddr + "告警：脚本异常退出"
+		notifyContent := fmt.Sprintf("> ###### 来自jiacrontabd: %s 的脚本异常退出报警：\n> ##### 任务id：%d\n> ##### 任务名称：%s\n> ##### timeout:%d\n> ##### 尝试次数：%d\n> ##### 报警时间：%s", nodeAddr, int(j.detail.ID), j.detail.Name, int64(j.detail.Timeout), p.retryNum, time.Now().Format("2006-01-02 15:04:05"))
+		notifyBody := fmt.Sprintf(
+			`{
+				"msgtype": "markdown",
+				"markdown": {
+					"title": "%s",
+					"text": "%s"
+				}
+			}`, title, notifyContent)
+		if err = j.jd.rpcCallCtx(context.TODO(), "Srv.ApiPost", proto.ApiPost{
+			Urls: j.detail.DingdingTo,
+			Data: notifyBody,
+		}, &reply); err != nil {
+			log.Error("Srv.ApiPost error:", err, "server addr:", cfg.AdminAddr)
+		}
+	}
 }
 
 func (j *JobEntry) timeoutTrigger(p *process) {
@@ -361,6 +403,26 @@ func (j *JobEntry) timeoutTrigger(p *process) {
 		case proto.TimeoutTrigger_Kill:
 			j.detail.LastExitStatus = exitTimeout
 			p.cancel()
+		case proto.TimeoutTrigger_DingdingWebhook:
+			j.detail.LastExitStatus = exitTimeout
+
+			nodeAddr := cfg.BoardcastAddr
+			title := nodeAddr + "告警：脚本执行超时"
+			notifyContent := fmt.Sprintf("> ###### 来自jiacrontabd: %s 的脚本执行超时报警：\n> ##### 任务id：%d\n> ##### 任务名称：%s\n> ##### timeout:%d\n> ##### 尝试次数：%d\n> ##### 报警时间：%s", nodeAddr, int(j.detail.ID), j.detail.Name, int64(j.detail.Timeout), p.retryNum, time.Now().Format("2006-01-02 15:04:05"))
+			notifyBody := fmt.Sprintf(
+				`{
+					"msgtype": "markdown",
+					"markdown": {
+						"title": "%s",
+						"text": "%s"
+					}
+				}`, title, notifyContent)
+			if err = j.jd.rpcCallCtx(context.TODO(), "Srv.ApiPost", proto.ApiPost{
+				Urls: j.detail.DingdingTo,
+				Data: notifyBody,
+			}, &reply); err != nil {
+				log.Error("Srv.ApiPost error:", err, "server addr:", cfg.AdminAddr)
+			}
 		default:
 			log.Error("invalid timeoutTrigger", e)
 		}

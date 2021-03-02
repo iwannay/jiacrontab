@@ -3,7 +3,8 @@ package proto
 const (
 	DefaultTimeLayout = "2006-01-02 15:04:05"
 
-	TimeoutTrigger_CallApi   = "CallApi"
-	TimeoutTrigger_SendEmail = "SendEmail"
-	TimeoutTrigger_Kill      = "Kill"
+	TimeoutTrigger_CallApi         = "CallApi"
+	TimeoutTrigger_SendEmail       = "SendEmail"
+	TimeoutTrigger_Kill            = "Kill"
+	TimeoutTrigger_DingdingWebhook = "DingdingWebhook"
 )
