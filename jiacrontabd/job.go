@@ -381,11 +381,11 @@ func (j *JobEntry) timeoutTrigger(p *process) {
 				log.Error("json.Marshal error:", err)
 			}
 
-			if err = j.jd.rpcCallCtx(context.TODO(), "Srv.ErrorNotify err:", proto.ApiPost{
+			if err = j.jd.rpcCallCtx(context.TODO(), "Srv.ApiPost err:", proto.ApiPost{
 				Urls: j.detail.APITo,
 				Data: string(postData),
 			}, &reply); err != nil {
-				log.Error("Srv.ErrorNotify err:", err, "server addr:", cfg.AdminAddr)
+				log.Error("Srv.ApiPost err:", err, "server addr:", cfg.AdminAddr)
 			}
 
 		case proto.TimeoutTrigger_SendEmail:
