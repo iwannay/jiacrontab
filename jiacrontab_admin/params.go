@@ -233,6 +233,7 @@ type EditDaemonJobReqParams struct {
 	Name            string   `json:"name" rule:"required,请填写name"`
 	MailTo          []string `json:"mailTo"`
 	APITo           []string `json:"APITo"`
+	DingdingTo      []string `json:"DingdingTo"`
 	Command         []string `json:"command"  rule:"required,请填写command"`
 	Code            string   `json:"code"`
 	WorkUser        string   `json:"workUser"`
@@ -243,6 +244,7 @@ type EditDaemonJobReqParams struct {
 	RetryNum        int      `json:"retryNum"`
 	ErrorMailNotify bool     `json:"errorMailNotify"`
 	ErrorAPINotify  bool     `json:"errorAPINotify"`
+	ErrorDingdingNotify  bool     `json:"errorDingdingNotify"`
 }
 
 func (p *EditDaemonJobReqParams) Verify(ctx *myctx) error {
