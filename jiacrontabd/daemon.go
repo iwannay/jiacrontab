@@ -156,6 +156,29 @@ func (d *daemonJob) handleNotify(err error) {
 			log.Error("Logic.ApiPost error:", err, "server addr:", cfg.AdminAddr)
 		}
 	}
+
+	// 钉钉webhook通知
+	if d.job.ErrorDingdingNotify && len(d.job.DingdingTo) > 0 {
+		nodeAddr := cfg.BoardcastAddr
+		title := nodeAddr + "告警：常驻脚本异常退出"
+		notifyContent := fmt.Sprintf("> ###### 来自jiacrontabd: %s 的常驻脚本异常退出报警：\n> ##### 任务id：%d\n> ##### 任务名称：%s\n> ##### 异常：%s\n> ##### 报警时间：%s", nodeAddr, int(d.job.ID), d.job.Name, err, time.Now().Format("2006-01-02 15:04:05"))
+		notifyBody := fmt.Sprintf(
+			`{
+				"msgtype": "markdown",
+				"markdown": {
+					"title": "%s",
+					"text": "%s"
+				}
+			}`, title, notifyContent)
+		err = d.daemon.jd.rpcCallCtx(d.ctx, "Srv.ApiPost", proto.ApiPost{
+			Urls: d.job.DingdingTo,
+			Data: notifyBody,
+		}, &reply)
+
+		if err != nil {
+			log.Error("Logic.ApiPost error:", err, "server addr:", cfg.AdminAddr)
+		}
+	}
 }
 
 type Daemon struct {

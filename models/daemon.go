@@ -14,9 +14,11 @@ type DaemonJob struct {
 	Code            string      `json:"code"  gorm:"type:TEXT"`
 	ErrorMailNotify bool        `json:"errorMailNotify"`
 	ErrorAPINotify  bool        `json:"errorAPINotify"`
+	ErrorDingdingNotify  bool   `json:"errorDingdingNotify"`
 	Status          JobStatus   `json:"status"`
 	MailTo          StringSlice `json:"mailTo" gorm:"type:varchar(1000)"`
 	APITo           StringSlice `json:"APITo" gorm:"type:varchar(1000)"`
+	DingdingTo      StringSlice `json:"DingdingTo" gorm:"type:varchar(1000)"`
 	FailRestart     bool        `json:"failRestart"`
 	RetryNum        int         `json:"retryNum"`
 	StartAt         time.Time   `json:"startAt"`
