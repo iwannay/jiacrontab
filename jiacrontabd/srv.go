@@ -113,6 +113,9 @@ func (j *CrontabJob) Edit(args proto.EditCrontabJobArgs, reply *models.CrontabJo
 	if args.Job.ID == 0 {
 		model = models.DB().Save(&args.Job)
 	} else {
+		// we should kill the job
+		j.jd.killTask(args.Job.ID)
+
 		j.jd.mux.Lock()
 		delete(j.jd.jobs, args.Job.ID)
 		j.jd.mux.Unlock()

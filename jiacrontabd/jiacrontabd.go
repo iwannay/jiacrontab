@@ -127,7 +127,7 @@ func (j *Jiacrontabd) execTask(job *crontab.Job) {
 		task.exec()
 		return
 	}
-	log.Errorf("not found jobID(%d)", job.ID)
+	log.Warnf("not found jobID(%d)", job.ID)
 	j.mux.RUnlock()
 
 }
@@ -425,7 +425,13 @@ func (j *Jiacrontabd) recovery() {
 	var crontabJobs []models.CrontabJob
 	var daemonJobs []models.DaemonJob
 
-	err := models.DB().Find(&crontabJobs, "status IN (?)", []models.JobStatus{models.StatusJobTiming, models.StatusJobRunning}).Error
+	// reset processNUm 0
+	err := models.DB().Model(&models.CrontabJob{}).Where("process_num > ?", 0).Update("process_num", 0).Error
+	if err != nil {
+		log.Debug("crontab recovery: reset processNum failed -", err)
+	}
+
+	err = models.DB().Find(&crontabJobs, "status IN (?)", []models.JobStatus{models.StatusJobTiming, models.StatusJobRunning}).Error
 	if err != nil {
 		log.Debug("crontab recovery:", err)
 	}
