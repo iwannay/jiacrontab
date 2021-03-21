@@ -27,12 +27,14 @@ func CreateDB(dialect string, dsn string) (err error) {
 		return createSqlite(dsn)
 	case "mysql":
 		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-			PrepareStmt: true,
+			PrepareStmt:                              true,
+			DisableForeignKeyConstraintWhenMigrating: true,
 		})
 		return
 	case "postgres":
 		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-			PrepareStmt: true,
+			PrepareStmt:                              true,
+			DisableForeignKeyConstraintWhenMigrating: true,
 		})
 		return
 	}
@@ -50,7 +52,9 @@ func createSqlite(dsn string) error {
 	if err != nil {
 		return fmt.Errorf("sqlite: makedir failed %s", err)
 	}
-	db, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{})
+	db, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{
+		DisableForeignKeyConstraintWhenMigrating: true,
+	})
 	if err == nil {
 		d, err := db.DB()
 		if err != nil {
