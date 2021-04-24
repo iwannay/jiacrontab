@@ -5,6 +5,7 @@ go 1.14
 require (
 	github.com/Joker/hpp v1.0.0 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/go-ldap/ldap/v3 v3.3.0
 	github.com/gofrs/uuid v3.2.0+incompatible
 	github.com/google/go-cmp v0.5.1 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20190812055157-5d271430af9f // indirect

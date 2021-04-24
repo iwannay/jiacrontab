@@ -14,11 +14,12 @@ import (
 
 type User struct {
 	gorm.Model
-	Username string `json:"username" gorm:"not null;uniqueIndex;size:500`
+	Username string `json:"username" gorm:"not null;uniqueIndex;size:500"`
 	Passwd   string `json:"-"`
 	Salt     string `json:"-"`
 	Avatar   string `json:"avatar"`
 	Version  int64  `json:"version"`
+	Gender   string `json:"gender"`
 	GroupID  uint   `json:"groupID" grom:"index"`
 	Root     bool   `json:"root"`
 	Mail     string `json:"mail"`
@@ -47,11 +48,7 @@ func (u *User) Verify(username, passwd string) bool {
 	}
 
 	bts := md5.Sum([]byte(fmt.Sprint(passwd, u.Salt)))
-	if fmt.Sprintf("%x", bts) == u.Passwd {
-		return true
-	}
-
-	return false
+	return fmt.Sprintf("%x", bts) == u.Passwd
 }
 
 // Verify 验证用户
@@ -64,11 +61,7 @@ func (u *User) VerifyByUserId(id uint, passwd string) bool {
 	}
 
 	bts := md5.Sum([]byte(fmt.Sprint(passwd, u.Salt)))
-	if fmt.Sprintf("%x", bts) == u.Passwd {
-		return true
-	}
-
-	return false
+	return fmt.Sprintf("%x", bts) == u.Passwd
 }
 
 func (u *User) setPasswd() {

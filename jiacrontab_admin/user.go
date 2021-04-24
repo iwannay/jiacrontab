@@ -38,9 +38,19 @@ func Login(ctx *myctx) {
 		ctx.respParamError(err)
 		return
 	}
-	if !user.Verify(reqBody.Username, reqBody.Passwd) {
-		ctx.respAuthFailed(errors.New("帐号或密码不正确"))
-		return
+
+	if reqBody.IsLdap {
+		luser, err := ctx.adm.ldap.Login(reqBody.Username, reqBody.Passwd)
+		if err != nil {
+			ctx.respAuthFailed(err)
+			return
+		}
+		user = *luser
+	} else {
+		if !user.Verify(reqBody.Username, reqBody.Passwd) {
+			ctx.respAuthFailed(errors.New("帐号或密码不正确"))
+			return
+		}
 	}
 
 	customerClaims.ExpiresAt = cfg.Jwt.Expires + time.Now().Unix()

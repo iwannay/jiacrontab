@@ -44,41 +44,41 @@ func (p *JobsReqParams) Verify(ctx *myctx) error {
 }
 
 type EditJobReqParams struct {
-	JobID            uint              `json:"jobID"`
-	Addr             string            `json:"addr" rule:"required,请填写addr"`
-	IsSync           bool              `json:"isSync"`
-	Name             string            `json:"name" rule:"required,请填写name"`
-	Command          []string          `json:"command" rule:"required,请填写name"`
-	Code             string            `json:"code"`
-	Timeout          int               `json:"timeout"`
-	MaxConcurrent    uint              `json:"maxConcurrent"`
-	ErrorMailNotify  bool              `json:"errorMailNotify"`
-	ErrorAPINotify   bool              `json:"errorAPINotify"`
-	ErrorDingdingNotify   bool         `json:"errorDingdingNotify"`
-	MailTo           []string          `json:"mailTo"`
-	APITo            []string          `json:"APITo"`
-	DingdingTo       []string          `json:"DingdingTo"`
-	RetryNum         int               `json:"retryNum"`
-	WorkDir          string            `json:"workDir"`
-	WorkUser         string            `json:"workUser"`
-	WorkEnv          []string          `json:"workEnv"`
-	WorkIp           []string          `json:"workIp"`
-	KillChildProcess bool              `json:"killChildProcess"`
-	DependJobs       models.DependJobs `json:"dependJobs"`
-	Month            string            `json:"month"`
-	Weekday          string            `json:"weekday"`
-	Day              string            `json:"day"`
-	Hour             string            `json:"hour"`
-	Minute           string            `json:"minute"`
-	Second           string            `json:"second"`
-	TimeoutTrigger   []string          `json:"timeoutTrigger"`
+	JobID               uint              `json:"jobID"`
+	Addr                string            `json:"addr" rule:"required,请填写addr"`
+	IsSync              bool              `json:"isSync"`
+	Name                string            `json:"name" rule:"required,请填写name"`
+	Command             []string          `json:"command" rule:"required,请填写name"`
+	Code                string            `json:"code"`
+	Timeout             int               `json:"timeout"`
+	MaxConcurrent       uint              `json:"maxConcurrent"`
+	ErrorMailNotify     bool              `json:"errorMailNotify"`
+	ErrorAPINotify      bool              `json:"errorAPINotify"`
+	ErrorDingdingNotify bool              `json:"errorDingdingNotify"`
+	MailTo              []string          `json:"mailTo"`
+	APITo               []string          `json:"APITo"`
+	DingdingTo          []string          `json:"DingdingTo"`
+	RetryNum            int               `json:"retryNum"`
+	WorkDir             string            `json:"workDir"`
+	WorkUser            string            `json:"workUser"`
+	WorkEnv             []string          `json:"workEnv"`
+	WorkIp              []string          `json:"workIp"`
+	KillChildProcess    bool              `json:"killChildProcess"`
+	DependJobs          models.DependJobs `json:"dependJobs"`
+	Month               string            `json:"month"`
+	Weekday             string            `json:"weekday"`
+	Day                 string            `json:"day"`
+	Hour                string            `json:"hour"`
+	Minute              string            `json:"minute"`
+	Second              string            `json:"second"`
+	TimeoutTrigger      []string          `json:"timeoutTrigger"`
 }
 
 func (p *EditJobReqParams) Verify(ctx *myctx) error {
 	ts := map[string]bool{
-		proto.TimeoutTrigger_CallApi:   true,
-		proto.TimeoutTrigger_SendEmail: true,
-		proto.TimeoutTrigger_Kill:      true,
+		proto.TimeoutTrigger_CallApi:         true,
+		proto.TimeoutTrigger_SendEmail:       true,
+		proto.TimeoutTrigger_Kill:            true,
 		proto.TimeoutTrigger_DingdingWebhook: true,
 	}
 
@@ -228,23 +228,23 @@ func (p *ActionTaskReqParams) Verify(ctx *myctx) error {
 }
 
 type EditDaemonJobReqParams struct {
-	Addr            string   `json:"addr" rule:"required,请填写addr"`
-	JobID           uint     `json:"jobID"`
-	Name            string   `json:"name" rule:"required,请填写name"`
-	MailTo          []string `json:"mailTo"`
-	APITo           []string `json:"APITo"`
-	DingdingTo      []string `json:"DingdingTo"`
-	Command         []string `json:"command"  rule:"required,请填写command"`
-	Code            string   `json:"code"`
-	WorkUser        string   `json:"workUser"`
-	WorkIp          []string `json:"workIp"`
-	WorkEnv         []string `json:"workEnv"`
-	WorkDir         string   `json:"workDir"`
-	FailRestart     bool     `json:"failRestart"`
-	RetryNum        int      `json:"retryNum"`
-	ErrorMailNotify bool     `json:"errorMailNotify"`
-	ErrorAPINotify  bool     `json:"errorAPINotify"`
-	ErrorDingdingNotify  bool     `json:"errorDingdingNotify"`
+	Addr                string   `json:"addr" rule:"required,请填写addr"`
+	JobID               uint     `json:"jobID"`
+	Name                string   `json:"name" rule:"required,请填写name"`
+	MailTo              []string `json:"mailTo"`
+	APITo               []string `json:"APITo"`
+	DingdingTo          []string `json:"DingdingTo"`
+	Command             []string `json:"command"  rule:"required,请填写command"`
+	Code                string   `json:"code"`
+	WorkUser            string   `json:"workUser"`
+	WorkIp              []string `json:"workIp"`
+	WorkEnv             []string `json:"workEnv"`
+	WorkDir             string   `json:"workDir"`
+	FailRestart         bool     `json:"failRestart"`
+	RetryNum            int      `json:"retryNum"`
+	ErrorMailNotify     bool     `json:"errorMailNotify"`
+	ErrorAPINotify      bool     `json:"errorAPINotify"`
+	ErrorDingdingNotify bool     `json:"errorDingdingNotify"`
 }
 
 func (p *EditDaemonJobReqParams) Verify(ctx *myctx) error {
@@ -315,6 +315,7 @@ type LoginReqParams struct {
 	Username string `json:"username" rule:"required,请输入用户名"`
 	Passwd   string `json:"passwd" rule:"required,请输入密码"`
 	Remember bool   `json:"remember"`
+	IsLdap   bool   `json:"is_ldap"`
 }
 
 func (p *LoginReqParams) Verify(ctx *myctx) error {
@@ -415,7 +416,7 @@ func (p *AuditJobReqParams) Verify(ctx *myctx) error {
 		return err
 	}
 
-	if jobTypeMap[p.JobType] == false {
+	if !jobTypeMap[p.JobType] {
 		return paramsError
 	}
 

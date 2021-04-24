@@ -5,6 +5,7 @@ import (
 	"jiacrontab/models"
 	"jiacrontab/pkg/mailer"
 	"jiacrontab/pkg/rpc"
+	"time"
 
 	"sync/atomic"
 
@@ -13,6 +14,7 @@ import (
 
 type Admin struct {
 	cfg           atomic.Value
+	ldap          *Ldap
 	initAdminUser int32
 }
 
@@ -58,11 +60,20 @@ func (a *Admin) init() {
 			HookMode:       false,
 		})
 	}
+	a.ldap = &Ldap{
+		BindUserDn:             cfg.Ldap.BindUserdn,
+		BindPwd:                cfg.Ldap.BindPasswd,
+		BaseOn:                 cfg.Ldap.Basedn,
+		UserField:              cfg.Ldap.UserField,
+		Addr:                   cfg.Ldap.Addr,
+		DisabledAnonymousQuery: cfg.Ldap.DisabledAnonymousQuery,
+		Timeout:                time.Second * time.Duration(cfg.Ldap.Timeout),
+	}
 }
 
 func (a *Admin) ResetPwd(username string, password string) error {
 	if username == "" || password == "" {
-		return errors.New("username or password cannot empty!")
+		return errors.New("username or password cannot empty")
 	}
 	a.init()
 	user := models.User{

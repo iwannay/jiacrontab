@@ -55,11 +55,22 @@ type databaseOpt struct {
 	DSN        string `opt:"dsn"`
 }
 
+type ldapOpt struct {
+	Addr                   string `opt:"addr"`
+	DisabledAnonymousQuery bool   `opt:"disabled_anonymous_query"`
+	Basedn                 string `opt:"basedn"`
+	Timeout                int    `opt:"timeout"`
+	BindPasswd             string `opt:"bind_passwd"`
+	BindUserdn             string `opt:"bind_userdn"`
+	UserField              string `opt:"user_field"`
+}
+
 type Config struct {
 	Mailer   *MailerOpt   `section:"mail"`
 	Jwt      *JwtOpt      `section:"jwt"`
 	App      *AppOpt      `section:"app"`
 	Database *databaseOpt `section:"database"`
+	Ldap     *ldapOpt     `section:"ldap"`
 
 	CfgPath         string
 	iniFile         *ini.File
@@ -140,6 +151,7 @@ func NewConfig() *Config {
 			Name:       "token",
 			Expires:    3600,
 		},
+		Ldap:     &ldapOpt{},
 		Database: &databaseOpt{},
 	}
 }

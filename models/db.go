@@ -106,7 +106,7 @@ func InitModel(driverName string, dsn string, debug bool) error {
 }
 
 func AutoMigrate() {
-	if err := DB().AutoMigrate(&Node{}, &Group{}, &User{}, &Event{}, &JobHistory{}); err != nil {
+	if err := DB().AutoMigrate(&SysSetting{}, &Node{}, &Group{}, &User{}, &Event{}, &JobHistory{}); err != nil {
 		log.Fatal(err)
 	}
 	if err := DB().FirstOrCreate(&SuperGroup).Error; err != nil {
