@@ -35,6 +35,7 @@ PROJECT_ROOT=`pwd`
 ADMIN_FLAG=0
 BD_FLAG=0
 FORMATER_LINE="------------------------------------------------------------------------------------------------------"
+ECHO_PREFIX=" -- "
 STIME_LOGFILE=".stime.log"
 function start(){
     for cli in `ps -ef | grep "$APP_KEYWORDS" | grep -v grep | awk -F '/' '{print $3}'`
@@ -52,9 +53,9 @@ function start(){
         nohup ./${ADMIN_SCRIPT_NAME} &> ${ADMIN_SCRIPT_NAME}.log &
         #sleep 1;
         echo "${ADMIN_SCRIPT_NAME}[ StartTime: `date --date='0 days ago' \"+%Y-%m-%d %H:%M:%S\"` ]" >> ${PROJECT_ROOT}/${STIME_LOGFILE}
-        echo -e " -- \033[33m${ADMIN_SCRIPT_NAME}\033[0m (\033[32mStarted\033[0m)"
+        echo -e "${ECHO_PREFIX} \033[33m${ADMIN_SCRIPT_NAME}\033[0m (\033[32mStarted\033[0m)"
     else
-        echo -e " -- \033[33m${ADMIN_SCRIPT_NAME}\033[0m is running (\033[33mSkiped\033[0m)"
+        echo -e "${ECHO_PREFIX} \033[33m${ADMIN_SCRIPT_NAME}\033[0m is running (\033[33mSkiped\033[0m)"
     fi
 
     if [ "${BD_FLAG}"  == "0" ];then
@@ -62,9 +63,9 @@ function start(){
         nohup ./${BD_SCRIPT_NAME} &> ${BD_SCRIPT_NAME}.log &
         #sleep 1;
         echo "${BD_SCRIPT_NAME}[ StartTime: `date --date='0 days ago' \"+%Y-%m-%d %H:%M:%S\"` ]" >> ${PROJECT_ROOT}/${STIME_LOGFILE}
-        echo -e " -- \033[33m${BD_SCRIPT_NAME}\033[0m (\033[32mStarted\033[0m)"
+        echo -e "${ECHO_PREFIX} \033[33m${BD_SCRIPT_NAME}\033[0m (\033[32mStarted\033[0m)"
     else
-        echo -e " -- \033[33m${BD_SCRIPT_NAME}\033[0m is running (\033[33mSkiped\033[0m)"
+        echo -e "${ECHO_PREFIX} \033[33m${BD_SCRIPT_NAME}\033[0m is running (\033[33mSkiped\033[0m)"
     fi
 }
 
@@ -75,7 +76,7 @@ function stop(){
         if [ $STR -gt 0 ] 2> /dev/null ;then
             kill -9 $STR;
         else
-            echo -e " -- \033[33m${STR}\033[0m  (\033[34mStoped\033[0m) "
+            echo -e "${ECHO_PREFIX} \033[33m${STR}\033[0m  (\033[34mStoped\033[0m) "
             #sleep 1;
         fi
     done
@@ -119,32 +120,32 @@ function parseDuringTime(){
 function status(){
     if [ `ps -ef | grep "$APP_KEYWORDS" | grep -v grep | wc -l` -gt 0 ];then
         echo $FORMATER_LINE
-        echo " -- "
+        echo ${ECHO_PREFIX}
         parseDuringTime "${ADMIN_SCRIPT_NAME}"
         if [ $? -gt 0 ] 2> /dev/null;then
             # 全局获取函数返回的字符串
-            echo -e " -- \033[33m${ADMIN_SCRIPT_NAME}\033[0m \033[32mactive (running)\033[0m since ${parseTimeResultStr}"
+            echo -e "${ECHO_PREFIX} \033[33m${ADMIN_SCRIPT_NAME}\033[0m \033[32mactive (running)\033[0m since ${parseTimeResultStr}"
             #sleep 1
 	else
-            echo -e " -- \033[33m${ADMIN_SCRIPT_NAME}\033[0m \033[32mactive (running)\033[0m since Unknow"
+            echo -e "${ECHO_PREFIX} \033[33m${ADMIN_SCRIPT_NAME}\033[0m \033[32mactive (running)\033[0m since Unknow"
         fi
 
         parseDuringTime "${BD_SCRIPT_NAME}"
         if [ $? -gt 0 ] 2> /dev/null;then
             # 全局获取函数返回的字符串
-            echo -e " -- \033[33m${BD_SCRIPT_NAME}\033[0m \033[32mactive (running)\033[0m since ${parseTimeResultStr}"
+            echo -e "${ECHO_PREFIX} \033[33m${BD_SCRIPT_NAME}\033[0m \033[32mactive (running)\033[0m since ${parseTimeResultStr}"
             #sleep 1
 	else
-            echo -e " -- \033[33m${BD_SCRIPT_NAME}\033[0m \033[32mactive (running)\033[0m since Unknow"
+            echo -e "${ECHO_PREFIX} \033[33m${BD_SCRIPT_NAME}\033[0m \033[32mactive (running)\033[0m since Unknow"
         fi
-        echo " -- "
+        echo ${ECHO_PREFIX}
         echo $FORMATER_LINE
         ps -ef | grep "$APP_KEYWORDS" | grep -v grep
         echo $FORMATER_LINE
         netstat -tlpan | grep "$APP_KEYWORDS" | grep -v grep
     else
-       echo -e " -- \033[33m${ADMIN_SCRIPT_NAME}\033[0m is \033[31moffline\033[0m"
-       echo -e " -- \033[33m${BD_SCRIPT_NAME}\033[0m is \033[31moffline\033[0m"
+       echo -e "${ECHO_PREFIX} \033[33m${ADMIN_SCRIPT_NAME}\033[0m is \033[31moffline\033[0m"
+       echo -e "${ECHO_PREFIX} \033[33m${BD_SCRIPT_NAME}\033[0m is \033[31moffline\033[0m"
     fi
 }
 
@@ -201,6 +202,6 @@ case $COMMAND in
 
     *)  
         help;  
-        exit 1;  
+        exit 1;
         ;;  
 esac
