@@ -54,11 +54,15 @@ do
         ai=$(($ai+1))
     fi
 done
+
 apps=""
+
 [[ $ai -gt 0 ]] && exit 1
+
 function _timeNow(){
     nowtime=`date --date='0 days ago' "+%Y-%m-%d %H:%M:%S"`
 }
+
 function _runApp(){
     if [ "${1}"  == "0" ];then
         path=${PROJECT_ROOT}/${2}
@@ -82,6 +86,7 @@ function _runApp(){
         echo -e " ${ECHO_PREFIX} \033[33m${2:=Unknow}\033[0m is running (\033[33mSkiped\033[0m)"
     fi
 }
+
 function start(){
     ADMIN_FLAG=0
     BD_FLAG=0
@@ -179,6 +184,16 @@ function status(){
     fi
 }
 
+function cli(){
+    echo "input: $0 OPTION" >&2
+    echo "   OPTION :"  
+    echo "          start"  
+    echo "          stop"  
+    echo "          status"  
+    echo "          restart" 
+    echo "          h | help" 
+}
+
 function help() {
     echo $FORMATER_LINE
     #echo " "
@@ -200,12 +215,7 @@ function help() {
     echo " Package: https://jiacrontab.iwannay.cn/download/"
     #echo " "
     echo $FORMATER_LINE
-    echo "input: $0 OPTION" >&2  
-    echo "   OPTION :"  
-    echo "          start"  
-    echo "          stop"  
-    echo "          status"  
-    echo "          restart"  
+    cli
 }
 COMMAND=$1
 shift 1  
@@ -213,15 +223,12 @@ case $COMMAND in
     start)
         start;
     ;;
-
     stop)
         stop;
     ;;
-    
     status)
         status;
     ;;
-
     restart)
         stop;
         sleep 1
@@ -229,9 +236,11 @@ case $COMMAND in
         sleep 1
         status;
     ;;
-
-    *)  
+    h|help)  
         help;  
-        exit 1;
-        ;;  
+    ;;  
+    *)
+       cli;
+       exit 1;
+    ;;
 esac
