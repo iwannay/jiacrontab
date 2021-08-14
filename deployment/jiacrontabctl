@@ -7,18 +7,19 @@
 #
 # 部署方法：1、解压上述zip二进制包; 2、将本脚本放入解压后的目录终呈如下结构
 #
-# [root@vipkwd jiacrontab]# la
-# 总用量 20K
-# 1033994 drwxr-xr-x  4 root www  4.0K 8月  12 20:09 .
-# 1024002 drwxr-xr-x 24 root www  4.0K 8月  12 20:09 ..
+# [root@vipkwd jiacrontab]# pwd
+# /data/wwwroot/jiacrontab
+# [root@vipkwd jiacrontab]# ll
+# 总用量 16
+# 1033992 -rwx--x--x  1 root root 7.4K 8月  14 21:30 jiacronntabctl
 # 1034047 drwxr-xr-x  3 root www  4.0K 8月  11 08:27 jiacrontab_admin
 # 1033995 drwxr-xr-x  4 root www  4.0K 8月  11 14:24 jiacrontabd
-# 1034863 -rwxr-xr-x  1 root root 3.6K 8月  11 13:13 service
+# [root@vipkwd jiacrontab]# 
 # -----------------------------------------------------------------
 
 
 # -----配置项 start-----
-# 提供进程搜索关键字（即:  "jiacrontab_admin"与“jiacrontab_admin” 在公共关键字部分，用于shell grep 过滤）
+# 提供进程搜索关键字（即:  "jiacrontab_admin"与“jiacrontabd” 在公共字符串部分，用于shell grep 过滤）
 APP_KEYWORDS=jiacrontab
 
 # 提供web前端服务的脚本文件(目录)名（对应: ./jiacrontab_admin/jiacrontab_admin)
@@ -26,18 +27,64 @@ ADMIN_SCRIPT_NAME=jiacrontab_admin
 
 # 任务调度服务脚本文件(目录)名（对应: ./jiacrontabd/jiacrontabd)
 BD_SCRIPT_NAME=jiacrontabd
+
+#手动指定项目PATH(默认空，自动定位 pwd 指令目录)
+DEPLOY_PATH=
 # -----配置项 end-----
 
+ 
 
-
-# 绝对定位当前目录
-PROJECT_ROOT=`pwd`
-ADMIN_FLAG=0
-BD_FLAG=0
 FORMATER_LINE="------------------------------------------------------------------------------------------------------"
 ECHO_PREFIX=" -- "
 STIME_LOGFILE=".stime.log"
+
+# 绝对定位工作目录
+PROJECT_ROOT=${DEPLOY_PATH:=`pwd`}
+if [ ! -d $PROJECT_ROOT ];then
+    echo -e "[\033[31mError\033[0m] DEPLOY_PATH \033[33m${DEPLOY_PATH}\033[0m is not a directory!"
+    exit 1
+fi
+ai=0
+apps=("${ADMIN_SCRIPT_NAME}" "${BD_SCRIPT_NAME}")
+for app in ${apps[*]}
+do
+    path=${PROJECT_ROOT}/${app}
+    if [ ! -d $path ];then
+        echo -e "[\033[31mError\033[0m] Project path: \033[33m${path}\033[0m is not a directory!"
+        ai=$(($ai+1))
+    fi
+done
+apps=""
+[[ $ai -gt 0 ]] && exit 1
+function _timeNow(){
+    nowtime=`date --date='0 days ago' "+%Y-%m-%d %H:%M:%S"`
+}
+function _runApp(){
+    if [ "${1}"  == "0" ];then
+        path=${PROJECT_ROOT}/${2}
+        if [ ! -d $path ];then
+            echo -e "[\033[31mError\033[0m] \033[33m${path}\033[0m is not directory（Skiped）!"
+            return 0
+        fi
+        
+        if [ ! -f "${path}/${2}" ];then
+            echo -e "[\033[31mError\033[0m] Service script \033[33m${path}/${2}\033[0m is not exist（Skiped）!"
+            return 0
+        fi
+
+        cd $path
+        `nohup ./${2} &> ${2}.log &`
+        #sleep 1;
+        _timeNow
+        echo "${2}[ StartTime: ${nowtime} ]" >> ${PROJECT_ROOT}/${STIME_LOGFILE}
+        echo -e " ${ECHO_PREFIX} \033[33m${2}\033[0m (\033[32mStarted\033[0m)"
+    else
+        echo -e " ${ECHO_PREFIX} \033[33m${2:=Unknow}\033[0m is running (\033[33mSkiped\033[0m)"
+    fi
+}
 function start(){
+    ADMIN_FLAG=0
+    BD_FLAG=0
     for cli in `ps -ef | grep "$APP_KEYWORDS" | grep -v grep | awk -F '/' '{print $3}'`
     do 
         if [ "${cli}"  == "${ADMIN_SCRIPT_NAME}" ];then
@@ -47,26 +94,8 @@ function start(){
             BD_FLAG=1
         fi
     done
-
-    if [ "${ADMIN_FLAG}"  == "0" ];then
-        cd ${PROJECT_ROOT}/${ADMIN_SCRIPT_NAME}
-        nohup ./${ADMIN_SCRIPT_NAME} &> ${ADMIN_SCRIPT_NAME}.log &
-        #sleep 1;
-        echo "${ADMIN_SCRIPT_NAME}[ StartTime: `date --date='0 days ago' \"+%Y-%m-%d %H:%M:%S\"` ]" >> ${PROJECT_ROOT}/${STIME_LOGFILE}
-        echo -e " ${ECHO_PREFIX} \033[33m${ADMIN_SCRIPT_NAME}\033[0m (\033[32mStarted\033[0m)"
-    else
-        echo -e " ${ECHO_PREFIX} \033[33m${ADMIN_SCRIPT_NAME}\033[0m is running (\033[33mSkiped\033[0m)"
-    fi
-
-    if [ "${BD_FLAG}"  == "0" ];then
-        cd ${PROJECT_ROOT}/${BD_SCRIPT_NAME}
-        nohup ./${BD_SCRIPT_NAME} &> ${BD_SCRIPT_NAME}.log &
-        #sleep 1;
-        echo "${BD_SCRIPT_NAME}[ StartTime: `date --date='0 days ago' \"+%Y-%m-%d %H:%M:%S\"` ]" >> ${PROJECT_ROOT}/${STIME_LOGFILE}
-        echo -e " ${ECHO_PREFIX} \033[33m${BD_SCRIPT_NAME}\033[0m (\033[32mStarted\033[0m)"
-    else
-        echo -e " ${ECHO_PREFIX} \033[33m${BD_SCRIPT_NAME}\033[0m is running (\033[33mSkiped\033[0m)"
-    fi
+    _runApp "${ADMIN_FLAG}" "${ADMIN_SCRIPT_NAME}"
+    _runApp "${BD_FLAG}" "${BD_SCRIPT_NAME}"
 }
 
 function stop(){
@@ -83,11 +112,11 @@ function stop(){
 }
 
 function parseDuringTime(){
-    parseTimeResultStr=""
+    #parseTimeResultStr=""
     logfile="${PROJECT_ROOT}/${STIME_LOGFILE}"
     if [ -f $logfile ];then
         stime=`grep "${1}\[ StartTime:" ${logfile} | tail -1 | awk '{print $3 " "$4}'`
-        nowtime=`date --date='0 days ago' "+%Y-%m-%d %H:%M:%S"`
+        _timeNow
         time1=$(($(date +%s -d "$nowtime") - $(date +%s -d "$stime")));
         array=("Duration: ")
         config=(31579200 "Year" 2635200 "Month" 86400 "Day" 3600 "Hour" 60 "Minute" 1 "Second")
@@ -124,23 +153,24 @@ function status(){
         parseDuringTime "${ADMIN_SCRIPT_NAME}"
         if [ $? -gt 0 ] 2> /dev/null;then
             # 全局获取函数返回的字符串
-            echo -e " ${ECHO_PREFIX} \033[33m${ADMIN_SCRIPT_NAME}\033[0m \033[32mactive (running)\033[0m since ${parseTimeResultStr}"
+            echo -e " ${ECHO_PREFIX} \033[32mactive (running)\033[0m \033[33m${ADMIN_SCRIPT_NAME}\033[0m since ${parseTimeResultStr}"
             #sleep 1
     else
-            echo -e " ${ECHO_PREFIX} \033[33m${ADMIN_SCRIPT_NAME}\033[0m \033[32mactive (running)\033[0m since Unknow"
+            echo -e " ${ECHO_PREFIX} \033[32mactive (running)\033[0m \033[33m${ADMIN_SCRIPT_NAME}\033[0m since Unknow"
         fi
 
         parseDuringTime "${BD_SCRIPT_NAME}"
         if [ $? -gt 0 ] 2> /dev/null;then
             # 全局获取函数返回的字符串
-            echo -e " ${ECHO_PREFIX} \033[33m${BD_SCRIPT_NAME}\033[0m \033[32mactive (running)\033[0m since ${parseTimeResultStr}"
+            echo -e " ${ECHO_PREFIX} \033[32mactive (running)\033[0m \033[33m${BD_SCRIPT_NAME}\033[0m since ${parseTimeResultStr}"
             #sleep 1
     else
-            echo -e " ${ECHO_PREFIX} \033[33m${BD_SCRIPT_NAME}\033[0m \033[32mactive (running)\033[0m since Unknow"
+            echo -e " ${ECHO_PREFIX} \033[32mactive (running)\033[0m \033[33m${BD_SCRIPT_NAME}\033[0m since Unknow"
         fi
         echo " ${ECHO_PREFIX}"
         echo $FORMATER_LINE
         ps -ef | grep "$APP_KEYWORDS" | grep -v grep
+        sleep 1
         echo $FORMATER_LINE
         netstat -tlpan | grep "$APP_KEYWORDS" | grep -v grep
     else
