@@ -114,6 +114,7 @@ function stop(){
             #sleep 1;
         fi
     done
+    echo "" > ${PROJECT_ROOT}/${STIME_LOGFILE}
 }
 
 function parseDuringTime(){
@@ -160,7 +161,7 @@ function status(){
             # 全局获取函数返回的字符串
             echo -e " ${ECHO_PREFIX} \033[32mactive (running)\033[0m \033[33m${ADMIN_SCRIPT_NAME}\033[0m since ${parseTimeResultStr}"
             #sleep 1
-    else
+        else
             echo -e " ${ECHO_PREFIX} \033[32mactive (running)\033[0m \033[33m${ADMIN_SCRIPT_NAME}\033[0m since Unknow"
         fi
 
@@ -169,7 +170,7 @@ function status(){
             # 全局获取函数返回的字符串
             echo -e " ${ECHO_PREFIX} \033[32mactive (running)\033[0m \033[33m${BD_SCRIPT_NAME}\033[0m since ${parseTimeResultStr}"
             #sleep 1
-    else
+        else
             echo -e " ${ECHO_PREFIX} \033[32mactive (running)\033[0m \033[33m${BD_SCRIPT_NAME}\033[0m since Unknow"
         fi
         echo " ${ECHO_PREFIX}"
