@@ -195,7 +195,7 @@ function cli(){
     echo "          h | help" 
 }
 
-function help() {
+function helpDoc() {
     echo $FORMATER_LINE
     #echo " "
     echo " Jiacrontab 简单可信赖的任务管理工具(V2.2.0)"
@@ -238,7 +238,7 @@ case $COMMAND in
         status;
     ;;
     h|help)  
-        help;  
+        helpDoc;  
     ;;  
     *)
        cli;
