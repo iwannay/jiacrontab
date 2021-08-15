@@ -1,0 +1,247 @@
+#!/bin/bash
+# -----------------------------------------------------------------
+# The initial version was released by Vipkwd
+# -----------------------------------------------------------------
+# 应用场景：本脚本需配合jiacrontab v2.2.0+ 版本使用
+# （https://jiacrontab.iwannay.cn/download/jiacrontab-v2.2.0-linux-amd64.zip）
+#
+# 部署方法：1、解压上述zip二进制包; 2、将本脚本放入解压后的目录终呈如下结构
+#
+# [root@vipkwd jiacrontab]# pwd
+# /data/wwwroot/jiacrontab
+# [root@vipkwd jiacrontab]# ll
+# 总用量 16
+# 1033992 -rwx--x--x  1 root root 7.4K 8月  14 21:30 jiacrontabctl
+# 1034047 drwxr-xr-x  3 root www  4.0K 8月  11 08:27 jiacrontab_admin
+# 1033995 drwxr-xr-x  4 root www  4.0K 8月  11 14:24 jiacrontabd
+# [root@vipkwd jiacrontab]# 
+# -----------------------------------------------------------------
+
+
+# -----配置项 start-----
+# 提供进程搜索关键字（即:  "jiacrontab_admin"与“jiacrontabd” 在公共字符串部分，用于shell grep 过滤）
+APP_KEYWORDS=jiacrontab
+
+# 提供web前端服务的脚本文件(目录)名（对应: ./jiacrontab_admin/jiacrontab_admin)
+ADMIN_SCRIPT_NAME=jiacrontab_admin
+
+# 任务调度服务脚本文件(目录)名（对应: ./jiacrontabd/jiacrontabd)
+BD_SCRIPT_NAME=jiacrontabd
+
+#手动指定项目PATH(默认空，自动定位 pwd 指令目录)
+DEPLOY_PATH=
+# -----配置项 end-----
+
+ 
+
+FORMATER_LINE="------------------------------------------------------------------------------------------------------"
+ECHO_PREFIX=" -- "
+STIME_LOGFILE=".stime.log"
+
+# 绝对定位工作目录
+PROJECT_ROOT=${DEPLOY_PATH:=`pwd`}
+if [ ! -d $PROJECT_ROOT ];then
+    echo -e "[\033[31mError\033[0m] DEPLOY_PATH \033[33m${DEPLOY_PATH}\033[0m is not a directory!"
+    exit 1
+fi
+ai=0
+apps=("${ADMIN_SCRIPT_NAME}" "${BD_SCRIPT_NAME}")
+for app in ${apps[*]}
+do
+    path=${PROJECT_ROOT}/${app}
+    if [ ! -d $path ];then
+        echo -e "[\033[31mError\033[0m] Project path: \033[33m${path}\033[0m is not a directory!"
+        ai=$(($ai+1))
+    fi
+done
+
+apps=""
+
+[[ $ai -gt 0 ]] && exit 1
+
+function _timeNow(){
+    nowtime=`date --date='0 days ago' "+%Y-%m-%d %H:%M:%S"`
+}
+
+function _runApp(){
+    if [ "${1}"  == "0" ];then
+        path=${PROJECT_ROOT}/${2}
+        if [ ! -d $path ];then
+            echo -e "[\033[31mError\033[0m] \033[33m${path}\033[0m is not directory（Skiped）!"
+            return 0
+        fi
+        
+        if [ ! -f "${path}/${2}" ];then
+            echo -e "[\033[31mError\033[0m] Service script \033[33m${path}/${2}\033[0m is not exist（Skiped）!"
+            return 0
+        fi
+
+        cd $path
+        `nohup ./${2} &> ${2}.log &`
+        #sleep 1;
+        _timeNow
+        echo "${2}[ StartTime: ${nowtime} ]" >> ${PROJECT_ROOT}/${STIME_LOGFILE}
+        echo -e " ${ECHO_PREFIX} \033[33m${2}\033[0m (\033[32mStarted\033[0m)"
+    else
+        echo -e " ${ECHO_PREFIX} \033[33m${2:=Unknow}\033[0m is running (\033[33mSkiped\033[0m)"
+    fi
+}
+
+function start(){
+    ADMIN_FLAG=0
+    BD_FLAG=0
+    for cli in `ps -ef | grep "$APP_KEYWORDS" | grep -v grep | awk -F '/' '{print $3}'`
+    do 
+        if [ "${cli}"  == "${ADMIN_SCRIPT_NAME}" ];then
+            ADMIN_FLAG=1
+        fi
+        if [ "${cli}"  == "${BD_SCRIPT_NAME}" ];then
+            BD_FLAG=1
+        fi
+    done
+    _runApp "${ADMIN_FLAG}" "${ADMIN_SCRIPT_NAME}"
+    _runApp "${BD_FLAG}" "${BD_SCRIPT_NAME}"
+}
+
+function stop(){
+    for line in `ps -ef | grep "$APP_KEYWORDS" | grep -v grep | awk -F ' ' '{print $2 " " $8}'`
+    do
+        STR=`echo $line | awk '{print $1}'`
+        if [ $STR -gt 0 ] 2> /dev/null ;then
+            kill -9 $STR;
+        else
+            echo -e " ${ECHO_PREFIX} \033[33m${STR}\033[0m  (\033[34mStoped\033[0m) "
+            #sleep 1;
+        fi
+    done
+    echo "" > ${PROJECT_ROOT}/${STIME_LOGFILE}
+}
+
+function parseDuringTime(){
+    #parseTimeResultStr=""
+    logfile="${PROJECT_ROOT}/${STIME_LOGFILE}"
+    if [ -f $logfile ];then
+        stime=`grep "${1}\[ StartTime:" ${logfile} | tail -1 | awk '{print $3 " "$4}'`
+        _timeNow
+        time1=$(($(date +%s -d "$nowtime") - $(date +%s -d "$stime")));
+        array=("Duration: ")
+        config=(31579200 "Year" 2635200 "Month" 86400 "Day" 3600 "Hour" 60 "Minute" 1 "Second")
+        j=0
+        for str in ${config[*]}; do
+            if [ $(($j%2)) -eq 0 ];then
+                if [ ${time1} -ge ${config[$j]} ];then
+                    j1=$(($j+1))
+                    j2=$(($j+2))
+                    array[$j1]=$[ $time1 / ${config[$j]} ]
+                    array[$j2]=${config[$j1]}
+                    if [ ${array[$j1]} -gt 1 ];then
+                        array[$j2]="${array[$j2]}s"
+                    fi
+                    time1=$(($time1 % ${config[$j]}))
+                fi
+            fi
+            j=$(($j+1))
+        done
+        if [ "Null" == "${stime}Null" ];then
+            return 0
+        fi
+        parseTimeResultStr="${stime} (${array[*]})"
+        return 1
+    fi
+    parseTimeResultStr=""
+    return 0
+}
+
+function status(){
+    if [ `ps -ef | grep "$APP_KEYWORDS" | grep -v grep | wc -l` -gt 0 ];then
+        echo $FORMATER_LINE
+        echo " ${ECHO_PREFIX}"
+        parseDuringTime "${ADMIN_SCRIPT_NAME}"
+        if [ $? -gt 0 ] 2> /dev/null;then
+            # 全局获取函数返回的字符串
+            echo -e " ${ECHO_PREFIX} \033[32mactive (running)\033[0m \033[33m${ADMIN_SCRIPT_NAME}\033[0m since ${parseTimeResultStr}"
+            #sleep 1
+        else
+            echo -e " ${ECHO_PREFIX} \033[32mactive (running)\033[0m \033[33m${ADMIN_SCRIPT_NAME}\033[0m since Unknow"
+        fi
+
+        parseDuringTime "${BD_SCRIPT_NAME}"
+        if [ $? -gt 0 ] 2> /dev/null;then
+            # 全局获取函数返回的字符串
+            echo -e " ${ECHO_PREFIX} \033[32mactive (running)\033[0m \033[33m${BD_SCRIPT_NAME}\033[0m since ${parseTimeResultStr}"
+            #sleep 1
+        else
+            echo -e " ${ECHO_PREFIX} \033[32mactive (running)\033[0m \033[33m${BD_SCRIPT_NAME}\033[0m since Unknow"
+        fi
+        echo " ${ECHO_PREFIX}"
+        echo $FORMATER_LINE
+        ps -ef | grep "$APP_KEYWORDS" | grep -v grep
+        sleep 1
+        echo $FORMATER_LINE
+        netstat -tlpan | grep "$APP_KEYWORDS" | grep -v grep
+    else
+       echo -e " ${ECHO_PREFIX} \033[33m${ADMIN_SCRIPT_NAME}\033[0m is \033[31moffline\033[0m"
+       echo -e " ${ECHO_PREFIX} \033[33m${BD_SCRIPT_NAME}\033[0m is \033[31moffline\033[0m"
+    fi
+}
+
+function cli(){
+    echo "input: $0 OPTION" >&2
+    echo "   OPTION :"  
+    echo "          start"  
+    echo "          stop"  
+    echo "          status"  
+    echo "          restart" 
+    echo "          h | help" 
+}
+
+function helpDoc() {
+    echo $FORMATER_LINE
+    #echo " "
+    echo " Jiacrontab 简单可信赖的任务管理工具(V2.2.0)"
+    echo "   1.自定义job执行"
+    echo "   2.允许设置job的最大并发数"
+    echo "   3.每个脚本都可在web界面下灵活配置，如测试脚本运行，查看日志，强杀进程，停止定时..."
+    echo "   4.允许添加脚本依赖（支持跨服务器），依赖脚本提供同步和异步的执行模式"
+    echo "   5.支持异常通知"
+    echo "   6.支持守护脚本进程"
+    echo "   7.支持节点分组"
+    echo "   n.更多请访问仓库查看"
+    #echo " "
+    echo $FORMATER_LINE
+    #echo " "
+    echo " Github: https://github.com/iwannay/jiacrontab"
+    echo " Csdn: https://codechina.csdn.net/mirrors/iwannay/jiacrontab"
+    echo " "
+    echo " Package: https://jiacrontab.iwannay.cn/download/"
+    #echo " "
+    echo $FORMATER_LINE
+    cli
+}
+COMMAND=$1
+shift 1  
+case $COMMAND in  
+    start)
+        start;
+    ;;
+    stop)
+        stop;
+    ;;
+    status)
+        status;
+    ;;
+    restart)
+        stop;
+        sleep 1
+        start;
+        sleep 1
+        status;
+    ;;
+    h|help)  
+        helpDoc;  
+    ;;  
+    *)
+       cli;
+       exit 1;
+    ;;
+esac
