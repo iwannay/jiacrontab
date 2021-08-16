@@ -32,7 +32,6 @@ BD_SCRIPT_NAME=jiacrontabd
 DEPLOY_PATH=
 # -----配置项 end-----
 
- 
 
 FORMATER_LINE="------------------------------------------------------------------------------------------------------"
 ECHO_PREFIX=" -- "
@@ -59,8 +58,11 @@ apps=""
 
 [[ $ai -gt 0 ]] && exit 1
 
+ADMIN_CLI_IS_RUNNING=0
+BD_CLI_IS_RUNNING=0
+
 function _timeNow(){
-    nowtime=`date --date='0 days ago' "+%Y-%m-%d %H:%M:%S"`
+    nowtime=`date "+%Y-%m-%d %H:%M:%S"`
 }
 
 function _runApp(){
@@ -87,37 +89,20 @@ function _runApp(){
     fi
 }
 
-function start(){
-    ADMIN_FLAG=0
-    BD_FLAG=0
-    for cli in `ps -ef | grep "$APP_KEYWORDS" | grep -v grep | awk -F '/' '{print $3}'`
+
+function _cliListen(){
+    for cli in `ps -ef | grep "$APP_KEYWORDS" | grep -v "grep" | awk -F ' ./' '{print $2}'`	
     do 
         if [ "${cli}"  == "${ADMIN_SCRIPT_NAME}" ];then
-            ADMIN_FLAG=1
+            ADMIN_CLI_IS_RUNNING=1
         fi
         if [ "${cli}"  == "${BD_SCRIPT_NAME}" ];then
-            BD_FLAG=1
+            BD_CLI_IS_RUNNING=1
         fi
-    done
-    _runApp "${ADMIN_FLAG}" "${ADMIN_SCRIPT_NAME}"
-    _runApp "${BD_FLAG}" "${BD_SCRIPT_NAME}"
+    done 
 }
 
-function stop(){
-    for line in `ps -ef | grep "$APP_KEYWORDS" | grep -v grep | awk -F ' ' '{print $2 " " $8}'`
-    do
-        STR=`echo $line | awk '{print $1}'`
-        if [ $STR -gt 0 ] 2> /dev/null ;then
-            kill -9 $STR;
-        else
-            echo -e " ${ECHO_PREFIX} \033[33m${STR}\033[0m  (\033[34mStoped\033[0m) "
-            #sleep 1;
-        fi
-    done
-    echo "" > ${PROJECT_ROOT}/${STIME_LOGFILE}
-}
-
-function parseDuringTime(){
+function _parseDuringTime(){
     #parseTimeResultStr=""
     logfile="${PROJECT_ROOT}/${STIME_LOGFILE}"
     if [ -f $logfile ];then
@@ -152,36 +137,66 @@ function parseDuringTime(){
     return 0
 }
 
-function status(){
-    if [ `ps -ef | grep "$APP_KEYWORDS" | grep -v grep | wc -l` -gt 0 ];then
-        echo $FORMATER_LINE
-        echo " ${ECHO_PREFIX}"
-        parseDuringTime "${ADMIN_SCRIPT_NAME}"
-        if [ $? -gt 0 ] 2> /dev/null;then
-            # 全局获取函数返回的字符串
-            echo -e " ${ECHO_PREFIX} \033[32mactive (running)\033[0m \033[33m${ADMIN_SCRIPT_NAME}\033[0m since ${parseTimeResultStr}"
-            #sleep 1
-        else
-            echo -e " ${ECHO_PREFIX} \033[32mactive (running)\033[0m \033[33m${ADMIN_SCRIPT_NAME}\033[0m since Unknow"
-        fi
+function start(){
+    _cliListen
+    if [ $ADMIN_CLI_IS_RUNNING -eq 0 -a $BD_CLI_IS_RUNNING -eq 0 ];then
+        echo "" > ${PROJECT_ROOT}/${STIME_LOGFILE}
+    fi
+    _runApp "${ADMIN_CLI_IS_RUNNING}" "${ADMIN_SCRIPT_NAME}"
+    _runApp "${BD_CLI_IS_RUNNING}" "${BD_SCRIPT_NAME}"
+}
 
-        parseDuringTime "${BD_SCRIPT_NAME}"
+function stop(){
+    for line in `ps -ef | grep "$APP_KEYWORDS" | grep -v grep | awk -F ' ' '{print $2 " " $NF}'`
+    do
+        STR=`echo $line | awk '{print $1}'`
+        if [ $STR -gt 0 ] 2> /dev/null ;then
+            kill -9 $STR;
+        else
+            echo -e " ${ECHO_PREFIX} \033[33m${STR}\033[0m  (\033[34mStoped\033[0m) "
+            #sleep 1;
+        fi
+    done
+    echo "" > ${PROJECT_ROOT}/${STIME_LOGFILE}
+}
+
+function status(){
+    _cliListen
+    echo $FORMATER_LINE
+    echo " ${ECHO_PREFIX}"
+    if [ $ADMIN_CLI_IS_RUNNING -eq 0 ];then
+        echo -e " ${ECHO_PREFIX} Active: \033[31minactive (dead)\033[0m \033[33m${ADMIN_SCRIPT_NAME}\033[0m  since Unknow"
+    else
+        _parseDuringTime "${ADMIN_SCRIPT_NAME}"
         if [ $? -gt 0 ] 2> /dev/null;then
             # 全局获取函数返回的字符串
-            echo -e " ${ECHO_PREFIX} \033[32mactive (running)\033[0m \033[33m${BD_SCRIPT_NAME}\033[0m since ${parseTimeResultStr}"
+            echo -e " ${ECHO_PREFIX} Active: \033[32mactive (running)\033[0m \033[33m${ADMIN_SCRIPT_NAME}\033[0m since ${parseTimeResultStr}"
             #sleep 1
         else
-            echo -e " ${ECHO_PREFIX} \033[32mactive (running)\033[0m \033[33m${BD_SCRIPT_NAME}\033[0m since Unknow"
+            echo -e " ${ECHO_PREFIX} Active: \033[32mactive (running)\033[0m \033[33m${ADMIN_SCRIPT_NAME}\033[0m since Unknow"
         fi
-        echo " ${ECHO_PREFIX}"
-        echo $FORMATER_LINE
+    fi
+
+    if [ $BD_CLI_IS_RUNNING -eq 0 ];then
+        echo -e " ${ECHO_PREFIX} Active: \033[31minactive (dead)\033[0m \033[33m${BD_SCRIPT_NAME}\033[0m since Unknow"
+    else
+        _parseDuringTime "${BD_SCRIPT_NAME}"
+        if [ $? -gt 0 ] 2> /dev/null;then
+            # 全局获取函数返回的字符串
+            echo -e " ${ECHO_PREFIX} Active: \033[32mactive (running)\033[0m \033[33m${BD_SCRIPT_NAME}\033[0m since ${parseTimeResultStr}"
+            #sleep 1
+        else
+            echo -e " ${ECHO_PREFIX} Active: \033[32mactive (running)\033[0m \033[33m${BD_SCRIPT_NAME}\033[0m since Unknow"
+        fi
+    fi
+    echo " ${ECHO_PREFIX}"
+    echo $FORMATER_LINE
+    if [ $ADMIN_CLI_IS_RUNNING -gt 0 -o $BD_CLI_IS_RUNNING -gt 0 ];then
+
         ps -ef | grep "$APP_KEYWORDS" | grep -v grep
         sleep 1
         echo $FORMATER_LINE
         netstat -tlpan | grep "$APP_KEYWORDS" | grep -v grep
-    else
-       echo -e " ${ECHO_PREFIX} \033[33m${ADMIN_SCRIPT_NAME}\033[0m is \033[31moffline\033[0m"
-       echo -e " ${ECHO_PREFIX} \033[33m${BD_SCRIPT_NAME}\033[0m is \033[31moffline\033[0m"
     fi
 }
 
