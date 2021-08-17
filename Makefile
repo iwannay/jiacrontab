@@ -1,6 +1,7 @@
 # Go parameters
 goCmd=go
-goBuild=$(goCmd) build
+version=$(shell cat VERSION)
+goBuild=$(goCmd) build -ldflags "-X jiacrontab/pkg/version.Binary=$(version)"
 goClean=$(goCmd) clean
 goTest=$(goCmd) test
 goGet=$(goCmd) get
@@ -8,6 +9,7 @@ sourceAdmDir=./app/jiacrontab_admin
 sourceNodeDir=./app/jiacrontabd
 binAdm=$(sourceAdmDir)/jiacrontab_admin
 binNode=$(sourceNodeDir)/jiacrontabd
+
 
 buildDir=./build
 buildAdmDir=$(buildDir)/jiacrontab/jiacrontab_admin
@@ -35,6 +37,11 @@ build2:
 	$(goBuild) -o $(binNode) -v $(sourceNodeDir)
 	mv $(binAdm) $(buildAdmDir)
 	mv $(binNode) $(buildNodeDir)
+docker:
+	docker build \
+		-t iwannay/jiacrontab:$(version) \
+		-f Dockerfile \
+		.
 test:
 	$(goTest) -v -race -coverprofile=coverage.txt -covermode=atomic $(sourceAdmDir)
 	$(goTest) -v -race -coverprofile=coverage.txt -covermode=atomic $(sourceNodeDir)

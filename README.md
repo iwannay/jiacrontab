@@ -75,6 +75,24 @@ $ nohup ./jiacrontabd &> jiacrontabd.log &
 
 <font color="red" size="3">浏览器访问 host:port (eg: localhost:20000) 即可访问管理后台</font>
 
+#### docker 安装
+```sh
+# 下载镜像
+$ docker pull iwannay/jiacrontab:2.3.0
+
+# 创建自定义网络
+$ docker network create mybridge
+
+# 启动jiacrontab_admin
+# 需要指定配置文件目录时需要先挂载目录，然后-config指定
+$  docker run --network mybridge --name jiacrontab_admin -p 20000:20000 -it iwannay/jiacrontab:2.3.0 ./jiacrontab_admin
+
+# 启动jiacrontabd
+# 需要指定配置文件目录时需要先挂载目录，然后-config指定
+docker run -v $(pwd)/jiacrontabd:/config --name jiacrontabd --network mybridge -it iwannay/jiacrontab:2.3.0 ./jiacrontabd -config /config/jiacrontabd.ini
+
+```
+
 ### 升级版本
 
 1、下载新版本压缩包，并解压。
