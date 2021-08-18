@@ -89,7 +89,7 @@ $  docker run --network mybridge --name jiacrontab_admin -p 20000:20000 -it iwan
 
 # 启动jiacrontabd
 # 需要指定配置文件目录时需要先挂载目录，然后-config指定
-docker run -v $(pwd)/jiacrontabd:/config --name jiacrontabd --network mybridge -it iwannay/jiacrontab:2.3.0 ./jiacrontabd -config /config/jiacrontabd.ini
+$ docker run -v $(pwd)/jiacrontabd:/config --name jiacrontabd --network mybridge -it iwannay/jiacrontab:2.3.0 ./jiacrontabd -config /config/jiacrontabd.ini
 
 ```
 
