@@ -154,8 +154,6 @@ $ docker run -v $(pwd)/jiacrontabd:/config --name jiacrontabd --network mybridge
 
 [2.0.0版本演示地址](http://jiacrontab-spa.iwannay.cn/) 账号：test 密码：123456
 
-### 商务合作
-<img src="https://raw.githubusercontent.com/iwannay/static_dir/master/1555767089.jpg" width="250" alt="合作"/>
 
 
 ### 赞助

@@ -381,7 +381,7 @@ func (j *JobEntry) timeoutTrigger(p *process) {
 				log.Error("json.Marshal error:", err)
 			}
 
-			if err = j.jd.rpcCallCtx(context.TODO(), "Srv.ApiPost err:", proto.ApiPost{
+			if err = j.jd.rpcCallCtx(context.TODO(), "Srv.ApiPost", proto.ApiPost{
 				Urls: j.detail.APITo,
 				Data: string(postData),
 			}, &reply); err != nil {
