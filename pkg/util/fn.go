@@ -95,6 +95,7 @@ func CatFile(filepath string, limit int64, content *string) (isPath bool, err er
 	if err != nil {
 		return false, err
 	}
+	defer f.Close()
 	fi, err := f.Stat()
 	if err != nil {
 		return false, err
