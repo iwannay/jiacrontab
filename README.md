@@ -4,7 +4,7 @@
 
 简单可信赖的任务管理工具
 
-**如果你需要一次性推送作业到数以万计的实例上运行，请使用作者开源的另一款调度软件[Jiascheduler](https://github.com/jiawesoft/jiascheduler)**
+**如果你需要一次性推送作业到数以万计的实例上运行，请使用作者开源的另一款调度软件 [Jiascheduler](https://github.com/jiawesoft/jiascheduler)，jiascheduler更强大，更灵活**
 
 ### v2.0.0版发布
 
