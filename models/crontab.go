@@ -166,9 +166,9 @@ type DependJob struct {
 	Timeout  int64    `json:"timeout"`
 }
 
-type PipeComamnds [][]string
+type PipeCommands [][]string
 
-func (p *PipeComamnds) Scan(v interface{}) error {
+func (p *PipeCommands) Scan(v interface{}) error {
 	switch val := v.(type) {
 	case string:
 		return json.Unmarshal([]byte(val), p)
@@ -180,19 +180,19 @@ func (p *PipeComamnds) Scan(v interface{}) error {
 
 }
 
-func (p PipeComamnds) Value() (driver.Value, error) {
+func (p PipeCommands) Value() (driver.Value, error) {
 	if p == nil {
-		p = make(PipeComamnds, 0)
+		p = make(PipeCommands, 0)
 	}
 	bts, err := json.Marshal(p)
 	return string(bts), err
 }
 
-func (d PipeComamnds) MarshalJSON() ([]byte, error) {
+func (d PipeCommands) MarshalJSON() ([]byte, error) {
 	if d == nil {
-		d = make(PipeComamnds, 0)
+		d = make(PipeCommands, 0)
 	}
-	type m PipeComamnds
+	type m PipeCommands
 	return json.Marshal(m(d))
 }
 
